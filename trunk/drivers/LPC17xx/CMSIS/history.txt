@@ -1,0 +1,31 @@
+History of updates to CMSISv1p30_LPC17xx
+========================================
+
+19 January 2010
+---------------
+system_LPC17xx.c updated to new version (dated 11 January 2010)
+
+23 March 2010
+-------------
+system_LPC17xx.c updated to new version (1.07, dated 12 February
+2010) - with fix to check on value of CCLKCFG_Val to remove need
+for it to be odd only.
+
+Optimisation level of release build of project also changed from
+-O2 to -Os.
+
+12 May 2010
+-----------
+system_LPC17xx.c updated to new version (1.08, dated 12 May 2010)
+with fix to to use unsigned long long arithmetic in calculations
+of SystemCoreClock, preventing incorrect result being generated
+for certain inputs due to overflow.
+
+24 August 2010
+--------------
+LPC17xx.h updated to new version (1.09, 17. March 2010)
+- Addition of USBActivity_IRQn and CANActivity_IRQn to IRQn_Type
+- Addition of CANSLEEPCLR and CANWAKEFLAGS to LPC_SC_TypeDef
+- FIFOLVL changed to uint32_t in LPC_UART_TypeDef, 
+  LPC_UART0_TypeDef, LPC_UART1_TypeDef
+- Fixed I2C_RX and I2C_TX to share same address in LPC_USB_TypeDef

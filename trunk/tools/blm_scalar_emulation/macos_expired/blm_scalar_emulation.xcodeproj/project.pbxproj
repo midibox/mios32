@@ -1,0 +1,553 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 45;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
+		256AC3DA0F4B6AC300CF3369 /* blm_scalar_emulationAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 256AC3D90F4B6AC300CF3369 /* blm_scalar_emulationAppDelegate.m */; };
+		5218343310BB1F710094AD7E /* ControlButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 5218343210BB1F710094AD7E /* ControlButton.m */; };
+		52529BB410B6069000914779 /* BLM_ButtonCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 52529BB310B6069000914779 /* BLM_ButtonCell.m */; };
+		5284003B10B73626006FC1D9 /* Bugs.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284000810B73626006FC1D9 /* Bugs.html */; };
+		5284003C10B73626006FC1D9 /* archiving.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284000A10B73626006FC1D9 /* archiving.html */; };
+		5284003D10B73626006FC1D9 /* PYMIDIEndpoint.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284000C10B73626006FC1D9 /* PYMIDIEndpoint.html */; };
+		5284003E10B73626006FC1D9 /* PYMIDIEndpointDescriptor.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284000D10B73626006FC1D9 /* PYMIDIEndpointDescriptor.html */; };
+		5284003F10B73626006FC1D9 /* PYMIDIEndpointSet.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284000E10B73626006FC1D9 /* PYMIDIEndpointSet.html */; };
+		5284004010B73626006FC1D9 /* PYMIDIManager.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284000F10B73626006FC1D9 /* PYMIDIManager.html */; };
+		5284004110B73626006FC1D9 /* PYMIDIRealDestination.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001010B73626006FC1D9 /* PYMIDIRealDestination.html */; };
+		5284004210B73626006FC1D9 /* PYMIDIRealEndpoint.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001110B73626006FC1D9 /* PYMIDIRealEndpoint.html */; };
+		5284004310B73626006FC1D9 /* PYMIDIRealSource.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001210B73626006FC1D9 /* PYMIDIRealSource.html */; };
+		5284004410B73626006FC1D9 /* PYMIDIVirtualDestination.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001310B73626006FC1D9 /* PYMIDIVirtualDestination.html */; };
+		5284004510B73626006FC1D9 /* PYMIDIVirtualEndpoint.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001410B73626006FC1D9 /* PYMIDIVirtualEndpoint.html */; };
+		5284004610B73626006FC1D9 /* PYMIDIVirtualSource.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001510B73626006FC1D9 /* PYMIDIVirtualSource.html */; };
+		5284004710B73626006FC1D9 /* descriptors.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001610B73626006FC1D9 /* descriptors.html */; };
+		5284004810B73626006FC1D9 /* endpoints.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001710B73626006FC1D9 /* endpoints.html */; };
+		5284004910B73626006FC1D9 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001810B73626006FC1D9 /* index.html */; };
+		5284004A10B73626006FC1D9 /* manager.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001910B73626006FC1D9 /* manager.html */; };
+		5284004B10B73626006FC1D9 /* notification.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001A10B73626006FC1D9 /* notification.html */; };
+		5284004C10B73626006FC1D9 /* overview.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001B10B73626006FC1D9 /* overview.html */; };
+		5284004D10B73626006FC1D9 /* receiving.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001C10B73626006FC1D9 /* receiving.html */; };
+		5284004E10B73626006FC1D9 /* selection.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001D10B73626006FC1D9 /* selection.html */; };
+		5284004F10B73626006FC1D9 /* sending.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001E10B73626006FC1D9 /* sending.html */; };
+		5284005010B73626006FC1D9 /* toc.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284001F10B73626006FC1D9 /* toc.html */; };
+		5284005110B73626006FC1D9 /* MIT-LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 5284002010B73626006FC1D9 /* MIT-LICENSE */; };
+		5284005210B73626006FC1D9 /* Read Me.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284002110B73626006FC1D9 /* Read Me.html */; };
+		5284005310B73626006FC1D9 /* Release Notes.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284002210B73626006FC1D9 /* Release Notes.html */; };
+		5284005410B73626006FC1D9 /* To Do.html in Resources */ = {isa = PBXBuildFile; fileRef = 5284002310B73626006FC1D9 /* To Do.html */; };
+		5284005510B73626006FC1D9 /* PYMIDIEndpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = 5284002610B73626006FC1D9 /* PYMIDIEndpoint.m */; };
+		5284005610B73626006FC1D9 /* PYMIDIEndpointDescriptor.m in Sources */ = {isa = PBXBuildFile; fileRef = 5284002810B73626006FC1D9 /* PYMIDIEndpointDescriptor.m */; };
+		5284005710B73626006FC1D9 /* PYMIDIEndpointSet.m in Sources */ = {isa = PBXBuildFile; fileRef = 5284002A10B73626006FC1D9 /* PYMIDIEndpointSet.m */; };
+		5284005810B73626006FC1D9 /* PYMIDIManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 5284002C10B73626006FC1D9 /* PYMIDIManager.m */; };
+		5284005910B73626006FC1D9 /* PYMIDIRealDestination.m in Sources */ = {isa = PBXBuildFile; fileRef = 5284002E10B73626006FC1D9 /* PYMIDIRealDestination.m */; };
+		5284005A10B73626006FC1D9 /* PYMIDIRealEndpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = 5284003010B73626006FC1D9 /* PYMIDIRealEndpoint.m */; };
+		5284005B10B73626006FC1D9 /* PYMIDIRealSource.m in Sources */ = {isa = PBXBuildFile; fileRef = 5284003210B73626006FC1D9 /* PYMIDIRealSource.m */; };
+		5284005C10B73626006FC1D9 /* PYMIDIUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5284003410B73626006FC1D9 /* PYMIDIUtils.m */; };
+		5284005D10B73626006FC1D9 /* PYMIDIVirtualDestination.m in Sources */ = {isa = PBXBuildFile; fileRef = 5284003610B73626006FC1D9 /* PYMIDIVirtualDestination.m */; };
+		5284005E10B73626006FC1D9 /* PYMIDIVirtualEndpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = 5284003810B73626006FC1D9 /* PYMIDIVirtualEndpoint.m */; };
+		5284005F10B73626006FC1D9 /* PYMIDIVirtualSource.m in Sources */ = {isa = PBXBuildFile; fileRef = 5284003A10B73626006FC1D9 /* PYMIDIVirtualSource.m */; };
+		5284FECE10B72DD2006FC1D9 /* BLM.m in Sources */ = {isa = PBXBuildFile; fileRef = 5284FECD10B72DD2006FC1D9 /* BLM.m */; };
+		5284FF7410B73349006FC1D9 /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5284FF7310B73349006FC1D9 /* CoreMIDI.framework */; };
+		5284FFFE10B735CF006FC1D9 /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5284FFFD10B735CF006FC1D9 /* CoreMIDI.framework */; };
+		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
+		8D11072D0486CEB800E47090 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
+		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		5284FF7210B73342006FC1D9 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 8;
+			dstPath = Users/TK/svn/mios32/trunk/drivers/MacOS/PYMIDI;
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		5284FFB910B73467006FC1D9 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = ../../drivers/MacOS/PYMIDI;
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5284FFD610B73525006FC1D9 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		089C165DFE840E0CC02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		13E42FB307B3F0F600E4EEF1 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = /System/Library/Frameworks/CoreData.framework; sourceTree = "<absolute>"; };
+		1DDD58150DA1D0A300B32029 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = English.lproj/MainMenu.xib; sourceTree = "<group>"; };
+		256AC3D80F4B6AC300CF3369 /* blm_scalar_emulationAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = blm_scalar_emulationAppDelegate.h; sourceTree = "<group>"; };
+		256AC3D90F4B6AC300CF3369 /* blm_scalar_emulationAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = blm_scalar_emulationAppDelegate.m; sourceTree = "<group>"; };
+		256AC3F00F4B6AF500CF3369 /* blm_scalar_emulation_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = blm_scalar_emulation_Prefix.pch; sourceTree = "<group>"; };
+		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
+		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		5218343110BB1F710094AD7E /* ControlButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ControlButton.h; sourceTree = "<group>"; };
+		5218343210BB1F710094AD7E /* ControlButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ControlButton.m; sourceTree = "<group>"; };
+		52529BB210B6069000914779 /* BLM_ButtonCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BLM_ButtonCell.h; sourceTree = "<group>"; };
+		52529BB310B6069000914779 /* BLM_ButtonCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BLM_ButtonCell.m; sourceTree = "<group>"; };
+		5284000810B73626006FC1D9 /* Bugs.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = Bugs.html; sourceTree = "<group>"; };
+		5284000A10B73626006FC1D9 /* archiving.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = archiving.html; sourceTree = "<group>"; };
+		5284000C10B73626006FC1D9 /* PYMIDIEndpoint.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = PYMIDIEndpoint.html; sourceTree = "<group>"; };
+		5284000D10B73626006FC1D9 /* PYMIDIEndpointDescriptor.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = PYMIDIEndpointDescriptor.html; sourceTree = "<group>"; };
+		5284000E10B73626006FC1D9 /* PYMIDIEndpointSet.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = PYMIDIEndpointSet.html; sourceTree = "<group>"; };
+		5284000F10B73626006FC1D9 /* PYMIDIManager.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = PYMIDIManager.html; sourceTree = "<group>"; };
+		5284001010B73626006FC1D9 /* PYMIDIRealDestination.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = PYMIDIRealDestination.html; sourceTree = "<group>"; };
+		5284001110B73626006FC1D9 /* PYMIDIRealEndpoint.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = PYMIDIRealEndpoint.html; sourceTree = "<group>"; };
+		5284001210B73626006FC1D9 /* PYMIDIRealSource.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = PYMIDIRealSource.html; sourceTree = "<group>"; };
+		5284001310B73626006FC1D9 /* PYMIDIVirtualDestination.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = PYMIDIVirtualDestination.html; sourceTree = "<group>"; };
+		5284001410B73626006FC1D9 /* PYMIDIVirtualEndpoint.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = PYMIDIVirtualEndpoint.html; sourceTree = "<group>"; };
+		5284001510B73626006FC1D9 /* PYMIDIVirtualSource.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = PYMIDIVirtualSource.html; sourceTree = "<group>"; };
+		5284001610B73626006FC1D9 /* descriptors.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = descriptors.html; sourceTree = "<group>"; };
+		5284001710B73626006FC1D9 /* endpoints.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = endpoints.html; sourceTree = "<group>"; };
+		5284001810B73626006FC1D9 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = index.html; sourceTree = "<group>"; };
+		5284001910B73626006FC1D9 /* manager.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = manager.html; sourceTree = "<group>"; };
+		5284001A10B73626006FC1D9 /* notification.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = notification.html; sourceTree = "<group>"; };
+		5284001B10B73626006FC1D9 /* overview.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = overview.html; sourceTree = "<group>"; };
+		5284001C10B73626006FC1D9 /* receiving.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = receiving.html; sourceTree = "<group>"; };
+		5284001D10B73626006FC1D9 /* selection.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = selection.html; sourceTree = "<group>"; };
+		5284001E10B73626006FC1D9 /* sending.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = sending.html; sourceTree = "<group>"; };
+		5284001F10B73626006FC1D9 /* toc.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html.documentation; path = toc.html; sourceTree = "<group>"; };
+		5284002010B73626006FC1D9 /* MIT-LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "MIT-LICENSE"; sourceTree = "<group>"; };
+		5284002110B73626006FC1D9 /* Read Me.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = "Read Me.html"; sourceTree = "<group>"; };
+		5284002210B73626006FC1D9 /* Release Notes.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = "Release Notes.html"; sourceTree = "<group>"; };
+		5284002310B73626006FC1D9 /* To Do.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = "To Do.html"; sourceTree = "<group>"; };
+		5284002410B73626006FC1D9 /* PYMIDI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDI.h; sourceTree = "<group>"; };
+		5284002510B73626006FC1D9 /* PYMIDIEndpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIEndpoint.h; sourceTree = "<group>"; };
+		5284002610B73626006FC1D9 /* PYMIDIEndpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIEndpoint.m; sourceTree = "<group>"; };
+		5284002710B73626006FC1D9 /* PYMIDIEndpointDescriptor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIEndpointDescriptor.h; sourceTree = "<group>"; };
+		5284002810B73626006FC1D9 /* PYMIDIEndpointDescriptor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIEndpointDescriptor.m; sourceTree = "<group>"; };
+		5284002910B73626006FC1D9 /* PYMIDIEndpointSet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIEndpointSet.h; sourceTree = "<group>"; };
+		5284002A10B73626006FC1D9 /* PYMIDIEndpointSet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIEndpointSet.m; sourceTree = "<group>"; };
+		5284002B10B73626006FC1D9 /* PYMIDIManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIManager.h; sourceTree = "<group>"; };
+		5284002C10B73626006FC1D9 /* PYMIDIManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIManager.m; sourceTree = "<group>"; };
+		5284002D10B73626006FC1D9 /* PYMIDIRealDestination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIRealDestination.h; sourceTree = "<group>"; };
+		5284002E10B73626006FC1D9 /* PYMIDIRealDestination.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIRealDestination.m; sourceTree = "<group>"; };
+		5284002F10B73626006FC1D9 /* PYMIDIRealEndpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIRealEndpoint.h; sourceTree = "<group>"; };
+		5284003010B73626006FC1D9 /* PYMIDIRealEndpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIRealEndpoint.m; sourceTree = "<group>"; };
+		5284003110B73626006FC1D9 /* PYMIDIRealSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIRealSource.h; sourceTree = "<group>"; };
+		5284003210B73626006FC1D9 /* PYMIDIRealSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIRealSource.m; sourceTree = "<group>"; };
+		5284003310B73626006FC1D9 /* PYMIDIUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIUtils.h; sourceTree = "<group>"; };
+		5284003410B73626006FC1D9 /* PYMIDIUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIUtils.m; sourceTree = "<group>"; };
+		5284003510B73626006FC1D9 /* PYMIDIVirtualDestination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIVirtualDestination.h; sourceTree = "<group>"; };
+		5284003610B73626006FC1D9 /* PYMIDIVirtualDestination.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIVirtualDestination.m; sourceTree = "<group>"; };
+		5284003710B73626006FC1D9 /* PYMIDIVirtualEndpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIVirtualEndpoint.h; sourceTree = "<group>"; };
+		5284003810B73626006FC1D9 /* PYMIDIVirtualEndpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIVirtualEndpoint.m; sourceTree = "<group>"; };
+		5284003910B73626006FC1D9 /* PYMIDIVirtualSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PYMIDIVirtualSource.h; sourceTree = "<group>"; };
+		5284003A10B73626006FC1D9 /* PYMIDIVirtualSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PYMIDIVirtualSource.m; sourceTree = "<group>"; };
+		5284FECC10B72DD2006FC1D9 /* BLM.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BLM.h; sourceTree = "<group>"; };
+		5284FECD10B72DD2006FC1D9 /* BLM.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BLM.m; sourceTree = "<group>"; };
+		5284FF7310B73349006FC1D9 /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = System/Library/Frameworks/CoreMIDI.framework; sourceTree = SDKROOT; };
+		5284FFFD10B735CF006FC1D9 /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = /System/Library/Frameworks/CoreMIDI.framework; sourceTree = "<absolute>"; };
+		8D1107310486CEB800E47090 /* blm_scalar_emulation-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "blm_scalar_emulation-Info.plist"; sourceTree = "<group>"; };
+		8D1107320486CEB800E47090 /* blm_scalar_emulation.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = blm_scalar_emulation.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8D11072E0486CEB800E47090 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
+				5284FF7410B73349006FC1D9 /* CoreMIDI.framework in Frameworks */,
+				5284FFFE10B735CF006FC1D9 /* CoreMIDI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		080E96DDFE201D6D7F000001 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				5218343110BB1F710094AD7E /* ControlButton.h */,
+				5218343210BB1F710094AD7E /* ControlButton.m */,
+				5284FECC10B72DD2006FC1D9 /* BLM.h */,
+				5284FECD10B72DD2006FC1D9 /* BLM.m */,
+				52529BB210B6069000914779 /* BLM_ButtonCell.h */,
+				52529BB310B6069000914779 /* BLM_ButtonCell.m */,
+				256AC3D80F4B6AC300CF3369 /* blm_scalar_emulationAppDelegate.h */,
+				256AC3D90F4B6AC300CF3369 /* blm_scalar_emulationAppDelegate.m */,
+			);
+			name = Classes;
+			sourceTree = "<group>";
+		};
+		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				5284000610B73626006FC1D9 /* PYMIDI */,
+				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
+			);
+			name = "Linked Frameworks";
+			sourceTree = "<group>";
+		};
+		1058C7A2FEA54F0111CA2CBB /* Other Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				29B97324FDCFA39411CA2CEA /* AppKit.framework */,
+				13E42FB307B3F0F600E4EEF1 /* CoreData.framework */,
+				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
+			);
+			name = "Other Frameworks";
+			sourceTree = "<group>";
+		};
+		19C28FACFE9D520D11CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8D1107320486CEB800E47090 /* blm_scalar_emulation.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		29B97314FDCFA39411CA2CEA /* blm_scalar_emulation */ = {
+			isa = PBXGroup;
+			children = (
+				080E96DDFE201D6D7F000001 /* Classes */,
+				29B97315FDCFA39411CA2CEA /* Other Sources */,
+				29B97317FDCFA39411CA2CEA /* Resources */,
+				29B97323FDCFA39411CA2CEA /* Frameworks */,
+				19C28FACFE9D520D11CA2CBB /* Products */,
+				5284FF7310B73349006FC1D9 /* CoreMIDI.framework */,
+			);
+			name = blm_scalar_emulation;
+			sourceTree = "<group>";
+		};
+		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
+			isa = PBXGroup;
+			children = (
+				256AC3F00F4B6AF500CF3369 /* blm_scalar_emulation_Prefix.pch */,
+				29B97316FDCFA39411CA2CEA /* main.m */,
+			);
+			name = "Other Sources";
+			sourceTree = "<group>";
+		};
+		29B97317FDCFA39411CA2CEA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				8D1107310486CEB800E47090 /* blm_scalar_emulation-Info.plist */,
+				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
+				1DDD58140DA1D0A300B32029 /* MainMenu.xib */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				5284FFFD10B735CF006FC1D9 /* CoreMIDI.framework */,
+				1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */,
+				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		5284000610B73626006FC1D9 /* PYMIDI */ = {
+			isa = PBXGroup;
+			children = (
+				5284000710B73626006FC1D9 /* misc */,
+				5284002410B73626006FC1D9 /* PYMIDI.h */,
+				5284002510B73626006FC1D9 /* PYMIDIEndpoint.h */,
+				5284002610B73626006FC1D9 /* PYMIDIEndpoint.m */,
+				5284002710B73626006FC1D9 /* PYMIDIEndpointDescriptor.h */,
+				5284002810B73626006FC1D9 /* PYMIDIEndpointDescriptor.m */,
+				5284002910B73626006FC1D9 /* PYMIDIEndpointSet.h */,
+				5284002A10B73626006FC1D9 /* PYMIDIEndpointSet.m */,
+				5284002B10B73626006FC1D9 /* PYMIDIManager.h */,
+				5284002C10B73626006FC1D9 /* PYMIDIManager.m */,
+				5284002D10B73626006FC1D9 /* PYMIDIRealDestination.h */,
+				5284002E10B73626006FC1D9 /* PYMIDIRealDestination.m */,
+				5284002F10B73626006FC1D9 /* PYMIDIRealEndpoint.h */,
+				5284003010B73626006FC1D9 /* PYMIDIRealEndpoint.m */,
+				5284003110B73626006FC1D9 /* PYMIDIRealSource.h */,
+				5284003210B73626006FC1D9 /* PYMIDIRealSource.m */,
+				5284003310B73626006FC1D9 /* PYMIDIUtils.h */,
+				5284003410B73626006FC1D9 /* PYMIDIUtils.m */,
+				5284003510B73626006FC1D9 /* PYMIDIVirtualDestination.h */,
+				5284003610B73626006FC1D9 /* PYMIDIVirtualDestination.m */,
+				5284003710B73626006FC1D9 /* PYMIDIVirtualEndpoint.h */,
+				5284003810B73626006FC1D9 /* PYMIDIVirtualEndpoint.m */,
+				5284003910B73626006FC1D9 /* PYMIDIVirtualSource.h */,
+				5284003A10B73626006FC1D9 /* PYMIDIVirtualSource.m */,
+			);
+			name = PYMIDI;
+			path = ../../drivers/MacOS/PYMIDI;
+			sourceTree = SOURCE_ROOT;
+		};
+		5284000710B73626006FC1D9 /* misc */ = {
+			isa = PBXGroup;
+			children = (
+				5284000810B73626006FC1D9 /* Bugs.html */,
+				5284000910B73626006FC1D9 /* Documentation */,
+				5284002010B73626006FC1D9 /* MIT-LICENSE */,
+				5284002110B73626006FC1D9 /* Read Me.html */,
+				5284002210B73626006FC1D9 /* Release Notes.html */,
+				5284002310B73626006FC1D9 /* To Do.html */,
+			);
+			path = misc;
+			sourceTree = "<group>";
+		};
+		5284000910B73626006FC1D9 /* Documentation */ = {
+			isa = PBXGroup;
+			children = (
+				5284000A10B73626006FC1D9 /* archiving.html */,
+				5284000B10B73626006FC1D9 /* Classes */,
+				5284001610B73626006FC1D9 /* descriptors.html */,
+				5284001710B73626006FC1D9 /* endpoints.html */,
+				5284001810B73626006FC1D9 /* index.html */,
+				5284001910B73626006FC1D9 /* manager.html */,
+				5284001A10B73626006FC1D9 /* notification.html */,
+				5284001B10B73626006FC1D9 /* overview.html */,
+				5284001C10B73626006FC1D9 /* receiving.html */,
+				5284001D10B73626006FC1D9 /* selection.html */,
+				5284001E10B73626006FC1D9 /* sending.html */,
+				5284001F10B73626006FC1D9 /* toc.html */,
+			);
+			path = Documentation;
+			sourceTree = "<group>";
+		};
+		5284000B10B73626006FC1D9 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				5284000C10B73626006FC1D9 /* PYMIDIEndpoint.html */,
+				5284000D10B73626006FC1D9 /* PYMIDIEndpointDescriptor.html */,
+				5284000E10B73626006FC1D9 /* PYMIDIEndpointSet.html */,
+				5284000F10B73626006FC1D9 /* PYMIDIManager.html */,
+				5284001010B73626006FC1D9 /* PYMIDIRealDestination.html */,
+				5284001110B73626006FC1D9 /* PYMIDIRealEndpoint.html */,
+				5284001210B73626006FC1D9 /* PYMIDIRealSource.html */,
+				5284001310B73626006FC1D9 /* PYMIDIVirtualDestination.html */,
+				5284001410B73626006FC1D9 /* PYMIDIVirtualEndpoint.html */,
+				5284001510B73626006FC1D9 /* PYMIDIVirtualSource.html */,
+			);
+			path = Classes;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8D1107260486CEB800E47090 /* blm_scalar_emulation */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "blm_scalar_emulation" */;
+			buildPhases = (
+				5284FFB910B73467006FC1D9 /* CopyFiles */,
+				8D1107290486CEB800E47090 /* Resources */,
+				8D11072C0486CEB800E47090 /* Sources */,
+				5284FF7210B73342006FC1D9 /* CopyFiles */,
+				8D11072E0486CEB800E47090 /* Frameworks */,
+				5284FFD610B73525006FC1D9 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = blm_scalar_emulation;
+			productInstallPath = "$(HOME)/Applications";
+			productName = blm_scalar_emulation;
+			productReference = 8D1107320486CEB800E47090 /* blm_scalar_emulation.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		29B97313FDCFA39411CA2CEA /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "blm_scalar_emulation" */;
+			compatibilityVersion = "Xcode 3.1";
+			hasScannedForEncodings = 1;
+			mainGroup = 29B97314FDCFA39411CA2CEA /* blm_scalar_emulation */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8D1107260486CEB800E47090 /* blm_scalar_emulation */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8D1107290486CEB800E47090 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */,
+				1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */,
+				5284003B10B73626006FC1D9 /* Bugs.html in Resources */,
+				5284003C10B73626006FC1D9 /* archiving.html in Resources */,
+				5284003D10B73626006FC1D9 /* PYMIDIEndpoint.html in Resources */,
+				5284003E10B73626006FC1D9 /* PYMIDIEndpointDescriptor.html in Resources */,
+				5284003F10B73626006FC1D9 /* PYMIDIEndpointSet.html in Resources */,
+				5284004010B73626006FC1D9 /* PYMIDIManager.html in Resources */,
+				5284004110B73626006FC1D9 /* PYMIDIRealDestination.html in Resources */,
+				5284004210B73626006FC1D9 /* PYMIDIRealEndpoint.html in Resources */,
+				5284004310B73626006FC1D9 /* PYMIDIRealSource.html in Resources */,
+				5284004410B73626006FC1D9 /* PYMIDIVirtualDestination.html in Resources */,
+				5284004510B73626006FC1D9 /* PYMIDIVirtualEndpoint.html in Resources */,
+				5284004610B73626006FC1D9 /* PYMIDIVirtualSource.html in Resources */,
+				5284004710B73626006FC1D9 /* descriptors.html in Resources */,
+				5284004810B73626006FC1D9 /* endpoints.html in Resources */,
+				5284004910B73626006FC1D9 /* index.html in Resources */,
+				5284004A10B73626006FC1D9 /* manager.html in Resources */,
+				5284004B10B73626006FC1D9 /* notification.html in Resources */,
+				5284004C10B73626006FC1D9 /* overview.html in Resources */,
+				5284004D10B73626006FC1D9 /* receiving.html in Resources */,
+				5284004E10B73626006FC1D9 /* selection.html in Resources */,
+				5284004F10B73626006FC1D9 /* sending.html in Resources */,
+				5284005010B73626006FC1D9 /* toc.html in Resources */,
+				5284005110B73626006FC1D9 /* MIT-LICENSE in Resources */,
+				5284005210B73626006FC1D9 /* Read Me.html in Resources */,
+				5284005310B73626006FC1D9 /* Release Notes.html in Resources */,
+				5284005410B73626006FC1D9 /* To Do.html in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8D11072C0486CEB800E47090 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D11072D0486CEB800E47090 /* main.m in Sources */,
+				256AC3DA0F4B6AC300CF3369 /* blm_scalar_emulationAppDelegate.m in Sources */,
+				52529BB410B6069000914779 /* BLM_ButtonCell.m in Sources */,
+				5284FECE10B72DD2006FC1D9 /* BLM.m in Sources */,
+				5284005510B73626006FC1D9 /* PYMIDIEndpoint.m in Sources */,
+				5284005610B73626006FC1D9 /* PYMIDIEndpointDescriptor.m in Sources */,
+				5284005710B73626006FC1D9 /* PYMIDIEndpointSet.m in Sources */,
+				5284005810B73626006FC1D9 /* PYMIDIManager.m in Sources */,
+				5284005910B73626006FC1D9 /* PYMIDIRealDestination.m in Sources */,
+				5284005A10B73626006FC1D9 /* PYMIDIRealEndpoint.m in Sources */,
+				5284005B10B73626006FC1D9 /* PYMIDIRealSource.m in Sources */,
+				5284005C10B73626006FC1D9 /* PYMIDIUtils.m in Sources */,
+				5284005D10B73626006FC1D9 /* PYMIDIVirtualDestination.m in Sources */,
+				5284005E10B73626006FC1D9 /* PYMIDIVirtualEndpoint.m in Sources */,
+				5284005F10B73626006FC1D9 /* PYMIDIVirtualSource.m in Sources */,
+				5218343310BB1F710094AD7E /* ControlButton.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		089C165CFE840E0CC02AAC07 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				089C165DFE840E0CC02AAC07 /* English */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		1DDD58140DA1D0A300B32029 /* MainMenu.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				1DDD58150DA1D0A300B32029 /* English */,
+			);
+			name = MainMenu.xib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		C01FCF4B08A954540054247B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = blm_scalar_emulation_Prefix.pch;
+				INFOPLIST_FILE = "blm_scalar_emulation-Info.plist";
+				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_NAME = blm_scalar_emulation;
+			};
+			name = Debug;
+		};
+		C01FCF4C08A954540054247B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_MODEL_TUNING = G5;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = blm_scalar_emulation_Prefix.pch;
+				INFOPLIST_FILE = "blm_scalar_emulation-Info.plist";
+				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_NAME = blm_scalar_emulation;
+			};
+			name = Release;
+		};
+		C01FCF4F08A954540054247B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_VERSION = 4.2;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = ../../drivers/MacOS;
+				ONLY_ACTIVE_ARCH = NO;
+				PREBINDING = NO;
+				SDKROOT = macosx10.5;
+			};
+			name = Debug;
+		};
+		C01FCF5008A954540054247B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_VERSION = 4.2;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = ../../drivers/MacOS;
+				ONLY_ACTIVE_ARCH = NO;
+				PREBINDING = NO;
+				SDKROOT = macosx10.5;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "blm_scalar_emulation" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C01FCF4B08A954540054247B /* Debug */,
+				C01FCF4C08A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "blm_scalar_emulation" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C01FCF4F08A954540054247B /* Debug */,
+				C01FCF5008A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;
+}

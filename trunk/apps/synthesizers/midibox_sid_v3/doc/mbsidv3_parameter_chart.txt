@@ -1,0 +1,1349 @@
+$Id$
+
+General Parameter Handling
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each Engine supports up to 256 parameters which can be assigned to
+following control sources:
+
+   - Knobs, this means:
+     o controllable via MIDI: CC#01 (ModWheel) and CC#16/CC#17/CC#18/CC#19
+     o the 5 Knobs functions, located in OSC Assign Layer of the Control Surface
+     o 5 analog inputs (to control the parameters with faders or pots)
+       (DEFAULT_J5_FUNCTION must be set to 1 in your setup_*.asm file)
+     o Aftertouch
+     o Velocity
+     o PitchBender
+
+   - Wavetable Sequencers (Lead Engine: 4, Multi Engine: 6)
+
+   - Bassline Sequencer (as parameter track)
+
+
+The parameters are also accessible via NRPN controllers with full
+resolution.
+
+In order to achieve highest flexibility, a special address coding is
+used. Here a full explanation:
+
+The parameter value is derived from the NRPN LSB + bit #0 of the NRPN MSB.
+Examples (all values in hexadecimal format):
+        LSB   MSB
+  B0 62 01 63 00    Selects Parameter #1
+  B0 62 7F 63 00    Selects Parameter #127
+  B0 62 00 63 01    Selects Parameter #128
+  B0 62 7F 63 01    Selects Parameter #255
+
+For some parameters - like Filter CutOff or Oscillator Pulsewidth - it 
+is possible to separate between the left and right audio channel by
+adding 2 (for left channel) or 4 (for right channel) to the MSB:
+
+        LSB   MSB
+  B0 62 04 63 00    Selects CutOff Frequency of Left and Right Audio Channel
+  B0 62 04 63 02    Selects CutOff Frequency of Left Audio Channel
+  B0 62 04 63 04    Selects CutOff Frequency of Right Audio Channel
+
+
+NRPN Data values are 14 bit, but some MIDI controllers or Sequencers
+do only support 7bit NRPN values. In addition, it has to be
+considered, that the value range of MBSID parameters is different (see
+specifications in the tables below)
+
+In order to overcome such conversion issues, NRPN values can be automatically 
+scaled over the full 14bit range.
+
+This means for example: the Filter CutOff has a resolution of 12bit 
+(range 0-4096), the Finetune Parameter has a resolution of 8bit (range 0-255).
+The final value will always be scaled correctly over the NRPN value range 
+0-16383 regardless of the final resolution, so that you don't need to take 
+care about the conversion.
+
+This even allows you to send a single NRPN data MSB event with a range of 0-127,
+in order to sweep over the parameter range due to the used resolution compression
+algorithm.
+
+
+But if desired, it's also possible to access the parameters with
+absolute values without automatic scaling. This can be achieved by setting
+bit #6 of the NRPN MSB.
+
+Examples:
+        LSB   MSB
+  B0 62 21 63 40    Unscaled access to OSC1 Waveform of Left and Right Audio Channel
+  B0 62 21 63 42    Unscaled access to OSC1 Waveform of Left Audio Channel
+  B0 62 21 63 44    Unscaled access to OSC1 Waveform of Right Audio Channel
+
+
+NRPN Data Values:
+So long you are using the "automatic scaling address range", data
+values can either be sent with reduced 7bit resolution (provided by
+most MIDI controllers and sequencers), or with full 14bit resolution.
+
+The parameter change will take effect whenever the NRPN data MSB has
+been received.
+
+Accordingly, following streams are possible to access the CutOff of
+Left/Right Audio Channel:
+
+        LSB   MSB   dataMSB
+  B0 62 04 63 00 06 <value>   Changes CutOff Frequency from decimal 0-127
+
+
+        LSB   MSB    dataLSB      dataMSB   
+  B0 62 04 63 00 26 <value_l> 06 <value_h>   Changes CutOff Frequency from decimal 0-16383
+
+
+Last but not least a hint how to determine the parameter value in
+decimal form, for the case that you don't know how to calculate with
+10 fingers and 6 toes ;-)
+
+CC# for NRPN LSB: 62h == decimal 98
+CC# for NRPN MSB: 63h == decimal 99
+CC# for NRPN LSB data value: 26h == decimal 38
+CC# for NRPN MSB data value: 06h == decimal 6
+
+Calculating the Address LSB:
+   parameter number % 128
+   (or easier: if the value is >= 128, substract 128 to get it within the range of 0-127)
+
+Calculating the Address MSB:
+   parameter number >= 128 -> then 1, else 0
+   + add 2 if only left Audio Channel should be selected
+   + or add 4 if only right Audio Channel should be selected
+   + add 64 if an absolute value should be transmitted
+
+Example for CutOff:
+          LSB     MSB    dataMSB
+  176  98   4  99   0  6 <value>   Changes CutOff Frequency from 0-127
+(all values decimal)
+
+
+What are "current instruments"?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sometimes it is useful to specify a parameter number in such a way,
+that the final destination depends on the selection on the control
+surface, or on the MIDI channel (-> Bassline/Multi Instruments)
+
+In order to allow this, some parameters have "current" selections.
+
+E.g. if the bassline engine is running, and Parameter 97 (decimal)
+(-> "Current Bassline Filter CutOff") is assigned to Knob function 
+#1 (-> CC#01, ModWheel, Pot/Fader at analog input AN0), you will
+always control the currently selected bassline(s), so either LR,
+L- or -R, with these control elements.
+
+
+
+Enough blabla, here are the parameter charts:
+
+
+
+Parameter Chart of MIDIbox SID V2 --- Lead Engine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ Dec | Hex | Description                                  | Range       | Reset
+=====+=====+==============================================+=============+======
+   1 | 01h | Volume (00h-7Fh)                             |  0-127: val |  127
+-----+-----+----------------------------------------------+-------------+------
+   2 | 02h | Oscillator Phase Offset                      |  0-256: val |    0
+   3 | 03h | Oscillator Detune                            |  0-256: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+   4 | 04h | Filter CutOff frequency                      | 0-4096: val | 2048
+   5 | 05h | Filter Resonance                             |  0-256: val |    0
+   6 | 06h | Filter Channels                              |             |    0
+     |     |   Bit 0: Filter for Voice 1 on/off           |             |
+     |     |   Bit 1: Filter for Voice 2 on/off           |             |
+     |     |   Bit 2: Filter for Voice 3 on/off           |             |
+     |     |   Bit 3: Filter for Audio In on/off          |             |
+   7 | 07h | Filter Mode                                  |             |    0
+     |     |   Bit 0: LowPass on/off                      |             |
+     |     |   Bit 1: BandPass on/off                     |             |
+     |     |   Bit 2: HighPass on/off                     |             |
+     |     |   Bit 3: Voice 3 off                         |             |
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+   8 | 08h | Knob #1 Value                                |  0-256: val |  128
+   9 | 09h | Knob #2 Value                                |  0-256: val |  128
+  10 | 0Ah | Knob #3 Value                                |  0-256: val |  128
+  11 | 0Bh | Knob #4 Value                                |  0-256: val |  128
+  12 | 0Ch | Knob #5 Value                                |  0-256: val |  128
+  13 | 0Dh | Knob #V Value                                |  0-256: val |  128
+  14 | 0Eh | Knob #P Value                                |  0-256: val |  128
+  15 | 0Fh | Knob #A Value                                |  0-256: val |  128
+-----+-----+----------------------------------------------+-------------+------
+  16 | 10h | Ext AOUT #1 Value                            |  0-256: val |  128
+  17 | 11h | Ext AOUT #2 Value                            |  0-256: val |  128
+  18 | 12h | Ext AOUT #3 Value                            |  0-256: val |  128
+  19 | 13h | Ext AOUT #4 Value                            |  0-256: val |  128
+  20 | 14h | Ext AOUT #5 Value                            |  0-256: val |  128
+  21 | 15h | Ext AOUT #6 Value                            |  0-256: val |  128
+  22 | 16h | Ext AOUT #7 Value                            |  0-256: val |  128
+  23 | 17h | Ext AOUT #8 Value                            |  0-256: val |  128
+-----+-----+----------------------------------------------+-------------+------
+  24 | 18h | Ext Switch #1 Value                          |    0-1: val |    0
+  25 | 19h | Ext Switch #2 Value                          |    0-1: val |    0
+  26 | 1Ah | Ext Switch #3 Value                          |    0-1: val |    0
+  27 | 1Bh | Ext Switch #4 Value                          |    0-1: val |    0
+  28 | 1Ch | Ext Switch #5 Value                          |    0-1: val |    0
+  29 | 1Dh | Ext Switch #6 Value                          |    0-1: val |    0
+  30 | 1Eh | Ext Switch #7 Value                          |    0-1: val |    0
+  31 | 1Fh | Ext Switch #8 Value                          |    0-1: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+  32 | 20h | Voice 1/2/3 Waveform                         |   0-15: val |    4
+     |     |   Bit 0: Triangle                            |             |
+     |     |   Bit 1: Saw                                 |             |
+     |     |   Bit 2: Pulse                               |             |
+     |     |   Bit 3: Noise (disables all other waveforms)|             |
+     |     |   Bit 4: Disable Voice                       |             |
+     |     |   Bit 5: Sync                                |             |
+     |     |   Bit 6: Ringmodulator                       |             |
+     |     | Example: 02h = 2 = Saw                       |             |
+     |     | Example: 05h = 5 = Triangle & Pulse          |             |
+     |     | Example: 21h = 33 = Triangle & Sync          |             |
+  33 | 21h | Voice 1 Waveform                             |             |    4
+  34 | 22h | Voice 2 Waveform                             |             |    4
+  35 | 23h | Voice 3 Waveform                             |             |    4
+-----+-----+----------------------------------------------+-------------+------
+  36 | 24h | Voice 1/2/3 Transpose                        |  0- 63: neg |   64
+     |     |                                              |     64: off |     
+     |     |                                              | 64-127: pos |     
+  37 | 25h | Voice 1 Single Transpose                     | see above   |   64
+  38 | 26h | Voice 2 Single Transpose                     | see above   |   64
+  39 | 27h | Voice 3 Single Transpose                     | see above   |   64
+-----+-----+----------------------------------------------+-------------+------
+  40 | 28h | Voice 1/2/3 Finetune                         |  0-127: neg |  128
+     |     |                                              |    128: off |     
+     |     |                                              |128-255: pos |     
+  41 | 29h | Voice 1 Single Finetune                      | see above   |  128
+  42 | 2Ah | Voice 2 Single Finetune                      | see above   |  128
+  43 | 2Bh | Voice 3 Single Finetune                      | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+  44 | 2Ch | Voice 1/2/3 Portamento Rate                  |     0: off  |    0
+     |     |                                              | 1-255: val  |     
+  45 | 2Dh | Voice 1 Portamento Rate                      | see above   |    0
+  46 | 2Eh | Voice 2 Portamento Rate                      | see above   |    0
+  47 | 2Fh | Voice 3 Portamento Rate                      | see above   |    0
+-----+-----+----------------------------------------------+-------------+------
+  48 | 30h | Voice 1/2/3 Pulsewidth                       | 0-2047:  neg|2048
+     |     |                                              |   2048:  mid|     
+     |     |                                              |2049-4095:pos|     
+  49 | 31h | Voice 1 Pulsewidth                           | see above   | 2048
+  50 | 32h | Voice 2 Pulsewidth                           | see above   | 2048
+  51 | 33h | Voice 3 Pulsewidth                           | see above   | 2048
+-----+-----+----------------------------------------------+-------------+------
+  52 | 34h | Voice 1/2/3 VCA Delay                        |  0-255: val |    0
+  53 | 35h | Voice 1 Single VCA Delay                     |  0-255: val |    0
+  54 | 36h | Voice 2 Single VCA Delay                     |  0-255: val |    0
+  55 | 37h | Voice 3 Single VCA Delay                     |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+  56 | 38h | Voice 1/2/3 VCA Attack                       |  0- 15: val |    0
+  57 | 39h | Voice 1 Single VCA Attack                    |  0- 15: val |    0
+  58 | 3Ah | Voice 2 Single VCA Attack                    |  0- 15: val |    0
+  59 | 3Bh | Voice 3 Single VCA Attack                    |  0- 15: val |    0
+-----+-----+----------------------------------------------+-------------+------
+  60 | 3Ch | Voice 1/2/3 VCA Decay                        |  0- 15: val |    0
+  61 | 3Dh | Voice 1 Single VCA Decay                     |  0- 15: val |    0
+  62 | 3Eh | Voice 2 Single VCA Decay                     |  0- 15: val |    0
+  63 | 3Fh | Voice 3 Single VCA Decay                     |  0- 15: val |    0
+-----+-----+----------------------------------------------+-------------+------
+  64 | 40h | Voice 1/2/3 VCA Sustain                      |  0- 15: val |   15
+  65 | 41h | Voice 1 Single VCA Sustain                   |  0- 15: val |   15
+  66 | 42h | Voice 2 Single VCA Sustain                   |  0- 15: val |   15
+  67 | 43h | Voice 3 Single VCA Sustain                   |  0- 15: val |   15
+-----+-----+----------------------------------------------+-------------+------
+  68 | 44h | Voice 1/2/3 VCA Release                      |  0- 15: val |    0
+  69 | 45h | Voice 1 VCA Release                          |  0- 15: val |    0
+  70 | 46h | Voice 2 VCA Release                          |  0- 15: val |    0
+  71 | 47h | Voice 3 VCA Release                          |  0- 15: val |    0
+-----+-----+----------------------------------------------+-------------+------
+  72 | 48h | Voice 1/2/3 Arp Speed                        |  0- 63: val |    0
+  73 | 49h | Voice 1 Arp Speed                            |  0- 63: val |    0
+  74 | 4Ah | Voice 2 Arp Speed                            |  0- 63: val |    0
+  75 | 4Bh | Voice 3 Arp Speed                            |  0- 63: val |    0
+-----+-----+----------------------------------------------+-------------+------
+  76 | 4Ch | Voice 1/2/3 Arp Gatelength                   |  0- 31: val |    6
+  77 | 4Dh | Voice 1 Arp Gatelength                       |  0- 31: val |    6
+  78 | 4Eh | Voice 2 Arp Gatelength                       |  0- 31: val |    6
+  79 | 4Fh | Voice 3 Arp Gatelength                       |  0- 31: val |    6
+-----+-----+----------------------------------------------+-------------+------
+  80 | 50h | Voice 1/2/3 Pitch Bender                     |  0-255: val |    0
+  81 | 51h | Voice 1 Pitch Bender                         |  0-255: val |    0
+  82 | 52h | Voice 2 Pitch Bender                         |  0-255: val |    0
+  83 | 53h | Voice 3 Pitch Bender                         |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+  96 | 60h | MOD1 Depth                                   |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+  97 | 61h | MOD2 Depth                                   | see above   |  128
+  98 | 62h | MOD3 Depth                                   | see above   |  128
+  99 | 63h | MOD4 Depth                                   | see above   |  128
+ 100 | 64h | MOD5 Depth                                   | see above   |  128
+ 101 | 65h | MOD6 Depth                                   | see above   |  128
+ 102 | 66h | MOD7 Depth                                   | see above   |  128
+ 103 | 67h | MOD8 Depth                                   | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+ 104 | 68h | MOD1 Invert Target L/R                       |  0- 3: val  |    0
+ 105 | 69h | MOD2 Invert Target L/R                       |  0- 3: val  |    0
+ 106 | 6Ah | MOD3 Invert Target L/R                       |  0- 3: val  |    0
+ 107 | 6Bh | MOD4 Invert Target L/R                       |  0- 3: val  |    0
+ 108 | 6Ch | MOD5 Invert Target L/R                       |  0- 3: val  |    0
+ 109 | 6Dh | MOD6 Invert Target L/R                       |  0- 3: val  |    0
+ 110 | 6Eh | MOD7 Invert Target L/R                       |  0- 3: val  |    0
+ 111 | 6Fh | MOD8 Invert Target L/R                       |  0- 3: val  |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 128 | 80h | LFO1 Waveform                                |  0-15: val  |    0
+     |     |            0: Sine                           |             |
+     |     |            1: Triangle                       |             |
+     |     |            2: Saw                            |             |
+     |     |            3: Pulse                          |             |
+     |     |            4: Random                         |             |
+     |     |            5: Positive Sine                  |             |
+     |     |            6: Positive Triangle              |             |
+     |     |            7: Positive Saw                   |             |
+     |     |            8: Positive Pulse                 |             |
+ 129 | 81h | LFO2 Waveform                                |             |
+ 130 | 82h | LFO3 Waveform                                |             |
+ 131 | 83h | LFO4 Waveform                                |             |
+ 132 | 84h | LFO5 Waveform                                |             |
+ 133 | 85h | LFO6 Waveform                                |             |
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 136 | 88h | LFO1 Depth                                   |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+ 137 | 89h | LFO2 Depth                                   | see above   |  128
+ 138 | 8Ah | LFO3 Depth                                   | see above   |  128
+ 139 | 8Bh | LFO4 Depth                                   | see above   |  128
+ 140 | 8Ch | LFO5 Depth                                   | see above   |  128
+ 141 | 8Dh | LFO6 Depth                                   | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 144 | 90h | LFO1 Rate                                    |      0: off |    0
+     |     |                                              |  1-255: val |
+ 145 | 91h | LFO2 Rate                                    | see above   |    0
+ 146 | 92h | LFO3 Rate                                    | see above   |    0
+ 147 | 93h | LFO4 Rate                                    | see above   |    0
+ 148 | 94h | LFO5 Rate                                    | see above   |    0
+ 149 | 95h | LFO6 Rate                                    | see above   |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 152 | 98h | LFO1 Delay                                   |      0: off |    0
+     |     |                                              |  1-255: val |
+ 153 | 99h | LFO2 Delay                                   | see above   |    0
+ 154 | 9Ah | LFO3 Delay                                   | see above   |    0
+ 155 | 9Bh | LFO4 Delay                                   | see above   |    0
+ 156 | 9Ch | LFO5 Delay                                   | see above   |    0
+ 157 | 9Dh | LFO6 Delay                                   | see above   |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 160 | A0h | LFO1 Phase                                   |      0: off |    0
+     |     |                                              |  1-255: val |
+ 161 | A1h | LFO2 Phase                                   | see above   |    0
+ 162 | A2h | LFO3 Phase                                   | see above   |    0
+ 163 | A3h | LFO4 Phase                                   | see above   |    0
+ 164 | A4h | LFO5 Phase                                   | see above   |    0
+ 165 | A5h | LFO6 Phase                                   | see above   |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 192 | C0h | Envelope 1 Mode                              |  ---        |    0
+ 193 | C1h | Envelope 1 Depth                             |  0-255: val |    0
+ 194 | C2h | Envelope 1 Delay                             |  0-255: val |    0
+ 195 | C3h | Envelope 1 Attack 1                          |  0-255: val |    0
+ 196 | C4h | Envelope 1 Attack Level                      |  0-255: val |    0
+ 197 | C5h | Envelope 1 Attack 2                          |  0-255: val |    0
+ 198 | C6h | Envelope 1 Decay 1                           |  0-255: val |    0
+ 199 | C7h | Envelope 1 Decay Level                       |  0-255: val |    0
+ 200 | C8h | Envelope 1 Decay 2                           |  0-255: val |    0
+ 201 | C9h | Envelope 1 Sustain                           |  0-255: val |    0
+ 202 | CAh | Envelope 1 Release 1                         |  0-255: val |    0
+ 203 | CBh | Envelope 1 Release Level                     |  0-255: val |    0
+ 204 | CCh | Envelope 1 Release 2                         |  0-255: val |    0
+ 205 | CDh | Envelope 1 Curve Attack                      |  0-255: val |    0
+ 206 | CEh | Envelope 1 Curve Decay                       |  0-255: val |    0
+ 207 | CFh | Envelope 1 Curve Release                     |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 208 | D0h | Envelope 2 Mode                              |  ---        |    0
+ 209 | D1h | Envelope 2 Depth                             |  0-255: val |    0
+ 210 | D2h | Envelope 2 Delay                             |  0-255: val |    0
+ 211 | D3h | Envelope 2 Attack 1                          |  0-255: val |    0
+ 212 | D4h | Envelope 2 Attack Level                      |  0-255: val |    0
+ 213 | D5h | Envelope 2 Attack 2                          |  0-255: val |    0
+ 214 | D6h | Envelope 2 Decay 1                           |  0-255: val |    0
+ 215 | D7h | Envelope 2 Decay Level                       |  0-255: val |    0
+ 216 | D8h | Envelope 2 Decay 2                           |  0-255: val |    0
+ 217 | D9h | Envelope 2 Sustain                           |  0-255: val |    0
+ 218 | DAh | Envelope 2 Release 1                         |  0-255: val |    0
+ 219 | DBh | Envelope 2 Release Level                     |  0-255: val |    0
+ 220 | DCh | Envelope 2 Release 2                         |  0-255: val |    0
+ 221 | DDh | Envelope 2 Curve Attack                      |  0-255: val |    0
+ 222 | DEh | Envelope 2 Curve Decay                       |  0-255: val |    0
+ 223 | DFh | Envelope 2 Curve Release                     |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 224 | E0h | WT1 Speed                                    |  0- 63: val |    0
+ 225 | E1h | WT2 Speed                                    |  0- 63: val |    0
+ 226 | E2h | WT3 Speed                                    |  0- 63: val |    0
+ 227 | E3h | WT4 Speed                                    |  0- 63: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 228 | E4h | WT1 Start                                    |  0-127: val |    0
+ 229 | E5h | WT2 Start                                    |  0-127: val |    0
+ 230 | E6h | WT3 Start                                    |  0-127: val |    0
+ 231 | E7h | WT4 Start                                    |  0-127: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 232 | E8h | WT1 End                                      |  0-127: val |    0
+ 233 | E9h | WT2 End                                      |  0-127: val |    0
+ 234 | EAh | WT3 End                                      |  0-127: val |    0
+ 235 | EBh | WT4 End                                      |  0-127: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 236 | ECh | WT1 Loop                                     |  0-127: val |    0
+ 237 | EDh | WT2 Loop                                     |  0-127: val |    0
+ 238 | EEh | WT3 Loop                                     |  0-127: val |    0
+ 239 | EFh | WT4 Loop                                     |  0-127: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 240 | F0h | WT1 Position                                 |  0-127: val |    0
+ 241 | F1h | WT2 Position                                 |  0-127: val |    0
+ 242 | F2h | WT3 Position                                 |  0-127: val |    0
+ 243 | F3h | WT4 Position                                 |  0-127: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 252 | FCh | Voice 1/2/3 Play Note                        |  1-127: val |    0
+     |     | for Wavetable sequencer                      |             |
+     |     | allows to Play Notes independent from the    |             |
+     |     | a keyboard. Can also forward an arpeggiator  |             |
+     |     | note (up to four pressed notes, they are     |             |
+     |     | sorted from the lowest to the highest key)   |             |
+     |     |                                              |             |
+     |     |    000 = 00h = Note Off                      |             |
+     |     |    001 = 01h = Hold Note (do nothing)        |             |
+     |     |    002 = 02h = Play Note #2                  |             |
+     |     |    ...                                       |             |
+     |     |    060 = 3Ch = Play Note #60 (C-3)           |             |
+     |     |    ...                                       |             |
+     |     |    123 = 7Bh = Play Note #123                |             |
+     |     |    124 = 7Ch = Play first pressed Note       |             |
+     |     |    125 = 7Dh = Play second pressed Note      |             |
+     |     |    126 = 7Eh = Play third pressed Note       |             |
+     |     |    127 = 7Fh = Play fourth pressed Note      |             |
+     |     |                                              |             |
+ 253 | FDh | Voice 1 Play Note                            |             |     
+ 254 | FEh | Voice 2 Play Note                            |             |     
+ 255 | FFh | Voice 3 Play Note                            |             |     
+-----+-----+----------------------------------------------+-------------+------
+
+
+
+
+
+
+Parameter Chart of MIDIbox SID V2 --- Multi Engine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ Dec | Hex | Description                                  | Range       | Reset
+=====+=====+==============================================+=============+======
+   1 | 01h | Volume (00h-7Fh)                             |  0-127: val |  127
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+   4 | 04h | Filter CutOff frequency                      | 0-4096: val | 2048
+   5 | 05h | Filter Resonance                             |  0-256: val |    0
+   6 | 06h | Filter CutOff frequency of left channel SID  | 0-4096: val | 2048
+   7 | 07h | Filter CutOff frequency of right channel SID | 0-4096: val | 2048
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+   8 | 08h | Knob #1 Value                                |  0-256: val |  128
+   9 | 09h | Knob #2 Value                                |  0-256: val |  128
+  10 | 0Ah | Knob #3 Value                                |  0-256: val |  128
+  11 | 0Bh | Knob #4 Value                                |  0-256: val |  128
+  12 | 0Ch | Knob #5 Value                                |  0-256: val |  128
+  13 | 0Dh | Knob #V Value                                |  0-256: val |  128
+  14 | 0Eh | Knob #P Value                                |  0-256: val |  128
+  15 | 0Fh | Knob #A Value                                |  0-256: val |  128
+-----+-----+----------------------------------------------+-------------+------
+  16 | 10h | Ext AOUT #1 Value                            |  0-256: val |  128
+  17 | 11h | Ext AOUT #2 Value                            |  0-256: val |  128
+  18 | 12h | Ext AOUT #3 Value                            |  0-256: val |  128
+  19 | 13h | Ext AOUT #4 Value                            |  0-256: val |  128
+  20 | 14h | Ext AOUT #5 Value                            |  0-256: val |  128
+  21 | 15h | Ext AOUT #6 Value                            |  0-256: val |  128
+  22 | 16h | Ext AOUT #7 Value                            |  0-256: val |  128
+  23 | 17h | Ext AOUT #8 Value                            |  0-256: val |  128
+-----+-----+----------------------------------------------+-------------+------
+  24 | 18h | Ext Switch #1 Value                          |    0-1: val |    0
+  25 | 19h | Ext Switch #2 Value                          |    0-1: val |    0
+  26 | 1Ah | Ext Switch #3 Value                          |    0-1: val |    0
+  27 | 1Bh | Ext Switch #4 Value                          |    0-1: val |    0
+  28 | 1Ch | Ext Switch #5 Value                          |    0-1: val |    0
+  29 | 1Dh | Ext Switch #6 Value                          |    0-1: val |    0
+  30 | 1Eh | Ext Switch #7 Value                          |    0-1: val |    0
+  31 | 1Fh | Ext Switch #8 Value                          |    0-1: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+  32 | 20h | Waveform of all Instruments                  |   0-15: val |    4
+     |     |   Bit 0: Triangle                            |             |
+     |     |   Bit 1: Saw                                 |             |
+     |     |   Bit 2: Pulse                               |             |
+     |     |   Bit 3: Noise (disables all other waveforms)|             |
+     |     |   Bit 4: Disable Voice                       |             |
+     |     |   Bit 5: Sync                                |             |
+     |     |   Bit 6: Ringmodulator                       |             |
+     |     | Example: 02h = 2 = Saw                       |             |
+     |     | Example: 05h = 5 = Triangle & Pulse          |             |
+     |     | Example: 21h = 33 = Triangle & Sync          |             |
+  33 | 21h | Waveform of Current Instrument               |             |    4
+  34 | 22h | Waveform of Instrument #1                    |             |    4
+  35 | 23h | Waveform of Instrument #2                    |             |    4
+  36 | 24h | Waveform of Instrument #3                    |             |    4
+  37 | 25h | Waveform of Instrument #4                    |             |    4
+  38 | 26h | Waveform of Instrument #5                    |             |    4
+  39 | 27h | Waveform of Instrument #6                    |             |    4
+-----+-----+----------------------------------------------+-------------+------
+  40 | 28h | Transpose of all Instruments                 |  0- 63: neg |   64
+     |     |                                              |     64: off |     
+     |     |                                              | 64-127: pos |     
+  41 | 29h | Transpose of Current Instrument              | see above   |   64
+  42 | 2Ah | Transpose of Instrument #1                   | see above   |   64
+  43 | 2Bh | Transpose of Instrument #2                   | see above   |   64
+  44 | 2Ch | Transpose of Instrument #3                   | see above   |   64
+  45 | 2Dh | Transpose of Instrument #4                   | see above   |   64
+  46 | 2Eh | Transpose of Instrument #5                   | see above   |   64
+  47 | 2Fh | Transpose of Instrument #6                   | see above   |   64
+-----+-----+----------------------------------------------+-------------+------
+  48 | 30h | Finetune of all Instruments                  |  0-127: neg |  128
+     |     |                                              |    128: off |     
+     |     |                                              |128-255: pos |     
+  49 | 31h | Finetune of Current Instrument               | see above   |  128
+  50 | 32h | Finetune of Instrument #1                    | see above   |  128
+  51 | 33h | Finetune of Instrument #2                    | see above   |  128
+  52 | 34h | Finetune of Instrument #3                    | see above   |  128
+  53 | 35h | Finetune of Instrument #4                    | see above   |  128
+  54 | 36h | Finetune of Instrument #5                    | see above   |  128
+  55 | 37h | Finetune of Instrument #6                    | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+  56 | 38h | Portamento Rate of all Instruments           |     0: off  |    0
+     |     |                                              | 1-255: val  |     
+  57 | 39h | Portamento Rate of Current Instrument        | see above   |    0
+  58 | 3Ah | Portamento Rate of Instrument #1             | see above   |    0
+  59 | 3Bh | Portamento Rate of Instrument #2             | see above   |    0
+  60 | 3Ch | Portamento Rate of Instrument #3             | see above   |    0
+  61 | 3Dh | Portamento Rate of Instrument #4             | see above   |    0
+  62 | 3Eh | Portamento Rate of Instrument #5             | see above   |    0
+  63 | 3Fh | Portamento Rate of Instrument #6             | see above   |    0
+-----+-----+----------------------------------------------+-------------+------
+  64 | 40h | Pulsewidth of all Instruments                | 0-2047:  neg|2048
+     |     |                                              |   2048:  mid|     
+     |     |                                              |2049-4095:pos|     
+  65 | 41h | Pulsewidth of Current Instrument             | see above   | 2048
+  66 | 42h | Pulsewidth of Instrument #1                  | see above   | 2048
+  67 | 43h | Pulsewidth of Instrument #2                  | see above   | 2048
+  68 | 44h | Pulsewidth of Instrument #3                  | see above   | 2048
+  69 | 45h | Pulsewidth of Instrument #4                  | see above   | 2048
+  70 | 46h | Pulsewidth of Instrument #5                  | see above   | 2048
+  71 | 47h | Pulsewidth of Instrument #6                  | see above   | 2048
+-----+-----+----------------------------------------------+-------------+------
+  72 | 48h | VCA Attack of all Instruments                |  0- 15: val |    0
+  73 | 49h | VCA Attack of Current Instrument             |  0- 15: val |    0
+  74 | 4Ah | VCA Attack of Instrument #1                  |  0- 15: val |    0
+  75 | 4Bh | VCA Attack of Instrument #2                  |  0- 15: val |    0
+  76 | 4Ch | VCA Attack of Instrument #3                  |  0- 15: val |    0
+  77 | 4Dh | VCA Attack of Instrument #4                  |  0- 15: val |    0
+  78 | 4Eh | VCA Attack of Instrument #5                  |  0- 15: val |    0
+  79 | 4Fh | VCA Attack of Instrument #6                  |  0- 15: val |    0
+-----+-----+----------------------------------------------+-------------+------
+  80 | 50h | VCA Decay of all Instruments                 |  0- 15: val |    0
+  81 | 51h | VCA Decay of Current Instrument              |  0- 15: val |    0
+  82 | 52h | VCA Decay of Instrument #1                   |  0- 15: val |    0
+  83 | 53h | VCA Decay of Instrument #2                   |  0- 15: val |    0
+  84 | 54h | VCA Decay of Instrument #3                   |  0- 15: val |    0
+  85 | 55h | VCA Decay of Instrument #4                   |  0- 15: val |    0
+  86 | 56h | VCA Decay of Instrument #5                   |  0- 15: val |    0
+  87 | 57h | VCA Decay of Instrument #6                   |  0- 15: val |    0
+-----+-----+----------------------------------------------+-------------+------
+  88 | 58h | VCA Sustain of all Instruments               |  0- 15: val |   15
+  89 | 59h | VCA Sustain of Current Instrument            |  0- 15: val |   15
+  90 | 5Ah | VCA Sustain of Instrument #1                 |  0- 15: val |   15
+  91 | 5Bh | VCA Sustain of Instrument #2                 |  0- 15: val |   15
+  92 | 5Ch | VCA Sustain of Instrument #3                 |  0- 15: val |   15
+  93 | 5Dh | VCA Sustain of Instrument #4                 |  0- 15: val |   15
+  94 | 5Eh | VCA Sustain of Instrument #5                 |  0- 15: val |   15
+  95 | 5Fh | VCA Sustain of Instrument #6                 |  0- 15: val |   15
+-----+-----+----------------------------------------------+-------------+------
+  96 | 60h | VCA Release of all Instruments               |  0- 15: val |    0
+  97 | 61h | VCA Release of Current Instrument            |  0- 15: val |    0
+  98 | 62h | VCA Release of Instrument #1                 |  0- 15: val |    0
+  99 | 63h | VCA Release of Instrument #2                 |  0- 15: val |    0
+ 100 | 64h | VCA Release of Instrument #3                 |  0- 15: val |    0
+ 101 | 65h | VCA Release of Instrument #4                 |  0- 15: val |    0
+ 102 | 66h | VCA Release of Instrument #5                 |  0- 15: val |    0
+ 103 | 67h | VCA Release of Instrument #6                 |  0- 15: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 104 | 68h | Arp Speed of all Instruments                 |  0- 63: val |    0
+ 105 | 69h | Arp Speed of Current Instrument              |  0- 63: val |    0
+ 106 | 6Ah | Arp Speed of Instrument #1                   |  0- 63: val |    0
+ 107 | 6Bh | Arp Speed of Instrument #2                   |  0- 63: val |    0
+ 108 | 6Ch | Arp Speed of Instrument #3                   |  0- 63: val |    0
+ 109 | 6Dh | Arp Speed of Instrument #4                   |  0- 63: val |    0
+ 110 | 6Eh | Arp Speed of Instrument #5                   |  0- 63: val |    0
+ 111 | 6Fh | Arp Speed of Instrument #6                   |  0- 63: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 112 | 70h | Arp Gatelength of all Instruments            |  0- 31: val |    6
+ 113 | 71h | Arp Gatelength of Current Instrument         |  0- 31: val |    6
+ 114 | 72h | Arp Gatelength of Instrument #1              |  0- 31: val |    6
+ 115 | 73h | Arp Gatelength of Instrument #2              |  0- 31: val |    6
+ 116 | 74h | Arp Gatelength of Instrument #3              |  0- 31: val |    6
+ 117 | 75h | Arp Gatelength of Instrument #4              |  0- 31: val |    6
+ 118 | 76h | Arp Gatelength of Instrument #5              |  0- 31: val |    6
+ 119 | 77h | Arp Gatelength of Instrument #6              |  0- 31: val |    6
+-----+-----+----------------------------------------------+-------------+------
+ 120 | 78h | Pitch Bender of all Instruments              |  0-255: val |    0
+ 121 | 79h | Pitch Bender of Current Instrument           |  0-255: val |    0
+ 122 | 7Ah | Pitch Bender of Instrument #1                |  0-255: val |    0
+ 123 | 7Bh | Pitch Bender of Instrument #2                |  0-255: val |    0
+ 124 | 7Ch | Pitch Bender of Instrument #3                |  0-255: val |    0
+ 125 | 7Dh | Pitch Bender of Instrument #4                |  0-255: val |    0
+ 126 | 7Eh | Pitch Bender of Instrument #5                |  0-255: val |    0
+ 127 | 7Fh | Pitch Bender of Instrument #6                |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 128 | 80h | LFO1 Pitch Depth of all Instruments          |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+ 129 | 81h | LFO1 Pitch Depth of Current Instrument       | see above   |  128
+ 130 | 82h | LFO1 Pitch Depth of Instrument #1            | see above   |  128
+ 131 | 83h | LFO1 Pitch Depth of Instrument #2            | see above   |  128
+ 132 | 84h | LFO1 Pitch Depth of Instrument #3            | see above   |  128
+ 133 | 85h | LFO1 Pitch Depth of Instrument #4            | see above   |  128
+ 134 | 86h | LFO1 Pitch Depth of Instrument #5            | see above   |  128
+ 135 | 87h | LFO1 Pitch Depth of Instrument #6            | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 136 | 88h | LFO1 Pulsewidth Depth of all Instruments     |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+ 137 | 89h | LFO1 Pulsewidth Depth of Current Instr.      | see above   |  128
+ 138 | 8Ah | LFO1 Pulsewidth Depth of Instrument #1       | see above   |  128
+ 139 | 8Bh | LFO1 Pulsewidth Depth of Instrument #2       | see above   |  128
+ 140 | 8Ch | LFO1 Pulsewidth Depth of Instrument #3       | see above   |  128
+ 141 | 8Dh | LFO1 Pulsewidth Depth of Instrument #4       | see above   |  128
+ 142 | 8Eh | LFO1 Pulsewidth Depth of Instrument #5       | see above   |  128
+ 143 | 8Fh | LFO1 Pulsewidth Depth of Instrument #6       | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 144 | 90h | LFO1 Filter Depth of all Instruments         |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+ 145 | 91h | LFO1 Filter Depth of Current Instrument      | see above   |  128
+ 146 | 92h | LFO1 Filter Depth of Instrument #1           | see above   |  128
+ 147 | 93h | LFO1 Filter Depth of Instrument #2           | see above   |  128
+ 148 | 94h | LFO1 Filter Depth of Instrument #3           | see above   |  128
+ 149 | 95h | LFO1 Filter Depth of Instrument #4           | see above   |  128
+ 150 | 96h | LFO1 Filter Depth of Instrument #5           | see above   |  128
+ 151 | 97h | LFO1 Filter Depth of Instrument #6           | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 152 | 98h | LFO1 Rate of all Instruments                 |      0: off |    0
+     |     |                                              |  1-255: val |
+ 153 | 99h | LFO1 Rate of Current Instrument              | see above   |    0
+ 154 | 9Ah | LFO1 Rate of Instrument #1                   | see above   |    0
+ 155 | 9Bh | LFO1 Rate of Instrument #2                   | see above   |    0
+ 156 | 9Ch | LFO1 Rate of Instrument #3                   | see above   |    0
+ 157 | 9Dh | LFO1 Rate of Instrument #4                   | see above   |    0
+ 158 | 9Eh | LFO1 Rate of Instrument #5                   | see above   |    0
+ 159 | 9Fh | LFO1 Rate of Instrument #6                   | see above   |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 160 | A0h | LFO2 Pitch Depth of all Instruments          |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+ 161 | A1h | LFO2 Pitch Depth of Current Instrument       | see above   |  128
+ 162 | A2h | LFO2 Pitch Depth of Instrument #1            | see above   |  128
+ 163 | A3h | LFO2 Pitch Depth of Instrument #2            | see above   |  128
+ 164 | A4h | LFO2 Pitch Depth of Instrument #3            | see above   |  128
+ 165 | A5h | LFO2 Pitch Depth of Instrument #4            | see above   |  128
+ 166 | A6h | LFO2 Pitch Depth of Instrument #5            | see above   |  128
+ 167 | A7h | LFO2 Pitch Depth of Instrument #6            | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 168 | A8h | LFO2 Pulsewidth Depth of all Instruments     |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+ 169 | A9h | LFO2 Pulsewidth Depth of Current Instrument  | see above   |  128
+ 170 | AAh | LFO2 Pulsewidth Depth of Instrument #1       | see above   |  128
+ 171 | ABh | LFO2 Pulsewidth Depth of Instrument #2       | see above   |  128
+ 172 | ACh | LFO2 Pulsewidth Depth of Instrument #3       | see above   |  128
+ 173 | ADh | LFO2 Pulsewidth Depth of Instrument #4       | see above   |  128
+ 174 | AEh | LFO2 Pulsewidth Depth of Instrument #5       | see above   |  128
+ 175 | AFh | LFO2 Pulsewidth Depth of Instrument #6       | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 176 | B0h | LFO2 Filter Depth of all Instruments         |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+ 177 | B1h | LFO2 Filter Depth of Current Instrument      | see above   |  128
+ 178 | B2h | LFO2 Filter Depth of Instrument #1           | see above   |  128
+ 179 | B3h | LFO2 Filter Depth of Instrument #2           | see above   |  128
+ 180 | B4h | LFO2 Filter Depth of Instrument #3           | see above   |  128
+ 181 | B5h | LFO2 Filter Depth of Instrument #4           | see above   |  128
+ 182 | B6h | LFO2 Filter Depth of Instrument #5           | see above   |  128
+ 183 | B7h | LFO2 Filter Depth of Instrument #6           | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 184 | B8h | LFO2 Rate of all Instruments                 |      0: off |    0
+     |     |                                              |  1-255: val |
+ 185 | B9h | LFO2 Rate of Current Instrument              | see above   |    0
+ 186 | BAh | LFO2 Rate of Instrument #1                   | see above   |    0
+ 187 | BBh | LFO2 Rate of Instrument #2                   | see above   |    0
+ 188 | BCh | LFO2 Rate of Instrument #3                   | see above   |    0
+ 189 | BDh | LFO2 Rate of Instrument #4                   | see above   |    0
+ 190 | BEh | LFO2 Rate of Instrument #5                   | see above   |    0
+ 191 | BFh | LFO2 Rate of Instrument #6                   | see above   |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 192 | C0h | ENV Pitch Depth of all Instruments           |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+ 193 | C1h | ENV Pitch Depth of Current Instrument        | see above   |  128
+ 194 | C2h | ENV Pitch Depth of Instrument #1             | see above   |  128
+ 195 | C3h | ENV Pitch Depth of Instrument #2             | see above   |  128
+ 196 | C4h | ENV Pitch Depth of Instrument #3             | see above   |  128
+ 197 | C5h | ENV Pitch Depth of Instrument #4             | see above   |  128
+ 198 | C6h | ENV Pitch Depth of Instrument #5             | see above   |  128
+ 199 | C7h | ENV Pitch Depth of Instrument #6             | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 200 | C8h | ENV Pulsewidth Depth of all Instruments      |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+ 201 | C9h | ENV Pulsewidth Depth of Current Instrument   | see above   |  128
+ 202 | CAh | ENV Pulsewidth Depth of Instrument #1        | see above   |  128
+ 203 | CBh | ENV Pulsewidth Depth of Instrument #2        | see above   |  128
+ 204 | CCh | ENV Pulsewidth Depth of Instrument #3        | see above   |  128
+ 205 | CDh | ENV Pulsewidth Depth of Instrument #4        | see above   |  128
+ 206 | CEh | ENV Pulsewidth Depth of Instrument #5        | see above   |  128
+ 207 | CFh | ENV Pulsewidth Depth of Instrument #6        | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 208 | D0h | ENV Filter Depth of all Instruments          |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+ 209 | D1h | ENV Filter Depth of Current Instrument       | see above   |  128
+ 210 | D2h | ENV Filter Depth of Instrument #1            | see above   |  128
+ 211 | D3h | ENV Filter Depth of Instrument #2            | see above   |  128
+ 212 | D4h | ENV Filter Depth of Instrument #3            | see above   |  128
+ 213 | D5h | ENV Filter Depth of Instrument #4            | see above   |  128
+ 214 | D6h | ENV Filter Depth of Instrument #5            | see above   |  128
+ 215 | D7h | ENV Filter Depth of Instrument #6            | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 216 | D8h | ENV Attack Rate of all Instruments           |  0-255: val |    0
+ 217 | D9h | ENV Attack Rate of Current Instrument        |  0-255: val |    0
+ 218 | DAh | ENV Attack Rate of Instrument #1             |  0-255: val |    0
+ 219 | DBh | ENV Attack Rate of Instrument #2             |  0-255: val |    0
+ 220 | DCh | ENV Attack Rate of Instrument #2             |  0-255: val |    0
+ 221 | DDh | ENV Attack Rate of Instrument #2             |  0-255: val |    0
+ 222 | DEh | ENV Attack Rate of Instrument #2             |  0-255: val |    0
+ 223 | DFh | ENV Attack Rate of Instrument #2             |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 224 | E0h | ENV Decay Rate of all Instruments            |  0-255: val |    0
+ 225 | E1h | ENV Decay Rate of Current Instrument         |  0-255: val |    0
+ 226 | E2h | ENV Decay Rate of Instrument #1              |  0-255: val |    0
+ 227 | E3h | ENV Decay Rate of Instrument #2              |  0-255: val |    0
+ 228 | E4h | ENV Decay Rate of Instrument #2              |  0-255: val |    0
+ 229 | E5h | ENV Decay Rate of Instrument #2              |  0-255: val |    0
+ 230 | E6h | ENV Decay Rate of Instrument #2              |  0-255: val |    0
+ 231 | E7h | ENV Decay Rate of Instrument #2              |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 232 | E8h | ENV Sustain Level of all Instruments         |  0-255: val |    0
+ 233 | E9h | ENV Sustain Level of Current Instrument      |  0-255: val |    0
+ 234 | EAh | ENV Sustain Level of Instrument #1           |  0-255: val |    0
+ 235 | EBh | ENV Sustain Level of Instrument #2           |  0-255: val |    0
+ 236 | ECh | ENV Sustain Level of Instrument #2           |  0-255: val |    0
+ 237 | EDh | ENV Sustain Level of Instrument #2           |  0-255: val |    0
+ 238 | EEh | ENV Sustain Level of Instrument #2           |  0-255: val |    0
+ 239 | EFh | ENV Sustain Level of Instrument #2           |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 240 | F0h | ENV Release Rate of all Instruments          |  0-255: val |    0
+ 241 | F1h | ENV Release Rate of Current Instrument       |  0-255: val |    0
+ 242 | F2h | ENV Release Rate of Instrument #1            |  0-255: val |    0
+ 243 | F3h | ENV Release Rate of Instrument #2            |  0-255: val |    0
+ 244 | F4h | ENV Release Rate of Instrument #2            |  0-255: val |    0
+ 245 | F5h | ENV Release Rate of Instrument #2            |  0-255: val |    0
+ 246 | F6h | ENV Release Rate of Instrument #2            |  0-255: val |    0
+ 247 | F7h | ENV Release Rate of Instrument #2            |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 248 | F8h | Play Note on all Instruments                 |  1-127: val |    0
+     |     | for Wavetable sequencer                      |             |
+     |     | allows to Play Notes independent from the    |             |
+     |     | a keyboard. Can also forward an arpeggiator  |             |
+     |     | note (up to four pressed notes, they are     |             |
+     |     | sorted from the lowest to the highest key)   |             |
+     |     |                                              |             |
+     |     |    000 = 00h = Note Off                      |             |
+     |     |    001 = 01h = Hold Note (do nothing)        |             |
+     |     |    002 = 02h = Play Note #2                  |             |
+     |     |    ...                                       |             |
+     |     |    060 = 3Ch = Play Note #60 (C-3)           |             |
+     |     |    ...                                       |             |
+     |     |    123 = 7Bh = Play Note #123                |             |
+     |     |    124 = 7Ch = Play first pressed Note       |             |
+     |     |    125 = 7Dh = Play second pressed Note      |             |
+     |     |    126 = 7Eh = Play third pressed Note       |             |
+     |     |    127 = 7Fh = Play fourth pressed Note      |             |
+     |     |                                              |             |
+ 249 | F9h | Play Note on Current Instrument              |             |     
+ 250 | FAh | Play Note on Instrument #1                   |             |     
+ 251 | FBh | Play Note on Instrument #2                   |             |     
+ 252 | FCh | Play Note on Instrument #3                   |             |     
+ 253 | FDh | Play Note on Instrument #4                   |             |     
+ 254 | FEh | Play Note on Instrument #5                   |             |     
+ 255 | FFh | Play Note on Instrument #6                   |             |     
+-----+-----+----------------------------------------------+-------------+------
+
+
+
+
+Parameter Chart of MIDIbox SID V2 --- Bassline Engine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ Dec | Hex | Description                                  | Range       | Reset
+=====+=====+==============================================+=============+======
+   1 | 01h | Volume (00h-7Fh)                             |  0-127: val |  127
+   3 | 03h | Oscillator Detune                            |  0-256: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+   4 | 04h | Filter CutOff frequency Bassline 1+2         | 0-4096: val | 2048
+     |     | Note: only available here due to compat.     |             |   
+     |     | reasons - separate control possible via      |             |   
+     |     | Parameter Number 96..99                      |             |   
+   5 | 05h | Filter Resonance Bassline 1+2                |  0-256: val |    0
+     |     | Note: only available here due to compat.     |             |   
+     |     | reasons - separate control possible via      |             |   
+     |     | Parameter Number 100..103                    |             |   
+   6 | 06h | Filter Channels Bassline 1+2                 |             |    0
+     |     |   Bit 0: Filter for Voice 1 on/off           |             |
+     |     |   Bit 1: Filter for Voice 2 on/off           |             |
+     |     |   Bit 2: Filter for Voice 3 on/off           |             |
+     |     |   Bit 3: Filter for Audio In on/off          |             |
+   7 | 07h | Filter Mode Bassline 1+2                     |             |    0
+     |     |   Bit 0: LowPass on/off                      |             |
+     |     |   Bit 1: BandPass on/off                     |             |
+     |     |   Bit 2: HighPass on/off                     |             |
+     |     |   Bit 3: Voice 3 off                         |             |
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+   8 | 08h | Knob #1 Value                                |  0-256: val |  128
+   9 | 09h | Knob #2 Value                                |  0-256: val |  128
+  10 | 0Ah | Knob #3 Value                                |  0-256: val |  128
+  11 | 0Bh | Knob #4 Value                                |  0-256: val |  128
+  12 | 0Ch | Knob #5 Value                                |  0-256: val |  128
+  13 | 0Dh | Knob #V Value                                |  0-256: val |  128
+  14 | 0Eh | Knob #P Value                                |  0-256: val |  128
+  15 | 0Fh | Knob #A Value                                |  0-256: val |  128
+-----+-----+----------------------------------------------+-------------+------
+  16 | 10h | Ext AOUT #1 Value                            |  0-256: val |  128
+  17 | 11h | Ext AOUT #2 Value                            |  0-256: val |  128
+  18 | 12h | Ext AOUT #3 Value                            |  0-256: val |  128
+  19 | 13h | Ext AOUT #4 Value                            |  0-256: val |  128
+  20 | 14h | Ext AOUT #5 Value                            |  0-256: val |  128
+  21 | 15h | Ext AOUT #6 Value                            |  0-256: val |  128
+  22 | 16h | Ext AOUT #7 Value                            |  0-256: val |  128
+  23 | 17h | Ext AOUT #8 Value                            |  0-256: val |  128
+-----+-----+----------------------------------------------+-------------+------
+  24 | 18h | Ext Switch #1 Value                          |    0-1: val |    0
+  25 | 19h | Ext Switch #2 Value                          |    0-1: val |    0
+  26 | 1Ah | Ext Switch #3 Value                          |    0-1: val |    0
+  27 | 1Bh | Ext Switch #4 Value                          |    0-1: val |    0
+  28 | 1Ch | Ext Switch #5 Value                          |    0-1: val |    0
+  29 | 1Dh | Ext Switch #6 Value                          |    0-1: val |    0
+  30 | 1Eh | Ext Switch #7 Value                          |    0-1: val |    0
+  31 | 1Fh | Ext Switch #8 Value                          |    0-1: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+  32 | 20h | Bassline 1+2 Waveform                        |   0-15: val |    4
+     |     |   Bit 0: Triangle                            |             |
+     |     |   Bit 1: Saw                                 |             |
+     |     |   Bit 2: Pulse                               |             |
+     |     |   Bit 3: Noise (disables all other waveforms)|             |
+     |     |   Bit 4: Disable Voice                       |             |
+     |     |   Bit 5: Sync                                |             |
+     |     |   Bit 6: Ringmodulator                       |             |
+     |     | Example: 02h = 2 = Saw                       |             |
+     |     | Example: 05h = 5 = Triangle & Pulse          |             |
+     |     | Example: 21h = 33 = Triangle & Sync          |             |
+  33 | 21h | Current Bassline Waveform                    |             |    4
+  34 | 22h | Bassline 1 Waveform                          |             |    4
+  35 | 23h | Bassline 2 Waveform                          |             |    4
+-----+-----+----------------------------------------------+-------------+------
+  36 | 24h | Bassline 1+2 Transpose                       |  0- 63: neg |   64
+     |     |                                              |     64: off |     
+     |     |                                              | 64-127: pos |     
+  37 | 25h | Current Bassline Transpose                   | see above   |   64
+  38 | 26h | Bassline 1 Transpose                         | see above   |   64
+  39 | 27h | Bassline 2 Transpose                         | see above   |   64
+-----+-----+----------------------------------------------+-------------+------
+  40 | 28h | Bassline 1+2 Finetune                        |  0-127: neg |  128
+     |     |                                              |    128: off |     
+     |     |                                              |128-255: pos |     
+  41 | 29h | Current Bassline Finetune                    | see above   |  128
+  42 | 2Ah | Bassline 1 Finetune                          | see above   |  128
+  43 | 2Bh | Bassline 2 Finetune                          | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+  44 | 2Ch | Bassline 1+2 Portamento Rate                 |     0: off  |    0
+     |     |                                              | 1-255: val  |     
+  45 | 2Dh | Current Bassline Portamento Rate             | see above   |    0
+  46 | 2Eh | Bassline 1 Portamento Rate                   | see above   |    0
+  47 | 2Fh | Bassline 2 Portamento Rate                   | see above   |    0
+-----+-----+----------------------------------------------+-------------+------
+  48 | 30h | Bassline 1+2 Pulsewidth                      | 0-2047:  neg|2048
+     |     |                                              |   2048:  mid|     
+     |     |                                              |2049-4095:pos|     
+  49 | 31h | Current Bassline Pulsewidth                  | see above   | 2048
+  50 | 32h | Bassline 1 Pulsewidth                        | see above   | 2048
+  51 | 33h | Bassline 2 Pulsewidth                        | see above   | 2048
+-----+-----+----------------------------------------------+-------------+------
+  52 | 34h | Bassline 1+2 VCA Delay                       |  0-255: val |    0
+  53 | 35h | Current Bassline VCA Delay                   |  0-255: val |    0
+  54 | 36h | Bassline 1 VCA Delay                         |  0-255: val |    0
+  55 | 37h | Bassline 2 VCA Delay                         |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+  56 | 38h | Bassline 1+2 VCA Attack                      |  0- 15: val |    0
+  57 | 39h | Current Bassline VCA Attack                  |  0- 15: val |    0
+  58 | 3Ah | Bassline 1 VCA Attack                        |  0- 15: val |    0
+  59 | 3Bh | Bassline 2 VCA Attack                        |  0- 15: val |    0
+-----+-----+----------------------------------------------+-------------+------
+  60 | 3Ch | Bassline 1+2 VCA Decay                       |  0- 15: val |    0
+  61 | 3Dh | Current Bassline VCA Decay                   |  0- 15: val |    0
+  62 | 3Eh | Bassline 1 VCA Decay                         |  0- 15: val |    0
+  63 | 3Fh | Bassline 2 VCA Decay                         |  0- 15: val |    0
+-----+-----+----------------------------------------------+-------------+------
+  64 | 40h | Bassline 1+2 VCA Sustain                     |  0- 15: val |   15
+  65 | 41h | Current Bassline VCA Sustain                 |  0- 15: val |   15
+  66 | 42h | Bassline 1 VCA Sustain                       |  0- 15: val |   15
+  67 | 43h | Bassline 2 VCA Sustain                       |  0- 15: val |   15
+-----+-----+----------------------------------------------+-------------+------
+  68 | 44h | Bassline 1+2 VCA Release                     |  0- 15: val |    0
+  69 | 45h | Current Bassline VCA Release                 |  0- 15: val |    0
+  70 | 46h | Bassline 1 VCA Release                       |  0- 15: val |    0
+  71 | 47h | Bassline 2 VCA Release                       |  0- 15: val |    0
+-----+-----+----------------------------------------------+-------------+------
+  72 | 48h | Bassline 1+2 Arp Speed                       |  0- 63: val |    0
+  73 | 49h | Current Bassline Arp Speed                   |  0- 63: val |    0
+  74 | 4Ah | Bassline 1 Arp Speed                         |  0- 63: val |    0
+  75 | 4Bh | Bassline 2 Arp Speed                         |  0- 63: val |    0
+-----+-----+----------------------------------------------+-------------+------
+  76 | 4Ch | Bassline 1+2 Arp Gatelength                  |  0- 31: val |    6
+  77 | 4Dh | Current Bassline Arp Gatelength              |  0- 31: val |    6
+  78 | 4Eh | Bassline 1 Arp Gatelength                    |  0- 31: val |    6
+  79 | 4Fh | Bassline 2 Arp Gatelength                    |  0- 31: val |    6
+-----+-----+----------------------------------------------+-------------+------
+  80 | 50h | Bassline 1+2 Pitch Bender                    |  0-255: val |    0
+  81 | 51h | Current Bassline Pitch Bender                |  0-255: val |    0
+  82 | 52h | Bassline 1 Pitch Bender                      |  0-255: val |    0
+  83 | 53h | Bassline 2 Pitch Bender                      |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+  96 | 60h | Bassline 1+2 Filter CutOff                   |  0-255: val |    0
+  97 | 61h | Current Bassline Filter CutOff               |  0-255: val |    0
+  98 | 62h | Bassline 1 Filter CutOff                     |  0-255: val |    0
+  99 | 63h | Bassline 2 Filter CutOff                     |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 100 | 64h | Bassline 1+2 Filter Resonance                |  0-255: val |    0
+ 101 | 65h | Current Bassline Filter Resonance            |  0-255: val |    0
+ 102 | 66h | Bassline 1 Filter Resonance                  |  0-255: val |    0
+ 103 | 67h | Bassline 2 Filter Resonance                  |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 104 | 68h | Bassline 1+2 EnvMod (ENV Filter Depth)       |  0-255: val |    0
+ 105 | 69h | Current Bassline EnvMod                      |  0-255: val |    0
+ 106 | 6Ah | Bassline 1 EnvMod                            |  0-255: val |    0
+ 107 | 6Bh | Bassline 2 EnvMod                            |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 108 | 6Ch | Bassline 1+2 Decay (ENV Filter Decay)        |  0-255: val |    0
+ 109 | 6Dh | Current Bassline Decay                       |  0-255: val |    0
+ 110 | 6Eh | Bassline 1 Decay                             |  0-255: val |    0
+ 111 | 6Fh | Bassline 2 Decay                             |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 112 | 70h | Bassline 1+2 Accent                          |  0-127: val |    0
+ 113 | 71h | Current Bassline Accent                      |  0-127: val |    0
+ 114 | 72h | Bassline 1 Accent                            |  0-127: val |    0
+ 115 | 73h | Bassline 2 Accent                            |  0-127: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 128 | 80h | Bassline 1+2 LFO1 Waveform                   |  0-15: val  |    0
+     |     |            0: Sine                           |             |
+     |     |            1: Triangle                       |             |
+     |     |            2: Saw                            |             |
+     |     |            3: Pulse                          |             |
+     |     |            4: Random                         |             |
+     |     |            5: Positive Sine                  |             |
+     |     |            6: Positive Triangle              |             |
+     |     |            7: Positive Saw                   |             |
+     |     |            8: Positive Pulse                 |             |
+ 129 | 81h | Current Bassline LFO1 Waveform               |             |
+ 130 | 82h | Bassline 1 LFO1 Waveform                     |             |
+ 131 | 83h | Bassline 2 LFO1 Waveform                     |             |
+ 132 | 84h | Bassline 1+2 LFO2 Waveform                   |             |    0
+ 133 | 85h | Current Bassline LFO2 Waveform               |             |
+ 134 | 86h | Bassline 1 LFO2 Waveform                     |             |
+ 135 | 87h | Bassline 2 LFO2 Waveform                     |             |
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 136 | 88h | Bassline 1+2 LFO1 Pitch Depth                |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+ 137 | 89h | Current Bassline LFO1 Pitch Depth            | see above   |  128
+ 138 | 8Ah | Bassline 1 LFO1 Pitch Depth                  | see above   |  128
+ 139 | 8Bh | Bassline 2 LFO1 Pitch Depth                  | see above   |  128
+ 140 | 8Ch | Bassline 1+2 LFO2 Pitch Depth                | see above   |  128
+ 141 | 8Dh | Current Bassline LFO2 Pitch Depth            | see above   |  128
+ 142 | 8Eh | Bassline 1 LFO2 Pitch Depth                  | see above   |  128
+ 143 | 8Fh | Bassline 2 LFO2 Pitch Depth                  | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 144 | 90h | Bassline 1+2 LFO1 Pulsewidth Depth           |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+ 145 | 91h | Current Bassline LFO1 Pulsewidth Depth       | see above   |  128
+ 146 | 92h | Bassline 1 LFO1 Pulsewidth Depth             | see above   |  128
+ 147 | 93h | Bassline 2 LFO1 Pulsewidth Depth             | see above   |  128
+ 148 | 94h | Bassline 1+2 LFO2 Pulsewidth Depth           | see above   |  128
+ 149 | 95h | Current Bassline LFO2 Pulsewidth Depth       | see above   |  128
+ 150 | 96h | Bassline 1 LFO2 Pulsewidth Depth             | see above   |  128
+ 151 | 97h | Bassline 2 LFO2 Pulsewidth Depth             | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 152 | 98h | Bassline 1+2 LFO1 Filter Depth               |  0-127: neg |  128
+     |     | negative depth (0-127) inverts the waveform  |    128: off |     
+     |     |                                              |129-255: pos |     
+ 153 | 99h | Current Bassline LFO1 Filter Depth           | see above   |  128
+ 154 | 9Ah | Bassline 1 LFO1 Filter Depth                 | see above   |  128
+ 155 | 9Bh | Bassline 2 LFO1 Filter Depth                 | see above   |  128
+ 156 | 9Ch | Bassline 1+2 LFO2 Filter Depth               | see above   |  128
+ 157 | 9Dh | Current Bassline LFO2 Filter Depth           | see above   |  128
+ 158 | 9Eh | Bassline 1 LFO2 Filter Depth                 | see above   |  128
+ 159 | 9Fh | Bassline 2 LFO2 Filter Depth                 | see above   |  128
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 160 | A0h | Bassline 1+2 LFO1 Rate                       |      0: off |    0
+     |     |                                              |  1-255: val |
+ 161 | A1h | Current Bassline LFO1 Rate                   | see above   |    0
+ 162 | A2h | Bassline 1 LFO1 Rate                         | see above   |    0
+ 163 | A3h | Bassline 2 LFO1 Rate                         | see above   |    0
+ 164 | A4h | Bassline 1+2 LFO2 Rate                       | see above   |    0
+ 166 | A6h | Bassline 1 LFO2 Rate                         | see above   |    0
+ 167 | A7h | Bassline 2 LFO2 Rate                         | see above   |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 168 | A8h | Bassline 1+2 LFO1 Delay                      |      0: off |    0
+     |     |                                              |  1-255: val |
+ 169 | A9h | Current Bassline LFO1 Delay                  | see above   |    0
+ 170 | AAh | Bassline 1 LFO1 Delay                        | see above   |    0
+ 171 | ABh | Bassline 2 LFO1 Delay                        | see above   |    0
+ 172 | ACh | Bassline 1+2 LFO2 Delay                      | see above   |    0
+ 173 | ADh | Current Bassline LFO2 Delay                  | see above   |    0
+ 174 | AEh | Bassline 1 LFO2 Delay                        | see above   |    0
+ 175 | AFh | Bassline 2 LFO2 Delay                        | see above   |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 176 | B0h | Bassline 1+2 LFO1 Phase                      |      0: off |    0
+     |     |                                              |  1-255: val |
+ 177 | B1h | Current Bassline LFO1 Phase                  | see above   |    0
+ 178 | B2h | Bassline 1 LFO1 Phase                        | see above   |    0
+ 179 | B3h | Bassline 2 LFO1 Phase                        | see above   |    0
+ 180 | B4h | Bassline 1+2 LFO2 Phase                      | see above   |    0
+ 181 | B5h | Current Bassline LFO2 Phase                  | see above   |    0
+ 182 | B6h | Bassline 1 LFO2 Phase                        | see above   |    0
+ 183 | B7h | Bassline 2 LFO2 Phase                        | see above   |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+ 192 | C0h | Bassline 1+2 ENV Pitch Depth                 |  0-255: val |    0
+ 193 | C1h | Current Bassline ENV Pitch Depth             |  0-255: val |    0
+ 194 | C2h | Bassline 1 ENV Pitch Depth                   |  0-255: val |    0
+ 195 | C3h | Bassline 2 ENV Pitch Depth                   |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 196 | C4h | Bassline 1+2 ENV Pulsewidth Depth            |  0-255: val |    0
+ 197 | C5h | Current Bassline ENV Pulsewidth Depth        |  0-255: val |    0
+ 198 | C6h | Bassline 1 ENV Pulsewidth Depth              |  0-255: val |    0
+ 199 | C7h | Bassline 2 ENV Pulsewidth Depth              |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 200 | C8h | Bassline 1+2 ENV Filter Depth                |  0-255: val |    0
+ 201 | C9h | Current Bassline ENV Filter Depth            |  0-255: val |    0
+ 202 | CAh | Bassline 1 ENV Filter Depth                  |  0-255: val |    0
+ 203 | CBh | Bassline 2 ENV Filter Depth                  |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 204 | CCh | Bassline 1+2 ENV Attack                      |  0-255: val |    0
+ 205 | CDh | Current Bassline ENV Attack                  |  0-255: val |    0
+ 206 | CEh | Bassline 1 ENV Attack                        |  0-255: val |    0
+ 207 | CFh | Bassline 2 ENV Attack                        |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 208 | D0h | Bassline 1+2 ENV Decay                       |  0-255: val |    0
+ 209 | D1h | Current Bassline ENV Decay                   |  0-255: val |    0
+ 210 | D2h | Bassline 1 ENV Decay                         |  0-255: val |    0
+ 211 | D3h | Bassline 2 ENV Decay                         |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 212 | D4h | Bassline 1+2 ENV Sustain                     |  0-255: val |    0
+ 213 | D5h | Current Bassline ENV Sustain                 |  0-255: val |    0
+ 214 | D6h | Bassline 1 ENV Sustain                       |  0-255: val |    0
+ 215 | D7h | Bassline 2 ENV Sustain                       |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 216 | D8h | Bassline 1+2 ENV Release                     |  0-255: val |    0
+ 217 | D9h | Current Bassline ENV Release                 |  0-255: val |    0
+ 218 | DAh | Bassline 1 ENV Release                       |  0-255: val |    0
+ 219 | DBh | Bassline 2 ENV Release                       |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 220 | DCh | Bassline 1+2 ENV Curve                       |  0-255: val |    0
+ 221 | DDh | Current Bassline ENV Curve                   |  0-255: val |    0
+ 222 | DEh | Bassline 1 ENV Curve                         |  0-255: val |    0
+ 223 | DFh | Bassline 2 ENV Curve                         |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+ 224 | E0h | Bassline 1+2 ENV Decay Accented              |  0-255: val |    0
+ 225 | E1h | Current Bassline ENV Decay Accented          |  0-255: val |    0
+ 226 | E2h | Bassline 1 ENV Decay Accented                |  0-255: val |    0
+ 227 | E3h | Bassline 2 ENV Decay Accented                |  0-255: val |    0
+-----+-----+----------------------------------------------+-------------+------
+
+
+
+Parameter Chart of MIDIbox SID V2 --- Drum Engine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ Dec | Hex | Description                                  | Range       | Reset
+=====+=====+==============================================+=============+======
+   1 | 01h | Volume (00h-7Fh)                             |  0-127: val |  127
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+   4 | 04h | Filter CutOff frequency                      | 0-4096: val | 2048
+   5 | 05h | Filter Resonance                             |  0-256: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+   8 | 08h | Knob #1 Value                                |  0-256: val |  128
+   9 | 09h | Knob #2 Value                                |  0-256: val |  128
+  10 | 0Ah | Knob #3 Value                                |  0-256: val |  128
+  11 | 0Bh | Knob #4 Value                                |  0-256: val |  128
+  12 | 0Ch | Knob #5 Value                                |  0-256: val |  128
+  13 | 0Dh | Knob #V Value                                |  0-256: val |  128
+  14 | 0Eh | Knob #P Value                                |  0-256: val |  128
+  15 | 0Fh | Knob #A Value                                |  0-256: val |  128
+-----+-----+----------------------------------------------+-------------+------
+  16 | 10h | Ext AOUT #1 Value                            |  0-256: val |  128
+  17 | 11h | Ext AOUT #2 Value                            |  0-256: val |  128
+  18 | 12h | Ext AOUT #3 Value                            |  0-256: val |  128
+  19 | 13h | Ext AOUT #4 Value                            |  0-256: val |  128
+  20 | 14h | Ext AOUT #5 Value                            |  0-256: val |  128
+  21 | 15h | Ext AOUT #6 Value                            |  0-256: val |  128
+  22 | 16h | Ext AOUT #7 Value                            |  0-256: val |  128
+  23 | 17h | Ext AOUT #8 Value                            |  0-256: val |  128
+-----+-----+----------------------------------------------+-------------+------
+  24 | 18h | Ext Switch #1 Value                          |    0-1: val |    0
+  25 | 19h | Ext Switch #2 Value                          |    0-1: val |    0
+  26 | 1Ah | Ext Switch #3 Value                          |    0-1: val |    0
+  27 | 1Bh | Ext Switch #4 Value                          |    0-1: val |    0
+  28 | 1Ch | Ext Switch #5 Value                          |    0-1: val |    0
+  29 | 1Dh | Ext Switch #6 Value                          |    0-1: val |    0
+  30 | 1Eh | Ext Switch #7 Value                          |    0-1: val |    0
+  31 | 1Fh | Ext Switch #8 Value                          |    0-1: val |    0
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+  32 | 20h | Drum Model of current Instrument             |   0-xx: val |
+  33 | 21h | Attack Rate of current Instrument            |   0-15: val |
+  34 | 22h | Decay Rate of current Instrument             |   0-15: val |
+  35 | 23h | Sustain Level of current Instrument          |   0-15: val |
+  36 | 24h | Release Rate of current Instrument           |   0-15: val |
+  37 | 25h | Tuning of current Instrument                 |  0-127: neg |
+     |     |                                              |    128: mid |
+     |     |                                              |129-255: pos |
+  38 | 26h | Gatelength of current Instrument             |  0-127: neg |
+     |     |                                              |    128: mid |
+     |     |                                              |129-255: pos |
+  39 | 27h | WT Speed of current Instrument               |  0-127: neg |
+     |     |                                              |    128: mid |
+     |     |                                              |129-255: pos |
+  40 | 28h | Parameter #3 of current Instrument           |  0-127: neg |
+     |     |                                              |    128: mid |
+     |     |                                              |129-255: pos |
+-----+-----+----------------------------------------------+-------------+------
+-----+-----+----------------------------------------------+-------------+------
+  48 | 30h | Drum Model of Instrument #1                  |   0-xx: val |
+  49 | 31h | Drum Model of Instrument #2                  |             |
+  50 | 32h | Drum Model of Instrument #3                  |             |
+  51 | 33h | Drum Model of Instrument #4                  |             |
+  52 | 34h | Drum Model of Instrument #5                  |             |
+  53 | 35h | Drum Model of Instrument #6                  |             |
+  54 | 36h | Drum Model of Instrument #7                  |             |
+  55 | 37h | Drum Model of Instrument #8                  |             |
+  56 | 38h | Drum Model of Instrument #9                  |             |
+  57 | 39h | Drum Model of Instrument #10                 |             |
+  58 | 3Ah | Drum Model of Instrument #11                 |             |
+  59 | 3Bh | Drum Model of Instrument #12                 |             |
+  60 | 3Ch | Drum Model of Instrument #13                 |             |
+  61 | 3Dh | Drum Model of Instrument #14                 |             |
+  62 | 3Eh | Drum Model of Instrument #15                 |             |
+  63 | 3Fh | Drum Model of Instrument #16                 |             |
+-----+-----+----------------------------------------------+-------------+------
+  64 | 40h | Attack Rate of Instrument #1                 |   0-15: val |
+  65 | 41h | Attack Rate of Instrument #2                 |             |
+  66 | 42h | Attack Rate of Instrument #3                 |             |
+  67 | 43h | Attack Rate of Instrument #4                 |             |
+  68 | 44h | Attack Rate of Instrument #5                 |             |
+  69 | 45h | Attack Rate of Instrument #6                 |             |
+  70 | 46h | Attack Rate of Instrument #7                 |             |
+  71 | 47h | Attack Rate of Instrument #8                 |             |
+  72 | 48h | Attack Rate of Instrument #9                 |             |
+  73 | 49h | Attack Rate of Instrument #10                |             |
+  74 | 4Ah | Attack Rate of Instrument #11                |             |
+  75 | 4Bh | Attack Rate of Instrument #12                |             |
+  76 | 4Ch | Attack Rate of Instrument #13                |             |
+  77 | 4Dh | Attack Rate of Instrument #14                |             |
+  78 | 4Eh | Attack Rate of Instrument #15                |             |
+  79 | 4Fh | Attack Rate of Instrument #16                |             |
+-----+-----+----------------------------------------------+-------------+------
+  80 | 50h | Decay Rate of Instrument #1                  |   0-15: val |
+  81 | 51h | Decay Rate of Instrument #2                  |             |
+  82 | 52h | Decay Rate of Instrument #3                  |             |
+  83 | 53h | Decay Rate of Instrument #4                  |             |
+  84 | 54h | Decay Rate of Instrument #5                  |             |
+  85 | 55h | Decay Rate of Instrument #6                  |             |
+  86 | 56h | Decay Rate of Instrument #7                  |             |
+  87 | 57h | Decay Rate of Instrument #8                  |             |
+  88 | 58h | Decay Rate of Instrument #9                  |             |
+  89 | 59h | Decay Rate of Instrument #10                 |             |
+  90 | 5Ah | Decay Rate of Instrument #11                 |             |
+  91 | 5Bh | Decay Rate of Instrument #12                 |             |
+  92 | 5Ch | Decay Rate of Instrument #13                 |             |
+  93 | 5Dh | Decay Rate of Instrument #14                 |             |
+  94 | 5Eh | Decay Rate of Instrument #15                 |             |
+  95 | 5Fh | Decay Rate of Instrument #16                 |             |
+-----+-----+----------------------------------------------+-------------+------
+  96 | 60h | Sustain Level of Instrument #1               |   0-15: val |
+  97 | 61h | Sustain Level of Instrument #2               |             |
+  98 | 62h | Sustain Level of Instrument #3               |             |
+  99 | 63h | Sustain Level of Instrument #4               |             |
+ 100 | 64h | Sustain Level of Instrument #5               |             |
+ 101 | 65h | Sustain Level of Instrument #6               |             |
+ 102 | 66h | Sustain Level of Instrument #7               |             |
+ 103 | 67h | Sustain Level of Instrument #8               |             |
+ 104 | 68h | Sustain Level of Instrument #9               |             |
+ 105 | 69h | Sustain Level of Instrument #10              |             |
+ 106 | 6Ah | Sustain Level of Instrument #11              |             |
+ 107 | 6Bh | Sustain Level of Instrument #12              |             |
+ 108 | 6Ch | Sustain Level of Instrument #13              |             |
+ 109 | 6Dh | Sustain Level of Instrument #14              |             |
+ 110 | 6Eh | Sustain Level of Instrument #15              |             |
+ 111 | 6Fh | Sustain Level of Instrument #16              |             |
+-----+-----+----------------------------------------------+-------------+------
+ 112 | 70h | Release Rate of Instrument #1                |   0-15: val |
+ 113 | 71h | Release Rate of Instrument #2                |             |
+ 114 | 72h | Release Rate of Instrument #3                |             |
+ 115 | 73h | Release Rate of Instrument #4                |             |
+ 116 | 74h | Release Rate of Instrument #5                |             |
+ 117 | 75h | Release Rate of Instrument #6                |             |
+ 118 | 76h | Release Rate of Instrument #7                |             |
+ 119 | 77h | Release Rate of Instrument #8                |             |
+ 120 | 78h | Release Rate of Instrument #9                |             |
+ 121 | 79h | Release Rate of Instrument #10               |             |
+ 122 | 7Ah | Release Rate of Instrument #11               |             |
+ 123 | 7Bh | Release Rate of Instrument #12               |             |
+ 124 | 7Ch | Release Rate of Instrument #13               |             |
+ 125 | 7Dh | Release Rate of Instrument #14               |             |
+ 126 | 7Eh | Release Rate of Instrument #15               |             |
+ 127 | 7Fh | Release Rate of Instrument #16               |             |
+-----+-----+----------------------------------------------+-------------+------
+ 128 | 80h | Tuning of Instrument #1                      |  0-127: neg |
+     |     |                                              |    128: mid |
+     |     |                                              |129-255: pos |
+ 129 | 81h | Tuning of Instrument #2                      |             |
+ 130 | 82h | Tuning of Instrument #3                      |             |
+ 131 | 83h | Tuning of Instrument #4                      |             |
+ 132 | 84h | Tuning of Instrument #5                      |             |
+ 133 | 85h | Tuning of Instrument #6                      |             |
+ 134 | 86h | Tuning of Instrument #7                      |             |
+ 135 | 87h | Tuning of Instrument #8                      |             |
+ 136 | 88h | Tuning of Instrument #9                      |             |
+ 137 | 89h | Tuning of Instrument #10                     |             |
+ 138 | 8Ah | Tuning of Instrument #11                     |             |
+ 139 | 8Bh | Tuning of Instrument #12                     |             |
+ 140 | 8Ch | Tuning of Instrument #13                     |             |
+ 141 | 8Dh | Tuning of Instrument #14                     |             |
+ 142 | 8Eh | Tuning of Instrument #15                     |             |
+ 143 | 8Fh | Tuning of Instrument #16                     |             |
+-----+-----+----------------------------------------------+-------------+------
+ 144 | 90h | Gatelength of Instrument #1                  |  0-127: neg |
+     |     |                                              |    128: mid |
+     |     |                                              |129-255: pos |
+ 145 | 91h | Gatelength of Instrument #2                  |             |
+ 146 | 92h | Gatelength of Instrument #3                  |             |
+ 147 | 93h | Gatelength of Instrument #4                  |             |
+ 148 | 94h | Gatelength of Instrument #5                  |             |
+ 149 | 95h | Gatelength of Instrument #6                  |             |
+ 150 | 96h | Gatelength of Instrument #7                  |             |
+ 151 | 97h | Gatelength of Instrument #8                  |             |
+ 152 | 98h | Gatelength of Instrument #9                  |             |
+ 153 | 99h | Gatelength of Instrument #10                 |             |
+ 154 | 9Ah | Gatelength of Instrument #11                 |             |
+ 155 | 9Bh | Gatelength of Instrument #12                 |             |
+ 156 | 9Ch | Gatelength of Instrument #13                 |             |
+ 157 | 9Dh | Gatelength of Instrument #14                 |             |
+ 158 | 9Eh | Gatelength of Instrument #15                 |             |
+ 159 | 9Fh | Gatelength of Instrument #16                 |             |
+-----+-----+----------------------------------------------+-------------+------
+ 160 | A0h | WT Speed of Instrument #1                    |  0-127: neg |
+     |     |                                              |    128: mid |
+     |     |                                              |129-255: pos |
+ 161 | A1h | WT Speed of Instrument #2                    |             |
+ 162 | A2h | WT Speed of Instrument #3                    |             |
+ 163 | A3h | WT Speed of Instrument #4                    |             |
+ 164 | A4h | WT Speed of Instrument #5                    |             |
+ 165 | A5h | WT Speed of Instrument #6                    |             |
+ 166 | A6h | WT Speed of Instrument #7                    |             |
+ 167 | A7h | WT Speed of Instrument #8                    |             |
+ 168 | A8h | WT Speed of Instrument #9                    |             |
+ 169 | A9h | WT Speed of Instrument #10                   |             |
+ 170 | AAh | WT Speed of Instrument #11                   |             |
+ 171 | ABh | WT Speed of Instrument #12                   |             |
+ 172 | ACh | WT Speed of Instrument #13                   |             |
+ 173 | ADh | WT Speed of Instrument #14                   |             |
+ 174 | AEh | WT Speed of Instrument #15                   |             |
+ 175 | AFh | WT Speed of Instrument #16                   |             |
+-----+-----+----------------------------------------------+-------------+------
+ 176 | B0h | Parameter #3 of Instrument #1                |  0-127: neg |
+     |     |                                              |    128: mid |
+     |     |                                              |129-255: pos |
+ 177 | B1h | Parameter #3 of Instrument #2                |             |
+ 178 | B2h | Parameter #3 of Instrument #3                |             |
+ 179 | B3h | Parameter #3 of Instrument #4                |             |
+ 180 | B4h | Parameter #3 of Instrument #5                |             |
+ 181 | B5h | Parameter #3 of Instrument #6                |             |
+ 182 | B6h | Parameter #3 of Instrument #7                |             |
+ 183 | B7h | Parameter #3 of Instrument #8                |             |
+ 184 | B8h | Parameter #3 of Instrument #9                |             |
+ 185 | B9h | Parameter #3 of Instrument #10               |             |
+ 186 | BAh | Parameter #3 of Instrument #11               |             |
+ 187 | BBh | Parameter #3 of Instrument #12               |             |
+ 188 | BCh | Parameter #3 of Instrument #13               |             |
+ 189 | BDh | Parameter #3 of Instrument #14               |             |
+ 190 | BEh | Parameter #3 of Instrument #15               |             |
+ 191 | BFh | Parameter #3 of Instrument #16               |             |
+-----+-----+----------------------------------------------+-------------+------
+
+(c) Thorsten.Klose@midibox.org

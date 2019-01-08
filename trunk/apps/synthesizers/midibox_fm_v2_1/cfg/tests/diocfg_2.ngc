@@ -1,0 +1,34 @@
+# This example demonstrates how to emulate one DIN and one DOUT shift register
+# with the digital OPs at J10A and J10B of the MBHP_CORE_STM32F4 module
+#
+# The same is possible with a MBHP_CORE_LPC17 module (J10A == J10, J10B == J28)
+#
+# Note that once J10A has been configured with the DIO command, it isn't available for the SCS anymore!
+
+RESET_HW
+
+LCD "%CDIO Cfg Demo #2"
+
+DIO  port=J10A  emu_din_sr=1
+DIO  port=J10B  emu_dout_sr=1
+
+
+# 8 button events (DIN SR1 pins are assigned to hw_id=1..8)
+EVENT_BUTTON id=1  hw_id=1  type=CC chn=1 cc=16 range=0:127  fwd_id=LED:1
+EVENT_BUTTON id=2  hw_id=2  type=CC chn=1 cc=17 range=0:127  fwd_id=LED:2
+EVENT_BUTTON id=3  hw_id=3  type=CC chn=1 cc=18 range=0:127  fwd_id=LED:3
+EVENT_BUTTON id=4  hw_id=4  type=CC chn=1 cc=19 range=0:127  fwd_id=LED:4
+EVENT_BUTTON id=5  hw_id=5  type=CC chn=1 cc=20 range=0:127  fwd_id=LED:5
+EVENT_BUTTON id=6  hw_id=6  type=CC chn=1 cc=21 range=0:127  fwd_id=LED:6
+EVENT_BUTTON id=7  hw_id=7  type=CC chn=1 cc=22 range=0:127  fwd_id=LED:7
+EVENT_BUTTON id=8  hw_id=8  type=CC chn=1 cc=23 range=0:127  fwd_id=LED:8
+
+# 8 LED events (DOUT SR1 pins are assigned to hw_id=1..8)
+EVENT_LED    id=1  hw_id=1  type=CC chn=1 cc=16 range=0:127
+EVENT_LED    id=2  hw_id=2  type=CC chn=1 cc=17 range=0:127
+EVENT_LED    id=3  hw_id=3  type=CC chn=1 cc=18 range=0:127
+EVENT_LED    id=4  hw_id=4  type=CC chn=1 cc=19 range=0:127
+EVENT_LED    id=5  hw_id=5  type=CC chn=1 cc=20 range=0:127
+EVENT_LED    id=6  hw_id=6  type=CC chn=1 cc=21 range=0:127
+EVENT_LED    id=7  hw_id=7  type=CC chn=1 cc=22 range=0:127
+EVENT_LED    id=8  hw_id=8  type=CC chn=1 cc=23 range=0:127

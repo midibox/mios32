@@ -1,0 +1,23 @@
+RESET_HW
+
+LCD "%CKeyboard Mapped"
+
+# keyboard configuration
+KEYBOARD n=1   rows=8  dout_sr1=1  dout_sr2=2  din_sr1=1  din_sr2=2 \
+               din_inverted=0  break_inverted=0  din_key_offset=32 \
+               scan_velocity=1  scan_optimized=0  note_offset=28 \
+               delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100
+
+# velocity will be mapped to following (128) values
+# (generated with tools/kb_vel_map.pl)
+MAP1    0   2   4   6   8  10  12  14  16  18  20  22  24  26  28  30 \
+       32  34  36  38  40  42  44  46  48  50  52  54  56  58  60  62 \
+       64  65  66  67  68  69  70  71  72  73  74  75  76  77  78  79 \
+       80  81  82  83  84  85  86  87  88  89  90  91  92  93  94  95 \
+       96  96  97  97  98  98  99  99 100 100 101 101 102 102 103 103 \
+      104 104 105 105 106 106 107 107 108 108 109 109 110 110 111 111 \
+      112 112 113 113 114 114 115 115 116 116 117 117 118 118 119 119 \
+      120 120 121 121 122 122 123 123 124 124 125 125 126 126 127 127
+
+# send MIDI event with mapped velocity value
+EVENT_KB id=1  type=NoteOn chn=1 key=any use_key_number=1 range=0:127  kb_velocity_map=map1  kb_transpose=0  lcd_pos=1:1:1 label="Note %n"

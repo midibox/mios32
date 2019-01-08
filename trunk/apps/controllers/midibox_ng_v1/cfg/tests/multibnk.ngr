@@ -1,0 +1,74 @@
+# This run script works together with MULTIBNK.NGC
+
+# the bank selection should be handled regardless of the ^section
+# Note that ^section == 0 is called after boot
+# And ^section == 1 will be called whenever the bank has been changed.
+
+# Note also, that logical combinations are not supported by the .NGR parser
+# e.g. "if ^bank == 1 || ^bank == 2" is not supported!
+# Therefore we have to duplicate the set_active commands
+# This might change in future
+
+
+if ^bank == 1
+  ##############################################################################
+  LOG "Bank 1 branch processed in .NGR script"
+
+  set_active (id)BUTTON:101 1
+  set_active (id)BUTTON:102 1
+  set_active (id)BUTTON:103 1
+  set_active (id)BUTTON:104 1
+
+  set_active (id)BUTTON:301 0
+  set_active (id)BUTTON:302 0
+  set_active (id)BUTTON:303 0
+  set_active (id)BUTTON:304 0
+
+
+elsif ^bank == 2
+  ##############################################################################
+  LOG "Bank 2 branch processed in .NGR script"
+
+  set_active (id)BUTTON:101 1
+  set_active (id)BUTTON:102 1
+  set_active (id)BUTTON:103 1
+  set_active (id)BUTTON:104 1
+
+  set_active (id)BUTTON:301 0
+  set_active (id)BUTTON:302 0
+  set_active (id)BUTTON:303 0
+  set_active (id)BUTTON:304 0
+
+
+elsif ^bank == 3
+  ##############################################################################
+  LOG "Bank 3 branch processed in .NGR script"
+
+  set_active (id)BUTTON:101 0
+  set_active (id)BUTTON:102 0
+  set_active (id)BUTTON:103 0
+  set_active (id)BUTTON:104 0
+
+  set_active (id)BUTTON:301 1
+  set_active (id)BUTTON:302 1
+  set_active (id)BUTTON:303 1
+  set_active (id)BUTTON:304 1
+
+
+elsif ^bank == 4
+  ##############################################################################
+  LOG "Bank 4 branch processed in .NGR script"
+
+  set_active (id)BUTTON:101 0
+  set_active (id)BUTTON:102 0
+  set_active (id)BUTTON:103 0
+  set_active (id)BUTTON:104 0
+
+  set_active (id)BUTTON:301 1
+  set_active (id)BUTTON:302 1
+  set_active (id)BUTTON:303 1
+  set_active (id)BUTTON:304 1
+
+endif
+
+exit

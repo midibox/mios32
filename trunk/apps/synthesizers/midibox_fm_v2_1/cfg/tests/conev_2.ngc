@@ -1,0 +1,23 @@
+
+# demonstrates how different events can be processed depending on a condition
+
+RESET_HW
+
+LCD "%C"
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+# this toggle button switches between two CC modes
+EVENT_BUTTON  id=2000  type=meta  meta=UpdateLcd  range=0:1  button_mode=Toggle  lcd_pos=1:1:1 label="Mode #%d"
+
+# send CC#16 if mode #0 selected
+EVENT_ENC  id=2000  hw_id=2000  if_equal=Button:2000:0  type=CC cc=16  lcd_pos=1:1:2 label="Enc Mode 0: %3d"
+
+# send CC#32 if mode #1 is selected
+EVENT_ENC  id=2001  hw_id=2000  if_equal=Button:2000:1  type=CC cc=32  lcd_pos=1:1:2 label="Enc Mode 1: %3d"

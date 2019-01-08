@@ -1,0 +1,48 @@
+# how to control WS2812 based RGB LEDs
+
+# Reset to default
+RESET_HW
+
+# LCD message after load
+LCD "%C@(1:1:1)RGB LED Test"
+
+# EVENTs
+
+# LED will change hue in range of 0..127 (for larger range a NRPN is required)
+EVENT_RGBLED id=1  hsv=0:100:20    type=CC chn=1 cc=16 range=0:127 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
+
+# LED will change hue in range of 127..0 (reversed)
+EVENT_RGBLED id=2  hsv=0:100:20    type=CC chn=1 cc=17 range=127:0 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
+
+# LED will change hue in range of 200..300 (hue offset defined with hsv parameter) - values >100 saturate to 100
+EVENT_RGBLED id=3  hsv=200:100:20  type=CC chn=1 cc=18 range=0:100 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
+
+# LED will change hue in range of 300..200 (hue offset defined with hsv parameter) - values >100 saturate to 100
+EVENT_RGBLED id=4  hsv=200:100:20  type=CC chn=1 cc=19 range=100:0 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
+
+# LED will change brightness (v) based on value (hue statically defined)
+EVENT_RGBLED id=5  hsv=120:100:20  dimmed=1 type=CC chn=1 cc=20 range=0:100 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
+
+# LED has a RGB definition
+# we expect that the LED will be turned on/off depending on value
+# note that r/g/b are 4bit values, they will be scaled up to 8bit
+EVENT_RGBLED id=6  rgb=15:3:7               type=CC chn=1 cc=21 range=0:127 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
+
+# LED has a RGB definition + dimmed=1
+# we expect that the LED will dimmed between the specified levels
+EVENT_RGBLED id=7  rgb=15:3:7 dimmed=1      type=CC chn=1 cc=22 range=0:127 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
+
+
+# some buttons set the 8th LED to different hues + dimming depending on velocity value (if the appr. MIDI event is received)
+EVENT_BUTTON id=1  type=NoteOn key=48 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_btn"  fwd_id=RGBLED:8  hsv=0:100:40    dimmed=1
+EVENT_BUTTON id=2  type=NoteOn key=49 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_btn"  fwd_id=RGBLED:8  hsv=20:100:40   dimmed=1
+EVENT_BUTTON id=3  type=NoteOn key=50 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_btn"  fwd_id=RGBLED:8  hsv=40:100:40   dimmed=1
+EVENT_BUTTON id=4  type=NoteOn key=51 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_btn"  fwd_id=RGBLED:8  hsv=60:100:40   dimmed=1
+EVENT_BUTTON id=5  type=NoteOn key=52 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_btn"  fwd_id=RGBLED:8  hsv=80:100:40   dimmed=1
+EVENT_BUTTON id=6  type=NoteOn key=53 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_btn"  fwd_id=RGBLED:8  hsv=100:100:40  dimmed=1
+EVENT_BUTTON id=7  type=NoteOn key=54 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_btn"  fwd_id=RGBLED:8  hsv=120:100:40  dimmed=1
+EVENT_BUTTON id=8  type=NoteOn key=55 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_btn"  fwd_id=RGBLED:8  hsv=140:100:40  dimmed=1
+EVENT_BUTTON id=9  type=NoteOn key=56 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_btn"  fwd_id=RGBLED:8  hsv=160:100:40  dimmed=1
+EVENT_BUTTON id=10 type=NoteOn key=57 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_btn"  fwd_id=RGBLED:8  hsv=180:100:40  dimmed=1
+EVENT_BUTTON id=11 type=NoteOn key=58 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_btn"  fwd_id=RGBLED:8  hsv=200:100:40  dimmed=1
+EVENT_BUTTON id=12 type=NoteOn key=59 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_btn"  fwd_id=RGBLED:8  hsv=220:100:40  dimmed=1

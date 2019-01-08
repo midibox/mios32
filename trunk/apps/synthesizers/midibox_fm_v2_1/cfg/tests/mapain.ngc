@@ -1,0 +1,32 @@
+RESET_HW
+
+LCD "%CMap AINSER Values"
+
+# use various maps
+EVENT_AINSER id=  1  fwd_id=LED_MATRIX:1  led_matrix_pattern=1  fwd_to_lcd=1  type=CC  chn= 1 cc= 16   range=map1   lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  2  fwd_id=LED_MATRIX:2  led_matrix_pattern=1  fwd_to_lcd=1  type=CC  chn= 1 cc= 17   range=map2   lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  3  fwd_id=LED_MATRIX:3  led_matrix_pattern=1  fwd_to_lcd=1  type=CC  chn= 1 cc= 18   range=map3   lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  4  fwd_id=LED_MATRIX:4  led_matrix_pattern=1  fwd_to_lcd=1  type=CC  chn= 1 cc= 19   range=map4   lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  5  fwd_id=LED_MATRIX:5  led_matrix_pattern=1  fwd_to_lcd=1  type=CC  chn= 1 cc= 20   range=map5   lcd_pos=1:1:1  label="^std_aser"
+
+# re-use map1
+EVENT_AINSER id=  6  fwd_id=LED_MATRIX:6  led_matrix_pattern=1  fwd_to_lcd=1  type=CC  chn= 1 cc= 21   range=map1   lcd_pos=1:1:1  label="^std_aser"
+
+# don't use map
+EVENT_AINSER id=  7  fwd_id=LED_MATRIX:7  led_matrix_pattern=1  fwd_to_lcd=1  type=CC  chn= 1 cc= 22   range=0:127  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  8  fwd_id=LED_MATRIX:8  led_matrix_pattern=1  fwd_to_lcd=1  type=CC  chn= 1 cc= 23   range=10:100 lcd_pos=1:1:1  label="^std_aser"
+
+
+# map definitions
+MAP1   1 2 4 8 16 32 64
+MAP2   0x01 0x02 0x03 0x04 0x08 0x10 0x11 0x12 0x13 0x14 0x15 0x16 0x17 0x18 0x19 0x1a 0x1b 0x1c 0x1d 0x1e 0x1f 0x7f
+MAP3   1 10 2 20 3 30
+MAP4   0 1 2 3 4 5 6 7
+MAP5   7 6 5 4 3 2 1 0
+
+
+# LEDring configuration
+DOUT_MATRIX n= 1   rows=16 inverted=0  sr_dout_sel1= 1 sr_dout_sel2= 2  sr_dout_r1= 3 sr_dout_r2= 4  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+
+# enable first AINSER module
+AINSER n=  1   enabled=1  cs=0

@@ -1,0 +1,394 @@
+
+################################################################################
+# Reset the setup to default settings
+# This command ensures, that previous hardware definitions will be overwritten
+# by a new setup without the need to set defintions for all components
+################################################################################
+RESET_HW
+
+LCD "%C@(1:1:1)  LC"
+
+
+################################################################################
+# SysEx communication
+################################################################################
+
+# Device ID selects the device:
+#   0x10 : Logic Control
+#   0x11 : Logic Control XT
+#   0x14 : Mackie Control
+#   0x15 : Mackie Control XT
+SYSEX_VAR dev=0x10
+
+# Receive Device Query -> send Host Connection Query
+EVENT_RECEIVER id=  1  fwd_id=SENDER:1 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x00 0xf7"
+EVENT_SENDER   id=  1 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x01 0x4d 0x42 0x4e 0x47 0x56 0x31 0x00 0x00 0x00 0x00 0xf7"
+
+
+# Receive Host Connection Reply -> send Host Connection Confirmation
+EVENT_RECEIVER id=  2  fwd_id=SENDER:2 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x02 0xf7"
+EVENT_SENDER   id=  2 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x03 0x4d 0x42 0x4e 0x47 0x56 0x31 0xf7"
+
+
+# Firmware version request
+EVENT_RECEIVER id=  3  fwd_id=SENDER:3 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x13 00 0xf7"
+EVENT_SENDER   id=  3 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x14 0x56 0x31 0x2e 0x34 0x32 0xf7"
+
+
+# Special Query for Mackie Control
+EVENT_RECEIVER id=  4  fwd_id=SENDER:4 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1a 0xf7"
+EVENT_SENDER   id=  4 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1b 0x42 0xf7"
+
+# LCD Messages
+# Note: we use ^txt56 instead of ^txt, so that the cursor will jump 
+#       to the next line after the 56th character has been reached
+#       Use map=1 to map the cursor positions over a 2x80 LCD
+EVENT_RECEIVER id=  5 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x12 ^cursor ^txt56" \
+	       range=map1
+
+# X cursor positions are defined in MAP1
+# spread message over two 2x40 LCDs
+MAP1   2  3  4  5  6  7  8 \
+      12 13 14 15 16 17 18 \
+      22 23 24 25 26 27 28 \
+      32 33 34 35 36 37 38 \
+      42 43 44 45 46 47 48 \
+      52 53 54 55 56 57 58 \
+      62 63 64 65 66 67 68 \
+      72 73 74 75 76 77 78
+
+# use this definition instead of the one above to print on a GLCD with small font (will work with a 240x64 LCD)
+# if multiple GLCDs are used, you could also use the normal font (&n)
+# not shown here: of course, it's possible to map to different cursor positions as well.
+#EVENT_RECEIVER id= 5 \
+#               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x12 ^cursor ^txt56" \
+#	       lcd_pos=1:3:1 label="&s"
+
+
+
+# this generic receiver (without controller assignment) receives the MTC digits
+# and notifies all events which select syxdump_pos=10:<pos-in-dump>
+EVENT_RECEIVER id=10  type=SysEx  stream="0xf0 0x00 0x00 0x66 ^dev 0x10 ^dump"
+
+# this generic receiver (without controller assignment) receives the status digits
+# and notifies all events which select syxdump_pos=11:<pos-in-dump>
+EVENT_RECEIVER id=11  type=SysEx  stream="0xf0 0x00 0x00 0x66 ^dev 0x11 ^dump"
+
+
+
+################################################################################
+# Select 1-8 (Note Key: 0x18..0x1f)
+################################################################################
+EVENT_BUTTON id=  1  type=NoteOn chn= 1 key=0x18
+EVENT_BUTTON id=  2  type=NoteOn chn= 1 key=0x19
+EVENT_BUTTON id=  3  type=NoteOn chn= 1 key=0x1a
+EVENT_BUTTON id=  4  type=NoteOn chn= 1 key=0x1b
+EVENT_BUTTON id=  5  type=NoteOn chn= 1 key=0x1c
+EVENT_BUTTON id=  6  type=NoteOn chn= 1 key=0x1d
+EVENT_BUTTON id=  7  type=NoteOn chn= 1 key=0x1e
+EVENT_BUTTON id=  8  type=NoteOn chn= 1 key=0x1f
+
+EVENT_LED    id=  1  type=NoteOn chn= 1 key=0x18
+EVENT_LED    id=  2  type=NoteOn chn= 1 key=0x19
+EVENT_LED    id=  3  type=NoteOn chn= 1 key=0x1a
+EVENT_LED    id=  4  type=NoteOn chn= 1 key=0x1b
+EVENT_LED    id=  5  type=NoteOn chn= 1 key=0x1c
+EVENT_LED    id=  6  type=NoteOn chn= 1 key=0x1d
+EVENT_LED    id=  7  type=NoteOn chn= 1 key=0x1e
+EVENT_LED    id=  8  type=NoteOn chn= 1 key=0x1f
+
+
+################################################################################
+# Rec/Ready 1-8 (Note Key: 0x00..0x07)
+################################################################################
+EVENT_BUTTON id=  9  type=NoteOn chn= 1 key=0x00
+EVENT_BUTTON id= 10  type=NoteOn chn= 1 key=0x01
+EVENT_BUTTON id= 11  type=NoteOn chn= 1 key=0x02
+EVENT_BUTTON id= 12  type=NoteOn chn= 1 key=0x03
+EVENT_BUTTON id= 13  type=NoteOn chn= 1 key=0x04
+EVENT_BUTTON id= 14  type=NoteOn chn= 1 key=0x05
+EVENT_BUTTON id= 15  type=NoteOn chn= 1 key=0x06
+EVENT_BUTTON id= 16  type=NoteOn chn= 1 key=0x07
+
+EVENT_LED    id=  9  type=NoteOn chn= 1 key=0x00
+EVENT_LED    id= 10  type=NoteOn chn= 1 key=0x01
+EVENT_LED    id= 11  type=NoteOn chn= 1 key=0x02
+EVENT_LED    id= 12  type=NoteOn chn= 1 key=0x03
+EVENT_LED    id= 13  type=NoteOn chn= 1 key=0x04
+EVENT_LED    id= 14  type=NoteOn chn= 1 key=0x05
+EVENT_LED    id= 15  type=NoteOn chn= 1 key=0x06
+EVENT_LED    id= 16  type=NoteOn chn= 1 key=0x07
+
+
+################################################################################
+# Solo 1-8 (Note Key: 0x08..0x0f)
+################################################################################
+EVENT_BUTTON id= 17  type=NoteOn chn= 1 key=0x08
+EVENT_BUTTON id= 18  type=NoteOn chn= 1 key=0x09
+EVENT_BUTTON id= 19  type=NoteOn chn= 1 key=0x0a
+EVENT_BUTTON id= 20  type=NoteOn chn= 1 key=0x0b
+EVENT_BUTTON id= 21  type=NoteOn chn= 1 key=0x0c
+EVENT_BUTTON id= 22  type=NoteOn chn= 1 key=0x0d
+EVENT_BUTTON id= 23  type=NoteOn chn= 1 key=0x0e
+EVENT_BUTTON id= 24  type=NoteOn chn= 1 key=0x0f
+
+EVENT_LED    id= 17  type=NoteOn chn= 1 key=0x08
+EVENT_LED    id= 18  type=NoteOn chn= 1 key=0x09
+EVENT_LED    id= 19  type=NoteOn chn= 1 key=0x0a
+EVENT_LED    id= 20  type=NoteOn chn= 1 key=0x0b
+EVENT_LED    id= 21  type=NoteOn chn= 1 key=0x0c
+EVENT_LED    id= 22  type=NoteOn chn= 1 key=0x0d
+EVENT_LED    id= 23  type=NoteOn chn= 1 key=0x0e
+EVENT_LED    id= 24  type=NoteOn chn= 1 key=0x0f
+
+
+################################################################################
+# Mute 1-8 (Note Key: 0x10..0x17)
+################################################################################
+EVENT_BUTTON id= 25  type=NoteOn chn= 1 key=0x10
+EVENT_BUTTON id= 26  type=NoteOn chn= 1 key=0x11
+EVENT_BUTTON id= 27  type=NoteOn chn= 1 key=0x12
+EVENT_BUTTON id= 28  type=NoteOn chn= 1 key=0x13
+EVENT_BUTTON id= 29  type=NoteOn chn= 1 key=0x14
+EVENT_BUTTON id= 30  type=NoteOn chn= 1 key=0x15
+EVENT_BUTTON id= 31  type=NoteOn chn= 1 key=0x16
+EVENT_BUTTON id= 32  type=NoteOn chn= 1 key=0x17
+
+EVENT_LED    id= 25  type=NoteOn chn= 1 key=0x10
+EVENT_LED    id= 26  type=NoteOn chn= 1 key=0x11
+EVENT_LED    id= 27  type=NoteOn chn= 1 key=0x12
+EVENT_LED    id= 28  type=NoteOn chn= 1 key=0x13
+EVENT_LED    id= 29  type=NoteOn chn= 1 key=0x14
+EVENT_LED    id= 30  type=NoteOn chn= 1 key=0x15
+EVENT_LED    id= 31  type=NoteOn chn= 1 key=0x16
+EVENT_LED    id= 32  type=NoteOn chn= 1 key=0x17
+
+
+
+
+################################################################################
+# VPots (Encoders with LED rings)
+################################################################################
+
+ENC n=  1   sr=13 pins=0:1   type=non_detented
+ENC n=  2   sr=13 pins=2:3   type=non_detented
+ENC n=  3   sr=13 pins=4:5   type=non_detented
+ENC n=  4   sr=13 pins=6:7   type=non_detented
+ENC n=  5   sr=14 pins=0:1   type=non_detented
+ENC n=  6   sr=14 pins=2:3   type=non_detented
+ENC n=  7   sr=14 pins=4:5   type=non_detented
+ENC n=  8   sr=14 pins=6:7   type=non_detented
+
+# LED_MATRIX_PATTERNs
+LED_MATRIX_PATTERN n= 1  pos= 0  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 1  pattern=1000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 2  pattern=0100000000000000
+LED_MATRIX_PATTERN n= 1  pos= 3  pattern=0010000000000000
+LED_MATRIX_PATTERN n= 1  pos= 4  pattern=0001000000000000
+LED_MATRIX_PATTERN n= 1  pos= 5  pattern=0000100000000000
+LED_MATRIX_PATTERN n= 1  pos= 6  pattern=0000010000000000
+LED_MATRIX_PATTERN n= 1  pos= 7  pattern=0000001000000000
+LED_MATRIX_PATTERN n= 1  pos= M  pattern=0000000100000000
+LED_MATRIX_PATTERN n= 1  pos= 8  pattern=0000000100000000
+LED_MATRIX_PATTERN n= 1  pos= 9  pattern=0000000010000000
+LED_MATRIX_PATTERN n= 1  pos=10  pattern=0000000001000000
+LED_MATRIX_PATTERN n= 1  pos=11  pattern=0000000000100000
+LED_MATRIX_PATTERN n= 1  pos=12  pattern=0000000000100000
+LED_MATRIX_PATTERN n= 1  pos=13  pattern=0000000000100000
+LED_MATRIX_PATTERN n= 1  pos=14  pattern=0000000000100000
+LED_MATRIX_PATTERN n= 1  pos=15  pattern=0000000000100000
+
+LED_MATRIX_PATTERN n= 2  pos= 0  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 2  pos= 1  pattern=1111110000000000
+LED_MATRIX_PATTERN n= 2  pos= 2  pattern=0111110000000000
+LED_MATRIX_PATTERN n= 2  pos= 3  pattern=0011110000000000
+LED_MATRIX_PATTERN n= 2  pos= 4  pattern=0001110000000000
+LED_MATRIX_PATTERN n= 2  pos= 5  pattern=0000110000000000
+LED_MATRIX_PATTERN n= 2  pos= 6  pattern=0000010000000000
+LED_MATRIX_PATTERN n= 2  pos= 7  pattern=0000011000000000
+LED_MATRIX_PATTERN n= 2  pos= M  pattern=0000011000000000
+LED_MATRIX_PATTERN n= 2  pos= 8  pattern=0000011100000000
+LED_MATRIX_PATTERN n= 2  pos= 9  pattern=0000011110000000
+LED_MATRIX_PATTERN n= 2  pos=10  pattern=0000011111000000
+LED_MATRIX_PATTERN n= 2  pos=11  pattern=0000011111100000
+LED_MATRIX_PATTERN n= 2  pos=12  pattern=0000011111100000
+LED_MATRIX_PATTERN n= 2  pos=13  pattern=0000011111100000
+LED_MATRIX_PATTERN n= 2  pos=14  pattern=0000011111100000
+LED_MATRIX_PATTERN n= 2  pos=15  pattern=0000011111100000
+
+LED_MATRIX_PATTERN n= 3  pos= 0  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 3  pos= 1  pattern=1000000000000000
+LED_MATRIX_PATTERN n= 3  pos= 2  pattern=1100000000000000
+LED_MATRIX_PATTERN n= 3  pos= 3  pattern=1110000000000000
+LED_MATRIX_PATTERN n= 3  pos= 4  pattern=1111000000000000
+LED_MATRIX_PATTERN n= 3  pos= 5  pattern=1111100000000000
+LED_MATRIX_PATTERN n= 3  pos= 6  pattern=1111110000000000
+LED_MATRIX_PATTERN n= 3  pos= 7  pattern=1111111000000000
+LED_MATRIX_PATTERN n= 3  pos= M  pattern=1111111000000000
+LED_MATRIX_PATTERN n= 3  pos= 8  pattern=1111111100000000
+LED_MATRIX_PATTERN n= 3  pos= 9  pattern=1111111110000000
+LED_MATRIX_PATTERN n= 3  pos=10  pattern=1111111111000000
+LED_MATRIX_PATTERN n= 3  pos=11  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 3  pos=12  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 3  pos=13  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 3  pos=14  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 3  pos=15  pattern=1111111111100000
+
+LED_MATRIX_PATTERN n= 4  pos= 0  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 4  pos= 1  pattern=0000010000000000
+LED_MATRIX_PATTERN n= 4  pos= 2  pattern=0000111000000000
+LED_MATRIX_PATTERN n= 4  pos= 3  pattern=0001111100000000
+LED_MATRIX_PATTERN n= 4  pos= 4  pattern=0011111110000000
+LED_MATRIX_PATTERN n= 4  pos= 5  pattern=0111111111000000
+LED_MATRIX_PATTERN n= 4  pos= 6  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 4  pos= 7  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 4  pos= M  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 4  pos= 8  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 4  pos= 9  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 4  pos=10  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 4  pos=11  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 4  pos=12  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 4  pos=13  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 4  pos=14  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 4  pos=15  pattern=1111111111100000
+
+
+EVENT_ENC    id= 1  type=CC  chn= 1 cc=0x10  enc_mode=Inc00Speed_Dec40Speed
+EVENT_ENC    id= 2  type=CC  chn= 1 cc=0x11  enc_mode=Inc00Speed_Dec40Speed
+EVENT_ENC    id= 3  type=CC  chn= 1 cc=0x12  enc_mode=Inc00Speed_Dec40Speed
+EVENT_ENC    id= 4  type=CC  chn= 1 cc=0x13  enc_mode=Inc00Speed_Dec40Speed
+EVENT_ENC    id= 5  type=CC  chn= 1 cc=0x14  enc_mode=Inc00Speed_Dec40Speed
+EVENT_ENC    id= 6  type=CC  chn= 1 cc=0x15  enc_mode=Inc00Speed_Dec40Speed
+EVENT_ENC    id= 7  type=CC  chn= 1 cc=0x16  enc_mode=Inc00Speed_Dec40Speed
+EVENT_ENC    id= 8  type=CC  chn= 1 cc=0x17  enc_mode=Inc00Speed_Dec40Speed
+
+DOUT_MATRIX n= 1   rows=16 inverted=0  sr_dout_sel1= 9  sr_dout_r1=11 sr_dout_r2=12
+
+EVENT_LED_MATRIX   id= 1  type=CC  chn= 1 cc=0x30  led_matrix_pattern=LcAuto
+EVENT_LED_MATRIX   id= 2  type=CC  chn= 1 cc=0x31  led_matrix_pattern=LcAuto
+EVENT_LED_MATRIX   id= 3  type=CC  chn= 1 cc=0x32  led_matrix_pattern=LcAuto
+EVENT_LED_MATRIX   id= 4  type=CC  chn= 1 cc=0x33  led_matrix_pattern=LcAuto
+EVENT_LED_MATRIX   id= 5  type=CC  chn= 1 cc=0x34  led_matrix_pattern=LcAuto
+EVENT_LED_MATRIX   id= 6  type=CC  chn= 1 cc=0x35  led_matrix_pattern=LcAuto
+EVENT_LED_MATRIX   id= 7  type=CC  chn= 1 cc=0x36  led_matrix_pattern=LcAuto
+EVENT_LED_MATRIX   id= 8  type=CC  chn= 1 cc=0x37  led_matrix_pattern=LcAuto
+
+
+
+################################################################################
+# Jogwheel (Encoder)
+################################################################################
+
+# Jogwheel
+ENC n=  9   sr= 15 pins=0:1   type=non_detented
+
+EVENT_ENC    id= 9  type=CC  chn= 1 cc=0x3c  enc_mode=Inc00Speed_Dec40Speed
+
+
+################################################################################
+# Motorfaders
+################################################################################
+
+# we've a single MBHP_MF_NG module with 8 motorfaders
+# It has to be configured for Motormix protocol!
+MF n=1  enabled=1  midi_in_port=IN3  midi_out_port=OUT3  chn=1  ts_first_button_id=2001  config_port=USB3
+
+# on motorfader movements
+EVENT_MF  id= 1  type=PitchBend  chn= 1  range=0:16383
+EVENT_MF  id= 2  type=PitchBend  chn= 2  range=0:16383
+EVENT_MF  id= 3  type=PitchBend  chn= 3  range=0:16383
+EVENT_MF  id= 4  type=PitchBend  chn= 4  range=0:16383
+EVENT_MF  id= 5  type=PitchBend  chn= 5  range=0:16383
+EVENT_MF  id= 6  type=PitchBend  chn= 6  range=0:16383
+EVENT_MF  id= 7  type=PitchBend  chn= 7  range=0:16383
+EVENT_MF  id= 8  type=PitchBend  chn= 8  range=0:16383
+
+# on touchsensor event (first id has been specified in the MF configuration above)
+EVENT_BUTTON  id= 2001  type=NoteOn chn= 1 key=0x68  range=0:127
+EVENT_BUTTON  id= 2002  type=NoteOn chn= 1 key=0x69  range=0:127
+EVENT_BUTTON  id= 2003  type=NoteOn chn= 1 key=0x70  range=0:127
+EVENT_BUTTON  id= 2004  type=NoteOn chn= 1 key=0x71  range=0:127
+EVENT_BUTTON  id= 2005  type=NoteOn chn= 1 key=0x72  range=0:127
+EVENT_BUTTON  id= 2006  type=NoteOn chn= 1 key=0x73  range=0:127
+EVENT_BUTTON  id= 2007  type=NoteOn chn= 1 key=0x74  range=0:127
+EVENT_BUTTON  id= 2008  type=NoteOn chn= 1 key=0x75  range=0:127
+
+
+################################################################################
+# MTC and Status LED Digits
+################################################################################
+
+# HW definitions for "Common Cathode" Digits
+# see also http://www.ucapps.de/midibox_ng/mbng_led_digits_mtc.pdf
+DOUT_MATRIX n=2   rows=8   sr_dout_r1=13  inverted_row=0  mirrored_row=0  sr_dout_sel1=14  inverted_sel=0
+DOUT_MATRIX n=3   rows=8   sr_dout_r1=15  inverted_row=0  mirrored_row=0  sr_dout_sel1=16  inverted_sel=0
+
+# for "Common Anode" set inverted_row=1 and inverted_sel=1
+# if the segment connections are mirrored, set mirrored_row=1
+
+
+# the digits are accessible with:
+# second matrix (n=2): LED_MATRIX:17 ... LED_MATRIX:24
+# third matrix  (n=3): LED_MATRIX:33 ... LED_MATRIX:40
+
+
+# direct access to the digits via CC#64..CC#73
+EVENT_LED_MATRIX id=33 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 64  syxdump_pos=10:0
+EVENT_LED_MATRIX id=34 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 65  syxdump_pos=10:1
+EVENT_LED_MATRIX id=17 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 66  syxdump_pos=10:2
+EVENT_LED_MATRIX id=18 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 67  syxdump_pos=10:3
+EVENT_LED_MATRIX id=19 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 68  syxdump_pos=10:4
+EVENT_LED_MATRIX id=20 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 69  syxdump_pos=10:5
+EVENT_LED_MATRIX id=21 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 70  syxdump_pos=10:6
+EVENT_LED_MATRIX id=22 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 71  syxdump_pos=10:7
+EVENT_LED_MATRIX id=23 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 72  syxdump_pos=10:8
+EVENT_LED_MATRIX id=24 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 73  syxdump_pos=10:9
+
+# status digits
+EVENT_LED_MATRIX id=39 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 75  syxdump_pos=11:1
+EVENT_LED_MATRIX id=40 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 74  syxdump_pos=11:0
+
+
+################################################################################
+# Meters
+# Assign to lc_meter_port=USB1 (incoming Channel Pressure events will be
+# converted into meter pattern)
+################################################################################
+DOUT_MATRIX n= 4   rows=16 inverted=0  sr_dout_sel1=17  sr_dout_r1=18 sr_dout_r2=19 \
+                   lc_meter_port=USB1
+
+LC_METER_PATTERN pos= 0  pattern=0000000000000000
+LC_METER_PATTERN pos= 1  pattern=1000000000000000
+LC_METER_PATTERN pos= 2  pattern=1100000000000000
+LC_METER_PATTERN pos= 3  pattern=1110000000000000
+LC_METER_PATTERN pos= 4  pattern=1110000000000000
+LC_METER_PATTERN pos= 5  pattern=1111000000000000
+LC_METER_PATTERN pos= 6  pattern=1111100000000000
+LC_METER_PATTERN pos= 7  pattern=1111110000000000
+LC_METER_PATTERN pos= 8  pattern=1111111000000000
+LC_METER_PATTERN pos= 9  pattern=1111111100000000
+LC_METER_PATTERN pos=10  pattern=1111111100000000
+LC_METER_PATTERN pos=11  pattern=1111111110000000
+LC_METER_PATTERN pos=12  pattern=1111111110000000
+LC_METER_PATTERN pos=13  pattern=1111111111000000
+LC_METER_PATTERN pos=14  pattern=1111111111000000
+LC_METER_PATTERN pos=15  pattern=1111111111100000
+
+# where is the overload LED located?
+LC_METER_PATTERN pos= O  pattern=0000000000010000
+
+# Reset all meters if the "global meter mode" message is received
+EVENT_RECEIVER id=  20  fwd_id=SENDER:20 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x21"
+
+EVENT_SENDER   id=  20 \
+               type=Meta  meta=ResetMeters

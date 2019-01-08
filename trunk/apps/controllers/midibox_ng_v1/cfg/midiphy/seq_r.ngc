@@ -1,0 +1,327 @@
+# test setup for MBSEQV4+ frontpanel from midiphy
+
+RESET_HW
+
+LCD "READY."
+
+################################################################################
+# Left Panel
+################################################################################
+
+# rotary encoders
+ENC n=  1   sr= 1  pins=1:0   type=detented3
+ENC n=  2   sr= 1  pins=3:2   type=detented3
+ENC n=  3   sr= 1  pins=5:4   type=detented3
+ENC n=  4   sr= 1  pins=7:6   type=detented3
+ENC n=  5   sr= 3  pins=1:0   type=detented3
+ENC n=  6   sr= 3  pins=3:2   type=detented3
+ENC n=  7   sr= 3  pins=5:4   type=detented3
+ENC n=  8   sr= 3  pins=7:6   type=detented3
+
+
+# 8x8 Button/LED matrix - we emulate "normal" LED/Button functions:
+DOUT_MATRIX n=1  rows=8 inverted_sel=1 inverted_row=1  sr_dout_sel1=1  sr_dout_r1=2  led_emu_id_offset=1001
+DIN_MATRIX  n=1  rows=8 inverted_sel=1 inverted_row=0  sr_dout_sel1=1  sr_din1=2     button_emu_id_offset=1001
+
+################################################################################
+# Right Panel
+################################################################################
+
+# rotary encoders
+ENC n=  9   sr= 4  pins=1:0   type=detented3
+ENC n= 10   sr= 4  pins=3:2   type=detented3
+ENC n= 11   sr= 4  pins=5:4   type=detented3
+ENC n= 12   sr= 4  pins=7:6   type=detented3
+ENC n= 13   sr= 6  pins=1:0   type=detented3
+ENC n= 14   sr= 6  pins=3:2   type=detented3
+ENC n= 15   sr= 6  pins=5:4   type=detented3
+ENC n= 16   sr= 6  pins=7:6   type=detented3
+
+
+# 8x8 Button/LED matrix - we emulate "normal" LED/Button functions:
+DOUT_MATRIX n=2  rows=8 inverted_sel=1 inverted_row=1  sr_dout_sel1=6  sr_dout_r1=7  led_emu_id_offset=2001
+DIN_MATRIX  n=2  rows=8 inverted_sel=1 inverted_row=0  sr_dout_sel1=6  sr_din1=5     button_emu_id_offset=2001
+
+
+################################################################################
+# Jog Panel
+################################################################################
+
+# rotary encoder
+ENC n= 17   sr= 7  pins=7:6   type=detented3
+
+# 8x8 Button/LED matrix - we emulate "normal" LED/Button functions:
+# Note: DIN matrix only uses the first 4 pins, the remaining pins are allocated by encoder and footswitch/gate
+DOUT_MATRIX n=3  rows=8 inverted_sel=0 inverted_row=0  sr_dout_sel1=8  sr_dout_r1=9  led_emu_id_offset=3001
+DIN_MATRIX  n=3  rows=8 inverted_sel=0 inverted_row=0  sr_dout_sel1=8  sr_din1=7     button_emu_id_offset=3001
+
+
+################################################################################
+# Button/LED Assignments
+################################################################################
+
+# for testing only: allow to control all 3x64 LEDs via channel 14, 15 and 16
+EVENT_LED_MATRIX id=1 type=NoteOn key=36 chn=14
+EVENT_LED_MATRIX id=2 type=NoteOn key=36 chn=15
+EVENT_LED_MATRIX id=3 type=NoteOn key=36 chn=16
+
+
+# GP buttons (control the B GP LEDs)
+EVENT_BUTTON id=1009  type=NoteOn key=36 chn=1  fwd_id=LED:1010
+EVENT_BUTTON id=1010  type=NoteOn key=37 chn=1  fwd_id=LED:1012
+EVENT_BUTTON id=1011  type=NoteOn key=38 chn=1  fwd_id=LED:1014
+EVENT_BUTTON id=1012  type=NoteOn key=39 chn=1  fwd_id=LED:1016
+EVENT_BUTTON id=1045  type=NoteOn key=40 chn=1  fwd_id=LED:1042
+EVENT_BUTTON id=1046  type=NoteOn key=41 chn=1  fwd_id=LED:1044
+EVENT_BUTTON id=1047  type=NoteOn key=42 chn=1  fwd_id=LED:1046
+EVENT_BUTTON id=1048  type=NoteOn key=43 chn=1  fwd_id=LED:1048
+
+EVENT_BUTTON id=2009  type=NoteOn key=44 chn=1  fwd_id=LED:2010
+EVENT_BUTTON id=2010  type=NoteOn key=45 chn=1  fwd_id=LED:2012
+EVENT_BUTTON id=2011  type=NoteOn key=46 chn=1  fwd_id=LED:2014
+EVENT_BUTTON id=2012  type=NoteOn key=47 chn=1  fwd_id=LED:2016
+EVENT_BUTTON id=2045  type=NoteOn key=48 chn=1  fwd_id=LED:2042
+EVENT_BUTTON id=2046  type=NoteOn key=49 chn=1  fwd_id=LED:2044
+EVENT_BUTTON id=2047  type=NoteOn key=50 chn=1  fwd_id=LED:2046
+EVENT_BUTTON id=2048  type=NoteOn key=51 chn=1  fwd_id=LED:2048
+
+
+# Select buttons (control the B select LEDs)
+EVENT_BUTTON id=1017  type=NoteOn key=60 chn=1  fwd_id=LED:1018
+EVENT_BUTTON id=1018  type=NoteOn key=61 chn=1  fwd_id=LED:1020
+EVENT_BUTTON id=1019  type=NoteOn key=62 chn=1  fwd_id=LED:1022
+EVENT_BUTTON id=1020  type=NoteOn key=63 chn=1  fwd_id=LED:1024
+EVENT_BUTTON id=1053  type=NoteOn key=64 chn=1  fwd_id=LED:1050
+EVENT_BUTTON id=1054  type=NoteOn key=65 chn=1  fwd_id=LED:1052
+EVENT_BUTTON id=1055  type=NoteOn key=66 chn=1  fwd_id=LED:1054
+EVENT_BUTTON id=1056  type=NoteOn key=67 chn=1  fwd_id=LED:1056
+
+EVENT_BUTTON id=2017  type=NoteOn key=68 chn=1  fwd_id=LED:2018
+EVENT_BUTTON id=2018  type=NoteOn key=69 chn=1  fwd_id=LED:2020
+EVENT_BUTTON id=2019  type=NoteOn key=70 chn=1  fwd_id=LED:2022
+EVENT_BUTTON id=2020  type=NoteOn key=71 chn=1  fwd_id=LED:2024
+EVENT_BUTTON id=2053  type=NoteOn key=72 chn=1  fwd_id=LED:2050
+EVENT_BUTTON id=2054  type=NoteOn key=73 chn=1  fwd_id=LED:2052
+EVENT_BUTTON id=2055  type=NoteOn key=74 chn=1  fwd_id=LED:2054
+EVENT_BUTTON id=2056  type=NoteOn key=75 chn=1  fwd_id=LED:2056
+
+
+# Edit buttons (control the edit LEDs)
+EVENT_BUTTON id=1025  type=NoteOn key=84 chn=1  fwd_id=LED:1025
+EVENT_BUTTON id=1026  type=NoteOn key=85 chn=1  fwd_id=LED:1027
+EVENT_BUTTON id=1027  type=NoteOn key=86 chn=1  fwd_id=LED:1029
+EVENT_BUTTON id=1028  type=NoteOn key=87 chn=1  fwd_id=LED:1031
+EVENT_BUTTON id=1061  type=NoteOn key=88 chn=1  fwd_id=LED:1057
+EVENT_BUTTON id=1062  type=NoteOn key=89 chn=1  fwd_id=LED:1059
+EVENT_BUTTON id=1063  type=NoteOn key=90 chn=1  fwd_id=LED:1061
+EVENT_BUTTON id=1064  type=NoteOn key=91 chn=1  fwd_id=LED:1063
+
+EVENT_BUTTON id=2025  type=NoteOn key=92 chn=1  fwd_id=LED:2025
+EVENT_BUTTON id=2026  type=NoteOn key=93 chn=1  fwd_id=LED:2027
+EVENT_BUTTON id=2027  type=NoteOn key=94 chn=1  fwd_id=LED:2029
+EVENT_BUTTON id=2028  type=NoteOn key=95 chn=1  fwd_id=LED:2031
+EVENT_BUTTON id=2061  type=NoteOn key=96 chn=1  fwd_id=LED:2057
+EVENT_BUTTON id=2062  type=NoteOn key=97 chn=1  fwd_id=LED:2059
+EVENT_BUTTON id=2063  type=NoteOn key=98 chn=1  fwd_id=LED:2061
+EVENT_BUTTON id=2064  type=NoteOn key=99 chn=1  fwd_id=LED:2063
+
+
+# Encoder buttons (control the A GP LEDs)
+EVENT_BUTTON id=1001  type=NoteOn key=84 chn=2  fwd_id=LED:1009
+EVENT_BUTTON id=1002  type=NoteOn key=85 chn=2  fwd_id=LED:1011
+EVENT_BUTTON id=1003  type=NoteOn key=86 chn=2  fwd_id=LED:1013
+EVENT_BUTTON id=1004  type=NoteOn key=87 chn=2  fwd_id=LED:1015
+EVENT_BUTTON id=1037  type=NoteOn key=88 chn=2  fwd_id=LED:1041
+EVENT_BUTTON id=1038  type=NoteOn key=89 chn=2  fwd_id=LED:1043
+EVENT_BUTTON id=1039  type=NoteOn key=90 chn=2  fwd_id=LED:1045
+EVENT_BUTTON id=1040  type=NoteOn key=91 chn=2  fwd_id=LED:1047
+
+EVENT_BUTTON id=2001  type=NoteOn key=92 chn=2  fwd_id=LED:2009
+EVENT_BUTTON id=2002  type=NoteOn key=93 chn=2  fwd_id=LED:2011
+EVENT_BUTTON id=2003  type=NoteOn key=94 chn=2  fwd_id=LED:2013
+EVENT_BUTTON id=2004  type=NoteOn key=95 chn=2  fwd_id=LED:2015
+EVENT_BUTTON id=2037  type=NoteOn key=96 chn=2  fwd_id=LED:2041
+EVENT_BUTTON id=2038  type=NoteOn key=97 chn=2  fwd_id=LED:2043
+EVENT_BUTTON id=2039  type=NoteOn key=98 chn=2  fwd_id=LED:2045
+EVENT_BUTTON id=2040  type=NoteOn key=99 chn=2  fwd_id=LED:2047
+
+
+# Jog Buttons, Top row (control the corresponding LEDs)
+EVENT_BUTTON id=3001  type=NoteOn key=36 chn=3  fwd_id=LED:3003
+EVENT_BUTTON id=3002  type=NoteOn key=37 chn=3  fwd_id=LED:3004
+EVENT_BUTTON id=3003  type=NoteOn key=38 chn=3  fwd_id=LED:3005
+EVENT_BUTTON id=3004  type=NoteOn key=39 chn=3  fwd_id=LED:3006
+EVENT_BUTTON id=3052  type=NoteOn key=40 chn=3  fwd_id=LED:3054
+EVENT_BUTTON id=3051  type=NoteOn key=41 chn=3  fwd_id=LED:3053
+EVENT_BUTTON id=3050  type=NoteOn key=42 chn=3  fwd_id=LED:3052
+EVENT_BUTTON id=3049  type=NoteOn key=43 chn=3  fwd_id=LED:3051
+
+# Jog Buttons, Middle row (control the corresponding LEDs)
+EVENT_BUTTON id=3010  type=NoteOn key=44 chn=3  fwd_id=LED:3010
+EVENT_BUTTON id=3018  type=NoteOn key=45 chn=3  fwd_id=LED:3018
+EVENT_BUTTON id=3026  type=NoteOn key=46 chn=3  fwd_id=LED:3026
+EVENT_BUTTON id=3034  type=NoteOn key=47 chn=3  fwd_id=LED:3034
+EVENT_BUTTON id=3042  type=NoteOn key=48 chn=3  fwd_id=LED:3042
+
+# Jog Buttons, Bottom row (control the corresponding LEDs)
+EVENT_BUTTON id=3009  type=NoteOn key=49 chn=3  fwd_id=LED:3009
+EVENT_BUTTON id=3017  type=NoteOn key=50 chn=3  fwd_id=LED:3017
+EVENT_BUTTON id=3025  type=NoteOn key=51 chn=3  fwd_id=LED:3025
+EVENT_BUTTON id=3033  type=NoteOn key=52 chn=3  fwd_id=LED:3033
+EVENT_BUTTON id=3041  type=NoteOn key=53 chn=3  fwd_id=LED:3041
+
+
+
+# B GP LEDs
+EVENT_LED id=1010 type=NoteOn key=36 chn=1
+EVENT_LED id=1012 type=NoteOn key=37 chn=1
+EVENT_LED id=1014 type=NoteOn key=38 chn=1
+EVENT_LED id=1016 type=NoteOn key=39 chn=1
+EVENT_LED id=1042 type=NoteOn key=40 chn=1
+EVENT_LED id=1044 type=NoteOn key=41 chn=1
+EVENT_LED id=1046 type=NoteOn key=42 chn=1
+EVENT_LED id=1048 type=NoteOn key=43 chn=1
+
+EVENT_LED id=2010 type=NoteOn key=44 chn=1
+EVENT_LED id=2012 type=NoteOn key=45 chn=1
+EVENT_LED id=2014 type=NoteOn key=46 chn=1
+EVENT_LED id=2016 type=NoteOn key=47 chn=1
+EVENT_LED id=2042 type=NoteOn key=48 chn=1
+EVENT_LED id=2044 type=NoteOn key=49 chn=1
+EVENT_LED id=2046 type=NoteOn key=50 chn=1
+EVENT_LED id=2048 type=NoteOn key=51 chn=1
+
+
+# A GP LEDs
+EVENT_LED id=1009 type=NoteOn key=36 chn=2
+EVENT_LED id=1011 type=NoteOn key=37 chn=2
+EVENT_LED id=1013 type=NoteOn key=38 chn=2
+EVENT_LED id=1015 type=NoteOn key=39 chn=2
+EVENT_LED id=1041 type=NoteOn key=40 chn=2
+EVENT_LED id=1043 type=NoteOn key=41 chn=2
+EVENT_LED id=1045 type=NoteOn key=42 chn=2
+EVENT_LED id=1047 type=NoteOn key=43 chn=2
+
+EVENT_LED id=2009 type=NoteOn key=44 chn=2
+EVENT_LED id=2011 type=NoteOn key=45 chn=2
+EVENT_LED id=2013 type=NoteOn key=46 chn=2
+EVENT_LED id=2015 type=NoteOn key=47 chn=2
+EVENT_LED id=2041 type=NoteOn key=48 chn=2
+EVENT_LED id=2043 type=NoteOn key=49 chn=2
+EVENT_LED id=2045 type=NoteOn key=50 chn=2
+EVENT_LED id=2047 type=NoteOn key=51 chn=2
+
+
+# B Select LEDs
+EVENT_LED id=1018 type=NoteOn key=60 chn=1
+EVENT_LED id=1020 type=NoteOn key=61 chn=1
+EVENT_LED id=1022 type=NoteOn key=62 chn=1
+EVENT_LED id=1024 type=NoteOn key=63 chn=1
+EVENT_LED id=1050 type=NoteOn key=64 chn=1
+EVENT_LED id=1052 type=NoteOn key=65 chn=1
+EVENT_LED id=1054 type=NoteOn key=66 chn=1
+EVENT_LED id=1056 type=NoteOn key=67 chn=1
+
+EVENT_LED id=2018 type=NoteOn key=68 chn=1
+EVENT_LED id=2020 type=NoteOn key=69 chn=1
+EVENT_LED id=2022 type=NoteOn key=70 chn=1
+EVENT_LED id=2024 type=NoteOn key=71 chn=1
+EVENT_LED id=2050 type=NoteOn key=72 chn=1
+EVENT_LED id=2052 type=NoteOn key=73 chn=1
+EVENT_LED id=2054 type=NoteOn key=74 chn=1
+EVENT_LED id=2056 type=NoteOn key=75 chn=1
+
+
+# A Select LEDs
+EVENT_LED id=1017 type=NoteOn key=60 chn=2
+EVENT_LED id=1019 type=NoteOn key=61 chn=2
+EVENT_LED id=1021 type=NoteOn key=62 chn=2
+EVENT_LED id=1023 type=NoteOn key=63 chn=2
+EVENT_LED id=1049 type=NoteOn key=64 chn=2
+EVENT_LED id=1051 type=NoteOn key=65 chn=2
+EVENT_LED id=1053 type=NoteOn key=66 chn=2
+EVENT_LED id=1055 type=NoteOn key=67 chn=2
+
+EVENT_LED id=2017 type=NoteOn key=68 chn=2
+EVENT_LED id=2019 type=NoteOn key=69 chn=2
+EVENT_LED id=2021 type=NoteOn key=70 chn=2
+EVENT_LED id=2023 type=NoteOn key=71 chn=2
+EVENT_LED id=2049 type=NoteOn key=72 chn=2
+EVENT_LED id=2051 type=NoteOn key=73 chn=2
+EVENT_LED id=2053 type=NoteOn key=74 chn=2
+EVENT_LED id=2055 type=NoteOn key=75 chn=2
+
+
+# Edit LEDs
+EVENT_LED id=1026 type=NoteOn key=84 chn=1
+EVENT_LED id=1028 type=NoteOn key=85 chn=1
+EVENT_LED id=1030 type=NoteOn key=86 chn=1
+EVENT_LED id=1032 type=NoteOn key=87 chn=1
+EVENT_LED id=1058 type=NoteOn key=88 chn=1
+EVENT_LED id=1060 type=NoteOn key=89 chn=1
+EVENT_LED id=1062 type=NoteOn key=90 chn=1
+EVENT_LED id=1064 type=NoteOn key=91 chn=1
+
+EVENT_LED id=2026 type=NoteOn key=92 chn=1
+EVENT_LED id=2028 type=NoteOn key=93 chn=1
+EVENT_LED id=2030 type=NoteOn key=94 chn=1
+EVENT_LED id=2032 type=NoteOn key=95 chn=1
+EVENT_LED id=2058 type=NoteOn key=96 chn=1
+EVENT_LED id=2060 type=NoteOn key=97 chn=1
+EVENT_LED id=2062 type=NoteOn key=98 chn=1
+EVENT_LED id=2064 type=NoteOn key=99 chn=1
+
+# Beat LEDs
+EVENT_LED id=1037 type=NoteOn key=108 chn=1
+EVENT_LED id=1038 type=NoteOn key=109 chn=1
+
+EVENT_LED id=2037 type=NoteOn key=110 chn=1
+EVENT_LED id=2038 type=NoteOn key=111 chn=1
+
+
+# Jog LEDs, Top row
+EVENT_LED id=3003 type=NoteOn key=36 chn=3
+EVENT_LED id=3004 type=NoteOn key=37 chn=3
+EVENT_LED id=3005 type=NoteOn key=38 chn=3
+EVENT_LED id=3006 type=NoteOn key=39 chn=3
+EVENT_LED id=3054 type=NoteOn key=40 chn=3
+EVENT_LED id=3053 type=NoteOn key=41 chn=3
+EVENT_LED id=3052 type=NoteOn key=42 chn=3
+EVENT_LED id=3051 type=NoteOn key=43 chn=3
+
+# Jog LEDs, Middle row
+EVENT_LED id=3010 type=NoteOn key=44 chn=3
+EVENT_LED id=3018 type=NoteOn key=45 chn=3
+EVENT_LED id=3026 type=NoteOn key=46 chn=3
+EVENT_LED id=3034 type=NoteOn key=47 chn=3
+EVENT_LED id=3042 type=NoteOn key=48 chn=3
+
+# Jog LEDs, Bottom row
+EVENT_LED id=3009 type=NoteOn key=49 chn=3
+EVENT_LED id=3017 type=NoteOn key=50 chn=3
+EVENT_LED id=3025 type=NoteOn key=51 chn=3
+EVENT_LED id=3033 type=NoteOn key=52 chn=3
+EVENT_LED id=3041 type=NoteOn key=53 chn=3
+
+
+# Encoders
+EVENT_ENC id=  1  type=CC chn= 1 cc= 16  range=  0:127 
+EVENT_ENC id=  2  type=CC chn= 1 cc= 17  range=  0:127
+EVENT_ENC id=  3  type=CC chn= 1 cc= 18  range=  0:127
+EVENT_ENC id=  4  type=CC chn= 1 cc= 19  range=  0:127
+EVENT_ENC id=  5  type=CC chn= 1 cc= 20  range=  0:127
+EVENT_ENC id=  6  type=CC chn= 1 cc= 21  range=  0:127
+EVENT_ENC id=  7  type=CC chn= 1 cc= 22  range=  0:127
+EVENT_ENC id=  8  type=CC chn= 1 cc= 23  range=  0:127
+
+EVENT_ENC id=  9  type=CC chn= 1 cc= 24  range=  0:127
+EVENT_ENC id= 10  type=CC chn= 1 cc= 25  range=  0:127
+EVENT_ENC id= 11  type=CC chn= 1 cc= 26  range=  0:127
+EVENT_ENC id= 12  type=CC chn= 1 cc= 27  range=  0:127
+EVENT_ENC id= 13  type=CC chn= 1 cc= 28  range=  0:127
+EVENT_ENC id= 14  type=CC chn= 1 cc= 29  range=  0:127
+EVENT_ENC id= 15  type=CC chn= 1 cc= 30  range=  0:127
+EVENT_ENC id= 16  type=CC chn= 1 cc= 31  range=  0:127
+
+
+

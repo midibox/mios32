@@ -1,0 +1,8 @@
+%!: /header.htm
+<h1>System processes</h1><br><table width="100%">
+<h2>States: blocked ('B'), ready ('R'), deleted ('D') or suspended ('S').</h2>
+<pre>
+Name		State	Priority
+%! rtos-stats
+</pre>
+%!: /footer.htm

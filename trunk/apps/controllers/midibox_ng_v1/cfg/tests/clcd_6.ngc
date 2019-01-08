@@ -1,0 +1,15 @@
+RESET_HW
+
+
+# output a message on 6 CLCDs
+# connected to J15A/B
+# the E lines of the 4 additional CLCDs are connected to J28:SDA/SC/WS/RC
+
+# MIOS32 Bootloader configuration:
+# set lcd_num_x 2
+# set lcd_num_y 3
+# set lcd_width 20
+# set lcd_height 2
+# store
+
+LCD "%C@(1:1:1)LCD1 @(2:1:1)LCD2 @(3:1:1)LCD3 @(4:1:1)LCD4 @(5:1:1)LCD5 @(6:1:1)LCD6"

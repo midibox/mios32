@@ -1,0 +1,18 @@
+# Maps the velocity of received Note Events, and forwards them to a MIDI OUT
+
+RESET_HW
+
+LCD "%CVelocity Mapper"
+
+# velocity will be mapped to following (128) values
+MAP1    0   2   4   6   8  10  12  14  16  18  20  22  24  26  28  30 \
+       32  34  36  38  40  42  44  46  48  50  52  54  56  58  60  62 \
+       64  65  66  67  68  69  70  71  72  73  74  75  76  77  78  79 \
+       80  81  82  83  84  85  86  87  88  89  90  91  92  93  94  95 \
+       96  96  97  97  98  98  99  99 100 100 101 101 102 102 103 103 \
+      104 104 105 105 106 106 107 107 108 108 109 109 110 110 111 111 \
+      112 112 113 113 114 114 115 115 116 116 117 117 118 118 119 119 \
+      120 120 121 121 122 122 123 123 124 124 125 125 126 126 127 127
+
+EVENT_RECEIVER id= 1 ports=1111111100000000 type=NoteOn key=any fwd_id=SENDER:1
+EVENT_SENDER   id= 1 ports=1111111100000000 type=NoteOn key=any range=map1

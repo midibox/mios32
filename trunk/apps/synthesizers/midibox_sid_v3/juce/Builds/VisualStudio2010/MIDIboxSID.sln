@@ -1,0 +1,19 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{C52836D4-2FC5-55C2-C03F-375EFF8081B6}") = "MIDIboxSID", "MIDIboxSID.vcxproj", "{2AE7F6D9-6BA2-2019-7B83-75D99331B072}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2AE7F6D9-6BA2-2019-7B83-75D99331B072}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2AE7F6D9-6BA2-2019-7B83-75D99331B072}.Debug|Win32.Build.0 = Debug|Win32
+		{2AE7F6D9-6BA2-2019-7B83-75D99331B072}.Release|Win32.ActiveCfg = Release|Win32
+		{2AE7F6D9-6BA2-2019-7B83-75D99331B072}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

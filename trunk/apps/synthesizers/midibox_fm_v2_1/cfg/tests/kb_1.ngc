@@ -1,0 +1,28 @@
+RESET_HW
+
+LCD "%CKeyboard Test"
+
+# keyboard configuration
+KEYBOARD n=1   rows=8  dout_sr1=1  dout_sr2=2  din_sr1=1  din_sr2=2 \
+               din_inverted=0  break_inverted=0  din_key_offset=32 \
+               scan_velocity=1  scan_optimized=0  note_offset=28 \
+               delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100
+
+EVENT_KB id=1  type=NoteOn chn=1 key=any use_key_number=1 range=0:127  lcd_pos=1:1:1 label="Note %n"
+
+
+# Pitch- and Modulation wheel are connected to an AINSER module
+# (we enable all 64 inputs)
+AINSER n=1   enabled=1  cs=0  num_pins=64  resolution=7bit
+
+# optional: calibrate the wheels between a "physically limited" min/max value.
+# Set also "spread_center" for the PitchBend wheel to ensure that the middle value
+# will be sent when the wheel is around the center.
+#
+# In order to determine these values, enter "set debug on" in MIOS Terminal,
+# and move the wheels to the min and max position. Enter the min/max values here:
+AINSER pinrange=1:18:4065:spread_center
+AINSER pinrange=2:18:4065
+
+EVENT_AINSER id=1  type=PitchBend  chn= 1        range=0:16383 lcd_pos=1:1:2  label="PitchBender: %5d%B"
+EVENT_AINSER id=2  type=CC         chn= 1 cc= 1  range=0:127   lcd_pos=1:1:2  label="ModWheel:      %3d%B"

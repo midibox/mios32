@@ -1,0 +1,45 @@
+RESET_HW
+
+LCD "%CTranspose CV"
+
+# initialize the AOUT module
+# available types: None, AOUT, AOUT_LC, AOUT_NG
+AOUT  type=AOUT_NG  cs=0  num_channels=8
+
+
+# these two events listen to any key on channel 1
+# the first event uses the "key" as value, sets CV Channel #1 and the CV Gate #1 (at J5A.A0)
+# the second event uses velocity as value (default) and sets CV Channel #2
+EVENT_CV  id= 1  fwd_to_lcd=1  type=NoteOn  chn= 1 key=any use_key_number=1  fwd_gate_to_dout_pin=1.D7  lcd_pos=1:1:1  label="^std_cv"
+EVENT_CV  id= 2  fwd_to_lcd=1  type=NoteOn  chn= 1 key=any use_key_number=0  lcd_pos=1:1:2  label="^std_cv"
+
+# pitchbend sets voltage offset based on pitch range of CV channel #1
+EVENT_RECEIVER id=1 type=PitchBend chn=1 range=0:16383 fwd_id=SENDER:1
+EVENT_SENDER   id=1 type=Meta meta=CvPitchBend14Bit:1
+
+# CC#16 is doing the same, but with 7bit values
+EVENT_RECEIVER id=2 type=CC chn=1 cc=16 fwd_id=SENDER:2
+EVENT_SENDER   id=2 type=Meta meta=CvPitchBend7Bit:1
+
+# CC#17 sets pitch range of CV channel #1
+EVENT_RECEIVER id=3 type=CC chn=1 cc=17 fwd_id=SENDER:3
+EVENT_SENDER   id=3 type=Meta meta=CvPitchRange:1
+
+# Note: the pitch range could be directly changed in a .NGR file with:
+#    # set pitch range of all CV channels to +/- 12 semitones:
+#    EXEC_META CvPitchRange:1 12
+#    EXEC_META CvPitchRange:2 12
+#    EXEC_META CvPitchRange:3 12
+#    EXEC_META CvPitchRange:4 12
+#    EXEC_META CvPitchRange:5 12
+#    EXEC_META CvPitchRange:6 12
+#    EXEC_META CvPitchRange:7 12
+#    EXEC_META CvPitchRange:8 12
+
+# CC#18 sets octave transpose of CV channel #1 from -64..63 (CC value has to be 64 +/- transpose)
+EVENT_RECEIVER id=4 type=CC chn=1 cc=18 fwd_id=SENDER:4
+EVENT_SENDER   id=4 type=Meta meta=CvTransposeOctave:1
+
+# CC#19 sets semitone transpose of CV channel #1 from -64..63 (CC value has to be 64 +/- transpose)
+EVENT_RECEIVER id=5 type=CC chn=1 cc=19 fwd_id=SENDER:5
+EVENT_SENDER   id=5 type=Meta meta=CvTransposeSemitones:1

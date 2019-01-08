@@ -1,0 +1,29 @@
+
+# don't do anything during startup & patch load
+if ^section == 0
+  exit
+endif
+
+# loop this section as long as BUTTON:2000 is active
+# Note that this button has been configured for toggle mode!
+if ^section == 1
+  log "Section 1 called"
+
+  # do this
+
+  # and that
+
+  # maybe with some delays:
+  delay_ms 100
+
+  # and finally:
+  if (id)BUTTON:2000 != 0
+    LCD "@(1:1:2)loop running "
+    log "Retriggering section 1"
+    exec_meta RunSection:1
+  else
+    LCD "@(1:1:2)loop finished"
+    log "Finished."
+  endif
+  exit
+endif

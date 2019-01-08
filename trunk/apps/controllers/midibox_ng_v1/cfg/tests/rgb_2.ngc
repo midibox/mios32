@@ -1,0 +1,94 @@
+
+# In this demo we configure individual brightness levels for the LEDs from EVENT_BUTTON events
+
+RESET_HW
+
+LCD "%C@(1:1:1)RGB Demo #2"
+
+
+# In the SR configuration we assume that the DINs/DOUTs are directly connected to J8/9 of the core
+# they emulate button/led functions
+DIN_MATRIX  n=1  rows=4  inverted=0  sr_dout_sel1=1  sr_din1=1                    button_emu_id_offset=1001
+DIN_MATRIX  n=2  rows=4  inverted=0  sr_dout_sel1=4  sr_din1=2                    button_emu_id_offset=1033
+DOUT_MATRIX n=1  rows=4  inverted=0  sr_dout_sel1=1  sr_dout_r1=2  sr_dout_g1=3   led_emu_id_offset=1001
+DOUT_MATRIX n=2  rows=4  inverted=0  sr_dout_sel1=4  sr_dout_r1=5  sr_dout_g1=6   led_emu_id_offset=1033
+
+# note: actually the sr_dout_sel1 in DOUT_MATRIX could be removed,
+# since DIN_MATRIX already outputs the selection pulses there
+# this is just for the case that somebody copy&pastes the definition...
+
+
+# These button functions forward their value also to LEDs
+# it's possible to set the rgb levels in the button event, it will be forwarded as well!
+
+EVENT_BUTTON  id=1001  fwd_id=LED:1001  type=NoteOn key=36 chn=1  rgb=15:0:0
+EVENT_BUTTON  id=1002  fwd_id=LED:1002  type=NoteOn key=37 chn=1  rgb=15:0:0
+EVENT_BUTTON  id=1003  fwd_id=LED:1003  type=NoteOn key=38 chn=1  rgb=15:0:0
+EVENT_BUTTON  id=1004  fwd_id=LED:1004  type=NoteOn key=39 chn=1  rgb=15:0:0
+EVENT_BUTTON  id=1005  fwd_id=LED:1005  type=NoteOn key=40 chn=1  rgb=15:0:0
+EVENT_BUTTON  id=1006  fwd_id=LED:1006  type=NoteOn key=41 chn=1  rgb=15:0:0
+EVENT_BUTTON  id=1007  fwd_id=LED:1007  type=NoteOn key=42 chn=1  rgb=15:0:0
+EVENT_BUTTON  id=1008  fwd_id=LED:1008  type=NoteOn key=43 chn=1  rgb=15:0:0
+
+EVENT_BUTTON  id=1033  fwd_id=LED:1033  type=NoteOn key=44 chn=1  rgb=0:15:0
+EVENT_BUTTON  id=1034  fwd_id=LED:1034  type=NoteOn key=45 chn=1  rgb=0:15:0
+EVENT_BUTTON  id=1035  fwd_id=LED:1035  type=NoteOn key=46 chn=1  rgb=0:15:0
+EVENT_BUTTON  id=1036  fwd_id=LED:1036  type=NoteOn key=47 chn=1  rgb=0:15:0
+EVENT_BUTTON  id=1037  fwd_id=LED:1037  type=NoteOn key=48 chn=1  rgb=0:15:0
+EVENT_BUTTON  id=1038  fwd_id=LED:1038  type=NoteOn key=49 chn=1  rgb=0:15:0
+EVENT_BUTTON  id=1039  fwd_id=LED:1039  type=NoteOn key=50 chn=1  rgb=0:15:0
+EVENT_BUTTON  id=1040  fwd_id=LED:1040  type=NoteOn key=51 chn=1  rgb=0:15:0
+
+EVENT_BUTTON  id=1009  fwd_id=LED:1009  type=NoteOn key=52 chn=1  rgb=15:15:0
+EVENT_BUTTON  id=1010  fwd_id=LED:1010  type=NoteOn key=53 chn=1  rgb=15:15:0
+EVENT_BUTTON  id=1011  fwd_id=LED:1011  type=NoteOn key=54 chn=1  rgb=15:15:0
+EVENT_BUTTON  id=1012  fwd_id=LED:1012  type=NoteOn key=55 chn=1  rgb=15:15:0
+EVENT_BUTTON  id=1013  fwd_id=LED:1013  type=NoteOn key=56 chn=1  rgb=15:15:0
+EVENT_BUTTON  id=1014  fwd_id=LED:1014  type=NoteOn key=57 chn=1  rgb=15:15:0
+EVENT_BUTTON  id=1015  fwd_id=LED:1015  type=NoteOn key=58 chn=1  rgb=15:15:0
+EVENT_BUTTON  id=1016  fwd_id=LED:1016  type=NoteOn key=59 chn=1  rgb=15:15:0
+
+EVENT_BUTTON  id=1041  fwd_id=LED:1041  type=NoteOn key=60 chn=1  rgb=4:15:0
+EVENT_BUTTON  id=1042  fwd_id=LED:1042  type=NoteOn key=61 chn=1  rgb=4:15:0
+EVENT_BUTTON  id=1043  fwd_id=LED:1043  type=NoteOn key=62 chn=1  rgb=4:15:0
+EVENT_BUTTON  id=1044  fwd_id=LED:1044  type=NoteOn key=63 chn=1  rgb=4:15:0
+EVENT_BUTTON  id=1045  fwd_id=LED:1045  type=NoteOn key=64 chn=1  rgb=4:15:0
+EVENT_BUTTON  id=1046  fwd_id=LED:1046  type=NoteOn key=65 chn=1  rgb=4:15:0
+EVENT_BUTTON  id=1047  fwd_id=LED:1047  type=NoteOn key=66 chn=1  rgb=4:15:0
+EVENT_BUTTON  id=1048  fwd_id=LED:1048  type=NoteOn key=67 chn=1  rgb=4:15:0
+
+EVENT_BUTTON  id=1017  fwd_id=LED:1017  type=NoteOn key=68 chn=1  rgb=15:4:0
+EVENT_BUTTON  id=1018  fwd_id=LED:1018  type=NoteOn key=69 chn=1  rgb=15:4:0
+EVENT_BUTTON  id=1019  fwd_id=LED:1019  type=NoteOn key=70 chn=1  rgb=15:4:0
+EVENT_BUTTON  id=1020  fwd_id=LED:1020  type=NoteOn key=71 chn=1  rgb=15:4:0
+EVENT_BUTTON  id=1021  fwd_id=LED:1021  type=NoteOn key=72 chn=1  rgb=15:4:0
+EVENT_BUTTON  id=1022  fwd_id=LED:1022  type=NoteOn key=73 chn=1  rgb=15:4:0
+EVENT_BUTTON  id=1023  fwd_id=LED:1023  type=NoteOn key=74 chn=1  rgb=15:4:0
+EVENT_BUTTON  id=1024  fwd_id=LED:1024  type=NoteOn key=75 chn=1  rgb=15:4:0
+
+EVENT_BUTTON  id=1049  fwd_id=LED:1049  type=NoteOn key=76 chn=1  rgb=8:15:0
+EVENT_BUTTON  id=1050  fwd_id=LED:1050  type=NoteOn key=77 chn=1  rgb=8:15:0
+EVENT_BUTTON  id=1051  fwd_id=LED:1051  type=NoteOn key=78 chn=1  rgb=8:15:0
+EVENT_BUTTON  id=1052  fwd_id=LED:1052  type=NoteOn key=79 chn=1  rgb=8:15:0
+EVENT_BUTTON  id=1053  fwd_id=LED:1053  type=NoteOn key=80 chn=1  rgb=8:15:0
+EVENT_BUTTON  id=1054  fwd_id=LED:1054  type=NoteOn key=81 chn=1  rgb=8:15:0
+EVENT_BUTTON  id=1055  fwd_id=LED:1055  type=NoteOn key=82 chn=1  rgb=8:15:0
+EVENT_BUTTON  id=1056  fwd_id=LED:1056  type=NoteOn key=83 chn=1  rgb=8:15:0
+
+EVENT_BUTTON  id=1025  fwd_id=LED:1025  type=NoteOn key=84 chn=1  rgb=15:8:0
+EVENT_BUTTON  id=1026  fwd_id=LED:1026  type=NoteOn key=85 chn=1  rgb=15:8:0
+EVENT_BUTTON  id=1027  fwd_id=LED:1027  type=NoteOn key=86 chn=1  rgb=15:8:0
+EVENT_BUTTON  id=1028  fwd_id=LED:1028  type=NoteOn key=87 chn=1  rgb=15:8:0
+EVENT_BUTTON  id=1029  fwd_id=LED:1029  type=NoteOn key=88 chn=1  rgb=15:8:0
+EVENT_BUTTON  id=1030  fwd_id=LED:1030  type=NoteOn key=89 chn=1  rgb=15:8:0
+EVENT_BUTTON  id=1031  fwd_id=LED:1031  type=NoteOn key=90 chn=1  rgb=15:8:0
+EVENT_BUTTON  id=1032  fwd_id=LED:1032  type=NoteOn key=91 chn=1  rgb=15:8:0
+
+EVENT_BUTTON  id=1057  fwd_id=LED:1057  type=NoteOn key=92 chn=1  rgb=15:12:0
+EVENT_BUTTON  id=1058  fwd_id=LED:1058  type=NoteOn key=93 chn=1  rgb=15:12:0
+EVENT_BUTTON  id=1059  fwd_id=LED:1059  type=NoteOn key=94 chn=1  rgb=15:12:0
+EVENT_BUTTON  id=1060  fwd_id=LED:1060  type=NoteOn key=95 chn=1  rgb=15:12:0
+EVENT_BUTTON  id=1061  fwd_id=LED:1061  type=NoteOn key=96 chn=1  rgb=15:12:0
+EVENT_BUTTON  id=1062  fwd_id=LED:1062  type=NoteOn key=97 chn=1  rgb=15:12:0
+EVENT_BUTTON  id=1063  fwd_id=LED:1063  type=NoteOn key=98 chn=1  rgb=15:12:0
+EVENT_BUTTON  id=1064  fwd_id=LED:1064  type=NoteOn key=99 chn=1  rgb=15:12:0

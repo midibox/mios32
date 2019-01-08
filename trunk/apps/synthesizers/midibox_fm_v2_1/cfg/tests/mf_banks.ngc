@@ -1,0 +1,90 @@
+
+################################################################################
+# Reset the setup to default settings
+# This command ensures, that previous hardware definitions will be overwritten
+# by a new setup without the need to set defintions for all components
+################################################################################
+RESET_HW
+
+LCD "%C@(1:1:1)MF Banks Test"
+
+# we've a single MBHP_MF_NG module with 8 motorfaders
+# It has to be configured for Motormix protocol!
+MF n=1  enabled=1  midi_in_port=IN3  midi_out_port=OUT3  chn=1  ts_first_button_id=1001  config_port=USB3
+
+
+################################################################################
+# Switch banks with Button 1..4
+EVENT_BUTTON id=1  type=Meta   meta=SetBank   button_mode=OnOnly range=1:1
+EVENT_BUTTON id=2  type=Meta   meta=SetBank   button_mode=OnOnly range=2:2
+EVENT_BUTTON id=3  type=Meta   meta=SetBank   button_mode=OnOnly range=3:3
+EVENT_BUTTON id=4  type=Meta   meta=SetBank   button_mode=OnOnly range=4:4
+
+
+################################################################################
+# for the case that a SCS is connected
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+# Controlled from SCS buttons at J10 in main page
+EVENT_BUTTON id=2000  type=Meta   meta=SetBank   button_mode=OnOnly range=1:1
+EVENT_BUTTON id=2001  type=Meta   meta=SetBank   button_mode=OnOnly range=2:2
+EVENT_BUTTON id=2002  type=Meta   meta=SetBank   button_mode=OnOnly range=3:3
+EVENT_BUTTON id=2003  type=Meta   meta=SetBank   button_mode=OnOnly range=4:4
+EVENT_BUTTON id=2004  type=Meta   meta=EncFast:4 button_mode=OnOff  range=0:2
+
+# the SCS encoder at J10 just increments/decrements the bank
+# redundant function - could be changed in future
+EVENT_ENC    id=2000  type=Meta   meta=SetBank   range=1:4
+
+# This is a dummy LED without assigned hardware (hw_id=2000 not used anywhere else) and without MIDI event.
+# the purpose of this EVENT item is to print the bank whenever the LCD is refreshed (e.g. after startup or bank change)
+EVENT_LED id=2000 fwd_to_lcd=1 lcd_pos=1:17:1 label="Bnk%q"
+
+################################################################################
+# Bank 1
+EVENT_MF  id= 1  hw_id= 1  bank=1  type=CC  chn= 1 cc=16  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 2  hw_id= 2  bank=1  type=CC  chn= 2 cc=16  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 3  hw_id= 3  bank=1  type=CC  chn= 3 cc=16  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 4  hw_id= 4  bank=1  type=CC  chn= 4 cc=16  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 5  hw_id= 5  bank=1  type=CC  chn= 5 cc=16  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 6  hw_id= 6  bank=1  type=CC  chn= 6 cc=16  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 7  hw_id= 7  bank=1  type=CC  chn= 7 cc=16  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 8  hw_id= 8  bank=1  type=CC  chn= 8 cc=16  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+
+################################################################################
+# Bank 2
+EVENT_MF  id=11  hw_id= 1  bank=2  type=CC  chn= 1 cc=17  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=12  hw_id= 2  bank=2  type=CC  chn= 2 cc=17  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=13  hw_id= 3  bank=2  type=CC  chn= 3 cc=17  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=14  hw_id= 4  bank=2  type=CC  chn= 4 cc=17  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=15  hw_id= 5  bank=2  type=CC  chn= 5 cc=17  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=16  hw_id= 6  bank=2  type=CC  chn= 6 cc=17  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=17  hw_id= 7  bank=2  type=CC  chn= 7 cc=17  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=18  hw_id= 8  bank=2  type=CC  chn= 8 cc=17  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+
+################################################################################
+# Bank 3
+EVENT_MF  id=21  hw_id= 1  bank=3  type=CC  chn= 1 cc=18  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=22  hw_id= 2  bank=3  type=CC  chn= 2 cc=18  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=23  hw_id= 3  bank=3  type=CC  chn= 3 cc=18  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=24  hw_id= 4  bank=3  type=CC  chn= 4 cc=18  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=25  hw_id= 5  bank=3  type=CC  chn= 5 cc=18  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=26  hw_id= 6  bank=3  type=CC  chn= 6 cc=18  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=27  hw_id= 7  bank=3  type=CC  chn= 7 cc=18  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=28  hw_id= 8  bank=3  type=CC  chn= 8 cc=18  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+
+################################################################################
+# Bank 4
+EVENT_MF  id=31  hw_id= 1  bank=4  type=CC  chn= 1 cc=19  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=32  hw_id= 2  bank=4  type=CC  chn= 2 cc=19  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=33  hw_id= 3  bank=4  type=CC  chn= 3 cc=19  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=34  hw_id= 4  bank=4  type=CC  chn= 4 cc=19  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=35  hw_id= 5  bank=4  type=CC  chn= 5 cc=19  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=36  hw_id= 6  bank=4  type=CC  chn= 6 cc=19  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=37  hw_id= 7  bank=4  type=CC  chn= 7 cc=19  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=38  hw_id= 8  bank=4  type=CC  chn= 8 cc=19  range=0:127  lcd_pos=1:1:1  label="^std_mf"

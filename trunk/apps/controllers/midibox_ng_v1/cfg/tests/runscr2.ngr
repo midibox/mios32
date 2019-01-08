@@ -1,0 +1,101 @@
+# This run script will be executed after RUNSCR2.NGC has been loaded
+
+lcd "%COK"
+
+log "Hello World!"
+
+#################################################################################
+if ^section == 1
+  log "Section is 1"
+
+  # priority selection
+  if BUTTON:1 > 0
+    log "Section 1 check: BUTTON:1 pressed"
+  elseif BUTTON:2 > 0
+    log "Section 1 check: BUTTON:2 pressed"
+  elseif BUTTON:3 > 0
+    log "Section 1 check: BUTTON:3 pressed"
+  else
+    log "Section 1 check: BUTTON:1..3 not pressed!"
+  endif
+
+endif
+
+#################################################################################
+if ^section == 2
+  log "Section is 2"
+
+  # priority selection
+  if BUTTON:1 > 0
+    log "Section 2 check: BUTTON:1 pressed"
+
+    if BUTTON:2 > 0
+      log "Section 2 check: BUTTON:2 pressed"
+
+      if BUTTON:3 > 0
+        log "Section 2 check: BUTTON:3 pressed"
+      endif
+    endif
+  endif
+endif
+
+#################################################################################
+if ^section == 3
+  log "Section is 3"
+
+  if BUTTON:1 > 0
+    log "Sending NoteOn USB1 1 36 ^value"
+    send NoteOn USB1 1 36 ^value
+    send NoteOn USB1 1 36 0
+  endif
+
+  if BUTTON:2 > 0
+    log "Sending Polypressure USB1 1 36 ^value"
+    send Polypressure USB1 1 36 ^value
+  endif
+
+  if BUTTON:3 > 0
+    log "Sending CC USB1 1 16 ^value"
+    send CC USB1 1 16 ^value
+  endif
+
+  if BUTTON:4 > 0
+    log "Sending ProgramChange USB1 1 ^value"
+    send ProgramChange USB1 1 ^value
+  endif
+
+  if BUTTON:5 > 0
+    log "Sending Aftertouch USB1 1 ^value"
+    send Aftertouch USB1 1 ^value
+  endif
+
+  if BUTTON:6 > 0
+    log "Sending PitchBend USB1 1 ^value"
+    send PitchBend USB1 1 ^value
+  endif
+
+  if BUTTON:7 > 0
+    log "Sending NRPN USB1 1 0x1122 ^value"
+    send NRPN USB1 1 0x0123 ^value
+  endif
+
+  if BUTTON:8 > 0
+    log "Sending SysEx USB1 0xf0 0x11 0x22 0x33 0x44 ^value 0xf7"
+    send SysEx USB1 0xf0 0x11 0x22 0x33 0x44 ^value 0xf7
+  endif
+
+endif
+
+
+#################################################################################
+if ^section == 10
+  log "Section is 10"
+
+  send CC USB1 1 16 ^value
+endif
+
+
+#################################################################################
+if ^section >= 2
+  log "Section is >= 2"
+endif

@@ -1,0 +1,37 @@
+<html>
+<head>
+	<title>Receiving MIDI Data</title>
+</head>
+
+<body>
+
+<h1>Receiving MIDI Data</h1>
+
+<p>To receive MIDI data from a real source (or virtual destination)
+you must register yourself as receiver using the endpoint's
+<code>addReceiver:</code> method.</p>
+
+<p>Having done this, the endpoint will call the
+<code>processMIDIPacketList:sender:</code> method of the receiver
+whenever new MIDI data becomes available.</p>
+
+<p>Call the endpoint's <code>removeReceiver:</code> method when you
+no longer want to receive MIDI data.</p>
+
+<p>The following shows the basics of receiving MIDI data:</p>
+
+<blockquote>
+<pre>
+[myEndpoint addReceiver:self];
+
+- (void)processMIDIPacketList:(MIDIPacketList*)myPacketList sender:(id)sender
+{
+    // Handle the MIDI data in here
+}
+
+[myEndpoint removeReceiver:self];
+</pre>
+</blockquote>
+
+</body>
+</html>

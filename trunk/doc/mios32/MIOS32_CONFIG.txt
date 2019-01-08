@@ -1,0 +1,432 @@
+
+Each application has to provide a local "mios32_config.h" file, which is included
+from mios32.h to configure the code modules.
+
+Main purpose is to allow to disable MIOS32 functions in order to remove unused code.
+
+It also allows to configure the size of data structures (e.g. MIOS32_SRIO_NUM_SR)
+
+Later we could also provide hard-coded variants to increase the flexibility on
+unexpected usecases.
+
+
+Currently, following options are provided. Just copy&paste the relevant lines
+into your local mios32_config.h file
+
+// disable code modules
+#define MIOS32_DONT_USE_SYS
+#define MIOS32_DONT_USE_IRQ
+#define MIOS32_DONT_USE_SPI
+#define MIOS32_DONT_USE_SPI0
+#define MIOS32_DONT_USE_SPI1
+#define MIOS32_DONT_USE_SPI2
+#define MIOS32_DONT_USE_SRIO
+#define MIOS32_DONT_USE_DIN
+#define MIOS32_DONT_USE_DOUT
+#define MIOS32_DONT_USE_ENC
+#define MIOS32_DONT_USE_AIN
+#define MIOS32_DONT_USE_MF
+#define MIOS32_DONT_USE_LCD
+#define MIOS32_DONT_USE_MIDI
+#define MIOS32_DONT_USE_OSC
+#define MIOS32_DONT_USE_COM
+#define MIOS32_DONT_USE_USB
+#define MIOS32_DONT_USE_USB_MIDI
+#define MIOS32_USE_USB_COM
+#define MIOS32_DONT_USE_UART
+#define MIOS32_DONT_USE_UART_MIDI
+#define MIOS32_DONT_USE_IIC
+#define MIOS32_DONT_USE_IIC_MIDI
+#define MIOS32_USE_I2S
+#define MIOS32_DONT_USE_BOARD
+#define MIOS32_DONT_USE_TIMER
+#define MIOS32_DONT_USE_STOPWATCH
+#define MIOS32_DONT_USE_DELAY
+#define MIOS32_DONT_USE_SDCARD
+#define MIOS32_DONT_USE_ENC28J60
+
+// calls to FreeRTOS required? (e.g. to disable tasks on critical sections)
+#define MIOS32_DONT_USE_FREERTOS
+
+// Stack size for FreeRTOS tasks as defined by the programming model
+// Note that each task maintains it's own stack!
+// If you want to define a different stack size for your application tasks
+// (-> xTaskCreate() function), keep in mind that it has to be divided by 4,
+// since the stack width of ARM is 32bit.
+// The FreeRTOS define "configMINIMAL_STACK_SIZE" is (MIOS32_MINIMAL_STACK_SIZE/4)
+// it can be used in applications as well, e.g.
+// xTaskCreate(TASK_Period1mS, (signed portCHAR *)"Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
+#define MIOS32_MINIMAL_STACK_SIZE 1024
+
+// reserved memory for FreeRTOS pvPortMalloc function
+#define MIOS32_HEAP_SIZE 10*1024
+
+
+// number of scanned SR registers on SRIO chain
+// default value 16 (see mios32_srio.h)
+#define MIOS32_SRIO_NUM_SR 16
+
+// how many DOUT pages are supported (used for dimmed LED and optimized matrix handling support)
+#define MIOS32_SRIO_NUM_DOUT_PAGES 1
+
+// Which SPI peripheral should be used
+// allowed values: 0 and 1
+// (note: SPI0 will allocate DMA channel 2 and 3, SPI1 will allocate DMA channel 4 and 5)
+#define MIOS32_SRIO_SPI 1
+
+// Which RC pin of the SPI port should be used
+// allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC)
+#define MIOS32_SRIO_SPI_RC_PIN 0
+
+// should output pins be used in Open Drain mode? (perfect for 3.3V->5V levelshifting)
+#define MIOS32_SRIO_OUTPUTS_OD 1
+
+
+// disables the default SRIO scan routine in programming_models/traditional/main.c
+// allows to implement an own handler
+#define MIOS32_DONT_SERVICE_SRIO_SCAN 1
+
+// maximal number of rotary encoders
+#define MIOS32_ENC_NUM_MAX 64
+
+
+// the default MIDI port for MIDI output
+#define MIOS32_MIDI_DEFAULT_PORT USB0
+
+// the default MIDI port for debugging output via MIOS32_MIDI_SendDebugMessage
+#define MIOS32_MIDI_DEBUG_PORT USB0
+
+
+// OSC: maximum number of path parts (e.g. /a/b/c/d -> 4 parts)
+#define MIOS32_OSC_MAX_PATH_PARTS 8
+
+// OSC: maximum number of OSC arguments in message
+#define MIOS32_OSC_MAX_ARGS 8
+
+// the output function which is used to print debug messages
+// could be replaced by printf (e.g. for emulations)
+#define MIOS32_OSC_DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+
+
+// the default COM port for COM output
+#define MIOS32_COM_DEFAULT_PORT USB0
+
+// the default COM port for debugging output via printf
+#define MIOS32_COM_DEBUG_PORT USB0
+
+
+// Following settings allow to customize the USB device descriptor
+#define MIOS32_USB_VENDOR_ID    0x16c0        // sponsored by voti.nl! see http://www.voti.nl/pids
+#define MIOS32_USB_VENDOR_STR   "midibox.org" // you will see this in the USB device description
+#define MIOS32_USB_PRODUCT_STR  "MIOS32"      // you will see this in the MIDI device list
+#define MIOS32_USB_PRODUCT_ID   0x03ff        // ==1023; 1020-1029 reserved for T.Klose, 1000 - 1009 free for lab use
+#define MIOS32_USB_VERSION_ID   0x0100        // v1.00
+
+
+// 1 to stay compatible to USB MIDI spec, 0 as workaround for some windows versions...
+#define MIOS32_USB_MIDI_USE_AC_INTERFACE 1
+
+// allowed number of USB MIDI ports: 1..8
+#define MIOS32_USB_MIDI_NUM_PORTS 1
+
+// buffer size (should be at least >= MIOS32_USB_MIDI_DATA_*_SIZE/4)
+#define MIOS32_USB_MIDI_RX_BUFFER_SIZE   64 // packages
+#define MIOS32_USB_MIDI_TX_BUFFER_SIZE   64 // packages
+
+// size of IN/OUT pipe
+#define MIOS32_USB_MIDI_DATA_IN_SIZE           64
+#define MIOS32_USB_MIDI_DATA_OUT_SIZE          64
+
+
+// STM32: (1: I2C2(iic_port 0) available ; 2: I2C2 and I2C1(iic_port 1) available)
+// LPC17: (1: I2C0(iic_port 0) available ; 2: I2C1 (EEPROM) in addition, 3: I2C2 assigned to iic_port 1 available)
+#define MIOS32_IIC_NUM 1
+// for LPC17:
+// The third IIC port at J4B is disabled by default so that the app can decide if it's used for UART or IIC
+#define MIOS32_IIC_NUM 3
+
+// sets the IIC bus frequency in Hz (max. 400000, bus frequencies > 400kHz don't work stable)
+#define MIOS32_IIC0_BUS_FREQUENCY 400000
+
+// bus frequency for I2C1 peripheral in Hz (max. 400000, bus frequencies > 400kHz don't work stable)
+#define MIOS32_IIC1_BUS_FREQUENCY 400000
+
+// bus frequency for I2C2 peripheral in Hz (max. 400000, bus frequencies > 400kHz don't work stable)
+#define MIOS32_IIC2_BUS_FREQUENCY 400000
+
+// bus-clock duty-cycle for I2C2 peripheral (I2C_DutyCycle_2 / I2C_DutyCycle_16_9)
+// note: if IIC bus frequency <= 100kHz, duty-cycle is always 1:1
+#define MIOS32_IIC0_DUTYCYCLE I2C_DutyCycle_2
+
+// bus-clock duty-cycle for I2C1 peripheral (I2C_DutyCycle_2 / I2C_DutyCycle_16_9)
+// note: if IIC bus frequency <= 100kHz, duty-cycle is always 1:1
+#define MIOS32_IIC1_DUTYCYCLE I2C_DutyCycle_2
+
+// bus-clock duty-cycle for I2C1 peripheral (I2C_DutyCycle_2 / I2C_DutyCycle_16_9)
+// note: if IIC bus frequency <= 100kHz, duty-cycle is always 1:1
+#define MIOS32_IIC2_DUTYCYCLE I2C_DutyCycle_2
+
+// sets the timeout value for IIC transactions (default: 5000 = ca. 5 mS)
+#define MIOS32_IIC_TIMEOUT_VALUE 5000
+
+
+
+// base address of first MBHP_IIC_MIDI module
+#define MIOS32_IIC_MIDI_ADDR_BASE 0x10
+
+// max number of IIC MIDI interfaces (0..8)
+// has to be set to >0 in mios32_config.h to enable IIC MIDI!
+#define MIOS32_IIC_MIDI_NUM 0
+
+// Interface and RI_N port configuration
+// _ENABLED:   0 = interface disabled
+//             1 = interface enabled, don't poll receive status (OUT only)
+//             2 = interface enabled, poll receive status
+//             3 = interface enabled, check RI_N pin instead of polling receive status
+// _RI_N_PORT: Port to which RI_N is connected
+// _RI_N_PIN:  pin to which RI_N is connected
+#define MIOS32_IIC_MIDI0_ENABLED    2
+#define MIOS32_IIC_MIDI0_RI_N_PORT  GPIOC
+#define MIOS32_IIC_MIDI0_RI_N_PIN   GPIO_Pin_0
+#define MIOS32_IIC_MIDI1_ENABLED    2
+#define MIOS32_IIC_MIDI1_RI_N_PORT  GPIOC
+#define MIOS32_IIC_MIDI1_RI_N_PIN   GPIO_Pin_1
+#define MIOS32_IIC_MIDI2_ENABLED    2
+#define MIOS32_IIC_MIDI2_RI_N_PORT  GPIOC
+#define MIOS32_IIC_MIDI2_RI_N_PIN   GPIO_Pin_2
+#define MIOS32_IIC_MIDI3_ENABLED    2
+#define MIOS32_IIC_MIDI3_RI_N_PORT  GPIOC
+#define MIOS32_IIC_MIDI3_RI_N_PIN   GPIO_Pin_3
+#define MIOS32_IIC_MIDI4_ENABLED    2
+#define MIOS32_IIC_MIDI4_RI_N_PORT  GPIOA
+#define MIOS32_IIC_MIDI4_RI_N_PIN   GPIO_Pin_0
+#define MIOS32_IIC_MIDI5_ENABLED    2
+#define MIOS32_IIC_MIDI5_RI_N_PORT  GPIOA
+#define MIOS32_IIC_MIDI5_RI_N_PIN   GPIO_Pin_1
+#define MIOS32_IIC_MIDI6_ENABLED    2
+#define MIOS32_IIC_MIDI6_RI_N_PORT  GPIOA
+#define MIOS32_IIC_MIDI6_RI_N_PIN   GPIO_Pin_2
+#define MIOS32_IIC_MIDI7_ENABLED    2
+#define MIOS32_IIC_MIDI7_RI_N_PORT  GPIOA
+#define MIOS32_IIC_MIDI7_RI_N_PIN   GPIO_Pin_3
+
+
+// base address of first BankStick
+#define MIOS32_IIC_BS_ADDR_BASE 0xa0
+
+// max number of BankSticks (0..8)
+// has to be set to >0 in mios32_config.h to enable BankStick Support
+#define MIOS32_IIC_BS_NUM 0
+
+// _SIZE: 0 = BankStick disabled, 32768 or 65536 = BankStick enabled with given size in kilobyte
+#define MIOS32_IIC_BS0_SIZE    65536
+#define MIOS32_IIC_BS1_SIZE    65536
+#define MIOS32_IIC_BS2_SIZE    65536
+#define MIOS32_IIC_BS3_SIZE    65536
+#define MIOS32_IIC_BS4_SIZE    65536
+#define MIOS32_IIC_BS5_SIZE    65536
+#define MIOS32_IIC_BS6_SIZE    65536
+#define MIOS32_IIC_BS7_SIZE    65536
+
+
+// number of UART interfaces (1..3) - to disable UART at all, use "MIOS32_DONT_USE_UART" instead!
+#define MIOS32_UART_NUM 2
+
+// Tx buffer size (1..256)
+#define MIOS32_UART_TX_BUFFER_SIZE 64
+
+// Rx buffer size (1..256)
+#define MIOS32_UART_RX_BUFFER_SIZE 64
+
+// Baudrate of UART first interface
+#define MIOS32_UART0_BAUDRATE 31250
+
+// should UART0 Tx pin configured for open drain (default) or push-pull mode?
+#define MIOS32_UART0_TX_OD 1
+
+// Baudrate of UART second interface
+#define MIOS32_UART1_BAUDRATE 31250
+
+// should UART1 Tx pin configured for open drain (default) or push-pull mode?
+#define MIOS32_UART1_TX_OD 1
+
+// Baudrate of UART third interface
+#define MIOS32_UART2_BAUDRATE 31250
+
+// should UART2 Tx pin configured for open drain (default) or push-pull mode?
+#define MIOS32_UART2_TX_OD 1
+
+// Baudrate of UART fourth interface
+#define MIOS32_UART3_BAUDRATE 31250
+
+// should UART3 Tx pin configured for open drain (default) or push-pull mode?
+#define MIOS32_UART3_TX_OD 1
+
+// Interface assignment: 0 = disabled, 1 = MIDI, 2 = COM
+#define MIOS32_UART0_ASSIGNMENT 1
+#define MIOS32_UART1_ASSIGNMENT 1
+#define MIOS32_UART2_ASSIGNMENT 1
+#define MIOS32_UART3_ASSIGNMENT 1
+
+
+// maximum number of mapped CLCD lines
+#define MIOS32_LCD_MAX_MAP_LINES 4
+
+// The boot message which is print during startup and returned on a SysEx query
+#define MIOS32_LCD_BOOT_MSG_LINE1 "Unnamed App."
+#define MIOS32_LCD_BOOT_MSG_LINE2 "www.midibox.org"
+
+// the startup delay in mS
+// if 0, no message will be print
+#define MIOS32_LCD_BOOT_MSG_DELAY 2000
+
+
+// optional third Enable line (Pull-Up required)
+#define MIOS32_BOARD_LCD_E3_PORT GPIOB       // J15C.A10
+#define MIOS32_BOARD_LCD_E3_PIN  GPIO_Pin_0
+
+// optional third Enable line (Pull-Up required)
+#define MIOS32_BOARD_LCD_E4_PORT GPIOB       // J15C.A11
+#define MIOS32_BOARD_LCD_E4_PIN  GPIO_Pin_1
+
+
+
+// bit mask to enable channels
+//
+// Pin mapping on MBHP_CORE_STM32 module:
+//   15       14      13     12     11     10      9      8   
+// J16.SO  J16.SI  J16.SC J16.RC J5C.A11 J5C.A10 J5C.A9 J5C.A8
+//   7        6       5      4      3      2      1       0
+// J5B.A7  J5B.A6  J5B.A5 J5B.A4 J5A.A3 J5A.A2 J5A.A1  J5A.A0
+//
+// Examples:
+//   mask 0x000f will enable all J5A channels
+//   mask 0x00f0 will enable all J5B channels
+//   mask 0x0f00 will enable all J5C channels
+//   mask 0x0fff will enable all J5A/B/C channels
+// (all channels are disabled by default)
+#define MIOS32_AIN_CHANNEL_MASK 0
+
+// define the desired oversampling rate (1..16)
+#define MIOS32_AIN_OVERSAMPLING_RATE  1
+
+// define the deadband (min. difference to report a change to the application hook)
+// typically set to (2^(12-desired_resolution)-1)
+// e.g. for a resolution of 7 bit, it's set to (2^(12-7)-1) = (2^5 - 1) = 31
+// So, 31 is enough for 7bit resolution at 12bit sampling resolution (1x oversampling)
+#define MIOS32_AIN_DEADBAND 31
+
+// define the deadband which is used when an AIN pin is in "idle" state
+// this helps to avoid sporadical jittering values
+// Set this value to 0 to disable the feature (it's enabled by default)
+#define MIOS32_AIN_DEADBAND_IDLE 127
+
+// define after how many conversions the AIN pin should go into "idle" state
+// - "idle" state is left once MIOS32_AIN_DEADBAND_IDLE is exceeded.
+// - "idle" state is entered once MIOS32_AIN_DEADBAND hasn't been exceeded for 
+//   MIOS32_AIN_IDLE_CTR conversions
+// 3000 conversions are done in ca. 3 seconds (depends on number of pins!)
+// allowed range: 1..65535
+#define MIOS32_AIN_IDLE_CTR 3000
+
+// muxed or unmuxed mode (0..3)?
+// 0 == unmuxed mode
+// 1 == 1 mux control line -> *2 channels
+// 2 == 2 mux control line -> *4 channels
+// 3 == 3 mux control line -> *8 channels
+#define MIOS32_AIN_MUX_PINS 0
+
+// control pins to select the muxed channel
+// only relevant if MIOS32_AIN_MUX_PINS > 0
+#define MIOS32_AIN_MUX0_PIN   GPIO_Pin_4 // J5C.A8
+#define MIOS32_AIN_MUX0_PORT  GPIOC
+#define MIOS32_AIN_MUX1_PIN   GPIO_Pin_5 // J5C.A9
+#define MIOS32_AIN_MUX1_PORT  GPIOC
+#define MIOS32_AIN_MUX2_PIN   GPIO_Pin_0 // J5C.A10
+#define MIOS32_AIN_MUX2_PORT  GPIOB
+
+
+// number of motorfaders (0-16)
+#define MIOS32_MF_NUM 0
+
+// Which SPI peripheral should be used
+// allowed values: 0, 1 or 2
+#define MIOS32_MF_SPI 2
+
+// Which RC pin of the SPI port should be used
+// allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC), 0 or 1 for SPI2 (J19:RC1, J19:RC2)
+#define MIOS32_MF_SPI_RC_PIN 0
+
+
+// MCLK at J15b:E not enabled by default - has to be done in mios32_config.h
+// if I2S chip requires "master clock" (for oversampling)
+#define MIOS32_I2S_MCLK_ENABLE  0
+
+// supported by STM32: 
+// I2S_Standard_Phillips, I2S_Standard_MSB, I2S_Standard_LSB,
+// I2S_Standard_PCMShort, I2S_Standard_PCMLong
+// note that "Philips" is written incorrectly (typo in STM32 driver)
+#define MIOS32_I2S_STANDARD     I2S_Standard_Phillips
+
+// supported by STM32: 
+// I2S_DataFormat_16b, I2S_DataFormat_16bextended, I2S_DataFormat_24b, I2S_DataFormat_32b
+#define MIOS32_I2S_DATA_FORMAT  I2S_DataFormat_16b;
+
+// the sample rate in hertz
+#define MIOS32_I2S_AUDIO_FREQ   48000
+
+
+// timer used for MIOS32_DELAY functions (TIM1..TIM8)
+#define MIOS32_DELAY_TIMER  TIM1
+#define MIOS32_DELAY_TIMER_RCC RCC_APB1Periph_TIM1
+
+// optional to disable timer IRQ handlers in mios32_timer.c
+#define MIOS32_DONT_ALLOCATE_TIM2_IRQn
+#define MIOS32_DONT_ALLOCATE_TIM3_IRQn
+#define MIOS32_DONT_ALLOCATE_TIM5_IRQn
+
+
+// Which SPI peripheral should be used to access SDCard
+// allowed values: 0 and 1
+// (note: SPI0 will allocate DMA channel 2 and 3, SPI1 will allocate DMA channel 4 and 5)
+#define MIOS32_SDCARD_SPI 0
+
+// Which RC pin of the SPI port should be used
+// allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC)
+#define MIOS32_SDCARD_SPI_RC_PIN 0
+
+
+// Which SPI peripheral should be used to access ENC28J60
+// allowed values: 0 and 1
+// (note: SPI0 will allocate DMA channel 2 and 3, SPI1 will allocate DMA channel 4 and 5)
+#define MIOS32_ENC28J60_SPI 0
+
+// Which RC pin of the SPI port should be used
+// allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC)
+#define MIOS32_ENC28J60_SPI_RC_PIN 0
+
+// maximum frame size
+// must be <= 1518 (IEEE 802.3 specified limit)
+#define MIOS32_ENC28J60_MAX_FRAME_SIZE 1518
+
+// if 0: half duplex operation
+// if 1: full duplex operation
+#define MIOS32_ENC28J60_FULL_DUPLEX 1
+
+// a unique MAC address in your network (6 bytes are required)
+// If all bytes are 0, the serial number of STM32 will be taken instead,
+// which should be unique in your private network.
+#define MIOS32_ENC28J60_MY_MAC_ADDR1 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR2 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR3 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR4 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR5 0
+#define MIOS32_ENC28J60_MY_MAC_ADDR6 0
+
+
+// The DBGMCU_CR register allows to suspend peripherals when CPU is in halt
+// state to simplify debugging (e.g. no timer interrupt is triggered each
+// time the program is stepped)
+// See STM32 reference manual for the meaning of these flags.
+// By default, we suspend all peripherals which are provided by DBGMCU_CR
+#define MIOS32_SYS_STM32_DBGMCU_CR 0xffffff00

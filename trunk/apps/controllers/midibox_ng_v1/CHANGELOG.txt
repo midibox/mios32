@@ -1,0 +1,807 @@
+$Id$
+
+MIDIbox NG V1.037
+~~~~~~~~~~~~~~~~~
+
+   o .NGR: the "send SysEx" command can now also parse ASCII strings.
+     This is a comfortable way to send terminal commands to other MIDIboxes.
+     E.g. assumed that a MIDIbox SEQ is connected to MIDI OUT1, you could send:
+       send sysex OUT1 0xf0 0x00 0x00 0x7e 0x32 0x00 0x0d 0x00 "reset" 0x0a 0xf7
+     to reset the MIDIbox, or:
+       send sysex OUT1 0xf0 0x00 0x00 0x7e 0x32 0x00 0x0d 0x00 "new sesn42" 0x0a 0xf7
+     to create a new session, or:
+       send sysex OUT1 0xf0 0x00 0x00 0x7e 0x32 0x00 0x0d 0x00 "lcd Hello!" 0x0a 0xf7
+     to display a message on screen.
+
+     Transformation of values to ASCII isn't supported yet.
+     If it's a single digit, you could try ..."lcd Value: " [0x30 + ^value]
+
+
+MIDIbox NG V1.036
+~~~~~~~~~~~~~~~~~
+
+   o new .NGR script command: send_seq (see cfg/test/seq* examples)
+
+   o added new MIDI event types: Clock, Start, Stop, Cont
+
+   o added new meta events to control a MIDI clock divider:
+     MClkSetDivider, MClkDecDivider, MClkIncDivider
+
+   o added new .NGC file configuration parameters:
+     MidiClkOutPorts and MidiClkInPorts
+
+   o new LCD format character '%L' allows to display logic control digits
+     (MTC and status digits)
+
+   o added new .NGR commands SET_KB_TRANSPOSE and SET_KB_VELOCITY_MAP.
+     The configuration example can be found under cfg/tests/kb_6.ng*
+
+   o encoder absolute mode: negative ranges are now handled correctly
+
+   o .NGR LCD command: %d outputs the ^value
+
+
+MIDIbox NG V1.035
+~~~~~~~~~~~~~~~~~
+
+   o Support for secure keyboard handling if patch is switched: keep original
+     MIDI port, note, channel when playing Note Off
+     (this feature is not supported for LPC17 due to high memory consumption)
+
+    o Fixed encoder incrementer in absolute mode
+
+
+MIDIbox NG V1.034
+~~~~~~~~~~~~~~~~~
+
+   o Support for interpolation tables:
+     MAPs can now apply linear interpolation between data points.
+     This allows to quickly define curves without the need to enter the values for the complete range.
+     E.g. previously it was required to enter 128 values to create a curve for a CC controller,
+     now it's mostly sufficient to define the same with 3..4 data points. MBNG will interpolate
+     the values between these points.
+
+     Interpolation tables can be defined with following commands:
+     MAP<n>/BYTEI and MAP<n>/HWORDI
+
+     A BYTEI map can define up to 64 datapoints with 8bit resultion,
+     and a HWORDI map can define up to 32 datapoints with 16bit resolution.
+
+     Usage examples can be found under cfg/test/map* and cfg/test/kb_2.ngc
+
+     See the user manual for further explanations.
+
+   o Support for 16bit maps: with MAP<n>/HWORD 16bit values can be mapped.
+
+   o label "std_rgbled" renamed to "std_rgb" to avoid error message
+
+   o Cursor handling on SysEx based GLCD output should now work correctly if the big font is activated
+
+
+MIDIbox NG V1.033
+~~~~~~~~~~~~~~~~~
+
+   o with this release, .NGR scripts running on a STM32F4 are directly executed from RAM in a compressed
+     format, and therefore they are significantly faster, so that they could even be used for timing
+     critical operations.
+
+   o added basic support for SPI_MIDI
+     This feature requires an update to MIOS32 bootloader v1.018
+     In the bootloader update app, enter "set spi_midi 1" to enable the SPI MIDI device at J16 (RC2 chip select line).
+     This will also disable the OSC ports via MBHP_ETH module, which is normally connected to this port.
+
+   o support for WS2812 LED strips (currently only for the MBHP_CORE_STM32F4 module).
+     The data input has to be connected to J4B.SC, ground to J4B.VS and +5V to an external PSU (required, since
+     each RGB LED can consume up to 20 mA!)
+
+     Following meta event commands are available:
+     - RgbLedClearAll (clears all LEDs)
+     - RgbLedSetRgb:<led>:<r>:<g>:<b> (led=1..64, r/g/b=0..255)
+     - RgbLedSetHsv:<led>:<h>:<s>:<v> (led=1..64, h=0..359, s=0..100, v=0..100)
+     - RgbLedRainbow:<speed>:<brightness> (speed=1..255, brightness=0..100)
+
+    Most simple way to test a LED strip: enter following command in MIOS Terminal
+       ngr exec_meta RgbLedRainbow:9:100
+    (don't forget to wear sunglasses, or start with brightness 20!!! ;-)
+
+   o added EVENT_RGBLED
+     See cfg/test/rgbled_1.ngc for usage examples
+
+   o .NGR file: added "set_hsv" command which allows to control the hue parameters of a RGBLED
+
+   o SRIO num_sr=<value> reconfiguration works correctly with DIN/DOUT matrices now
+
+   o added "inverted=1" to EVENT_BUTTON and EVENT_LED
+
+   o .NGR file: added "load <setup>" command which allows to switch to another setup (.NGC, .NGS, .NGR, ... files)
+
+   o implemented new meta command "SendEvent" which allows to remote control one or more events from a single event
+     within a given value range and direction.
+     See cfg/test/metalrn.ngc for a usage example
+
+   o implemented new meta command "LearnEvent" which allows to learn SendEvent based controller assignments during runtime.
+     See cfg/test/metalrn.ngc for a usage example
+
+   o added new meta command "SaveDelayedSnapshot:<seconds>"
+     It will request to store a snapshot after at least the given seconds.
+
+   o added new event type "NoteOnOff", which will send a NoteOff event immediately after NoteOn (resp. actually it will
+     send Note On with velocity 0 for runtime event optimisation)
+
+   o added possibility to calibrate the delay_slowest values for each individual key of a keyboard.
+     New terminal commands:
+     - set kb <1|2> key_calibration on: delay values will be measured (method described at the MIDIbox KB webpage)
+     - set kb <1|2> key_calibration off: captured delay values will be used: (<measured-delay> * delay_slowest / 1000)
+     - set kb <1|2> key_calibration clean: shows the captured measurement values
+     - set kb <1|2> key_calibration_value <key> <value>: allows to modify a calibration value directly
+     - kb <1|2> delays: shows the measured delay values
+
+   o keyboard calibration values are stored in a new file: .NGK, and can also be edited there
+
+   o bugfix for DELAY_MS
+
+   o bugfix for fwd_id to a non-existing ID with specific value
+
+   o bugfix for maps with duplicated values
+
+   o bugfix for sporadic file access errors reported during snapshot restore
+
+
+MIDIbox NG V1.032
+~~~~~~~~~~~~~~~~~
+
+   o support for mathematical operations in .NGR script.
+     They have to be surrounded with square-brackets ([...])
+     Syntax: [<left-operand><operator><right-operand>]
+     Example:
+        - set LED:2000 [LED:2000 + 1]
+          will increment the value stored in LED:2000
+        - set LED:2000 [LED:2000 - 1]
+          will decrement the value stored in LED:2000
+
+     Note that nested operations are supported as well, such as:
+        - send CC USB1 1 [LED:2000 + [LED:2001 + [LED:2002 + LED:2003]]]
+
+     More examples in cfg/tests/runscr5.ngc
+
+     Support operators: + - * / % & | ^
+
+
+   o number of scanned SRIOs now configurable in .NGC file
+     with 'SRIO num_sr=<1..32>'
+
+     By default 32 DIN and DOUT shift registers are scanned, which
+     result into an update rate of ca. 420 uS on a STM32F4 based core.
+
+     With (for example) 'sr_num=8' only up to 8 DIN and 8 DOUT SRs will
+     be scanned anymore, but the update rate is reduced to ca. 110..120 uS
+     (a little bit more than a quarter due to SR handling overhead)
+     
+
+    o corrected DebounceCtr parameter (value was not passed to MIOS32)
+      Now also part of the SRIO configuration, use:
+      SRIO debounce_cycles=<1..255>
+
+    o added new meta event "KbBreakIsMake:<keyboard-number>" which will
+      already trigger a note event when the break contact is activated
+      (nice for playing organ style).
+      Trigger it from a toggle button function as shown in cfg/test/kb_5.ngc
+      Can be optionally set from the terminal as well with following
+      command: "set kb <keyboard-number> break_is_make <on|off>"
+      (e.g. "set kb 1 break_is_make on")
+
+   o added ain_mode=Toggle for AIN and AINSER events.
+     Similar to ain_mode=Switch it can be used if buttons are connected to analog inputs.
+     The event will toggle between the min and max value.
+
+   o .NGR: added "set_no_dump" command. It allows to change the "no_dump" flag
+     which specifies if an EVENT_xxx should be sent during a DumpSnapshot.
+     This feature can be used to handle different snapshot setups.
+
+   o STM32F4: support for bootloader "enforce_usb_device" flag
+
+
+MIDIbox NG V1.031
+~~~~~~~~~~~~~~~~~
+
+   o the STM32F4 variant of the firmware supports USB Host mode!
+     See also http://midibox.org/forums/topic/18906-usb-host-support-for-mbhp-core-stm32f4/
+
+   o MIDI clock input ports now disabled by default to avoid feedback loops
+     in various setups
+
+   o improved "ain_filter_delay_ms" implementation to support sensors (experimental stage)
+
+   o Covered new use case which allows to transform velocity values of incoming notes.
+     See cfg/test/conev_6.ngc
+     EVENT_RECEIVER and EVENT_SENDER have to be specified with "key=any", so that any
+     key will be received and sent.
+
+   o support for DIN/DOUT emulation on digital IO ports J10A/J10B (LPC17: J10/J28)
+     See examples in cfg/test/diocfg_1.ngc and cfg/test/diocfg_2.ngc
+
+
+MIDIbox NG V1.030
+~~~~~~~~~~~~~~~~~
+
+   o increased event pool size to 64k for MBHP_CORE_STM32F4
+
+   o added ain_mode=Switch for AIN and AINSER events.
+     Can be used if buttons are connected to analog inputs. The event will send the
+     min value if a 30% threshold is reached, and the max value if a 70% threshold
+     is reached.
+     Schematic:  Ground |----o Button o-----> analog input + 10k Pull-Up resistor to 3.3V (AIN) resp. 5V (AINSER)
+
+   o .ngr: added "change" command. It works similar to the "set" command, but
+     only changes the value, and doesn't generate a MIDI event.
+
+   o .ngr: added "set_min" and "set_max" command which allows to modify the
+     min/max range of a EVENT
+
+   o added new meta events to control the internal MIDI clock generator:
+     MClkPlay, MClkStop, MClkPlayStop, MClkPause, MClkDecTempo, MClkIncTempo, MClkSetTempo.
+     Example can be found under cfg/test/midiclk.ngc
+
+   o added new string formatting items:
+     %t to display MIDI clock state (Play/Stop)
+     %T to display tempo (BPM)
+
+   o added new MClk menu page to SCS to control the tempo w/o dedicated controllers
+
+   o fixed AOUT_NG module communication issue if AINSER was used in addition
+
+   o added new meta events:
+       - CvPitchBend14Bit:<cv-channel>
+       - CvPitchBend7Bit:<cv-channel>
+       - CvPitchRange:<cv-channel>
+       - CvTransposeOctave:<cv-channel>
+       - CvTransposeSemitones:<cv-channel>
+     see cfg/test/cvtransp.ngc for usage examples
+
+   o BUTTON toggle function can now also handle with inverted and reduced value ranges
+
+
+MIDIbox NG V1.029
+~~~~~~~~~~~~~~~~~
+
+   o added USB MIDI workaround for Windows
+
+   o if a EVENT_SENDER is part of a radio group, and got a new value, it will only
+     send the MIDI event if the new value is matching with the specified range.
+     Usage example: cfg/templates/pg300.ngc
+
+   o if EVENT_RECEIVER forwarded to EVENT_AIN, EVENT_AINSER or EVENT_BUTTON,
+     send also MIDI event.
+     Usage example: cfg/templates/pg300.ngc
+
+   o support for MBHP_CORE_STM32F4 module
+
+
+MIDIbox NG V1.028
+~~~~~~~~~~~~~~~~~
+
+   o DOUT_MATRIX n=8 properly supported
+
+   o now up to 16 DOUT_MATRIX and DIN_MATRIX can be configured
+
+
+MIDIbox NG V1.027
+~~~~~~~~~~~~~~~~~
+
+   o .NGR: added "set_active" command. It can be alternatively used
+     instead of the bank mechanism to activate/deactivate events,
+     e.g. if the same events should be activated in multiple banks under
+     certain conditions.
+     A demo can be found under cfg/tests/multibnk.*
+
+   o it's now possible to set a static forward value independent from the
+     actual value of the event which initiates the forwarding.
+
+     E.g. with
+        EVENT_xxx fwd_id=SENDER:1:42
+     the SENDER:1 will always get value 42 for additional processing
+
+   o support for multiple MBHP_MF_NG modules in a chain.
+     See cfg/test/mf_multi.ngc for a configuration example
+
+   o support for Logic Control Meters
+     Configuration example: see cfg/templates/logictrl.ngc
+     (search for "meter")
+
+   o added new GLCD fonts (provided by Pcbatterij): Inverted and Tiny.
+     In order to test these fonts, try following commands in the MIOS Terminal:
+     lcd %C&t@(1:1:1)Tiny Font
+     lcd %C&i@(1:1:1)Inverted Font
+
+   o fixed OSC receiver (avoided stack overflow)
+
+   o various minor bugfixes
+
+
+MIDIbox NG V1.026
+~~~~~~~~~~~~~~~~~
+
+   o support for nrpn_format=MsbOnly (e.g. for MBSEQ V4 NRPNs)
+
+   o new EVENT parameter ain_sensor_mode:
+
+     With ain_sensor_mode=NoteOnOff, AIN and AINSER events, which are 
+     assigned to Note events, send velocity 0 before a new Note is sent
+     with velocity > 0 to avoid hanging notes.
+
+     With ain_sensor_mode=None (default if no sensor mode specified),
+     Note events will be generated as a continuous stream like CCs
+
+
+MIDIbox NG V1.025
+~~~~~~~~~~~~~~~~~
+
+   o new terminal commands:
+     - ngc: allows to execute a .NGC command directly
+     - ngr: allows to execute a .NGR command directly
+     - ngr_section: sets the ^section for .NGR execution
+     - ngr_value: sets the ^value for .NGR execution
+     - run: can now also executed without specified <section> <value>
+       (the previously set values will be taken in this case)
+
+   o inofficial support for MAX72xx chains - see cfg/tests/max72xx.ngc for
+     a configuration example (no schematic available yet)
+
+   o .NGR: fixed "delay statements in if branches" issue
+
+   o .NGR: added "set_lock" command. It allows to prevent, that received
+     events will overwrite a value of an event.
+
+   o .NGR: the "set" command now also allows to change variables, e.g.:
+       set ^value 1
+       set ^section 2
+       set ^bank 3
+       (etc...)
+     the last one (^bank) will also switch MBNG to the specified bank
+
+   o .NGR: added variables ^dev, ^pat, ^bnk, ^ins, ^chn
+     These are the same which can be used in SysEx strings, and which can
+     be changed in a SCS page (e.g. the variables could also be used for
+     different purposes)
+
+   o added new SCS menu page to execute the .NGR file with given
+     ^section and ^value
+
+   o the AIN command now supports the "resolution" parameter
+
+   o the AINSER command now supports the "muxed" parameter.
+     Use muxed=1 for the AINSER64 module (default), and muxed=0 for the AINSER8 module.
+
+   o AIN and AINSER events, which are assigned to Note events, send velocity 0
+     before a new Note is sent with velocity > 0 to avoid hanging notes.
+
+   o added "ain_filter_delay_ms" to support sensors (experimental stage)
+
+   o EVENT_RECEIVER in conjunction with ^txt or ^txt56: if ^cursor is not specified
+     in the SysEx stream, it will start at offset 0 from the specified lcd_pos=<device>:<x>:<y>
+
+   o EVENT ... syxdumppos now supports the full receiver range 1..4095 (previously
+     only 1..15)
+
+   o the MIDI router forwards SysEx messages regardless if channels are filtered,
+     or "All" is used. It's ensured that messages are only sent once if multiple
+     router nodes forward to the same destination port.
+
+
+MIDIbox NG V1.024
+~~~~~~~~~~~~~~~~~
+
+   o bugfix for "single_usb" option
+
+   o support for LED Digits (7-segment displays).
+     Configuration examples can be found under cfg/tests/leddig*.ngc
+
+   o the DIN_MATRIX and DOUT_MATRIX configuration command now allows to
+     mirror the row pattern with "mirrored_row=1"
+
+   o added EVENT_RECEIVER emu_enc_mode and emu_enc_hw_id parameters.
+     See cfg/tests/emu_enc.ngc for an usage example
+
+   o .NGR now allows to cast the ID type: (id) or (hw_id).
+     E.g. (id)LED:1 will search for the EVENT specified with id=1, and
+     (hw_id)LED:1 will search for the EVENT specified with hw_id=1
+
+     if (hw_id) is used (default if no type specified), and no EVENT with
+     a matching hw_id can be found, a virtual event will access the control
+     element directly. This is currently only relevant for the SET command.
+
+     This matches with the behaviour of the "EVENT ... fwd_id=<id>" function.
+
+   o added RunStop meta event to stop the execution of a .NGR file
+
+   o added "runstop" terminal command
+
+   o new .NGR command: set_rgb <id> <r:g:b>
+     E.g. "set_rgb (id)LED:1001 15:8:4"
+
+
+MIDIbox NG V1.023
+~~~~~~~~~~~~~~~~~
+
+   o the current AIN/AINSER pot values can now be taken over by the meta events
+     RetrieveAinValues and RetrieveAinserValues
+
+   o new .NGR command: EXEC_META
+
+
+MIDIbox NG V1.022
+~~~~~~~~~~~~~~~~~
+
+   o support for run scripts.
+     See also the new manual page: http://www.ucapps.de/midibox_ng_manual_ngr.html
+
+   o the new SysEx command ^label has been added. It allows to insert the ASCII code
+     of a label string into a SysEx stream.
+     See also cfg/tests/syxlabel.ngc
+
+   o big GLCD font now correctly handled by ^txt and ^txt56 SysEx command
+
+   o line number now displayed on errors in .NGC, .NGL or .NGR file
+
+   o various bugfixes and improvements
+
+
+MIDIbox NG V1.021
+~~~~~~~~~~~~~~~~~
+
+   o support for the "single_usb" option, which can be enabled with the
+     bootloader update application V1.012 ("set usb_single 1")
+
+     Use this option if you are working with a Windows PC which can't handle
+     the 4 USB ports correctly (e.g. stucking MIDI, Filebrowser operations are failing, etc.)
+
+   o added .NGS file which allows to store and restore values into
+     up to 128 snapshots (0..127).
+     The snapshot can be changed in the "Snap" menu in the SCS
+
+   o the "Snap" menu also allows to dump all events (e.g. after a new
+     snapshot has been loaded)
+
+   o added new (hopefully selfexplaining) meta events:
+     SetSnapshot, DecSnapshot, IncSnapshot, CycleSnapshot, LoadSnapshot,
+     SaveSnapshot and DumpSnapshot
+     Note that multiple meta commands can be assigned to an event, e.g.
+     to set, auto-load and dump a snapshot from an encoder write:
+     EVENT_ENC ... type=Meta meta=SetSnapshot meta=LoadSnapshot meta=DumpSnapshot
+
+   o added "no_dump" parameter to EVENT_xxx
+     It specifies if an EVENT_xxx should be sent during a DumpSnapshot.
+
+     no_dump=1 is set for EVENT_RECEIVER and EVENT_KB and events which are using
+     type=Meta by default.
+     If such events should be part of the dump, set no_dump=0
+
+     For all other events/types no_dump=0 is set by default, set no_dump=1 if
+     they shouldn't send MIDI events on a snapshot dump.
+
+   o new label printf-control "%S" prints the snapshot number 0..127
+
+
+MIDIbox NG V1.020
+~~~~~~~~~~~~~~~~~
+
+   o added "rgb" parameter.
+     See cfg/tests/rgb_*.ngc for various examples.
+
+   o added "spread_center" option to AIN/AINSER calibration.
+     See cfg/tests/kb_1.ngc for an usage example.
+
+   o reduced memory consumption of EVENT_* definitions
+
+   o added MIOS Terminal commands: "show id" and "show hw_id"
+
+
+MIDIbox NG V1.019
+~~~~~~~~~~~~~~~~~
+
+   o added "Autoload" function: whenever a .NGC file has been uploaded via the
+     MIOS Filebrowser, it will be automatically loaded, so that "load <file>" 
+     doesn't need to be entered in the MIOS Terminal anymore.
+
+
+   o EVENT_LED_MATRIX: now expects the 'colour' parameter to address the
+     red (colour=0), green (colour=1) or blue (colour=2) LED.
+
+     Note that it's still possible to control the LEDs from a single incoming
+     MIDI message, e.g. by assigning the 3 EVENT_LED_MATRIX entries to the
+     same CC number.
+
+     But now it's also possible to address the LEDs independent from each other.
+
+
+   o LEDs can now be dimmed with 16 brightness levels over the value range.
+     This feature has to be enabled with dimmed=1 in the EVENT_* definition.
+     Configuration example: cfg/tests/dimled.ngc
+
+   o LEDs in a matrix configuration can be dimmed as well. The dim range is the
+     same (0..15), but the effective dim level is limited by the number of 
+     scanned rows:
+        - 4  rows: only 8 levels (0..1, 2..3, 4..5, 6..7, 8..9, 10..11, 12..13, 14..15)
+        - 8  rows: only 4 levels (0..3, 4..7, 8..11, 12..15)
+        - 16 rows: only 2 levels (0..7, 8..15)
+     Configuration example: cfg/tests/dimled_m.ngc
+
+   o the new MIOS Terminal command "lcd" allows to directly output a (formatted)
+     string to the LCD(s).
+     E.g. try "lcd @(1:1:1)Hello World!"
+
+     Note that terminal strings can also be sent via SysEx from a DAW:
+     F0 00 00 7E 32 00 0D 00 <ascii-text> 0A F7
+
+     Accordingly, this SysEx string will print "Hello World!" as well:
+     F0 00 00 7E 32 00 0D 00 6C 63 64 20 40 28 31 3A 31 3A 31 29 48 65 6C 6C 6F 20 57 6F 72 6C 64 21 0A F7
+
+
+
+
+MIDIbox NG V1.018
+~~~~~~~~~~~~~~~~~
+
+   o added EVENT_KB. See cfg/tests/kb_*.ngc for usage examples
+
+   o new LCD formats: %N prints the note name based on the specified MIDI event,
+     and %n based on the event value
+
+   o new meta event: SwapValues - it swaps the primary and secondary value of an event.
+     E.g. on a note event, velocity can be swapped with the key value.
+     A usage example can be found in cfg/tests/kb_4.ngc, where the key and velocity
+     value should be output by separate CV channels
+
+   o AIN/AINSER configuration: added pinrange parameter.
+     It allows to specify individual ranges for the connected pots to calibrate
+     the physical min/max limits.
+
+   o SCS configuration: added SCS num_items and lcd_pos parameters
+
+
+MIDIbox NG V1.017
+~~~~~~~~~~~~~~~~~
+
+   o it's now possible to use the same hw_id in multiple event definitions.
+     This allows for example to send multiple MIDI events from a single
+     control element (e.g. from a single button)
+
+   o the fwd_id now forwards to the event(s) with the given hw_id
+     (which is the same like the "normal id" if not explicitely specified)
+
+   o implemented "conditional events".
+     See the user manual (.NGC chapter) for details and examples.
+
+   o the new meta event UpdateLcd allows to force a refresh of the complete
+     LCD content. This is especially useful in conjunction with conditional
+     events: whenever a source value has been changed (e.g. a button state),
+     all events which have this value in their condition will print out the
+     label if the specified condition matches.
+
+
+MIDIbox NG V1.016
+~~~~~~~~~~~~~~~~~
+
+   o LPC17: robustness of LCD driver has been improved
+
+
+MIDIbox NG V1.015
+~~~~~~~~~~~~~~~~~
+
+   o support for GLCD_SSD1306_ROTATED
+
+   o the ^txt and ^txt56 SysEx command now allows to map incoming characters to
+     different cursor positions. An example can be found in cfg/templates/logictrl.ngc
+
+   o independent from this map feature, ^txt and ^txt56 now also take lcd_pos=... and
+     label=... into account to set the initial LCD and cursor position, at which the
+     message will start. The label can be used to change the GLCD font before the
+     characters will be print.
+     An example can be found in cfg/templates/logictrl.ngc as well.
+
+
+MIDIbox NG V1.014
+~~~~~~~~~~~~~~~~~
+
+   o the keyboard handler of MIDIbox KB has been integrated.
+     The configuration commands are identical "set kb..." as documented at
+     the MIDIbox KB page: http://www.ucapps.de/midibox_kb.html
+
+   o keyboard parameters are also stored in the .NGC file, and can be
+     configured from there.
+
+   o please note that the latency is 10 times higher than in the MIDIbox KB
+     application! Each row is scanned in 320 uS (instead of 32 uS).
+     This has to be considered in the velocity delay configuration.
+     delay_slowest should be 100 (instead of 1000), and delay_fastest should
+     be 5 (instead of 50)
+
+   o DOGM and SSD1306 GLCDs: support for more than 12 displays via DOUT shift
+     registers connected to J28
+
+
+MIDIbox NG V1.013
+~~~~~~~~~~~~~~~~~
+
+   o overworked LCD handling: there is no buffer limitation anymore, any LCD and GLCD size
+     is accepted, which especially means that GLCD fonts are displayed correctly
+     independent from the specified number of connected devices.
+
+   o this change has freed some RAM which can be used for other purposes in future
+
+
+MIDIbox NG V1.012
+~~~~~~~~~~~~~~~~~
+
+   o The application boots a little bit faster now
+
+   o support for more than 2 LCDs.
+     A documentation can be found under http://www.ucapps.de/midibox_ng_manual_lcd.html
+
+
+MIDIbox NG V1.011
+~~~~~~~~~~~~~~~~~
+
+   o EVENT_SENDER and EVENT_RECEIVER can now also be assigned to a radio_group.
+     This can not only be used in conjunction with BUTTON/LED radio groups, but also
+     to distribute MIDI events to from receiver to multiple senders without
+     forwarding chains (which then can be used for a different purpose)
+
+   o the "sdcard_format" command allows to format the connected SD Card with FAT32
+     from the MIOS Terminal
+
+
+MIDIbox NG V1.010
+~~~~~~~~~~~~~~~~~
+
+   o SysEx: added ^cursor, ^txt and ^txt56 identifiers.
+     They allow to send messages to the LCD via SysEx.
+     A usage example can be found under cfg/templates/logictrl.ngc
+
+   o Labels: ^# allows to terminate a label.
+     E.g. "^label^#MyText" prints "MyText" directly after the specified ^label
+
+
+MIDIbox NG V1.009
+~~~~~~~~~~~~~~~~~
+
+   o with a button assigned to 'type=Meta meta=MidiLearn range=0:1' it's now possible
+     to activate a MIDI Learn mode which allows to assign an incoming MIDI event to any
+     control element
+
+   o with 'type=Meta meta=MidiLearn range=0:2' also NRPN events can be learned (in this case,
+     CC#62 and CC#63 will be ignored!)
+
+   o MIDI Learn mode can also be activated in the SCS menu
+
+
+MIDIbox NG V1.008
+~~~~~~~~~~~~~~~~~
+
+   o DIN_MATRIX with rows=4 now properly supported
+
+   o DIN_MATRIX/DOUT_MATRIX: it's now possible to invert the rows as well:
+     inverted=1 or inverted_sel=1 will invert the selection lines
+     inverted_row=1 will invert the row pattern
+
+   o configuration examples for the 16x4 Button/Duo-LED matrix are now
+     available under cfg/tests/blm16x4*.ngc
+
+
+MIDIbox NG V1.007
+~~~~~~~~~~~~~~~~~
+
+   o changed bank concept: the BANK command has been removed, instead the EVENT
+     command got a new "hw_id" and "bank" parameter.
+     A simple configuration example can be found under cfg/tests/encbanks.ngc
+     More complex configuration examples under cfg/tests/bnk*.ngc
+
+   o added meta=CycleBank (increments bank, resets to 1 if last bank reached)
+
+   o additional new metas: SetBankOfHwId, DecBankOfHwId, IncBankOfHwId, CycleBankOfHwId
+
+
+MIDIbox NG V1.006
+~~~~~~~~~~~~~~~~~
+
+   o corrected LED pattern output for the case that the selection lines are inverted.
+
+   o the new SCS command allows to assign emulated button/encoder functions if the SCS
+     shows the mainpage.
+     A usage example can be found under cfg/templates/lre8x2.ngc
+
+
+MIDIbox NG V1.005
+~~~~~~~~~~~~~~~~~
+
+   o support for value MAPs.
+     Various examples can be found under cfg/tests/map*.ngc
+
+   o support for EVENT_CV
+     Various examples can be found under cfg/tests/cv*.ngc
+
+   o AINSER modules now disabled after RESET_HW
+     They have to be explicitely enabled with the AINSER command
+
+   o the AINSER command now supports the "resolution" and "num_pins" parameters
+
+
+MIDIbox NG V1.004
+~~~~~~~~~~~~~~~~~
+
+   o some minor code cleanup
+
+
+MIDIbox NG V1.003
+~~~~~~~~~~~~~~~~~
+
+   o added "enc_speed_mode" parameter to EVENT_ENC
+     Valid modes are Auto (speed automatically adapted according to the value range),
+     Slow:0 .. Slow:7 (divides the increments),
+     Normal (no special measure) and
+     Fast:0 .. Fast:7 (accelerates the increments)
+     A configuration example can be found under cfg/tests/encspeed.ngc
+
+
+MIDIbox NG V1.002
+~~~~~~~~~~~~~~~~~
+
+   o the patterns specified with LED_MATRIX_PATTERN are now reversed so that the
+     bit orientation matches with the hardware.
+
+   o reversed value ranges (min value greater than max value) now properly supported
+
+   o support for ain_mode Direct/Snap/Relative/Parallax
+
+   o incoming MIDI values can now trigger the output of EVENT labels if the "fwd_to_lcd"
+     option is set to 1 in the related EVENT_* definitions.
+
+   o support for "Radio Groups": button and LEDs can now be assigned to groups, which
+     handle the same value over multiple elements.
+     A configuration example can be found under: cfg/tests/radiogrp.ngc
+
+
+MIDIbox NG V1.001
+~~~~~~~~~~~~~~~~~
+
+   o maximum length of DIN/DOUT shift register chain increased to 32.
+     This means that up to 256 digital inputs, and 256 digital outputs are available.
+
+   o Number of virtual button and LED functions increased to 1024
+
+   o New meta event for speeding up ENC movements (EncFast, see .NGC documentation)
+
+   o New meta events for emulating SCS buttons/encoder (see .NGC documentation)
+
+   o Ethernet and OSC setup now stored with ETH/OSC commands in .NGC file
+
+   o SysEx variables are now stored with a SYSEX_VAR command in .NGC file
+
+   o EVENT_BUTTON_MATRIX and EVENT_LED_MATRIX now properly supported
+     See cfg/tests/blm8x8.ngc for a simple configuration example
+
+
+MIDIbox NG V1.000
+~~~~~~~~~~~~~~~~~
+
+   o initial version
+
+
+
+--------------------------------------------------------------------------------
+
+Wishlist
+~~~~~~~~
+
+--------------------------------------------------------------------------------
+automatic .NGC backup: http://midibox.org/forums/topic/18819-enable-midi-in4-and-midi-routing
+--------------------------------------------------------------------------------
+AOUT mapping: http://midibox.org/forums/topic/17498-midibox-ng-release-feedback/?p=167869
+--------------------------------------------------------------------------------
+Allow to directly select SCS pages with meta events: http://midibox.org/forums/topic/17498-midibox-ng-release-feedback/?p=168793
+--------------------------------------------------------------------------------
+Add "delete" option to SCS disk page
+--------------------------------------------------------------------------------
+KEYBOARD: allow individual delay settings for all keys
+--------------------------------------------------------------------------------
+Display timecode on LCD: http://midibox.org/forums/topic/17498-midibox-ng-release-feedback/?p=170513

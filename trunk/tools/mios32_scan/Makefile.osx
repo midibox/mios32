@@ -1,0 +1,31 @@
+# Makefile for MacOS
+# It is assumed, that portmidi already has been installed (usually under /usr/local)
+# -> see $MIOS32_PATH/drivers/gnustep/portmidi/pm_mac/README_MAC.txt
+
+VFLAGS = -g
+
+MIOS32FLAGS = -I $(MIOS32_PATH)/include/mios32 -I . -D MIOS32_FAMILY_EMULATION
+
+# Architecture for static libs
+#ARCH = -arch ppc -arch i386
+ARCH = -arch i386
+
+MACLIB = -framework CoreMIDI -framework CoreFoundation -framework CoreAudio \
+	 -framework CoreServices \
+	 -l portmidi
+
+CC = gcc $(VFLAGS) $(MIOS32FLAGS) $(ARCH)
+
+OBJS = main.o
+
+current: all
+
+all: Makefile.osx $(OBJS)
+	$(CC) $(OBJS) -o mios32_scan $(MACLIB)
+
+main.o: Makefile.osx main.c
+	$(CC) -c main.c -o main.o
+
+clean:
+	rm -f *.o
+	rm -f mios32_scan

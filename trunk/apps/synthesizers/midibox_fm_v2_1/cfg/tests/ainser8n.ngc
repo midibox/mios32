@@ -1,0 +1,20 @@
+# Reset to default
+RESET_HW
+
+
+# LCD message after load
+LCD "%C@(1:1:1)AINSER Test"
+
+
+# AINSER8 hardware
+AINSER n=  1   enabled=1  muxed=0  cs=0  resolution=7bit
+
+
+# EVENTs for the first AINSER8 module
+
+# send notes:
+# id=1 sends notes with different velocity values (and static note value)
+EVENT_AINSER id=  1  type=NoteOn   chn= 1 key= 36   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+
+# id=2 sends notes with different key values (and static velocity)
+EVENT_AINSER id=  2  type=NoteOn   chn= 1 use_key_number=1 range=  0:127  secondary_value=127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"

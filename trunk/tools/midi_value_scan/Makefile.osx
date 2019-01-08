@@ -1,0 +1,38 @@
+# Makefile for MacOS
+# It is assumed, that portmidi already has been installed (usually under /usr/local)
+# -> see $MIOS32_PATH/drivers/gnustep/portmidi/pm_mac/README_MAC.txt
+
+VFLAGS = -g
+
+# Architecture for static libs
+ARCH = -arch i386
+
+MACLIB = -framework CoreMIDI -framework CoreFoundation -framework CoreAudio \
+	 -framework CoreServices \
+	 -l portmidi
+
+CC = gcc $(VFLAGS) $(ARCH)
+
+OBJS = main.o
+
+current: all
+
+all: Makefile.osx $(OBJS)
+	$(CC) $(OBJS) -o midi_value_scan $(MACLIB)
+
+main.o: Makefile.osx main.c
+	$(CC) -c main.c -o main.o
+
+clean:
+	rm -f *.o
+	rm -f midi_value_scan
+	rm -f cc.dat cc_ref.dat pb.dat pb_ref.dat
+
+
+run:
+	./midi_value_scan --in 9 --out 27
+
+plot:
+	gnuplot --persist -e "plot 'cc.dat' title 'Interpolated' with lines, 'cc_ref.dat' title 'Ideal' with lines"
+	gnuplot --persist -e "plot 'pb.dat' title 'Interpolated' with lines, 'pb_ref.dat' title 'Ideal' with lines"
+

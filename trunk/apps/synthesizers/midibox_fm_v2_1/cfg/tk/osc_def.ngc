@@ -1,0 +1,14 @@
+# My preferred ethernet setup
+ETH dhcp=1  local_ip=192.168.1.180  netmask=255.255.255.0  gateway=192.168.1.1
+
+# iPad with TouchOSC protocol
+OSC n=1  remote_ip=192.168.1.123  remote_port=9000  local_port=8000  transfer_mode=TOSC
+
+# iPad with MCMPP protocol
+OSC n=2  remote_ip=192.168.1.123  remote_port=8001  local_port=8000  transfer_mode=MPP
+
+# Mac with TouchOSC protocol
+OSC n=3  remote_ip=192.168.1.114  remote_port=8001  local_port=8000  transfer_mode=TOSC
+
+# Mac with MIDI protocol
+OSC n=4  remote_ip=192.168.1.114  remote_port=8001  local_port=8000  transfer_mode=MIDI

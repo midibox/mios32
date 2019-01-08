@@ -1,0 +1,31 @@
+<html>
+<head>
+	<title>Sending MIDI Data</title>
+</head>
+
+<body>
+
+<h1>Sending MIDI Data</h1>
+
+<p>Before sending data to a real destination (or virtual source) you
+must register yourself as a sender using the <code>addSender:</code>
+method.</p>
+
+<p>MIDI data is sent using the <code>processMIDIPacketList:sender:</code>
+method.  CoreMIDI's MIDIPacketList data structure is used to hold
+the MIDI data.</p>
+
+<p>The following shows the basic calls used for sending MIDI data:</p>
+
+<blockquote>
+<pre>
+[myEndpoint addSender:self];
+
+[myEndpoint processMIDIPacketList:myPacketList sender:self];
+
+[myEndpoint removeSender:self];
+</pre>
+</blockquote>
+
+</body>
+</html>

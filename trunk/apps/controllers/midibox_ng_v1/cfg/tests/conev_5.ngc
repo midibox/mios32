@@ -1,0 +1,28 @@
+
+# demonstrates how different events can be processed depending on the value range.
+
+RESET_HW
+
+LCD "%C"
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+# this toggle button switches between two banks (0 and 1)
+EVENT_BUTTON  id=2000  type=CC  cc=0  range=0:1  button_mode=Toggle  lcd_pos=1:1:1 label="Bank %d"
+
+# the same button should also update the LCD
+EVENT_BUTTON  id=2001  hw_id=2000  type=meta  meta=UpdateLcd
+
+
+# this encoder sends a program change if the first bank is selected
+EVENT_ENC  id=2000  hw_id=2000  if_equal=Button:2000:0  type=ProgramChange range=0:127   lcd_pos=1:1:2 label="PC %3d in Bank 0"
+
+# this encoder event reacts on the same hw_id, and sends a program change if the second bank is selected
+# note that the label could vary, e.g. a conditional label could be used to display the selected patch in this bank
+EVENT_ENC  id=2001  hw_id=2000  if_equal=Button:2000:1  type=ProgramChange range=0:127   lcd_pos=1:1:2 label="PC %3d in Bank 1"

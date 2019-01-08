@@ -1,0 +1,42 @@
+RESET_HW
+
+# reduce number of SRs for faster scan
+# with 2 SRs the scan takes ca. 500 uS instead of 2.5 mS
+SRIO num_sr=2
+
+# keyboard configuration
+KEYBOARD n=1   rows=8  dout_sr1=1  dout_sr2=2  din_sr1=1  din_sr2=2 \
+               din_inverted=0  break_inverted=0  din_key_offset=32 \
+               scan_velocity=1  scan_optimized=0  make_debounced=1  break_is_make=0  note_offset=28 \
+               delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100
+
+EVENT_KB id=1  type=NoteOn chn=1 key=any use_key_number=1 range=0:127  kb_velocity_map=map1  kb_transpose=0  lcd_pos=1:1:1 label="Note %n"
+
+
+# Use soft keys to set a specific velocity map
+# Use encoder to change transpose value
+# See the appr. sections in the kb_6.ngr script!
+
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+EVENT_BUTTON id=2000  type=Meta  meta=RunSection:1  button_mode=OnOnly
+EVENT_BUTTON id=2001  type=Meta  meta=RunSection:2  button_mode=OnOnly
+EVENT_BUTTON id=2002  type=Meta  meta=RunSection:3  button_mode=OnOnly
+EVENT_BUTTON id=2003  type=Meta  meta=RunSection:4  button_mode=OnOnly
+EVENT_BUTTON id=2004  type=Meta  meta=RunSection:5  button_mode=OnOnly
+
+# allow to transpose between -12 and +12
+EVENT_ENC    id=2000  type=Meta  meta=RunSection:10  enc_mode=Absolute range=-12:12
+
+# velocity maps
+# using an interpolation map to define the velocity curve
+MAP1/BYTEI  0:0  127:127
+MAP2/BYTEI  0:0  64:30  96:80  127:127
+MAP3/BYTEI  0:0  10:40  64:80  127:127
+MAP4/BYTEI  0:0  10:40  60:80  90: 120 127:127
+

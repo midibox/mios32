@@ -1,0 +1,19 @@
+RESET_HW
+
+LCD "%CKeyboard Split"
+
+# keyboard configuration
+KEYBOARD n=1   rows=8  dout_sr1=1  dout_sr2=2  din_sr1=1  din_sr2=2 \
+               din_inverted=0  break_inverted=0  din_key_offset=32 \
+               scan_velocity=1  scan_optimized=0  note_offset=28 \
+               delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100
+
+
+# we use C-2 as a split point (key number 48)
+# two EVENT_KB events are listing to the same keyboard hardware (hw_id=1), and select notes from different ranges
+
+# the first zone ranges from 0:47 and outputs at chn1
+EVENT_KB id=1 hw_id=1  type=NoteOn chn=1 key=any use_key_number=1 range=0:47    kb_transpose=0  lcd_pos=1:1:1 label="Note %n Chn#1"
+
+# the second zone ranges from 48:127 and outputs at chn2
+EVENT_KB id=2 hw_id=1  type=NoteOn chn=2 key=any use_key_number=1 range=48:127  kb_transpose=0  lcd_pos=1:1:2 label="Note %n Chn#2"

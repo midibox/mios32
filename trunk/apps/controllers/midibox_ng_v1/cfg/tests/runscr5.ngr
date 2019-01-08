@@ -1,0 +1,152 @@
+if ^section == 0
+  exit
+endif
+
+# should the PC value be cleared?
+if LED:2001 == 2
+  set LED:2000 0
+  set LED:2001 0
+endif
+
+
+# keypad buttons
+
+# '1' button
+if ^section == 1
+  if LED:2000 <= 12
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 1]
+
+    # indicate a valid number
+    set LED:2001 1
+  endif
+  exit
+endif
+
+# '2' button
+if ^section == 2
+  if LED:2000 <= 12
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 2]
+
+    # indicate a valid number
+    set LED:2001 1
+  endif
+  exit
+endif
+
+# '3' button
+if ^section == 3
+  if LED:2000 <= 12
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 3]
+
+    # indicate a valid number
+    set LED:2001 1
+  endif
+  exit
+endif
+
+# '4' button
+if ^section == 4
+  if LED:2000 <= 12
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 4]
+
+    # indicate a valid number
+    set LED:2001 1
+  endif
+  exit
+endif
+
+# '5' button
+if ^section == 5
+  if LED:2000 <= 12
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 5]
+
+    # indicate a valid number
+    set LED:2001 1
+  endif
+  exit
+endif
+
+# '6' button
+if ^section == 6
+  if LED:2000 <= 12
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 6]
+
+    # indicate a valid number
+    set LED:2001 1
+  endif
+  exit
+endif
+
+# '7' button
+if ^section == 7
+  if LED:2000 <= 12
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 7]
+
+    # indicate a valid number
+    set LED:2001 1
+  endif
+  exit
+endif
+
+# '8' button
+if ^section == 8
+  if LED:2000 <= 11
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 8]
+
+    # indicate a valid number
+    set LED:2001 1
+  endif
+  exit
+endif
+
+# '9' button
+if ^section == 9
+  if LED:2000 <= 11
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 9]
+
+    # indicate a valid number
+    set LED:2001 1
+  endif
+  exit
+endif
+
+# '0' button
+if ^section == 10
+  if LED:2000 <= 12
+    set LED:2000 [LED:2000 * 10]
+
+    # indicate a valid number
+    set LED:2001 1
+  endif
+  exit
+endif
+
+# EXEC button
+if ^section == 11
+  # valid number?
+  if LED:2001 == 1
+    send ProgramChange USB1 1 LED:2000
+
+    # next entry will reset the number
+    set LED:2001 2
+  endif
+
+  exit
+endif
+
+# CLEAR button
+if ^section == 12
+  set LED:2000 0
+  set LED:2001 0
+  exit
+endif
+

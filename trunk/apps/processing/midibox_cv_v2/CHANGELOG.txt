@@ -1,0 +1,6 @@
+$Id$
+
+MIDIbox CV V2.000
+~~~~~~~~~~~~~~~~~
+
+   o initial version

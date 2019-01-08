@@ -1,0 +1,84 @@
+# test configuration for the TPD module
+# -> http://www.midibox.org/dokuwiki/doku.php?id=tpd_pcb
+# directly connected to J8/9 of the core module!
+
+RESET_HW
+
+# the rotary encoder
+# (it also forwards the current value to LED_MATRIX:1)
+ENC n=  1   sr= 1  pins=0:1   type=detented3
+EVENT_ENC     id= 1  type=CC     chn= 1 cc= 16   lcd_pos=1:1:1  label="^enc"   fwd_id=LED_MATRIX:1
+
+# the 4 buttons
+EVENT_BUTTON  id= 5  type=NoteOn chn=1  key=36   lcd_pos=1:1:1  label="^btn"  fwd_id=LED:68
+EVENT_BUTTON  id= 6  type=NoteOn chn=1  key=38   lcd_pos=1:1:1  label="^btn"  fwd_id=LED:67
+EVENT_BUTTON  id= 7  type=NoteOn chn=1  key=40   lcd_pos=1:1:1  label="^btn"  fwd_id=LED:66
+EVENT_BUTTON  id= 8  type=NoteOn chn=1  key=41   lcd_pos=1:1:1  label="^btn"  fwd_id=LED:65
+
+# the 4 Duo-Colour LEDs
+EVENT_LED     id=68  type=NoteOn chn=1  key=36
+EVENT_LED     id=67  type=NoteOn chn=1  key=38
+EVENT_LED     id=66  type=NoteOn chn=1  key=40
+EVENT_LED     id=65  type=NoteOn chn=1  key=41
+
+EVENT_LED     id=72  type=NoteOn chn=1  key=36
+EVENT_LED     id=71  type=NoteOn chn=1  key=38
+EVENT_LED     id=70  type=NoteOn chn=1  key=40
+EVENT_LED     id=69  type=NoteOn chn=1  key=41
+
+# LED Digits (Common Cathode)
+DOUT_MATRIX n=1   rows=8   sr_dout_r1=1  inverted_row=0  mirrored_row=1  sr_dout_sel1=2  inverted_sel=0
+
+# First Value (3 digits) received via CC#16
+EVENT_LED_MATRIX id=1  fwd_id=LED_MATRIX:2  led_matrix_pattern=Digit1  fwd_to_lcd=1  type=CC chn= 1 cc= 16  lcd_pos=1:1:2  label="1:%3d%B"
+EVENT_LED_MATRIX id=2  fwd_id=LED_MATRIX:3  led_matrix_pattern=Digit2
+EVENT_LED_MATRIX id=3  fwd_id=LED_MATRIX:4  led_matrix_pattern=Digit3
+EVENT_LED_MATRIX id=4                       led_matrix_pattern=Digit4
+
+# Second Value (3 digits) received via CC#17
+EVENT_LED_MATRIX id=5  fwd_id=LED_MATRIX:6  led_matrix_pattern=Digit1  fwd_to_lcd=1  type=CC chn= 1 cc= 17  lcd_pos=1:1:2  label="2:%3d%B"
+EVENT_LED_MATRIX id=6  fwd_id=LED_MATRIX:7  led_matrix_pattern=Digit2
+EVENT_LED_MATRIX id=7                       led_matrix_pattern=Digit3
+
+# Duo-Matrix (Common Anode)
+DOUT_MATRIX n=2   rows=8   sr_dout_g1=3  sr_dout_r1=4  inverted_row=1  mirrored_row=0  sr_dout_sel1=5  inverted_sel=1
+DOUT_MATRIX n=3   rows=8   sr_dout_g1=6  sr_dout_r1=7  inverted_row=1  mirrored_row=0  sr_dout_sel1=8  inverted_sel=1
+
+# CC 16..23
+EVENT_LED_MATRIX id=17 type=CC  chn= 1 cc= 16  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=18 type=CC  chn= 1 cc= 17  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=19 type=CC  chn= 1 cc= 18  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=20 type=CC  chn= 1 cc= 19  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=21 type=CC  chn= 1 cc= 20  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=22 type=CC  chn= 1 cc= 21  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=23 type=CC  chn= 1 cc= 22  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=24 type=CC  chn= 1 cc= 23  led_matrix_pattern=1  rgb=15:15:15
+
+# CC 24..31
+EVENT_LED_MATRIX id=33 type=CC  chn= 1 cc= 24  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=34 type=CC  chn= 1 cc= 25  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=35 type=CC  chn= 1 cc= 26  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=36 type=CC  chn= 1 cc= 27  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=37 type=CC  chn= 1 cc= 28  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=38 type=CC  chn= 1 cc= 29  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=39 type=CC  chn= 1 cc= 30  led_matrix_pattern=1  rgb=15:15:15
+EVENT_LED_MATRIX id=40 type=CC  chn= 1 cc= 31  led_matrix_pattern=1  rgb=15:15:15
+
+LED_MATRIX_PATTERN n= 1  pos= 0  pattern=1000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 1  pattern=1000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 2  pattern=1100000000000000
+LED_MATRIX_PATTERN n= 1  pos= 3  pattern=1100000000000000
+LED_MATRIX_PATTERN n= 1  pos= 4  pattern=1110000000000000
+LED_MATRIX_PATTERN n= 1  pos= 5  pattern=1110000000000000
+LED_MATRIX_PATTERN n= 1  pos= 6  pattern=1111000000000000
+LED_MATRIX_PATTERN n= 1  pos= 7  pattern=1111000000000000
+LED_MATRIX_PATTERN n= 1  pos= M  pattern=1111100000000000
+LED_MATRIX_PATTERN n= 1  pos= 8  pattern=1111100000000000
+LED_MATRIX_PATTERN n= 1  pos= 9  pattern=1111100000000000
+LED_MATRIX_PATTERN n= 1  pos=10  pattern=1111110000000000
+LED_MATRIX_PATTERN n= 1  pos=11  pattern=1111110000000000
+LED_MATRIX_PATTERN n= 1  pos=12  pattern=1111111000000000
+LED_MATRIX_PATTERN n= 1  pos=13  pattern=1111111000000000
+LED_MATRIX_PATTERN n= 1  pos=14  pattern=1111111100000000
+LED_MATRIX_PATTERN n= 1  pos=15  pattern=1111111100000000
+

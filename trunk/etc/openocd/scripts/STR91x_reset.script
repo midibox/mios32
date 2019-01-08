@@ -1,0 +1,6 @@
+# $Id$
+
+wait_halt
+reset run
+sleep 10
+shutdown

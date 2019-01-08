@@ -1,0 +1,420 @@
+$Id$
+
+
+CC Implementation of MIDIbox SEQ V4
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   o CC#1 (0x01 - Modulation Wheel)
+     Controls the Morphing Function
+
+   o CC#3 (0x03 - Scale)
+     Controls the Global Scale
+     "Global Scale" control mode must be enabled within the FX->SCALE menu
+
+   o CC#112-CC#115 (0x70-0x73)
+     Change Pattern of Group #1/2/3/4
+
+   o CC#116-CC#119 (0x74-0x77)
+     Bank Pattern of Group #1/2/3/4
+
+   o CC#98 (0x62 - NRPN LSB)
+     Selects the Sequencer Parameter which should be modified via NRPN
+     See list below
+
+   o CC#99 (0x63 - NRPN MSB)
+     Selects the Track which should be modified via NRPN
+     Allowed values: 0..15 for Track 1-16, 127 to modify the current selected track
+     All others reserved for future enhancements
+
+   o CC#6 (0x06 - NRPN Value, LSB)
+     Sets a Sequencer Parameter depending on the preselected track and parameter number
+
+Example for changing the Octave Transpose value of Track 3 to -1 Octave:
+   B0 62 31 63 02 06 0F
+
+
+Note that additional CCs can be assigned in the MIDI->Ext. Ctrl page
+
+
+
+
+NRPN LSB|   Range   | Default | Description
+========+===========+=========+================================================
+0x00/  0| -         |    -    | reserved
+  ...   |           |         | 
+0x0f/ 15|           |         | 
+--------+-----------+---------+------------------------------------------------
+0x10/ 16|   0 - 22  |       0 | LFO Waveform
+        |           |         |    0: off
+        |           |         |    1: Sine
+        |           |         |    2: Triangle
+        |           |         |    3: Sawtooth
+        |           |         |    4: Rectangle 05
+        |           |         |    5: Rectangle 10
+        |           |         |    ...
+        |           |         |    22: Rectangle 95
+--------+-----------+---------+------------------------------------------------
+0x11/ 17|   0 - 127 |      64 | LFO Amplitude
+        |           |         |    0x00..0x3f: negative range
+        |           |         |    0x40: no amplitude
+        |           |         |    0x41..0x7f: positive range
+        |           |         | Note: range is 0x00..0xff if edited from CS
+--------+-----------+---------+------------------------------------------------
+0x12/ 18|   0 - 99  |       0 | LFO Phase:
+        |           |         |    0: 0%
+        |           |         |    1: 1%
+        |           |         |    2: 2%
+        |           |         |    ...
+        |           |         |    99: 99%
+--------+-----------+---------+------------------------------------------------
+0x13/ 19|   0 - 127 |      15 | LFO Interval in Steps:
+        |           |         |    0: 1 Step
+        |           |         |    1: 2 Steps
+        |           |         |    2: 3 Steps
+        |           |         |    ...
+        |           |         |    127: 128 Steps
+        |           |         | Note: range is 1..256 steps if edited from CS
+--------+-----------+---------+------------------------------------------------
+0x14/ 20|   0 - 127 |      15 | LFO Interval Reset:
+        |           |         |    0: after 1 Step
+        |           |         |    1: after 2 Steps
+        |           |         |    2: after 3 Steps
+        |           |         |    ...
+        |           |         |    127: after 128 Steps
+        |           |         | Note: range is 1..256 steps if edited from CS
+--------+-----------+---------+------------------------------------------------
+0x15/ 21|   0 - 31  |       0 | LFO Flags:
+        |           |         |    bit 0: Oneshot Mode on/off
+        |           |         |    bit 1: Note Assignment on/off
+        |           |         |    bit 2: Velocity Assignment on/off
+        |           |         |    bit 3: Length Assignment on/off
+        |           |         |    bit 4: CC Assignment on/off
+        |           |         |    bit 5: Extra CC Assignment off/on (inverted!)
+--------+-----------+---------+------------------------------------------------
+0x16/ 22|   0 - 127 |       0 | LFO Extra CC Number
+--------+-----------+---------+------------------------------------------------
+0x17/ 23|   0 - 127 |      64 | LFO Extra CC Offset (0..127)
+--------+-----------+---------+------------------------------------------------
+0x18/ 24|   0 - 8   |       6 | LFO Extra CC PPQN
+        |           |         |    0: 1 PPQN
+        |           |         |    1: 3 PPQN
+        |           |         |    2: 6 PPQN
+        |           |         |    3: 12 PPQN
+        |           |         |    4: 24 PPQN
+        |           |         |    5: 48 PPQN
+        |           |         |    6: 96 PPQN
+        |           |         |    7: 192 PPQN
+        |           |         |    8: 384 PPQN
+--------+-----------+---------+------------------------------------------------
+0x19/ 25| -         |    -    | reserved
+  ...   |           |         | 
+0x1c/ 28|           |         | 
+--------+-----------+---------+------------------------------------------------
+0x1d/ 29|   0 -128  |       0 | Pattern Bank Change (Low-Byte)
+        |           |         |     0: off
+        |           |         | 1-128: Bank Selection (Low-Byte)
+--------+-----------+---------+------------------------------------------------
+0x1e/ 30|   0 -128  |       0 | Pattern Bank Change (High-Byte)
+        |           |         |     0: off
+        |           |         | 1-128: Bank Selection (High-Byte)
+--------+-----------+---------+------------------------------------------------
+0x1f/ 31|   0 -128  |       0 | Pattern Program Change
+        |           |         |     0: off
+        |           |         | 1-128: Program Change Selection
+--------+-----------+---------+------------------------------------------------
+0x20/ 32|   0 - 3   |       1 | Track Mode
+        |           |         |    0: off
+        |           |         |    1: Normal
+        |           |         |    2: Transpose
+        |           |         |    3: Arpeggiator
+--------+-----------+---------+------------------------------------------------
+0x21/ 33|   0 - 15  |       2 | Track Mode Flags
+        |           |         |    bit 0: Unsorted Arp Stack on/off
+        |           |         |    bit 1: Hold on/off
+        |           |         |    bit 2: Restart on/off
+        |           |         |    bit 3: Force Scale on/off
+        |           |         |    bit 4: Sustain on/off
+        |           |         |    bit 5: First Note on/off
+        |           |         |    bit 6: Next step has to be triggered from transposer on/off
+--------+-----------+---------+------------------------------------------------
+0x22/ 34|   0 - 3   |       0 | Track Event Mode
+        |           |         |    0: Note
+        |           |         |    1: Chord
+        |           |         |    2: CC
+        |           |         |    3: Drum
+--------+-----------+---------+------------------------------------------------
+0x23/ 35|   0 - 127 |       0 | Limit Fx: Lower Note Number (0=off)
+0x24/ 36|   0 - 127 |       0 | Limit Fx: Upper Note Number (0=off)
+--------+-----------+---------+------------------------------------------------
+0x25/ 37|   0 -   3 |       0 | Transposer/Arpeggiator Bus assignment (Bus1..Bus4)
+--------+-----------+---------+------------------------------------------------
+0x26/ 38|   0 - 15  |       0 | MIDI Channel of Track
+--------+-----------+---------+------------------------------------------------
+0x27/ 39|   0 - 127 |       0 | MIDI Port of Track
+        |           |         |    0x00: Default
+        |           |         |    0x10: USB1
+        |           |         |    0x11: USB2
+        |           |         |    0x12: USB3
+        |           |         |    0x13: USB4
+        |           |         |    0x20: OUT1 (MIDI Out Port #1)
+        |           |         |    0x21: OUT2 (MIDI Out Port #2)
+        |           |         |    0x22: OUT3 (MIDI Out Port #3)
+        |           |         |    0x23: OUT4 (MIDI Out Port #4)
+        |           |         |    0x30: IIC1
+        |           |         |    0x31: IIC2
+        |           |         |    0x32: IIC3
+        |           |         |    0x33: IIC4
+        |           |         |    0x60: CV1
+        |           |         |    0x61: CV2
+        |           |         |    0x70: Bus1 (Loopback)
+        |           |         |    0x71: Bus2
+        |           |         |    0x72: Bus3
+        |           |         |    0x73: Bus4
+--------+-----------+---------+------------------------------------------------
+0x28/ 40|   0 - 6   |       0 | Track Direction
+        |           |         |    0: Forward 
+        |           |         |    1: Backward
+        |           |         |    2: Ping Pong
+        |           |         |    3: Pendulum
+        |           |         |    4: Random Direction
+        |           |         |    5: Random Step
+        |           |         |    6: Random Direction and Step
+--------+-----------+---------+------------------------------------------------
+0x29/ 41|   0 - 15  |       0 | Steps Replay: (0..15 = x1..x16)
+0x2a/ 42|   0 - 15  |       0 | Steps Forward (0..15 = 1..16 steps)
+0x2b/ 43|   0 - 15  |       0 | Steps Jump Back (0..15 = 1..16 steps)
+--------+-----------+---------+------------------------------------------------
+0x2c/ 44|   0 - 127 |      15 | Clock Divider (in 384ppqn steps)
+--------+-----------+---------+------------------------------------------------
+0x2d/ 45|   0 - 127 |      15 | Track Length (0..127 = 1..127 steps)
+        |           |         | Range is 0x00..0xff = 1..256 steps if edited from CS
+--------+-----------+---------+------------------------------------------------
+0x2e/ 46|   0 - 31  |       0 | Loop Point (0..127 = step 1..128)
+        |           |         | Range is 0x00..0xff = 1..256 steps if edited from CS
+--------+-----------+---------+------------------------------------------------
+0x2f/ 47|   0 - 3   |       0 | Clock Divider Flags:
+        |           |         |   Bit 0: Synch to Measure
+        |           |         |   Bit 1: Triplets
+        |           |         |   Bit 2: Manual (Clock the next step only on manual requests (or via Step CC)
+--------+-----------+---------+------------------------------------------------
+0x30/ 48|   0 - 15  |       0 | Transpose Semitones
+        |           |         |     8: -8 semitones
+        |           |         |     9: -7 semitones
+        |           |         |    10: -6 semitones
+        |           |         |    11: -5 semitones
+        |           |         |    12: -4 semitones
+        |           |         |    13: -3 semitones
+        |           |         |    14: -2 semitones
+        |           |         |    15: -1 semitones
+        |           |         |     0: no transpose
+        |           |         |     1: +1 semitones
+        |           |         |     2: +2 semitones
+        |           |         |     3: +3 semitones
+        |           |         |     4: +4 semitones
+        |           |         |     5: +5 semitones
+        |           |         |     6: +6 semitones
+        |           |         |     7: +7 semitones
+--------+-----------+---------+------------------------------------------------
+0x31/ 49|   0 - 15  |       0 | Octave Transpose
+        |           |         |     8: no transpose, full range pot control
+        |           |         |     9: -7 Octaves
+        |           |         |    10: -6 Octaves
+        |           |         |    11: -5 Octaves
+        |           |         |    12: -4 Octaves
+        |           |         |    13: -3 Octaves
+        |           |         |    14: -2 Octaves
+        |           |         |    15: -1 Octave
+        |           |         |     0: +0 Octaves
+        |           |         |     1: +1 Octave
+        |           |         |     2: +2 Octaves
+        |           |         |     3: +3 Octaves
+        |           |         |     4: +4 Octaves
+        |           |         |     5: +5 Octaves
+        |           |         |     6: +6 Octaves
+        |           |         |     7: +7 Octaves
+--------+-----------+---------+------------------------------------------------
+0x32/ 50|   0 - 21  |       0 | Groove Style
+        |           |         |    0: off
+        |           |         |    1: Shuffle
+        |           |         |    2: Inv. Shuffle
+        |           |         |    3: Shuffle2
+        |           |         |    4: Shuffle3
+        |           |         |    5: Shuffle4
+        |           |         |    6: Shuffle5
+        |           |         |    7..21: Custom Grooves 1-16
+        |           |         |
+        |           |         | Bit #6 enables Sync to Track
+--------+-----------+---------+------------------------------------------------
+0x33/ 51|   0 - 15  |       0 | Groove Intensity
+--------+-----------+---------+------------------------------------------------
+0x34/ 52|   0 - 1   |       0 | Morph Mode
+        |           |         |    0: off
+        |           |         |    1: on
+--------+-----------+---------+------------------------------------------------
+0x35/ 53|   0 - 128 |       0 | Morph Destination Range
+        |           |         | 0..127 select offset step 1..128
+        |           |         | Range is 1..256 steps if edited from CS
+--------+-----------+---------+------------------------------------------------
+0x36/ 54|   0 - 127 |       0 | Humanize Mode: Random Intensity
+--------+-----------+---------+------------------------------------------------
+0x37/ 55|   0 - 7   |       0 | Humanize Mode: Assignments
+        |           |         |    bit 0: Note
+        |           |         |    bit 1: Vel./CC Value
+        |           |         |    bit 2: Length
+--------+-----------+---------+------------------------------------------------
+0x38/ 56|   0 - 9   |       0 | Assignment for Drum Parameter Layer A
+        |           |         |    0: None
+        |           |         |    1: Note
+        |           |         |    2: Chord
+        |           |         |    3: Velocity
+        |           |         |    4: Length
+        |           |         |    5: CC
+        |           |         |    6: PitchBend
+        |           |         |    7: Probability
+        |           |         |    8: Delay
+        |           |         |    9: Roll
+0x39/ 57|   0 - 9   |       0 | Assignment for Drum Parameter Layer B
+0x3a/ 57|   0 - 9   |       0 | Assignment for Drum Parameter Layer C
+0x3b/ 57|   0 - 9   |       0 | Assignment for Drum Parameter Layer D
+--------+-----------+---------+------------------------------------------------
+0x3c/ 60|   0 - 15  |       0 | Steps Repeat (0..16)
+0x3d/ 61|   0 - 15  |       0 | Steps Skip (0..16)
+0x3e/ 62|   0 - 63  |       0 | Steps Interval (0..63 = 1..64 steps)
+--------+-----------+---------+------------------------------------------------
+0x3f/ 64| -         |    -    | reserved
+--------+-----------+---------+------------------------------------------------
+0x40/ 65|   0 - 8   |       1 | Trigger Layer Assignment for Gate
+0x41/ 66|   0 - 8   |       2 | Trigger Layer Assignment for Skip
+0x42/ 67|   0 - 8   |       3 | Trigger Layer Assignment for Accent
+0x43/ 68|   0 - 8   |       4 | Trigger Layer Assignment for Glide
+0x44/ 69|   0 - 8   |       5 | Trigger Layer Assignment for Roll
+0x45/ 70|   0 - 8   |       6 | Trigger Layer Assignment for Random Gate
+0x46/ 71|   0 - 8   |       7 | Trigger Layer Assignment for Random Value
+0x47/ 72|   0 - 8   |       8 | Trigger Layer Assignment for No Fx
+--------+-----------+---------+------------------------------------------------
+0x48/ 73| -         |    -    | reserved
+  ...   |           |         | 
+0x4f/ 79|           |         | 
+--------+-----------+---------+------------------------------------------------
+0x50/ 80|   0 - 15  |       0 | Echo Repeats (0..15)
+        |       64  |         | Flag #6 will disable echo (but keep the repeats)
+--------+-----------+---------+------------------------------------------------
+0x51/ 81|   0 - 15  |       0 | Echo Delay:
+        |           |         |     0: 64T
+        |           |         |     1: 64
+        |           |         |     2: 32T
+        |           |         |     3: 32
+        |           |         |     4: 16T
+        |           |         |     5: 16
+        |           |         |     6:  8T
+        |           |         |     7:  8
+        |           |         |     8:  4T
+        |           |         |     9:  4
+        |           |         |    10:  2T
+        |           |         |    11:  2
+        |           |         |    12:  1T
+        |           |         |    13:  1
+        |           |         |    14:  Rnd1
+        |           |         |    15:  Rnd2
+        |           |         |    16: 64d
+        |           |         |    17: 32d
+        |           |         |    18: 16d
+        |           |         |    19:  8d
+        |           |         |    20:  4d
+        |           |         |    21:  2d
+        |           |         |    22:   0
+--------+-----------+---------+------------------------------------------------
+0x52/ 82|   0 - 40  |      15 | Initial Velocity Level:
+        |           |         |    0:   0%
+        |           |         |    1:   5%
+        |           |         |    2:  10%
+        |           |         |    ...
+        |           |         |    20:  100%
+        |           |         |    ...
+        |           |         |    40:  200%
+--------+-----------+---------+------------------------------------------------
+0x53/ 83|   0 - 40  |      15 | Feedback Velocity Level:
+        |           |         |    0:   0%
+        |           |         |    1:   5%
+        |           |         |    2:  10%
+        |           |         |    ...
+        |           |         |    20:  100%
+        |           |         |    ...
+        |           |         |    40:  200%
+--------+-----------+---------+------------------------------------------------
+0x54/ 84|   0 - 127 |      64 | Feedback Note Value:
+        |           |         |    0..63: decrements (-64..-1)
+        |           |         |    64: no increment
+        |           |         |    65..127: increments (+1..+63)
+--------+-----------+---------+------------------------------------------------
+0x55/ 85|   0 - 40  |      15 | Feedback Gatelength:
+        |           |         |    0:   0%
+        |           |         |    1:   5%
+        |           |         |    2:  10%
+        |           |         |    ...
+        |           |         |    20:  100%
+        |           |         |    ...
+        |           |         |    40:  200%
+--------+-----------+---------+------------------------------------------------
+0x56/ 86|   0 - 40  |      15 | Feedback Ticks (Delay):
+        |           |         |    0:   0%
+        |           |         |    1:   5%
+        |           |         |    2:  10%
+        |           |         |    ...
+        |           |         |    20:  100%
+        |           |         |    ...
+        |           |         |    40:  200%
+--------+-----------+---------+------------------------------------------------
+0x57/ 87| -         |    -    | reserved
+--------+-----------+---------+------------------------------------------------
+0x58/ 88|   0 - 40  |       0 | Fx MIDI Mode
+        |           |         |    bit 0..3: Behaviour
+        |           |         |              0: Forward to all channels
+        |           |         |              1: Alternate between channels
+        |           |         |              2: Alternate only on Echo Taps
+        |           |         |              3: Forward to Random channel
+        |           |         |           4..7: reserved
+        |           |         |    bit 4: Forward CCs, PitchBender, Channel
+        |           |         |           Pressure, Program Change to all Fx channels
+--------+-----------+---------+------------------------------------------------
+0x59/ 89|   0 - 40  |       0 | Fx MIDI Port
+        |           |         |    0x00: Same as configured for track
+        |           |         |    0x10: USB1
+        |           |         |    0x11: USB2
+        |           |         |    0x12: USB3
+        |           |         |    0x13: USB4
+        |           |         |    0x20: OUT1 (MIDI Out Port #1)
+        |           |         |    0x21: OUT2 (MIDI Out Port #2)
+        |           |         |    0x22: OUT3 (MIDI Out Port #3)
+        |           |         |    0x23: OUT4 (MIDI Out Port #4)
+        |           |         |    0x30: IIC1
+        |           |         |    0x31: IIC2
+        |           |         |    0x32: IIC3
+        |           |         |    0x33: IIC4
+        |           |         |    0x60: CV1
+        |           |         |    0x61: CV2
+--------+-----------+---------+------------------------------------------------
+0x5a/ 90|   0 - 15  |       0 | Fx MIDI Channel
+--------+-----------+---------+------------------------------------------------
+0x5b/ 91|   0 - 15  |       0 | Number of Fx MIDI Channels
+--------+-----------+---------+------------------------------------------------
+0x5c/ 92| -         |    -    | reserved
+  ...   |           |         | 
+0x7f/127|           |         | 
+--------+-----------+---------+------------------------------------------------
+
+Note: all these parameters can also be controlled from other tracks via the
+internal loopback port. The Loopback Channel selects the Track, and
+the Loopback CC# corresponds with with the NRPN LSB
+
+Example: Loopback Channel #3, CC#49 controls the Octave Transpose of Track 3
+
+Note also, that the Morphing Parameter can be controlled via Loopback
+as well. It's available on all channels, independent from the Morph
+Channel selection of the MIDI In port
+
+
+Since V4.077, it's possible to send parameter changes, done from the user interface,
+to a specified MIDI output port. This allows to record such changes with a DAW.
+The output port has to be selected in the MIDI->Ext.Ctrl page, where also the input
+port and channel is specified.

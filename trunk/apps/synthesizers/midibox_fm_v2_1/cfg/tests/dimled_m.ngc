@@ -1,0 +1,42 @@
+
+RESET_HW
+
+LCD "%CDimmed LEDs for LED Matrix"
+
+
+# test dimmed LEDs on the 16x4 Button/Duo-LED matrix
+# Schematic: http://www.ucapps.de/mbhp/button_duoled_matrix.pdf
+
+# only LEDs configured here:
+DOUT_MATRIX n=1  rows=4  inverted=0  sr_dout_sel1=1  sr_dout_r1=2  sr_dout_g1=3
+DOUT_MATRIX n=2  rows=4  inverted=0  sr_dout_sel1=4  sr_dout_r1=5  sr_dout_g1=6
+
+
+# Fade-in green and red LED over the 16 brightness levels
+# Both LEDs are assigned to the same MIDI event, but they range over different value maps which specify the brightness
+#  0..15: fade green LED
+# 16..31: fade red LED
+# 32..47: fade both LEDs (-> yellow)
+# 48..63: fade both LEDs with different levels
+MAP1  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 \
+      0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0 \
+      1  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 \
+      2  2  2  2  4  4  4  4  6  8 10 12 14 15 15 15 
+
+MAP2  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0 \
+      1  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 \
+      1  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 \
+      1  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+
+# Note: in a matrix configuration the dim range is the same as for normal DOUTs (0..15),
+# but the effective dim level is limited by the number of scanned rows:
+#  - 4  rows: only 8 levels (0..1, 2..3, 4..5, 6..7, 8..9, 10..11, 12..13, 14..15)
+#  - 8  rows: only 4 levels (0..3, 4..7, 8..11, 12..15)
+#  - 16 rows: only 2 levels (0..7, 8..15)
+
+# set the levels for each LED individually with CC#16..CC#79
+EVENT_LED_MATRIX id=1  hw_id=1  colour=0  type=CC cc=16 chn=1 dimmed=1 range=map1   fwd_to_lcd=1 lcd_pos=1:1:2 label="Matrix1 Pin %2p %b"
+EVENT_LED_MATRIX id=2  hw_id=1  colour=1  type=CC cc=16 chn=1 dimmed=1 range=map2   fwd_to_lcd=1 lcd_pos=1:1:2 label="Matrix1 Pin %2p %b"
+
+EVENT_LED_MATRIX id=3  hw_id=2  colour=0  type=CC cc=48 chn=1 dimmed=1 range=map1   fwd_to_lcd=1 lcd_pos=1:1:2 label="Matrix2 Pin %2p %b"
+EVENT_LED_MATRIX id=4  hw_id=2  colour=1  type=CC cc=48 chn=1 dimmed=1 range=map2   fwd_to_lcd=1 lcd_pos=1:1:2 label="Matrix2 Pin %2p %b"

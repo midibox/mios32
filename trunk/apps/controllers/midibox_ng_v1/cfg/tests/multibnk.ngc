@@ -1,0 +1,87 @@
+# Multi Bank Demo
+# - Button (and LED) 101..204 are located in bank 1 and 2
+# - Button (and LED) 301..304 are located in bank 3 and 4
+# - remaining buttons and LEDs are located in dedicated banks
+
+# The run script is located in MULTIBNK.NGR - this file has to be uploaded as well!
+
+RESET_HW
+
+LCD "%C@(1:1:1)Multi-Banks"
+
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+
+# Controlled from SCS buttons at J10 in main page
+
+# select Bank1 directly
+# call ^section 1 on each bank change
+EVENT_BUTTON id=2000  type=Meta   meta=SetBank    meta=RunSection:1  button_mode=OnOnly range=1:1
+
+# For testing purposes: decrement bank
+# call ^section 1 on each bank change
+EVENT_BUTTON id=2001  type=Meta   meta=DecBank    meta=RunSection:1   button_mode=OnOnly
+
+# For testing purposes: increment bank
+# call ^section 1 on each bank change
+EVENT_BUTTON id=2002  type=Meta   meta=IncBank    meta=RunSection:1   button_mode=OnOnly
+
+# For testing purposes: cycle bank
+# call ^section 1 on each bank change
+EVENT_BUTTON id=2003  type=Meta   meta=CycleBank  meta=RunSection:1   button_mode=OnOnly
+
+
+# the SCS encoder at J10 just increments/decrements the bank
+# call ^section 1 on each bank change
+EVENT_ENC    id=2000  type=Meta   meta=SetBank    meta=RunSection:1 range=1:4
+
+# This is a dummy LED without assigned hardware (hw_id=2000 not used anywhere else) and without MIDI event.
+# the purpose of this EVENT item is to print the bank whenever the LCD is refreshed (e.g. after startup or bank change)
+EVENT_LED id=2000 fwd_to_lcd=1 lcd_pos=1:17:1 label="Bnk%q"
+
+
+# Button (and LEDs) in Bank 1 and 2
+# The events will be activated in the .NGR script!
+EVENT_BUTTON id=101 hw_id=1  fwd_id=LED:1  type=CC cc=16
+EVENT_BUTTON id=102 hw_id=2  fwd_id=LED:2  type=CC cc=17
+EVENT_BUTTON id=103 hw_id=3  fwd_id=LED:3  type=CC cc=18
+EVENT_BUTTON id=104 hw_id=4  fwd_id=LED:4  type=CC cc=19
+
+# Button (and LEDs) in Bank 1 only
+EVENT_BUTTON id=105 hw_id=5  fwd_id=LED:5  type=CC cc=20  bank=1
+EVENT_BUTTON id=106 hw_id=6  fwd_id=LED:6  type=CC cc=21  bank=1
+EVENT_BUTTON id=107 hw_id=7  fwd_id=LED:7  type=CC cc=22  bank=1
+EVENT_BUTTON id=108 hw_id=8  fwd_id=LED:8  type=CC cc=23  bank=1
+
+# Button (and LEDs) in Bank 2 only
+EVENT_BUTTON id=205 hw_id=5  fwd_id=LED:5  type=CC cc=24  bank=2
+EVENT_BUTTON id=206 hw_id=6  fwd_id=LED:6  type=CC cc=25  bank=2
+EVENT_BUTTON id=207 hw_id=7  fwd_id=LED:7  type=CC cc=26  bank=2
+EVENT_BUTTON id=208 hw_id=8  fwd_id=LED:8  type=CC cc=27  bank=2
+
+
+# Button (and LEDs) in Bank 3 and 4
+# The events will be activated in the .NGR script!
+EVENT_BUTTON id=301 hw_id=1  fwd_id=LED:1  type=CC cc=32
+EVENT_BUTTON id=302 hw_id=2  fwd_id=LED:2  type=CC cc=33
+EVENT_BUTTON id=303 hw_id=3  fwd_id=LED:3  type=CC cc=34
+EVENT_BUTTON id=304 hw_id=4  fwd_id=LED:4  type=CC cc=35
+
+# Button (and LEDs) in Bank 3 only
+EVENT_BUTTON id=305 hw_id=5  fwd_id=LED:5  type=CC cc=36  bank=3
+EVENT_BUTTON id=306 hw_id=6  fwd_id=LED:6  type=CC cc=37  bank=3
+EVENT_BUTTON id=307 hw_id=7  fwd_id=LED:7  type=CC cc=38  bank=3
+EVENT_BUTTON id=308 hw_id=8  fwd_id=LED:8  type=CC cc=39  bank=3
+
+# Button (and LEDs) in Bank 4 only
+EVENT_BUTTON id=405 hw_id=5  fwd_id=LED:5  type=CC cc=40  bank=4
+EVENT_BUTTON id=406 hw_id=6  fwd_id=LED:6  type=CC cc=41  bank=4
+EVENT_BUTTON id=407 hw_id=7  fwd_id=LED:7  type=CC cc=42  bank=4
+EVENT_BUTTON id=408 hw_id=8  fwd_id=LED:8  type=CC cc=43  bank=4

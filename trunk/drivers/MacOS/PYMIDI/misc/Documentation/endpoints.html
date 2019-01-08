@@ -1,0 +1,44 @@
+<html>
+<head>
+	<title>MIDI Endpoints</title>
+</head>
+
+<body>
+
+<h1>MIDI Endpoints</h1>
+
+<p>An endpoint object represents a source or destination of MIDI data.  It can
+correspond to either a physical device such as a port on a MIDI interface,
+or to a source or destination within another MIDI application.</p>
+
+<h2>Real vs. Virtual Endpoints</h2>
+
+<p>Real endpoints correspond to physical devices or sources/destinations
+created by other MIDI applications on the system.</p>
+
+<p>Virtual endpoints, on the other hand, are endpoints that you
+create and that appear in other applications as sources and
+destinations.  They allow you to communicate with other applications
+as though your application were a physical device.</p>
+
+<h3>Managing Real Endpoints</h3>
+
+<p>Real endpoints are represented by objects of the PYMIDIRealDestination and
+PYMIDIRealSource classes.  
+The MIDI Manager is responsible for creating and managing objects of these
+classes - you never instantiate them yourself.</p>
+
+<h3>Managing Virtual Endpoints</h3>
+
+<p>Virtual endpoints are represented by objects of the
+PYMIDIVirtualDestination and PYMIDIVirtualSource classes.  These
+can be created using the <code>initWithName:</code> initializer.</p>
+
+<p>Note that the terminology can be slightly confusing in that a
+PYMIDIVirtualSource appears as a source to other applications, not to
+your own.  Your own application must send data to the virtual source
+(as though it were destination.)  That data can then be received by
+other applications.  The reverse is true for virtual destinations.</p>
+
+</body>
+</html>

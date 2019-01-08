@@ -1,0 +1,4 @@
+COND_LABEL pcstate
+COND =0  "Enter Number"
+COND =1  "Ongoing...  "
+COND =2  "PC Sent     "

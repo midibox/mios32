@@ -1,0 +1,366 @@
+# Reset to default
+RESET_HW
+
+
+# LCD message after load
+LCD "%C@(1:1:1)MIDIbox FM V2.0"
+
+
+# EVENTs
+
+# BUTTONs
+EVENT_BUTTON id=1121 type=MBFM mbfm=SelectOPL3       range=0:1
+EVENT_BUTTON id=1055 type=MBFM mbfm=SelectVoice:0    range=0:1
+EVENT_BUTTON id=1056 type=MBFM mbfm=SelectVoice:1    range=0:1
+EVENT_BUTTON id=1048 type=MBFM mbfm=SelectVoice:2    range=0:1
+EVENT_BUTTON id=1047 type=MBFM mbfm=SelectVoice:3    range=0:1
+EVENT_BUTTON id=1046 type=MBFM mbfm=SelectVoice:4    range=0:1
+EVENT_BUTTON id=1045 type=MBFM mbfm=SelectVoice:5    range=0:1
+EVENT_BUTTON id=1044 type=MBFM mbfm=SelectVoice:6    range=0:1
+EVENT_BUTTON id=1043 type=MBFM mbfm=SelectVoice:7    range=0:1
+EVENT_BUTTON id=1042 type=MBFM mbfm=SelectVoice:8    range=0:1
+EVENT_BUTTON id=1041 type=MBFM mbfm=SelectVoice:9    range=0:1
+EVENT_BUTTON id=1064 type=MBFM mbfm=SelectVoice:10   range=0:1
+EVENT_BUTTON id=1063 type=MBFM mbfm=SelectVoice:11   range=0:1
+EVENT_BUTTON id=1062 type=MBFM mbfm=SelectVoice:12   range=0:1
+EVENT_BUTTON id=1061 type=MBFM mbfm=SelectVoice:13   range=0:1
+EVENT_BUTTON id=1060 type=MBFM mbfm=SelectVoice:14   range=0:1
+EVENT_BUTTON id=1059 type=MBFM mbfm=SelectVoice:15   range=0:1
+EVENT_BUTTON id=1058 type=MBFM mbfm=SelectVoice:16   range=0:1
+EVENT_BUTTON id=1057 type=MBFM mbfm=SelectVoice:17   range=0:1
+EVENT_BUTTON id=1052 type=MBFM mbfm=SelectMode:0     range=0:1
+EVENT_BUTTON id=1051 type=MBFM mbfm=SelectMode:1     range=0:1
+EVENT_BUTTON id=1049 type=MBFM mbfm=SelectMode:2     range=0:1
+EVENT_BUTTON id=1050 type=MBFM mbfm=SelectMode:3     range=0:1
+EVENT_BUTTON id=1040 type=MBFM mbfm=BtnSoftkey:1     range=0:1
+EVENT_BUTTON id=1039 type=MBFM mbfm=BtnSoftkey:2     range=0:1
+EVENT_BUTTON id=1038 type=MBFM mbfm=BtnSoftkey:3     range=0:1
+EVENT_BUTTON id=1037 type=MBFM mbfm=BtnSoftkey:4     range=0:1
+EVENT_BUTTON id=1036 type=MBFM mbfm=BtnSoftkey:5     range=0:1
+EVENT_BUTTON id=1035 type=MBFM mbfm=BtnSoftkey:6     range=0:1
+EVENT_BUTTON id=1034 type=MBFM mbfm=BtnSoftkey:7     range=0:1
+EVENT_BUTTON id=1033 type=MBFM mbfm=BtnSoftkey:8     range=0:1
+EVENT_BUTTON id=1053 type=MBFM mbfm=BtnMenu          range=0:1
+EVENT_BUTTON id=1054 type=MBFM mbfm=BtnSelect        range=0:1
+EVENT_BUTTON id=1090 type=MBFM mbfm=BtnDlyScale      range=0:1
+EVENT_BUTTON id=1091 type=MBFM mbfm=BtnRetrig        range=0:1
+EVENT_BUTTON id=1097 type=MBFM mbfm=BtnLink          range=0:1
+EVENT_BUTTON id=1105 type=MBFM mbfm=BtnDupl          range=0:1
+EVENT_BUTTON id=1113 type=MBFM mbfm=Btn4Op           range=0:1
+EVENT_BUTTON id=1119 type=MBFM mbfm=BtnAlg           range=0:1
+EVENT_BUTTON id=1127 type=MBFM mbfm=BtnDest:0        range=0:1
+EVENT_BUTTON id=1111 type=MBFM mbfm=BtnDest:1        range=0:1
+EVENT_BUTTON id=1122 type=MBFM mbfm=BtnOpParam:0     range=0:1
+EVENT_BUTTON id=1123 type=MBFM mbfm=BtnOpWave:0      range=0:1
+EVENT_BUTTON id=1128 type=MBFM mbfm=BtnOpMute:0      range=0:1
+EVENT_BUTTON id=1114 type=MBFM mbfm=BtnOpParam:1     range=0:1
+EVENT_BUTTON id=1115 type=MBFM mbfm=BtnOpWave:1      range=0:1
+EVENT_BUTTON id=1120 type=MBFM mbfm=BtnOpMute:1      range=0:1
+EVENT_BUTTON id=1106 type=MBFM mbfm=BtnOpParam:2     range=0:1
+EVENT_BUTTON id=1107 type=MBFM mbfm=BtnOpWave:2      range=0:1
+EVENT_BUTTON id=1112 type=MBFM mbfm=BtnOpMute:2      range=0:1
+EVENT_BUTTON id=1098 type=MBFM mbfm=BtnOpParam:3     range=0:1
+EVENT_BUTTON id=1099 type=MBFM mbfm=BtnOpWave:3      range=0:1
+EVENT_BUTTON id=1104 type=MBFM mbfm=BtnOpMute:3      range=0:1
+
+EVENT_BUTTON id=1126 type=MBFM mbfm=BtnEGAssign:0    range=0:1
+EVENT_BUTTON id=1125 type=MBFM mbfm=BtnLFOAssign:0   range=0:1
+EVENT_BUTTON id=1117 type=MBFM mbfm=BtnLFOAssign:1   range=0:1
+EVENT_BUTTON id=1124 type=MBFM mbfm=BtnLFOWave:0     range=0:1
+EVENT_BUTTON id=1116 type=MBFM mbfm=BtnLFOWave:1     range=0:1
+EVENT_BUTTON id=1118 type=MBFM mbfm=BtnWTAssign:0    range=0:1
+#TODO banking
+#EVENT_BUTTON id=1100 fwd_id=LED:1100 type=NoteOn chn= 1 key= 36  range=  0:127  offset=  0    lcd_pos=1:1:1  label="^std_btn"
+#EVENT_BUTTON id=1101 fwd_id=LED:1101 type=NoteOn chn= 1 key= 36  range=  0:127  offset=  0    lcd_pos=1:1:1  label="^std_btn"
+
+EVENT_BUTTON id=1110 type=MBFM mbfm=BtnVelAssign     range=0:1
+EVENT_BUTTON id=1109 type=MBFM mbfm=BtnModAssign     range=0:1
+EVENT_BUTTON id=1108 type=MBFM mbfm=BtnVariAssign    range=0:1
+
+EVENT_BUTTON id=1070 type=MBFM mbfm=BtnSeqMute       range=0:1
+EVENT_BUTTON id=1071 type=MBFM mbfm=BtnSeqSolo       range=0:1
+EVENT_BUTTON id=1072 type=MBFM mbfm=BtnSeqBack       range=0:1
+EVENT_BUTTON id=1080 type=MBFM mbfm=BtnSeqPlay       range=0:1
+EVENT_BUTTON id=1088 type=MBFM mbfm=BtnSeqRec        range=0:1
+EVENT_BUTTON id=1087 type=MBFM mbfm=BtnSeqVel        range=0:1
+EVENT_BUTTON id=1102 type=MBFM mbfm=BtnSeqGate       range=0:1
+EVENT_BUTTON id=1079 type=MBFM mbfm=BtnSeqVari       range=0:1
+EVENT_BUTTON id=1078 type=MBFM mbfm=BtnSeqTrigger:0  range=0:1
+EVENT_BUTTON id=1077 type=MBFM mbfm=BtnSeqTrigger:1  range=0:1
+EVENT_BUTTON id=1076 type=MBFM mbfm=BtnSeqTrigger:2  range=0:1
+EVENT_BUTTON id=1075 type=MBFM mbfm=BtnSeqTrigger:3  range=0:1
+EVENT_BUTTON id=1074 type=MBFM mbfm=BtnSeqTrigger:4  range=0:1
+EVENT_BUTTON id=1073 type=MBFM mbfm=BtnSeqTrigger:5  range=0:1
+EVENT_BUTTON id=1086 type=MBFM mbfm=BtnSeqTrigger:6  range=0:1
+EVENT_BUTTON id=1085 type=MBFM mbfm=BtnSeqTrigger:7  range=0:1
+EVENT_BUTTON id=1084 type=MBFM mbfm=BtnSeqTrigger:8  range=0:1
+EVENT_BUTTON id=1083 type=MBFM mbfm=BtnSeqTrigger:9  range=0:1
+EVENT_BUTTON id=1082 type=MBFM mbfm=BtnSeqTrigger:10 range=0:1
+EVENT_BUTTON id=1081 type=MBFM mbfm=BtnSeqTrigger:11 range=0:1
+EVENT_BUTTON id=1069 type=MBFM mbfm=BtnSeqMeasure:1  range=0:1
+EVENT_BUTTON id=1068 type=MBFM mbfm=BtnSeqMeasure:2  range=0:1
+EVENT_BUTTON id=1067 type=MBFM mbfm=BtnSeqMeasure:4  range=0:1
+EVENT_BUTTON id=1066 type=MBFM mbfm=BtnSeqMeasure:8  range=0:1
+EVENT_BUTTON id=1065 type=MBFM mbfm=BtnSeqSection    range=0:1
+
+
+# LEDs
+EVENT_LED    id=1001 type=MBFM mbfm=SeqTriggerLED:11 range=0:1
+EVENT_LED    id=1002 type=MBFM mbfm=SeqTriggerLED:10 range=0:1
+EVENT_LED    id=1003 type=MBFM mbfm=SeqTriggerLED:9  range=0:1
+EVENT_LED    id=1004 type=MBFM mbfm=SeqTriggerLED:8  range=0:1
+EVENT_LED    id=1005 type=MBFM mbfm=SeqTriggerLED:7  range=0:1
+EVENT_LED    id=1006 type=MBFM mbfm=SeqTriggerLED:6  range=0:1
+EVENT_LED    id=1009 type=MBFM mbfm=SeqTriggerLED:5  range=0:1
+EVENT_LED    id=1010 type=MBFM mbfm=SeqTriggerLED:4  range=0:1
+EVENT_LED    id=1011 type=MBFM mbfm=SeqTriggerLED:3  range=0:1
+EVENT_LED    id=1012 type=MBFM mbfm=SeqTriggerLED:2  range=0:1
+EVENT_LED    id=1013 type=MBFM mbfm=SeqTriggerLED:1  range=0:1
+EVENT_LED    id=1014 type=MBFM mbfm=SeqTriggerLED:0  range=0:1
+EVENT_LED    id=1008 type=MBFM mbfm=IsRecording      range=0:1
+EVENT_LED    id=1016 type=MBFM mbfm=IsPlaying        range=0:1
+#EVENT_LED    id=1024 type=MBFM mbfm=IsSeqBack         range=0:1
+EVENT_LED    id=1007 type=MBFM mbfm=IsSeqVel         range=0:1
+EVENT_LED    id=1030 type=MBFM mbfm=IsSeqGate        range=0:1
+EVENT_LED    id=1015 type=MBFM mbfm=IsSeqVari        range=0:1
+#EVENT_LED    id=1017 type=MBFM mbfm=IsSeqSec         range=0:1
+EVENT_LED    id=1018 type=MBFM mbfm=IsMeasure:8      range=0:1
+EVENT_LED    id=1019 type=MBFM mbfm=IsMeasure:4      range=0:1
+EVENT_LED    id=1020 type=MBFM mbfm=IsMeasure:2      range=0:1
+EVENT_LED    id=1021 type=MBFM mbfm=IsMeasure:1      range=0:1
+EVENT_LED    id=1022 type=MBFM mbfm=IsMute           range=0:1
+EVENT_LED    id=1023 type=MBFM mbfm=IsSolo           range=0:1
+#TODO banking
+#EVENT_LED    id=1028 type=Mod12       range=0:1
+#EVENT_LED    id=1029 type=Mod34       range=0:1
+
+EVENT_LED    id=1040 type=MBFM mbfm=IsAlgFB          range=0:1
+EVENT_LED    id=1039 type=MBFM mbfm=IsAlgFM:0        range=0:1
+EVENT_LED    id=1038 type=MBFM mbfm=IsAlgFM:1        range=0:1
+EVENT_LED    id=1037 type=MBFM mbfm=IsAlgFM:2        range=0:1
+EVENT_LED    id=1056 type=MBFM mbfm=AlgOpLEDRed:0    range=0:1
+EVENT_LED    id=1055 type=MBFM mbfm=AlgOpLEDRed:1    range=0:1
+EVENT_LED    id=1054 type=MBFM mbfm=AlgOpLEDRed:2    range=0:1
+EVENT_LED    id=1045 type=MBFM mbfm=AlgOpLEDRed:3    range=0:1
+EVENT_LED    id=1048 type=MBFM mbfm=AlgOpLEDGreen:0  range=0:1
+EVENT_LED    id=1047 type=MBFM mbfm=AlgOpLEDGreen:1  range=0:1
+EVENT_LED    id=1046 type=MBFM mbfm=AlgOpLEDGreen:2  range=0:1
+EVENT_LED    id=1053 type=MBFM mbfm=AlgOpLEDGreen:3  range=0:1
+EVENT_LED    id=1064 type=MBFM mbfm=IsAlgOut:0       range=0:1
+EVENT_LED    id=1063 type=MBFM mbfm=IsAlgOut:1       range=0:1
+EVENT_LED    id=1062 type=MBFM mbfm=IsAlgOut:2       range=0:1
+EVENT_LED    id=1061 type=MBFM mbfm=IsAlgOut:3       range=0:1
+EVENT_LED    id=1057 type=MBFM mbfm=IsLink           range=0:1
+EVENT_LED    id=1058 type=MBFM mbfm=IsDupl           range=0:1
+EVENT_LED    id=1033 type=MBFM mbfm=IsCurVoice4Op    range=0:1
+EVENT_LED    id=1026 type=MBFM mbfm=IsDlyScale       range=0:1
+EVENT_LED    id=1027 type=MBFM mbfm=IsRetrig         range=0:1
+
+EVENT_LED    id=1103 type=MBFM mbfm=VoiceLEDRed:0    range=0:1
+EVENT_LED    id=1104 type=MBFM mbfm=VoiceLEDRed:1    range=0:1
+EVENT_LED    id=1072 type=MBFM mbfm=VoiceLEDRed:2    range=0:1
+EVENT_LED    id=1071 type=MBFM mbfm=VoiceLEDRed:3    range=0:1
+EVENT_LED    id=1070 type=MBFM mbfm=VoiceLEDRed:4    range=0:1
+EVENT_LED    id=1069 type=MBFM mbfm=VoiceLEDRed:5    range=0:1
+EVENT_LED    id=1068 type=MBFM mbfm=VoiceLEDRed:6    range=0:1
+EVENT_LED    id=1067 type=MBFM mbfm=VoiceLEDRed:7    range=0:1
+EVENT_LED    id=1066 type=MBFM mbfm=VoiceLEDRed:8    range=0:1
+EVENT_LED    id=1065 type=MBFM mbfm=VoiceLEDRed:9    range=0:1
+EVENT_LED    id=1088 type=MBFM mbfm=VoiceLEDRed:10   range=0:1
+EVENT_LED    id=1087 type=MBFM mbfm=VoiceLEDRed:11   range=0:1
+EVENT_LED    id=1086 type=MBFM mbfm=VoiceLEDRed:12   range=0:1
+EVENT_LED    id=1085 type=MBFM mbfm=VoiceLEDRed:13   range=0:1
+EVENT_LED    id=1084 type=MBFM mbfm=VoiceLEDRed:14   range=0:1
+EVENT_LED    id=1083 type=MBFM mbfm=VoiceLEDRed:15   range=0:1
+EVENT_LED    id=1082 type=MBFM mbfm=VoiceLEDRed:16   range=0:1
+EVENT_LED    id=1081 type=MBFM mbfm=VoiceLEDRed:17   range=0:1
+EVENT_LED    id=1031 type=MBFM mbfm=VoiceLEDGreen:0  range=0:1
+EVENT_LED    id=1032 type=MBFM mbfm=VoiceLEDGreen:1  range=0:1
+EVENT_LED    id=1080 type=MBFM mbfm=VoiceLEDGreen:2  range=0:1
+EVENT_LED    id=1079 type=MBFM mbfm=VoiceLEDGreen:3  range=0:1
+EVENT_LED    id=1078 type=MBFM mbfm=VoiceLEDGreen:4  range=0:1
+EVENT_LED    id=1077 type=MBFM mbfm=VoiceLEDGreen:5  range=0:1
+EVENT_LED    id=1076 type=MBFM mbfm=VoiceLEDGreen:6  range=0:1
+EVENT_LED    id=1075 type=MBFM mbfm=VoiceLEDGreen:7  range=0:1
+EVENT_LED    id=1074 type=MBFM mbfm=VoiceLEDGreen:8  range=0:1
+EVENT_LED    id=1073 type=MBFM mbfm=VoiceLEDGreen:9  range=0:1
+EVENT_LED    id=1096 type=MBFM mbfm=VoiceLEDGreen:10 range=0:1
+EVENT_LED    id=1095 type=MBFM mbfm=VoiceLEDGreen:11 range=0:1
+EVENT_LED    id=1094 type=MBFM mbfm=VoiceLEDGreen:12 range=0:1
+EVENT_LED    id=1093 type=MBFM mbfm=VoiceLEDGreen:13 range=0:1
+EVENT_LED    id=1092 type=MBFM mbfm=VoiceLEDGreen:14 range=0:1
+EVENT_LED    id=1091 type=MBFM mbfm=VoiceLEDGreen:15 range=0:1
+EVENT_LED    id=1090 type=MBFM mbfm=VoiceLEDGreen:16 range=0:1
+EVENT_LED    id=1089 type=MBFM mbfm=VoiceLEDGreen:17 range=0:1
+EVENT_LED    id=1112 type=MBFM mbfm=IsSomeVoice4Op:0 range=0:1
+EVENT_LED    id=1111 type=MBFM mbfm=IsSomeVoice4Op:1 range=0:1
+EVENT_LED    id=1110 type=MBFM mbfm=IsSomeVoice4Op:2 range=0:1
+EVENT_LED    id=1108 type=MBFM mbfm=IsSomeVoice4Op:3 range=0:1
+EVENT_LED    id=1106 type=MBFM mbfm=IsSomeVoice4Op:4 range=0:1
+EVENT_LED    id=1105 type=MBFM mbfm=IsSomeVoice4Op:5 range=0:1
+EVENT_LED    id=1097 type=MBFM mbfm=IsMode:2         range=0:1
+EVENT_LED    id=1098 type=MBFM mbfm=IsMode:3         range=0:1
+EVENT_LED    id=1099 type=MBFM mbfm=IsMode:1         range=0:1
+EVENT_LED    id=1100 type=MBFM mbfm=IsMode:0         range=0:1
+
+
+
+
+# ENCODERs
+EVENT_ENC    id= 1     enc_mode=40Speed type=MBFM mbfm=IncDatawheel
+EVENT_ENC    id= 2     enc_mode=40Speed type=MBFM mbfm=IncVoicePorta
+EVENT_ENC    id= 3     enc_mode=40Speed type=MBFM mbfm=IncVoiceTune
+EVENT_ENC    id= 4     enc_mode=40Speed type=MBFM mbfm=IncVoiceTranspose
+EVENT_ENC    id= 5     enc_mode=40Speed type=MBFM mbfm=IncOpFMult:3
+EVENT_ENC    id= 6     enc_mode=40Speed type=MBFM mbfm=IncOpFMult:2
+EVENT_ENC    id= 7     enc_mode=40Speed type=MBFM mbfm=IncOpFMult:1
+EVENT_ENC    id= 8     enc_mode=40Speed type=MBFM mbfm=IncOpFMult:0
+EVENT_ENC    id= 9     enc_mode=40Speed type=MBFM mbfm=IncOpAtk:3
+EVENT_ENC    id=10     enc_mode=40Speed type=MBFM mbfm=IncOpAtk:2
+EVENT_ENC    id=11     enc_mode=40Speed type=MBFM mbfm=IncOpAtk:1
+EVENT_ENC    id=12     enc_mode=40Speed type=MBFM mbfm=IncOpAtk:0
+EVENT_ENC    id=13     enc_mode=40Speed type=MBFM mbfm=IncOpDec:3
+EVENT_ENC    id=14     enc_mode=40Speed type=MBFM mbfm=IncOpDec:2
+EVENT_ENC    id=15     enc_mode=40Speed type=MBFM mbfm=IncOpDec:1
+EVENT_ENC    id=16     enc_mode=40Speed type=MBFM mbfm=IncOpDec:0
+EVENT_ENC    id=17     enc_mode=40Speed type=MBFM mbfm=IncOpSus:3
+EVENT_ENC    id=18     enc_mode=40Speed type=MBFM mbfm=IncOpSus:2
+EVENT_ENC    id=19     enc_mode=40Speed type=MBFM mbfm=IncOpSus:1
+EVENT_ENC    id=20     enc_mode=40Speed type=MBFM mbfm=IncOpSus:0
+EVENT_ENC    id=21     enc_mode=40Speed type=MBFM mbfm=IncOpRel:3
+EVENT_ENC    id=22     enc_mode=40Speed type=MBFM mbfm=IncOpRel:2
+EVENT_ENC    id=23     enc_mode=40Speed type=MBFM mbfm=IncOpRel:1
+EVENT_ENC    id=24     enc_mode=40Speed type=MBFM mbfm=IncOpRel:0
+EVENT_ENC    id=25     enc_mode=40Speed type=MBFM mbfm=IncOpVolume:3
+EVENT_ENC    id=26     enc_mode=40Speed type=MBFM mbfm=IncOpVolume:2
+EVENT_ENC    id=27     enc_mode=40Speed type=MBFM mbfm=IncOpVolume:1
+EVENT_ENC    id=28     enc_mode=40Speed type=MBFM mbfm=IncOpVolume:0
+EVENT_ENC    id=29     enc_mode=40Speed type=MBFM mbfm=IncVoiceDlyTime
+EVENT_ENC    id=30     enc_mode=40Speed type=MBFM mbfm=IncVoiceFB
+EVENT_ENC    id=31     enc_mode=40Speed type=MBFM mbfm=IncEGDec1:0
+EVENT_ENC    id=32     enc_mode=40Speed type=MBFM mbfm=IncEGAtk:0
+EVENT_ENC    id=33     enc_mode=40Speed type=MBFM mbfm=IncEGRel:0
+EVENT_ENC    id=34     enc_mode=40Speed type=MBFM mbfm=IncEGSus:0
+EVENT_ENC    id=35     enc_mode=40Speed type=MBFM mbfm=IncEGDec2:0
+EVENT_ENC    id=36     enc_mode=40Speed type=MBFM mbfm=IncEGLevel:0
+EVENT_ENC    id=37     enc_mode=40Speed type=MBFM mbfm=IncLFOFreq:1
+EVENT_ENC    id=38     enc_mode=40Speed type=MBFM mbfm=IncLFODelay:1
+EVENT_ENC    id=39     enc_mode=40Speed type=MBFM mbfm=IncLFODelay:0
+EVENT_ENC    id=40     enc_mode=40Speed type=MBFM mbfm=IncLFOFreq:0
+
+# MBFM controllers
+EVENT_RECEIVER id=1 fwd_id=SENDER:1 type=CC chn=1 cc=65 fwd_to_lcd=1 label="%C@(1:1:2)Ch1 Sus"
+EVENT_SENDER   id=1                 type=MBFM mbfm=ControlSus:0
+EVENT_RECEIVER id=2 fwd_id=SENDER:2 type=CC chn=2 cc=65 fwd_to_lcd=1 label="%C@(1:1:2)Ch2 Sus"
+EVENT_SENDER   id=2                 type=MBFM mbfm=ControlSus:1
+
+
+# ENC hardware
+ENC n=1  sr=3  pins=1:0 type=detented2
+ENC n=2  sr=3  pins=3:2 type=detented2
+ENC n=3  sr=3  pins=4:5 type=detented2
+ENC n=4  sr=3  pins=6:7 type=detented2
+ENC n=5  sr=4  pins=1:0 type=detented2
+ENC n=6  sr=4  pins=3:2 type=detented2
+ENC n=7  sr=4  pins=4:5 type=detented2
+ENC n=8  sr=4  pins=6:7 type=detented2
+ENC n=9  sr=5  pins=1:0 type=detented2
+ENC n=10 sr=5  pins=3:2 type=detented2
+ENC n=11 sr=5  pins=4:5 type=detented2
+ENC n=12 sr=5  pins=6:7 type=detented2
+ENC n=13 sr=6  pins=1:0 type=detented2
+ENC n=14 sr=6  pins=3:2 type=detented2
+ENC n=15 sr=6  pins=4:5 type=detented2
+ENC n=16 sr=6  pins=6:7 type=detented2
+ENC n=17 sr=7  pins=1:0 type=detented2
+ENC n=18 sr=7  pins=3:2 type=detented2
+ENC n=19 sr=7  pins=4:5 type=detented2
+ENC n=20 sr=7  pins=6:7 type=detented2
+ENC n=21 sr=8  pins=1:0 type=detented2
+ENC n=22 sr=8  pins=3:2 type=detented2
+ENC n=23 sr=8  pins=4:5 type=detented2
+ENC n=24 sr=8  pins=6:7 type=detented2
+ENC n=25 sr=9  pins=1:0 type=detented2
+ENC n=26 sr=9  pins=3:2 type=detented2
+ENC n=27 sr=9  pins=4:5 type=detented2
+ENC n=28 sr=9  pins=6:7 type=detented2
+ENC n=29 sr=10 pins=1:0 type=detented2
+ENC n=30 sr=10 pins=3:2 type=detented2
+ENC n=31 sr=10 pins=4:5 type=detented2
+ENC n=32 sr=10 pins=6:7 type=detented2
+ENC n=33 sr=11 pins=1:0 type=detented2
+ENC n=34 sr=11 pins=2:3 type=detented2
+ENC n=35 sr=11 pins=4:5 type=detented2
+ENC n=36 sr=11 pins=6:7 type=detented2
+ENC n=37 sr=12 pins=1:0 type=detented2
+ENC n=38 sr=12 pins=3:2 type=detented2
+ENC n=39 sr=12 pins=4:5 type=detented2
+ENC n=40 sr=12 pins=6:7 type=detented2
+
+
+# Button matrix
+DIN_MATRIX n= 1   rows=8  inverted_sel=1 sr_dout_sel1=1 \
+                          inverted_row=0 mirrored_row=1 sr_din1=1 sr_din2=2 \
+                          button_emu_id_offset=1001 swap_rows_columns=1
+
+
+# LED display digits
+DOUT_MATRIX n=1   rows=8  inverted_sel=1 sr_dout_sel1=1 \
+                          inverted_row=0 mirrored_row=0 sr_dout_r1=2 sr_dout_r2=0 \
+                          swap_rows_columns=1
+# LED matrix
+DOUT_MATRIX n=2   rows=8  inverted_sel=1 sr_dout_sel1=1 \
+                          inverted_row=0 mirrored_row=1 sr_dout_r1=3 sr_dout_r2=4 \
+                          led_emu_id_offset=1001 swap_rows_columns=1
+
+
+#LED display digits
+EVENT_LED_MATRIX id=8 led_matrix_pattern=Digit1 type=MBFM mbfm=DispValue digit_signed=1
+EVENT_LED_MATRIX id=7 led_matrix_pattern=Digit2 type=MBFM mbfm=DispValue digit_signed=1
+EVENT_LED_MATRIX id=6 led_matrix_pattern=Digit3 type=MBFM mbfm=DispValue digit_signed=1
+EVENT_LED_MATRIX id=5 led_matrix_pattern=Digit4 type=MBFM mbfm=DispValue digit_signed=1
+
+EVENT_LED_MATRIX id=4 led_matrix_pattern=Digit1 type=MBFM mbfm=DispVoice digit_blankzero=0
+EVENT_LED_MATRIX id=3 led_matrix_pattern=Digit2 type=MBFM mbfm=DispVoice digit_blankzero=0
+
+#LED display clearing
+EVENT_LED_MATRIX id=8 led_matrix_pattern=1      type=MBFM mbfm=ClearValue
+EVENT_LED_MATRIX id=7 led_matrix_pattern=1      type=MBFM mbfm=ClearValue
+EVENT_LED_MATRIX id=6 led_matrix_pattern=1      type=MBFM mbfm=ClearValue
+EVENT_LED_MATRIX id=5 led_matrix_pattern=1      type=MBFM mbfm=ClearValue
+
+EVENT_LED_MATRIX id=4 led_matrix_pattern=1      type=MBFM mbfm=ClearVoice
+EVENT_LED_MATRIX id=3 led_matrix_pattern=1      type=MBFM mbfm=ClearVoice
+
+
+# LED_MATRIX_PATTERN to clear a display
+LED_MATRIX_PATTERN n= 1  pos= 0  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 1  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 2  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 3  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 4  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 5  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 6  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 7  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos= M  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 8  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 9  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos=10  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos=11  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos=12  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos=13  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos=14  pattern=0000000000000000
+LED_MATRIX_PATTERN n= 1  pos=15  pattern=0000000000000000
+
+
+
+# AOUT hardware
+AOUT  type=none  cs=0  num_channels=8
+
+
+
+# Misc. Configuration
+DebounceCtr 20
+GlobalChannel 0
+AllNotesOffChannel 0
+ConvertNoteOffToOn0 1

@@ -1,0 +1,90 @@
+
+# Check that different RGB levels can be configured for banks
+
+# In this demo, we configure individual brightness levels for some LEDs from EVENT_BUTTON events
+
+RESET_HW
+
+LCD "%C@(1:1:1)RGB Demo #3"
+
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+
+# Controlled from SCS buttons at J10 in main page
+EVENT_BUTTON id=2000  type=Meta   meta=SetBank   button_mode=OnOnly range=1:1
+EVENT_BUTTON id=2001  type=Meta   meta=SetBank   button_mode=OnOnly range=2:2
+EVENT_BUTTON id=2002  type=Meta   meta=SetBank   button_mode=OnOnly range=3:3
+EVENT_BUTTON id=2003  type=Meta   meta=SetBank   button_mode=OnOnly range=4:4
+
+# This is a dummy LED without assigned hardware (hw_id=2000 not used anywhere else) and without MIDI event.
+# the purpose of this EVENT item is to print the bank whenever the LCD is refreshed (e.g. after startup or bank change)
+EVENT_LED id=2000 fwd_to_lcd=1 lcd_pos=1:1:2 label="Bnk%q"
+
+
+# In the SR configuration we assume that the DINs/DOUTs are directly connected to J8/9 of the core
+# they emulate button/led functions
+DIN_MATRIX  n=1  rows=4  inverted=0  sr_dout_sel1=1  sr_din1=1                    button_emu_id_offset=1001
+DIN_MATRIX  n=2  rows=4  inverted=0  sr_dout_sel1=4  sr_din1=2                    button_emu_id_offset=1033
+DOUT_MATRIX n=1  rows=4  inverted=0  sr_dout_sel1=1  sr_dout_r1=2  sr_dout_g1=3   led_emu_id_offset=1001
+DOUT_MATRIX n=2  rows=4  inverted=0  sr_dout_sel1=4  sr_dout_r1=5  sr_dout_g1=6   led_emu_id_offset=1033
+
+# note: actually the sr_dout_sel1 in DOUT_MATRIX could be removed,
+# since DIN_MATRIX already outputs the selection pulses there
+# this is just for the case that somebody copy&pastes the definition...
+
+
+# These button functions forward their value also to LEDs
+# it's possible to set the rgb levels in the button event, it will be forwarded as well!
+
+# only a subset (8) of available buttons/LEDs is used for demo purposes
+# buttons are in toggle mode
+
+# Bank1
+EVENT_BUTTON  id=1001  hw_id=1001  fwd_id=LED:1001  bank=1  type=NoteOn key=36 chn=1  button_mode=Toggle  rgb=15:0:0
+EVENT_BUTTON  id=1002  hw_id=1002  fwd_id=LED:1002  bank=1  type=NoteOn key=37 chn=1  button_mode=Toggle  rgb=15:0:0
+EVENT_BUTTON  id=1003  hw_id=1003  fwd_id=LED:1003  bank=1  type=NoteOn key=38 chn=1  button_mode=Toggle  rgb=15:0:0
+EVENT_BUTTON  id=1004  hw_id=1004  fwd_id=LED:1004  bank=1  type=NoteOn key=39 chn=1  button_mode=Toggle  rgb=15:0:0
+EVENT_BUTTON  id=1005  hw_id=1005  fwd_id=LED:1005  bank=1  type=NoteOn key=40 chn=1  button_mode=Toggle  rgb=15:0:0
+EVENT_BUTTON  id=1006  hw_id=1006  fwd_id=LED:1006  bank=1  type=NoteOn key=41 chn=1  button_mode=Toggle  rgb=15:0:0
+EVENT_BUTTON  id=1007  hw_id=1007  fwd_id=LED:1007  bank=1  type=NoteOn key=42 chn=1  button_mode=Toggle  rgb=15:0:0
+EVENT_BUTTON  id=1008  hw_id=1008  fwd_id=LED:1008  bank=1  type=NoteOn key=43 chn=1  button_mode=Toggle  rgb=15:0:0
+
+
+# Bank2
+EVENT_BUTTON  id=1101  hw_id=1001  fwd_id=LED:1001  bank=2  type=NoteOn key=36 chn=2  button_mode=Toggle  rgb=0:15:0
+EVENT_BUTTON  id=1102  hw_id=1002  fwd_id=LED:1002  bank=2  type=NoteOn key=37 chn=2  button_mode=Toggle  rgb=0:15:0
+EVENT_BUTTON  id=1103  hw_id=1003  fwd_id=LED:1003  bank=2  type=NoteOn key=38 chn=2  button_mode=Toggle  rgb=0:15:0
+EVENT_BUTTON  id=1104  hw_id=1004  fwd_id=LED:1004  bank=2  type=NoteOn key=39 chn=2  button_mode=Toggle  rgb=0:15:0
+EVENT_BUTTON  id=1105  hw_id=1005  fwd_id=LED:1005  bank=2  type=NoteOn key=40 chn=2  button_mode=Toggle  rgb=0:15:0
+EVENT_BUTTON  id=1106  hw_id=1006  fwd_id=LED:1006  bank=2  type=NoteOn key=41 chn=2  button_mode=Toggle  rgb=0:15:0
+EVENT_BUTTON  id=1107  hw_id=1007  fwd_id=LED:1007  bank=2  type=NoteOn key=42 chn=2  button_mode=Toggle  rgb=0:15:0
+EVENT_BUTTON  id=1108  hw_id=1008  fwd_id=LED:1008  bank=2  type=NoteOn key=43 chn=2  button_mode=Toggle  rgb=0:15:0
+
+
+# Bank3
+EVENT_BUTTON  id=1201  hw_id=1001  fwd_id=LED:1001  bank=3  type=NoteOn key=36 chn=3  button_mode=Toggle  rgb=15:15:0
+EVENT_BUTTON  id=1202  hw_id=1002  fwd_id=LED:1002  bank=3  type=NoteOn key=37 chn=3  button_mode=Toggle  rgb=15:15:0
+EVENT_BUTTON  id=1203  hw_id=1003  fwd_id=LED:1003  bank=3  type=NoteOn key=38 chn=3  button_mode=Toggle  rgb=15:15:0
+EVENT_BUTTON  id=1204  hw_id=1004  fwd_id=LED:1004  bank=3  type=NoteOn key=39 chn=3  button_mode=Toggle  rgb=15:15:0
+EVENT_BUTTON  id=1205  hw_id=1005  fwd_id=LED:1005  bank=3  type=NoteOn key=40 chn=3  button_mode=Toggle  rgb=15:15:0
+EVENT_BUTTON  id=1206  hw_id=1006  fwd_id=LED:1006  bank=3  type=NoteOn key=41 chn=3  button_mode=Toggle  rgb=15:15:0
+EVENT_BUTTON  id=1207  hw_id=1007  fwd_id=LED:1007  bank=3  type=NoteOn key=42 chn=3  button_mode=Toggle  rgb=15:15:0
+EVENT_BUTTON  id=1208  hw_id=1008  fwd_id=LED:1008  bank=3  type=NoteOn key=43 chn=3  button_mode=Toggle  rgb=15:15:0
+
+
+# Bank4
+EVENT_BUTTON  id=1301  hw_id=1001  fwd_id=LED:1001  bank=4  type=NoteOn key=36 chn=4  button_mode=Toggle  rgb=15:4:0
+EVENT_BUTTON  id=1302  hw_id=1002  fwd_id=LED:1002  bank=4  type=NoteOn key=37 chn=4  button_mode=Toggle  rgb=15:4:0
+EVENT_BUTTON  id=1303  hw_id=1003  fwd_id=LED:1003  bank=4  type=NoteOn key=38 chn=4  button_mode=Toggle  rgb=15:4:0
+EVENT_BUTTON  id=1304  hw_id=1004  fwd_id=LED:1004  bank=4  type=NoteOn key=39 chn=4  button_mode=Toggle  rgb=15:4:0
+EVENT_BUTTON  id=1305  hw_id=1005  fwd_id=LED:1005  bank=4  type=NoteOn key=40 chn=4  button_mode=Toggle  rgb=4:15:0
+EVENT_BUTTON  id=1306  hw_id=1006  fwd_id=LED:1006  bank=4  type=NoteOn key=41 chn=4  button_mode=Toggle  rgb=4:15:0
+EVENT_BUTTON  id=1307  hw_id=1007  fwd_id=LED:1007  bank=4  type=NoteOn key=42 chn=4  button_mode=Toggle  rgb=4:15:0
+EVENT_BUTTON  id=1308  hw_id=1008  fwd_id=LED:1008  bank=4  type=NoteOn key=43 chn=4  button_mode=Toggle  rgb=4:15:0

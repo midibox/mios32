@@ -1,0 +1,47 @@
+LCD "%C@(1:1:1)Forwarding Test"
+
+###################################################################################################################
+# A button should send/receive a note, and forward the state to LED id=1
+EVENT_BUTTON id=  1  fwd_id=LED:1  fwd_to_lcd=1  type=NoteOn chn=1 key=36  range=  0:127 ports=1000100000001000  lcd_pos=1:1:1 label="Button%3i:   %e"
+
+
+###################################################################################################################
+# An encoder should send/receive a CC, and forward the value to LED_MATRIX id=1
+EVENT_ENC    id=  1  fwd_id=LED_MATRIX:1  fwd_to_lcd=1  type=CC chn=1 cc=16   range=  0:127 ports=1000100000001000 \
+                     led_matrix_pattern=3  lcd_pos=1:1:1 label="Enc%3i:      %e"
+
+
+###################################################################################################################
+# Here we combine a generic receiver and sender to convert CC#16 to a SysEx stream
+EVENT_RECEIVER id=  1  fwd_id=SENDER:1  fwd_to_lcd=1  type=CC chn=1 cc=16   range=  0:127 ports=1000100000001000  lcd_pos=1:1:1 label="Receiver%3i: %e"
+EVENT_SENDER   id=  1  fwd_to_lcd=1  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  77 ^val 0xf7" ports=1000100000001000  lcd_pos=1:1:2 label="Sender%3i:   %e"
+
+
+###################################################################################################################
+# The same vice versa (SysEx -> CC)
+EVENT_RECEIVER id=  2  fwd_id=SENDER:2  fwd_to_lcd=1  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  77 ^val 0xf7" \
+               range=  0:127 ports=1000100000001000  lcd_pos=1:1:1 label="Receiver%3i: %e"
+EVENT_SENDER   id=  2  fwd_to_lcd=1  type=CC chn=1 cc=16 ports=1000100000001000  lcd_pos=1:1:2 label="Sender%3i:   %e"
+
+
+###################################################################################################################
+# A chain of events... max. 4 events can be chained (to avoid feedback loops or too deep recursions)
+# note: in future we could also provide range scaling here, e.g.
+# range 0:127 -> range 20:30 or even range 0:127 -> range 127:0 (inversion)
+EVENT_RECEIVER id=  3  fwd_id=SENDER:3  fwd_to_lcd=1  type=CC chn=1 cc=17   range=  0:127 ports=1000100000001000  lcd_pos=1:1:1 label="Receiver%3i: %e"
+EVENT_SENDER   id=  3  fwd_id=SENDER:4  fwd_to_lcd=1  type=CC chn=1 cc=18   range=  0:127 ports=1000100000001000  lcd_pos=1:1:2 label="Sender%3i:   %e"
+EVENT_SENDER   id=  4  fwd_id=SENDER:5  fwd_to_lcd=1  type=CC chn=1 cc=19   range=  0:127 ports=1000100000001000  lcd_pos=1:1:2 label="Sender%3i:   %e"
+EVENT_SENDER   id=  5                   fwd_to_lcd=1  type=CC chn=1 cc=20   range=  0:127 ports=1000100000001000  lcd_pos=1:1:2 label="Sender%3i:   %e"
+
+
+###################################################################################################################
+# An external MIDI controller, sending to CC32 should control an ENC entry
+EVENT_RECEIVER id=  6  fwd_id=ENC:6  type=CC chn=1 cc=32   range=  0:127 ports=1000100000001000
+
+# the ENC entry forwards the new value to a SENDER
+EVENT_ENC    id=  6  fwd_id=SENDER:6  fwd_to_lcd=1  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   1 ^val 0xf7"  syxdump_pos=1:1 \
+             range= 16:112 offset=  0  ports=1000100000001000  lcd_pos=1:1:2 label="OSC1 Octave ^octave %03d"
+
+# the sender sends back the new ENC value to the external controller
+# or: if the ENC is moved, the it will get the new value
+EVENT_SENDER id=  6                   type=CC chn=1 cc=32  range=  0:127 ports=1000100000001000

@@ -1,0 +1,48 @@
+RESET_HW
+
+LCD "%CMap Encoder Values"
+
+# use various maps
+EVENT_ENC    id=  1  fwd_id=LED_MATRIX:1  fwd_to_lcd=1  type=CC chn= 1 cc= 16  range=map1  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  2  fwd_id=LED_MATRIX:2  fwd_to_lcd=1  type=CC chn= 1 cc= 17  range=map2  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  3  fwd_id=LED_MATRIX:3  fwd_to_lcd=1  type=CC chn= 1 cc= 18  range=map3  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  4  fwd_id=LED_MATRIX:4  fwd_to_lcd=1  type=CC chn= 1 cc= 19  range=map4  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  5  fwd_id=LED_MATRIX:5  fwd_to_lcd=1  type=CC chn= 1 cc= 20  range=map5  lcd_pos=1:1:1  label="^std_enc"
+
+# re-use map1
+EVENT_ENC    id=  6  fwd_id=LED_MATRIX:6  fwd_to_lcd=1  type=CC chn= 1 cc= 21  range=map1  lcd_pos=1:1:1  label="^std_enc"
+
+# don't use map
+EVENT_ENC    id=  7  fwd_id=LED_MATRIX:7  fwd_to_lcd=1  type=CC chn= 1 cc= 22  range=0:127  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  8  fwd_id=LED_MATRIX:8  fwd_to_lcd=1  type=CC chn= 1 cc= 23  range=10:100 lcd_pos=1:1:1  label="^std_enc"
+
+
+# map definitions
+MAP1   1 2 4 8 16 32 64
+MAP2   0x01 0x02 0x03 0x04 0x08 0x10 0x11 0x12 0x13 0x14 0x15 0x16 0x17 0x18 0x19 0x1a 0x1b 0x1c 0x1d 0x1e 0x1f 0x7f
+MAP3   1 10 2 20 3 30
+MAP4   0 1 2 3 4 5 6 7
+MAP5   7 6 5 4 3 2 1 0
+
+
+# encoder hardware configuration
+ENC n=  1   sr= 1  pins=0:1   type=non_detented
+ENC n=  2   sr= 1  pins=2:3   type=non_detented
+ENC n=  3   sr= 1  pins=4:5   type=non_detented
+ENC n=  4   sr= 1  pins=6:7   type=non_detented
+ENC n=  5   sr= 2  pins=0:1   type=non_detented
+ENC n=  6   sr= 2  pins=2:3   type=non_detented
+ENC n=  7   sr= 2  pins=4:5   type=non_detented
+ENC n=  8   sr= 2  pins=6:7   type=non_detented
+ENC n=  9   sr= 3  pins=0:1   type=non_detented
+ENC n= 10   sr= 3  pins=2:3   type=non_detented
+ENC n= 11   sr= 3  pins=4:5   type=non_detented
+ENC n= 12   sr= 3  pins=6:7   type=non_detented
+ENC n= 13   sr= 4  pins=0:1   type=non_detented
+ENC n= 14   sr= 4  pins=2:3   type=non_detented
+ENC n= 15   sr= 4  pins=4:5   type=non_detented
+ENC n= 16   sr= 4  pins=6:7   type=non_detented
+
+
+# LEDring configuration
+DOUT_MATRIX n= 1   rows=16 inverted=0  sr_dout_sel1= 1 sr_dout_sel2= 2  sr_dout_r1= 3 sr_dout_r2= 4  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0

@@ -1,0 +1,32 @@
+# Reset to default
+RESET_HW
+
+
+# LCD message after load
+LCD "%C@(1:1:1)AINSER Test"
+
+
+# AINSER8 hardware
+AINSER n=  1   enabled=1  muxed=0  cs=0  resolution=7bit
+AINSER n=  2   enabled=1  muxed=0  cs=1  resolution=7bit
+
+
+# EVENTs for the first AINSER8 module
+EVENT_AINSER id=  1  type=CC     chn= 1 cc= 16   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  2  type=CC     chn= 1 cc= 17   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  3  type=CC     chn= 1 cc= 18   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  4  type=CC     chn= 1 cc= 19   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  5  type=CC     chn= 1 cc= 20   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  6  type=CC     chn= 1 cc= 21   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  7  type=CC     chn= 1 cc= 22   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  8  type=CC     chn= 1 cc= 23   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+
+# EVENTs for the second AINSER8 module will start at offset 65 (!)
+EVENT_AINSER id= 65  type=CC     chn= 2 cc= 16   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 66  type=CC     chn= 2 cc= 17   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 67  type=CC     chn= 2 cc= 18   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 68  type=CC     chn= 2 cc= 19   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 69  type=CC     chn= 2 cc= 20   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 70  type=CC     chn= 2 cc= 21   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 71  type=CC     chn= 2 cc= 22   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 72  type=CC     chn= 2 cc= 23   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"

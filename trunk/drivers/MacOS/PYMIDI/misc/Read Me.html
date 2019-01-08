@@ -1,0 +1,192 @@
+<html>
+<head>
+
+<!-- $Id: Read Me.html 137 2008-11-30 14:28:22Z tk $ -->
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<title>PYMIDI 1.1 by Pete Yandell</title>
+
+<style type="text/css">
+    body {
+        background: #fff;
+        margin: 1.5em 3em;
+    }
+    
+    #banner {
+        margin: 0;
+        padding: 0;
+    }
+    
+    #banner span.site-name {
+        font-family: "Lucida Grande", Arial, sans-serif;
+        font-weight: normal;
+        font-size: 14px;
+    }
+
+    #contents {
+        width: 30%;
+        float: right;
+        font-family: "Lucida Grande", Arial, sans-serif;
+        font-weight: normal;
+        font-size: 11px;
+        border: 1px solid #ccc;
+        background: #fff;
+        margin: 0;
+        margin-left: 1.2em;
+        margin-bottom: 0.6em;
+        padding: 0.6em;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-family: Helvetica, sans-serif;
+        font-weight: bold;
+        clear: both;
+    }
+    
+    h1 {
+        font-size: 24px;
+        color: #800;
+        border-top: 1px solid #ccc;
+        margin-top: 0;
+        padding-top: 2px;
+    }
+    
+    h1 span.note {
+        font-size: 14px
+    }
+    
+    h2 {
+        font-size: 17px;
+        color: #036;
+        border-top: 1px solid #ccc;
+        margin-top: 25px;
+        padding-top: 2px;
+    }
+    
+    h2 span.note {
+        font-size: 12px
+    }
+    
+    h3 {
+        font-size: 14px;
+        color: #036;
+    }
+    
+    p,ul,td {
+        font-family: "Lucida Grande", Verdana, sans-serif;
+        font-size: 13px;
+        line-height: 1.3em;
+    }
+    
+    #footer {
+        text-align: center;
+    }
+    
+    p.footer {
+        font-size: 11px;
+    }
+</style>
+
+</head>
+<body>
+
+<div id="banner">
+    <span class="site-name">Pete.Yandell.com</span>
+</div>
+
+<h1>PYMIDI Framework <span class="note">(Version 1.1)</span></h1>
+
+<div id="contents">
+Jump down to:<br />
+<a href="#requirements">Requirements</a><br />
+<a href="#usage">Using the Framework</a><br />
+<a href="#credits">Credits</a><br />
+</div>
+
+
+<p>The PYMIDI Framework makes it very easy to do all the things that
+a MIDI application commonly wants to do:
+    <ul>
+        <li>let the user select MIDI sources and destinations</li>
+        <li>handle the addition and removal of MIDI devices on the fly</li>
+        <li>save references to MIDI sources and destinations in files</li>
+        <li>send and receive MIDI data</li>
+    </ul>
+</p>
+
+<p>It also provides a nice Objective-C interface to a lot of Apple's
+CoreMIDI functionality, while still allowing you to get at the underlying
+CoreMIDI objects to do more advanced things.</p>
+
+
+<h2><a name="requirements">Requirements</a></h2>
+
+<p>
+    To build applications that use the PYMIDI Framework you will need:
+    <ul>
+        <li>Mac OS X 10.3</li>
+        <li>Xcode</li>
+    </ul>
+</p>
+
+<p>There's no reason you shouldn't be able to build projects just as
+well using Mac OS X 10.2 and Project Builder, but I haven't tested
+it recently.</p>
+
+
+<h2><a name="usage">Using the Framework</a></h2>
+
+<p>The framework has been built to be embedded within your application.
+If you've never done this before, here are the basic steps:</p>
+
+<ul>
+    <li>
+        copy the framework into your Xcode project's folder
+    </li>
+    <li>
+		drag the framework from the Finder into the
+        &#8220;Linked Frameworks&#8221; group
+		in the your project's &#8220;Groups &#38; Files&#8221; pane
+    </li>
+    <li>
+        select your target from the &#8220;Targets&#8221; section of the
+        &#8220;Groups &#38; Files" pane
+    </li>
+	<li>
+		choose &#8220;New Copy Files Build Phase&#8221; from the &#8220;New Build Phase"
+		sub-menu of the "Project" menu
+	</li>
+    <li>
+        choose &#8220;Frameworks&#8221; from the &#8220;Destination:&#8221; popup menu in
+        the &#8220;Copy Files Info&#8221; window
+    </li>
+    <li>
+        in the &#8220;Groups &#38; Files&#8221; pane, drag PYMIDI.framework
+        from the &#8220;Linked Frameworks&#8221; group onto
+        the new build phase inside your target
+    </li>
+</ul>
+        
+<p>You'll also need to link against Apple's CoreMIDI framework by
+choosing &#8220;Add Frameworks&#8230;&#8221; from the &#8220;Project&#8221; menu and adding
+the CoreMIDI.framework to your application.</p>
+
+<p>Full documentation for the framework APIs can be found in the
+<a href="Documentation/index.html">Documentation folder</a>.</p>
+
+
+<h2><a name="credits">Credits</a></h2>
+
+<p>The software was designed and written by
+<a href="mailto:pete@yandell.com">Pete Yandell</a>.</p>
+
+
+<div id="footer">
+    <br /><br />
+    <p class="footer">Copyright &copy; 2003-2004 <a href="mailto:pete@yandell.com">Peter Yandell</a>.
+    All Rights Reserved.</p>
+</div>
+
+</body>
+</html>

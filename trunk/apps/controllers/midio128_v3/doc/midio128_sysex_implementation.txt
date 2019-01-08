@@ -1,0 +1,71 @@
+$Id$
+
+
+MIDIO128 V3 SysEx Implementation
+================================
+
+
+Which Actions are implemented
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   a) F0 00 00 7E 44 <d>1 F7
+      Request a Dump
+         <d> = device number (0-7)
+
+   b) F0 00 00 7E 44 <d>2 <dump> F7
+      Write a Dump
+         <d> = device number (0-7)
+         <dump> = 1536 bytes dump data
+
+   c) F0 00 00 7E 44 <d>3 <b> F7
+      Request a block of 256 bytes
+         <d> = device number (0-7)
+         <b> = block number (00-05)
+
+   d) F0 00 00 7E 44 <d>4 <b> <256 bytes> <checksum> F7
+      Write a block of 256 bytes
+         <d> = device number (0-7)
+         <b> = block number (00-05)
+         <256 bytes> = the block data
+         <checksum> = the checksum of <b> and <256 bytes>
+
+   e) F0 00 00 7E 44 <d>F F7
+      Ping (just sends back the same SysEx string)
+
+
+How do I receive a SysEx Dump from the MIDIbox
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are two possibilities:
+
+   1) enter the SysEx menu and press the Snapshot button.
+      The box will send 6 blocks:
+
+         F0 00 00 7E 44 <d>4 <b> <256 bytes> <checksum> F7
+
+      This is exactly the SysEx data which can be used to
+      write back the configuration into the box.
+
+   2) also a MIDI program is able to request the configuration 
+      with the advantage that the user don't have to enter the 
+      SysEx menu.
+      To request all blocks just send 
+
+         F0 00 00 7E 44 05 F7
+
+      to the box. 6 blocks:
+
+         F0 00 00 7E 44 <d>4 <b> <256 bytes> <checksum> F7
+
+      will be sent back immediately.
+
+
+How do I edit a SysEx Dump
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A SysEx editor for MIDIO128 is integrated into MIOS Studio 2
+
+Alternatively use the mk_midio128_syx script in the tools directory.
+
+
+Thorsten.Klose@midibox.org

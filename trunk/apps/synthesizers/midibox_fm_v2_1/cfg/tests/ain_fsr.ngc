@@ -1,0 +1,18 @@
+# Reset to default
+RESET_HW
+
+
+# LCD message after load
+LCD "%C@(1:1:1)AIN FSR Test"
+
+# AIN hardware: only enable J5.A0 input
+# reduce the resolution (e.g. to 5bit) if you notice jittering values
+AIN enable_mask=100000  resolution=4bit
+
+# value range for J5.A0
+AIN pinrange=1:30:4095
+
+# generate a note on/off event
+# use a filter delay of 20 mS
+EVENT_AIN    id=  1  ain_filter_delay_ms=20 \
+             type=NoteOn   chn= 1 key=36  range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:2  label="^std_ain" \

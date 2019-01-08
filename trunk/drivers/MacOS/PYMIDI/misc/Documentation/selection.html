@@ -1,0 +1,46 @@
+<html>
+<head>
+    <title>Selecting Endpoints</title>
+</head>
+
+<body>
+
+<h1>Selecting Endpoints</h1>
+
+<p>Many applications will want to display a list of MIDI sources and/or
+destinations from which a user may choose.  The following shows simple
+code for populating an NSPopUpButton with a list of MIDI sources.</p>
+
+<blockquote>
+<pre>
+- (void)buildPopUp
+{
+    PYMIDIManager*  manager = [PYMIDIManager sharedInstance];
+
+    [myPopUp removeAllItems];
+
+    NSArray* endpointArray = [manager realSources];
+    
+    NSEnumerator* enumerator = [endpointArray objectEnumerator];
+    PYMIDIEndpoint* endpoint;
+    while (endpoint = [enumerator nextObject]) {
+        [myPopUp addItemWithTitle:[endpoint displayName]];
+        [[myPopUp lastItem] setRepresentedObject:endpoint];
+    }
+}
+</pre>
+</blockquote>
+
+<p>To do the same for desinations, simply replace the 
+<code>[manager realSources]</code> call with
+<code>[manager realDestinations]</code>.</p>
+
+<p>Note that <code>[[myPopUp selectedItem] representedObject]</code> can
+be used to return the currently selected endpoint.</p>
+
+<p>You should also register to receive <code>PYMIDISetupChanged</code>
+notifications and call your <code>buildPopUp</code> method whenever
+the setup changes to display the currently available endpoints.</p>
+
+</body>
+</html>

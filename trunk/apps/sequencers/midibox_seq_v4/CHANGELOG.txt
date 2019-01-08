@@ -1,0 +1,2647 @@
+$Id$
+
+Wishlist for future features
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-> see bottom of this document
+
+
+MIDIboxSEQ V4.096
+~~~~~~~~~~~~~~~~~
+
+   o Improved selection handling for midiphy frontpanel:
+       - if you press&hold the Bookm/Step/Track/Param/Trigger/Instr/Mute or Phrase button, and then
+         make a selection with SEL or GP buttons, the selection button will jump back to the previous
+         function
+       - if you press&release these buttons without a selection, the function stays active.
+
+     Example: let's say the track selection is active.
+     Press&Hold Param button, change to a new parameter layer, then release the Param button
+     -> the selection buttons will jump back to track selection.
+
+     If it's desired to permanently control the parameter layer with the selection buttons, just
+     press&release the Param button.
+
+   o It's now possible to customize the list of labels which are used during track/pattern
+     name and category and drum selection. After booting the new firmware, following files
+     will be created in the /PRESETS folder: TRKLABEL.V4P, TRKCATS.V4P and TRKDRUMS.V4P
+
+     Edit these files with the MIOS File browser. Uploaded changes are immediately taken
+     over.
+
+     - TRKLABEL and TRKCATS: are used in MENU->EVNT, "Trk Inst.", "Edit Name" page
+       (Use GP15 to select the Preset)
+
+     - TRKDRUMS is used on the same page when a drum track is edited (instead of a
+       track name we configure instrument names)
+
+       Special treatment: TRKDRUMS.V4P also maps MIDI notes to the drum labels.
+       Whenever a new preset drum is selected, the drum note will be changed accordingly.
+       This allows you to fully customize drum maps.
+
+       The first 16 drums are taken by default whenever a drum track is initialized, and the
+       remaining drums in the list can be optionally selected to replace on of the 16
+       drum instruments.
+
+     - TRKLABEL and TRKCATS are also used when a pattern is saved
+
+   o New option 9/33 allows to unmute tracks on pattern changes
+
+   o New option 14/33 allows to change the steps of the current selected view only
+
+
+MIDIboxSEQ V4.095
+~~~~~~~~~~~~~~~~~
+
+   o support for midiphy Frontpanel.
+     The appr. HW configuration file can be found under
+     hwcfg/midiphy_lh/MBSEQ_HW.V4 and hwcfg/midiphy_rh/MBSEQ_HW.V4
+
+   o introduced first "MBSEQV4+" function.
+     MIDIbox SEQ V4+ is a special firmware variant for the STM32F4 core.
+     It offers additional memory and/or CPU hungry functions which can't be implemented
+     for STM32F1 or LPC17 due to resource limitations.
+     These special functions are marked with "V4+" in future.
+
+   o V4+: implemented CC layers for drum tracks.
+     The CC numbers are statically assigned for all tracks of the session.
+     They can be changed in the Options page (item 20/26)
+
+   o trigger/layer edit views now also supported for drum tracks
+
+   o reference step for pattern changes now works indpendent from reference step used for sync-to-measure
+
+   o PATTERN page: pattern is switched immediately if SELECT button is pressed, regardless of
+     the pattern change synchronisation option.
+
+   o OPTIONS page: new option "Print and Modify Steps w/o changing Gate".
+     If enabled: note values will always be print regardless if they are played or not.
+     Changing a note value won't automatically enable the gate
+
+   o OPTIONS page: new option "Print Notes with transposed value".
+     Enabled by default (due to change in V4.093), can be optionally disabled now.
+
+   o OPTIONS page: new option "Swap LED colours" (relevant for Wilba and midiphy Frontpanels)
+
+   o OPTIONS page: new option "Invert Mute LEDs"
+
+   o OPTIONS page: new TPD option "BPM" and "BPM with Beat": prints tempo value and optionally flashes to measure/beat
+
+   o OPTIONS page: new TPD option "Logo" and "Logo with Beat": prints a 16x8 logo and optionally flashes to measure/beat
+     There are individual logos for each session which can be edited in the MBSEQ_C.V4 file.
+     If you don't find "TpdLogoLine" items there (because you are using an older session) just trigger the "Save" function
+
+   o AOUT: MIDI Channel 9..12/13..15 now set the gate pins #1/3/5/7 as documented (previously it was #1/2/3/4 due to a code translation error)
+     New: gate pins #2/4/6/8 are now set whenever the velocity is >100.
+     This way the pins can be used as an accent trigger
+
+   o V4+ AOUT: support for AOUT channel calibration.
+     In the CV configuration menu, turn GP ENC #7 until 0V/1V/2V/.../Max will be visible.
+     Calibrate the offset of the target value with ENC #8.
+     Press GP #8 to cycle between min/0/max offset of the calibration point.
+     Each V has a dedicated calibration value which can be configured this way, the output will be interpolated accordingly.
+     Note that with exiting the CV configuration menu the calibration values are stored on SD Card in the MBSEQ_GC.V4 file
+     (-> CV_Cali <cv-counting-from-0>).
+     You could backup/set/restore the values from there if required.
+     To reset all calibration values: delete all CV_Cali items in MBSEQ_GC.V4, store the file and enter "reset" in MIOS terminal.
+
+   o Bugfix for permanently cleared notes if live recording is used after previous step recording
+
+   o ProgramChange Layer: steps now disabled by default when the track is cleared
+
+   o Whenever a track or parameter layer is unmuted, it will be automatically selected
+     This option can now be disabled in the OPTIONS page (item 9/29)
+
+   o new terminal command "lcd" allows to display a temporary message from on LCD from
+     an external device via SysEx
+
+   o encoder buttons can now be assigned in the MBSEQ_HW.V4 file (currently hardcoded to FAST function)
+
+   o STM32F4 board: orange LED shows SD Card available, red LED any received MIDI IN, blue LED any transmitted MIDI OUT
+
+   o experimental: terminal command "backup" creates a .tar file of the entire SD card.
+     Whenever "backup" is entered, a new bak<incremented-number>.tar file will be created.
+     This file can be downloaded from MIOS Studio (might take a lot of time!) or from a computer by
+     plugging the SD Card into a SD Card reader.
+     .tar files can be unpacked with "tar xfv <filename>" or with other decompression tools (might be 
+     already installed on your computer by default)
+
+   o experimental (might be optional in future): show measure and pattern step position in main screen
+
+
+MIDIboxSEQ V4.094b
+~~~~~~~~~~~~~~~~~~
+
+   o fixed LED handling for common frontpanels (e.g. MUTE LED stayed active regardless of selected view)
+
+
+MIDIboxSEQ V4.094
+~~~~~~~~~~~~~~~~~
+
+   o support for Antilog Frontpanel.
+     The appr. HW configuration file can be found under hwcfg/antilog/MBSEQ_HW.V4
+
+   o enhanced COPY/PASTE/CLEAR functions for following pages:
+     - PATTERN page: copy/paste/clears all patterns.
+                     Special function: by pressing COPY+PASTE the patterns will be pasted into the next slots
+     - PARSEL page: copy/paste/clears the currently selected parameter layer only
+     - TRGSEL page: copy/paste/clears the currently selected trigger layer only
+     - INSSEL page: copy/paste/clears the currently selected instrument only
+                    (useful for drums: corresponding trigger any parameter layers are cleared)
+
+   o improved ALL button behaviour
+
+   o New worflow for PATTERN page:
+     GP 1/2, 5/6, 9/10, 13/14 allow to select group as well
+     (especially interesting for Antilog Frontpanel: Selection buttons can be used for mutes)
+
+   o New worflow for MUTE page:
+     Whenever a track or parameter layer is unmuted, it will be automatically selected
+
+   o EDIT page: improved handling for chord layers
+
+   o moved some configuration settings which were previously part of the
+     MBSEQ_HW.V4 file to the Options page, so that they can be changed without
+     a file editor:
+     - MIDI remote key (or CC)
+     - Track Selection CC
+     - MIDI OUT Runtime Status Optimisation
+     - MENU button assignments
+
+   o support for "Shadow Out", which will forward the MIDI events of the currently selected
+     track to a specified MIDI port and channel (e.g. can be used to visualize played notes
+     with an external device). Select the port/channel in the OPTIONS page.
+
+   o Metronome page removed. Please configure the metronome function in the Options page.
+
+   o Pattern banks can't be modified by default anymore, because they are typically
+     assigned to group 1/2/3/4, changed bank assignments can confused users
+     to much. If somebody still finds this feature useful: it can be enabled in the
+     Options page
+
+
+MIDIboxSEQ V4.093
+~~~~~~~~~~~~~~~~~
+
+   o new parameter type "Chord3" provides an alternative set of 108 chords.
+     Thanks to EsotericLabs for providing the chord table!
+
+   o notes in edit screen are displayed transposed now
+
+   o drum tracks: random probability layer now working as intended
+
+   o layers are now initialized for 6 notes polyphony by default (8 layers, 128 steps)
+
+   o optionally pattern changes don't re-send the PC/bank settings.
+     This option can be configured in the UTILITY->Options menu (item #4/18)
+
+
+MIDIboxSEQ V4.092
+~~~~~~~~~~~~~~~~~
+
+   o new parameter layers for track specific root note and scale
+
+     Root selection strategy: if Root is assigned to any parameter 
+     layer of a track, the layer can either select the global root 
+     selection ("Glb") or set the root note for each step explicitely.
+
+     The global root selection is configured in the FX->Scale page,
+     it's either "Keyb" (for MIDI keyboard entry) or C, C#, ... B
+
+     The local root selection is C, C#, ... B
+
+     Notes and Chords will be transposed accordingly if the track is in
+     Normal mode (and not in Transpose or Arpeggiator mode)
+
+     Similar for Scale: it can override the globally configured scale
+     of the FX->Scale page for each step.
+     
+   o new drum configurations: 4*16/2*64, 4*16/2*128, 4*16/1*256
+
+   o new configuration option in Track Mode page: "Note Last/First"
+     Allows to specify, if the transposer should take the last or first
+     played note (previously it always played the last note)
+
+   o new configuration option in Track Mode page: "STrg" (Step Trigger).
+     If activated, the step progression will be controlled from the transposer
+     bus, hence it can either be triggered from a loopback track or from an 
+     external MIDI device (MIDI keyboard, sequencer, etc.)
+     Note that each track can be assigned to a dedicated transpose bus
+     (4 busses are available), this allows to control 4 independent step progressions
+     for all 16 tracks.
+
+   o individual steps of CC, PitchBender, Program Change and Aftertouch
+     layers can now be disabled so that they won't play.
+     Turn the encoder to the rightmost position (value 128)
+
+     Also the init value has been changed: for these layers, the steps
+     are now disabled by default.
+     For CCs please change the init value by yourself in the UTIL->OPT
+     page (option #12: Initial CC value)
+
+   o new behaviour of CLEAR button in recording mode:
+     it clears only the selected step (instead of the entire pattern).
+     During live recording it will clear the "played" steps while the
+     button is pressed.
+
+   o new CC functions which can be configured in MIDI->ExtCtrl. page:
+     o Play/Stop: allows to assign the PLAY button to a CC
+     o Record: allows to assign the RECORD button to a CC
+
+   o new option in Groove page: Sync
+     Allows to sync the groove to the global reference step (RefS)
+     or to the local track step
+
+   o fixed G# transpose
+
+
+MIDIboxSEQ V4.091
+~~~~~~~~~~~~~~~~~
+
+   o new parameter type "Chord2" provides an alternative set of 32 chords
+
+   o new parameter type "Aftertouch" allows to send and record channel pressure events
+
+   o CPU load display has been re-adjusted for LPC17 and STM32F4
+
+   o hwcfg/wilba*/MBSEQ_HW.V4: default F1-F4 assignments changed to:
+     F1: Track Select, F2: Live Forwarding, F3: Recording, F4: Save All
+
+   o MBSEQ_HW.V4: added new button/LED functions: FX, MOVE, SCROLL
+
+   o MBSEQ_HW.V4: added new LED_MEASURE function which will activate a LED
+     when the first step of the measure is played.
+
+   o CC Parameter layer label now prints "#<number>" instead of "CC"
+
+   o Jam page: AStart now starts to record into first step in 
+     live recording mode (as intended), it starts on the selected step
+     in step recording mode
+
+   o Purpose of Record and Live Button & LED change:
+     they switch between record (and live) mode w/o changing to the Jam page
+
+   o new button/LED combo: JAM_LIVE and JAM_STEP: they switch to the JAM
+     page and select Live resp. Step recording mode
+
+   o BLM16x16+X keyboard can now record into any track
+
+   o Transpose page now allows selection based on Scale
+
+   o New option page item #10 "Initial Gate Trigger Layer" 
+     (empty or trigger on each 4th step)
+
+   o Event configuration page: new drum track configuration 2*64/2*128
+
+   o AOUT: added suskey function (AKA fingered portamento: slew rate only
+     enabled if more than 2 keys are played)
+     This function can be enabled in the CV Configuration page
+
+   o removed obsolete (non-working) pattern based scale control
+
+   o fixed LED behaviour in Step View page (corrected display if page is deselected)
+
+   o various minor bugfixes & improvements
+
+
+MIDIboxSEQ V4.090
+~~~~~~~~~~~~~~~~~
+
+   o Fx->Scale page: the configured scale is now displayed at the right
+     half of the page
+
+   o Track duplication now also possible with COPY+PASTE in UTILITY page
+
+   o Track selections (Parameter/Trigger Layer, instrument, step view)
+     can now be handled individually for each track.
+     This function can be enabled in the UTILITY->Opt menu (item #9/16)
+
+   o added BLM fader configuration to UTILITY->Opt menu (item #14/16)
+     Up to 8 faders can be connected to the BLM16x16+X
+     They can send a CC value either to a statically assigned Port/Chn, or to
+     the Port/Chn defined by the track.
+
+     Optionally value can be sent with inverted polarity (turn encoder beyond CC#127).
+
+     Additional (internal) functions can be added in future.
+
+   o BLM in keyboard mode: transpose only takes place if track not in normal
+     (no transpose) mode!
+
+   o if a track plays a sustained note, and doesn't play a step anymore
+     (all gates cleared), the sustain will be cancled now
+
+   o improved Auto Start in Jam page
+
+   o Jam recording options are now stored/restored in/from session 
+     configuration file
+
+   o SONG button has now the same function like the SELECT button: it shows
+     a configuration page. This makes it more consistent to the EDIT button.
+     In future, the SELECT button might get a new function in SONG page.
+
+   o Song mode: if Steps per Measure < Steps for Pattern synchronisation, the
+     song sequencer will already switch to the next pattern with the next measure.
+
+
+MIDIboxSEQ V4.089
+~~~~~~~~~~~~~~~~~
+
+   o added DIN testmode which can be enabled from the MIOS terminal with the
+     "set din_testmode on" command to display button and encoder movements.
+
+   o added "Roll Gate" as new optional trigger layer assignment.
+     It gates the Roll or Roll2 value which is configured in a parameter layer.
+
+   o Euclid Generator: parameter layer into which the pattern will be copied
+     now selectable.
+     Velocity/Accent will only be changed if the first parameter layer is selected.
+
+   o it's now possible to quickly duplicate the steps of a track:
+     press&hold COPY and press the PASTE button
+
+   o Groove page: by default, groove configuration changes are applied on all tracks now.
+     It's possible to select a "local groove" by pressing GP7 button in the groove page.
+
+   o BPM page: it's now possible to configure an output delay for each MIDI port.
+     (positive and negative delays are supported - this is currently an experimental feature!)
+
+   o fixed NoteOff in Jam Forwarding mode if FTS, Limit or Humanizer is enabled
+
+   o NOTE: due to a RAM capacity issue, the UNDO function is currently not available
+     for the LPC17 firmware
+
+
+MIDIboxSEQ V4.088
+~~~~~~~~~~~~~~~~~
+
+   o improved glide function for polyphonic steps
+
+   o BLM16x16+X support for Mute and Solo
+     The new functions are available at Extra Row Button #3 and #4
+     (if a BLM16x8+X is connected, they replace Start/Stop at Extra Row Button #1 and #2)
+
+     If Mute active: the extra column buttons mute/unmute tracks
+     If Solo active: the extra column buttons solo/unsolo tracks
+
+     LED Colour coding:
+     - LED off: Track neither muted nor soloed
+     - LED green: Track muted
+     - LED yellow: Track soloed
+     - LED red: Track muted and soloed - solo has higher priority, therefore track will be played
+
+     Special Key combinations:
+     - ALT+Mute clears all mutes
+     - ALT+Solo clears all solos
+
+   o added Robotizer Fx from Borfo
+
+   o added LCD Screensaver.
+     It will be active after 30 minutes by default.
+     The time can be changed in the UTIL->OPT menu page.
+
+   o added DETENTED4/DETENTED5 option for rotary encoders in MBSEQ_HW.V4 file
+
+   o added new parameter layers "Nth1" and "Nth2" which trigger a special action 
+     on each nth bar (Nth1) starting at the 1st bar, or after nth bars (Nth2).
+     Following trigger conditions are available:
+     - Pl (Play each nth bar)
+     - Mu (Mute each nth bar)
+     - Ac (Accent each nth bar)
+     - Ro (Roll each nth bar)
+     - Fx (enable Fx each nth bar)
+     - Nx (don't enable Fx each nth bar)
+
+   o combined Record and Live page to a new single "Jam" page with sub pages 
+     to improve the overview and simplify the configuration.
+
+   o added Live Pattern Recording to Jam page which can be used to play and record
+     customizable arpeggiator sequences.
+     Available in the Jam page (Utility->Jam->Ptn)
+     See updated user manual for further information.
+
+
+MIDIboxSEQ V4.087
+~~~~~~~~~~~~~~~~~
+
+   o new page: "Track Instrument"
+     Can be selected with MENU->EVNT->Trk Inst (GP #8) or from the main page (after Track Event item)
+     Allows to configure the MIDI port, channel and instrument name.
+
+   o the new Track Instrument page also allows to select Program Change and Bank (Low/High byte)
+     If activated, these parameters will be sent when the sequencer is started and on pattern changes.
+     Please note: a program and bank change can stall your synth so that the first note could be delayed!
+     Use this function only when the device can handle patch changes quickly!
+
+   o added CV_GATE_SR1 and CLK_SR to MBSEQ_HW.V4 config
+     This is the prefered option to add CV gates and DIN clock/start signals to your MIDIbox SEQ in future.
+     See also updated http://www.ucapps.de/midibox_seq_manual_hw.html
+
+   o 8 individual DIN Sync clock outputs with individual divider and pulsewidth values are
+     provided now. A clock output can optionally be turned to a Start/Stop output.
+     The outputs are available at the configured CLK_SR DOUT shift register pin D7..D0
+     (D7=first output, D6=second output, etc...)
+     The clock parameters can be configured in the CV configuration page.
+
+   o Mixer page: channel events can be dumped by pressing the corresponding GP button.
+     This also allows to prepare different mixer setups, sending to the same channel, triggered
+     by a GP button
+
+   o Mixer page: press SELECT to activate/deactivate "live sending" mode (values are sent
+     while moving an encoder)
+
+   o Mute page: the synchronized mute/unmute option can be temporary overruled by activating
+     the FAST button function
+
+   o improved step recording display for drum tracks
+
+   o Selected Datawheel mode in edit page now stored/restored to/from SD Card
+
+   o STM32F4: support for bootloader "enforce_usb_device" flag
+
+
+MIDIboxSEQ V4.086
+~~~~~~~~~~~~~~~~~
+
+   o various improvements for external BLMs with different dimensions
+     (previously only BLM16x16+X was properly supported)
+
+   o corrected behaviour of ALL button in EDIT page (GP buttons change
+     selection pattern with GP buttons)
+
+
+MIDIboxSEQ V4.086
+~~~~~~~~~~~~~~~~~
+
+   o MIDI Learn for Drum notes in Track Event configuration page:
+     on a drum track, press & hold button GP12 to set the drum note
+     depending on the configured recording port & channel (which has to be
+     configured in the RECORD page)
+
+   o Edit page: press&hold a GP button to record directly into the selected step
+
+   o Edit page: config page which was previously visible by pressing the SELECT
+     button now displayed by pressing&holding EDIT button.
+     SELECT button now toggles step recording mode
+
+   o Edit page: added shortcut to Recording Config (EDIT+GP11/GP12)
+
+   o Record page now allows to toggle the FTS and FX flag for MIDI Forwarding
+     (same flags can be configured in LIVE page)
+
+   o Step Recording: note length measurements now also working correctly when
+     the sequencer is clocked in slave mode.
+
+   o Track Event configuration page: VelN/VelA not displayed if they are
+     not relevant for the selected configuration.
+
+   o Clear function will clear all selected tracks
+
+   o LFO page: Extra CC can now be disabled/enable with a separate switch
+
+   o Echo page: echo can now be enabled/disabled without touching the repeat value
+
+
+MIDIboxSEQ V4.085
+~~~~~~~~~~~~~~~~~
+
+   o it's now possible to customize the MENU short cut page in MBSEQ_HW.V4
+     with the new MENU_SHORTCUT parameter.
+     See the templates under hwcfg/*/MBSEQ_HW.V4 for further informations.
+
+   o the bookmark configuration files (MBSEQ_BM.V4) are using the same
+     page names like MENU_SHORTCUT instead of numbers.
+     The old number scheme will be automatically converted to the new names.
+
+   o improved keypad (SMS-like) entry of names
+
+   o SysEx device page allows to specify a delay between SysEx messages which is
+     used when a .syx file contains multiple dumps
+
+   o each SysEx device page has now a dedicated port/delay configuration which
+     is stored/restored from the /SYSEX/<device>/DEVCFG.V4 file
+
+
+MIDIboxSEQ V4.084
+~~~~~~~~~~~~~~~~~
+
+   o the STM32F4 variant of the firmware supports USB Host mode!
+     See also http://midibox.org/forums/topic/18906-usb-host-support-for-mbhp-core-stm32f4/
+
+   o If Force-to-Scale is enabled, the edit screen shows the forced keys at the lower line.
+     The original value is still displayed at the upper right line.
+
+   o Live Page: FTS (Force-To-Scale) not applied on drum tracks anymore
+
+   o Options Page: added new option which enforces Force-To-Scale for
+     BLM16x16+X Grid Edit mode
+
+   o Euclid Generator Page: velocities are re-generated automatically whenever
+     VelN or VelA value is changed
+
+   o the optional RECORD button now toggles between RECORD and EDIT page (previously it
+     only switched to the RECORD page)
+
+   o Song page: new action "Unmute all" will unmute all tracks and parameter layers
+
+   o Mixer: in the UTIL->Options page it's now possible to define if CC1, CC2, CC3, CC4
+     should be sent after or before the Program Change event.
+
+   o NRPN MSB=127 allows to modify parameters of the currently selected track
+
+
+MIDIboxSEQ V4.083
+~~~~~~~~~~~~~~~~~
+
+   o fixed potential hang-up during pattern change which was introduced with V4.081
+
+
+MIDIboxSEQ V4.082
+~~~~~~~~~~~~~~~~~
+
+   o Options in LIVE page are now stored in session specific MBSEQ_C.V4 file
+
+   o initial release for MBHP_CORE_STM32F4
+
+
+MIDIboxSEQ V4.081
+~~~~~~~~~~~~~~~~~
+
+   o added USB MIDI workaround for Windows
+
+   o fixed synchronisation issue in Song mode
+
+
+MIDIboxSEQ V4.080
+~~~~~~~~~~~~~~~~~
+
+   o SELECT+PASTE transfers the parameter layer, which was active during COPY, to
+     the current parameter layer.
+     If a drum track is selected, it's doing this for the trigger layer (and not
+     for the parameter layer).
+
+   o SELECT+CLEAR clears only the current parameter layer.
+     If a drum track is selected, it's doing this for the trigger layer (and not
+     for the parameter layer)
+
+   o it's now possible to control the track steps with CCs.
+     Each track has a dedicated CC which has to be configured in the
+     MIDI->Ext.Ctrl page.
+
+   o it's now possible to turn off the track clock by enabling the new "Manual"
+     mode in the DIVIDER page. Once enabled, a step will only be played if:
+     - manually triggered in the MANUAL page
+     - set with the new CC based step control feature (MIDI->Ext.Ctrl page)
+
+     Use cases:
+     - predefined MIDI events, stored in the track layers, should be manually
+       triggered (and not sequenced).
+       E.g. in conjunction with a sampler, you could set each step to a note
+       which "fires" a certain sample. In addition, you can fire CCs,
+       Program Change, Aftertouch etc. from the MANUAL page.
+
+     - the track should be controlled from an analog modulation source (e.g. a
+       sawwave from a LFO). MIDIbox SEQ doesn't provide analog inputs, so that
+       an external CV-to-MIDI interface is required.
+       Note that this interface also has to scale the CC value over the desired
+       step range. If the modulation source should sweep over step 1..16, then
+       the CV-to-MIDI interface has to scale down the converted value to the
+       CC value range 0..15!
+
+
+
+MIDIboxSEQ V4.079
+~~~~~~~~~~~~~~~~~
+
+   o added new Fx which allows to send to one or more additional MIDI channels
+     from a single track with various behaviours (forward to all, alternate
+     between channels, randomly select channel)
+     The new functions can be configured at the Fx->Dupl (like Duplicate) page
+
+   o groove page: added possibility to change the intensity for all tracks at once
+
+   o MBSEQ_HW.V4 file: SR numbers for BUTTON and LED functions which are
+     assigned to the BLM8x8 matrix (-> Wilba's Frontpanel) are now named M1..M8
+     instead of 17..24
+     See also the configuration template under hwcfg/wilba/MBSEQ_HW.V4
+     The old syntax is still provided to keep old MBSEQ_HW.V4 files compatible.
+     Once the new SRIO_NUM_SR parameter is set to 17 or more SRs, the new syntax
+     has to be used.
+
+   o MBSEQ_HW.V4 file: new parameter SRIO_NUM_SR allows to specify the maximum
+     number of DIN/DOUT shift registers in a chain. Up to 23 DINs/DOUTs can be
+     chained now - this is also the new default value in the MBSEQ_HW.V4 templates.
+
+   o whenever a MBSEQ_HW.V4 file is uploaded with the MIOS Filebrowser, the
+     configuration will be automatically reloaded (no need to reset the core)
+
+   o official support for Ilmenator's Track Position Display.
+     See also http://www.midibox.org/dokuwiki/doku.php?id=tpd_pcb
+     An example configuration (TPD directly connected to J2 of Wilba's Frontpanel PCB)
+     can be found under hwcfg/wilba_tpd/MBSEQ_HW.V4
+
+   o the TPD display mode can now be configured in the Utility->Options menu (item #11)
+
+   o added new MIOS Terminal commands:
+     new, saveas, save, load, delete, session, sessions
+     
+
+MIDIboxSEQ V4.078
+~~~~~~~~~~~~~~~~~
+
+   o removed MSD (mass storage device) mode to save some memory.
+     With the MIOS Filebrowser (integrated into MIOS Studio) this mode has a good
+     replacement meanwhile. For direct access to the SD Card another application (like
+     MIDIO128) could be temporary uploaded... or the SD Card can be plugged into
+     a common SD Card reader.
+
+   o Options page has been overworked, so that more options can be added in future
+
+   o experimental: if Live mode or a MIDI Router based "Track" or "Sel.Trk" is active,
+     and Note, CC, PitchBender, Program Change is received on the selected IN Port,
+     the corresponding track layer (or LFO CC) will be muted completely, or temporary for
+     a given number of steps.
+     This allows to temporary overrule events generated by the sequencer from
+     an external MIDI keyboard or controller.
+     This feature has to be configured in the UTILITY->Options page, it's disabled by default!
+
+   o activate the ALL function (press ALL button) in the mute page to get a new 
+     menu page which allows to mute/unmute all tracks, layers of current track or 
+     mute&layers of all tracks.
+     Sidenote: this obsoletes the UTILITY->MUTE and UNMUTE function, which might
+     be replaced by something else in future.
+
+   o the 6 new mute/unmute functions are now also accessible from dedicated buttons
+     (and LEDs). They have to be assigned in the MBSEQ_HW.V4 file.
+
+   o it's now possible to control the track mutes via CCs.
+     The first CC (for the first track) has to be configured in the MENU->MIDI->Ext.Ctrl
+     page. The remaining tracks are controlled from the 15 consecutive CCs.
+     E.g. if the CC number is set to 16, the mutes of track 1-16 are controlled with
+     CC#16 .. CC#31
+
+   o it's now possible to dump a mixer map via CC. The CC has to be configured in the 
+     MENU->MIDI->Ext.Ctrl page.
+
+   o a CC assigned to a sequencer layer won't be sent if it's also assigned to
+     the LFO "Extra CC"
+
+   o if a track is initialized, CC layers will be assigned to "off" by default
+     (no CC will be sent). The desired CC number has to be set explicitly before a
+     CC layer will send an event.
+
+   o in record mode, incoming CC events will be automatically assigned to free CC 
+     layers so that no pre-configuration is required (like known from MBSEQ V4L).
+     A CC layer is "free" (unassigned) as long as the CC number is turned "off". This
+     is the default setting for all CC layers after initialisation, and can be changed
+     in the MENU->EVENT page if desired.
+
+   o Trigger/Layer/303 edit view working again
+
+
+MIDIboxSEQ V4.077
+~~~~~~~~~~~~~~~~~
+
+   o it's now possible to send parameter changes, done from the user interface,
+     to a specified MIDI output port. This allows to record such changes with a DAW.
+     The output port has to be selected in the MIDI->Ext.Ctrl page, where also the
+     input port and channel is specified.
+
+   o a very useful "quick save" function has been added which significantly improves
+     the song phrases handling.
+
+     The new function will store the current mixer and pattern setup into predefined
+     bank positions:
+       - Phrase A will use Mixer Map #1 and Patterns 1:A1 2:A1 3:A1 4:A1
+       - Phrase B will use Mixer Map #2 and Patterns 1:A2 2:A2 3:A2 4:A2
+       - Phrase C will use Mixer Map #3 and Patterns 1:A3 2:A3 3:A3 4:A3
+       - ...
+       - Phrase P will use Mixer Map #16 and Patterns 1:B8 2:B8 3:B8 4:B8
+
+     After the store operation, following references will be copied into the phrase
+     slot of the song:
+       - 1st phrase step: the current mutes
+       - 2nd phrase step: selects the new mixer map
+       - 3rd phrase step: selects the new pattern set
+       - 4th phrase step: jumps to the 3rd phrase step (could be useful in song mode)
+
+     How to use this function:
+     Start a new session, edit some tracks, start jamming.
+     Whenever you've found sequences which play well together, change to the SONG page,
+     press&hold the SELECT button, then select "Save&Take over Patterns" with GP button 16.
+     Thereafter release the SELECT button, and select the target phrase slot with
+     one of the GP buttons -> this will store the current mutes/mixer map/patterns
+     into the predefined bank positions and insert references into the phrase slot.
+
+     Now you can continue jamming, change tracks, change mixer values, change mutes.
+     Whenever you found a new nice working sequence, go to the SONG page and store
+     it into another phrase slot (or overwrite an existing slot).
+
+     The stored phrases can be restored as usual with the GP buttons in the song page.
+
+   o it's now possible to specify the initial CC value (for the CLEAR and INIT
+     function) in the UTILITY->Options page
+
+   o LFO: CC layer modulation is working properly again
+
+   o Mixer Map not switched on pattern changes anymore (this is actually only
+     part of the "Remix" feature).
+     To get the Remix function properly working again, please open your 
+     MBSEQ_GC.V4 file with the MIOS Filebrowser, search for "PatternMixerMapCoupling" 
+     and set it to 1.
+     If this parameter doesn't exist yet, please create it:
+     PatternMixerMapCoupling 1
+
+     
+
+MIDIboxSEQ V4.076
+~~~~~~~~~~~~~~~~~
+
+   o the MIDI router forwards SysEx messages regardless if channels are filtered,
+     or "All" is used. It's ensured that messages are only sent once if multiple
+     router nodes forward to the same destination port.
+
+   o added optional "SAVE" and "SAVE_ALL" button function to the MBSEQ_HW.V4 file
+
+   o it's now possible to change the mixer map name.
+     In the mixer page, press SELECT + GP16 button to enter the name editor.
+
+   o LFO page: the current CC can be sent manually by pressing the GP14 button.
+
+   o Multi-Arp events are working like intended (again)
+
+
+MIDIboxSEQ V4.075
+~~~~~~~~~~~~~~~~~
+
+   o MBHP_IIC_MIDI working properly again on a STM32 core (issue was caused by a compiler change)
+
+   o Track event configuration page: if a parameter layer is configured for CC,
+     Pitchbender or Program Change, it's now possible to send the event manually
+     by pressing one of the GP buttons below the controller configuration (GP10, 11, 12, 13)
+
+   o MIDI remote keyboard function now also deactivated when Note On with velocity 0 received
+
+
+MIDIboxSEQ V4.074
+~~~~~~~~~~~~~~~~~
+
+   o "SD Card connected" message not displayed after boot anymore, instead only 
+     when the SD Card is exchanged
+
+   o whenever the ALL function is active, you can now directly select the steps
+     which should be modified with the GP buttons (LEDs will show the selection pattern)
+
+   o the ALL function has been enhanced:
+     - press & hold the ALL button and move the encoder of the already selected step
+       (marked with >...<) to change all steps to the same value (like before)
+
+     - if ALL button not pushed (but active), move the encoder of the already selected step
+       (marked with >...<) to change all step values relatively (like before)
+
+     - NEW: if ALL button is active (regardless if pushed or not), and the encoder
+       of an unselected step is moved, the editor will generate a ramp between the
+       selected step and the moved encoder.
+       This feature has been borrowed from Sequentix Cirklon - thanks for the inspiration! :-)
+
+     The "selected step" can either be changed with the datawheel, or it will be
+     changed if the ALL function isn't active (as before)
+
+
+MIDIboxSEQ V4.073
+~~~~~~~~~~~~~~~~~
+
+   o bugfix for "single_usb" option
+
+   o the MIDI router provides the new destination "Sel.Trk"
+
+     Usecase: MIDI events, such as CC or Notes, should be sent from a master keyboard
+     or MIDI controller to the MIDI port and channel of the currently selected track.
+
+
+MIDIboxSEQ V4.072
+~~~~~~~~~~~~~~~~~
+
+   o support for the "single_usb" option, which can be enabled with the
+     bootloader update application V1.012 ("set usb_single 1")
+
+     Use this option if you are working with a Windows PC which can't handle
+     the 4 USB ports correctly (e.g. stucking MIDI, Filebrowser operations are failing, etc.)
+
+
+MIDIboxSEQ V4.071
+~~~~~~~~~~~~~~~~~
+
+   o if not in song mode, the Rew/Fwd buttons can now be used to select the step view.
+
+   o the MIDI router provides the new destination "Track".
+
+     If this destination is selected, incoming MIDI events will be routed to the
+     MIDI port and channel of a track depending on the incoming MIDI channel number.
+
+     Usecase: MIDI events, such as CC or Notes, should be sent from a master keyboard
+     or MIDI controller to synths which are assigned to different port and MIDI channels
+     in the track configuration.
+     Just select the track with the MIDI channel on your keyboard/controller, the router
+     will take care that the events reach the right destination.
+
+   o it's now possible to send a CC when a track has been selected.
+     This feature allows to synchronize the track selection with a DAW.
+     It has to be configured in the MBSEQ_HW.V4 file (search for TRACK_CC in hwcfg/*/MBSEQ_HW.V4)
+
+
+MIDIboxSEQ V4.070
+~~~~~~~~~~~~~~~~~
+
+   o LPC17: robustness of LCD driver has been improved
+
+   o the MIDI configuration page got a new subpage called "Ext.Ctrl"
+     This subpage allows to assign CCs to functions like Morph Value,
+     Scale, Song, Phrase, Patterns, Banks, All Note Off, etc.
+     Some of these functions can also be assigned to a Program Change Event.
+     The MIDI port and channel over which these functions are accessible is free assignable.
+     The MIDI channel is disabled by default, which means that the Ext Ctrl. feature
+     has to be explicitly enabled in the MIDI->Ext Ctrl. page!!
+
+   o improved transpose handling if loopback track is running with sustain enabled,
+     or with notes > step length (glide)
+
+   o note stack now automatically cleared if transpose was controlled by a loopback
+     track, and then manually from an external keyboard.
+
+   o it's now possible to transpose with chords (or multiple notes) from a loopback
+     track
+
+   o the "sdcard_format" command allows to format the connected SD Card with FAT32
+     from the MIOS Terminal
+
+   o added BLM_GP_ALWAYS_SELECT_MENU_PAGE option to MBSEQ_V4.HW file
+
+
+MIDIboxSEQ V4.069
+~~~~~~~~~~~~~~~~~
+
+   o USB MSD driver: changed endpoint to avoid conflict with MIDI driver.
+     Note that it's still not possible to use MSD and MIDI in parallel,
+     but Windows and MacOS should accept the connection (again).
+
+   o Event configuration page: the selected layer type now has to be confirmed with 
+     GP button below the appr. item.
+     A warning message will pop up to notify about this unusual data entry method.
+     In addition, the value will be marked with '!' as long as it doesn't match with
+     currently active value.
+
+    o it's now possible to delete a session from the main page
+
+
+MIDIboxSEQ V4.068
+~~~~~~~~~~~~~~~~~
+
+   o support for GM5 driver under Windows.
+     MacOS and Linux users: just install this update, no additional changes required.
+     Windows users:
+     - upload the application with MIOS Studio
+     - close MIOS Studio
+     - install the GM5 driver which can be downloaded from http://www.ucapps.de/mios32_download.html
+     - start MIOS Studio -> 4 "GM5" USB ports should be visible
+
+
+MIDIboxSEQ V4.067
+~~~~~~~~~~~~~~~~~
+
+   o USB device settings have been changed.
+     IMPORTANT: please install MIOS32 Bootloader V1.010 before uploading
+     the application! Otherwise code upload via USB won't work anymore!
+     (Backup: upload via MIDI IN1/OUT1)
+
+   o support for MIOS Filebrowser, which will be part of MIOS Studio 2.4
+
+
+MIDIboxSEQ V4.066
+~~~~~~~~~~~~~~~~~
+
+   o fixed potential stack overflow in LPC17 build
+
+
+MIDIboxSEQ V4.065
+~~~~~~~~~~~~~~~~~
+
+   o the DEBOUNCE_DELAY parameter of the MBSEQ_HW.V4 file will now be also taken
+     for the BLM8X8 (Wilba's Frontpanel)
+
+   o Mixer: setup now automatically loaded when a new mixer map is selected
+
+   o Sessions: the SAVE function now also stores the current mixer map
+
+
+MIDIboxSEQ V4.064
+~~~~~~~~~~~~~~~~~
+
+   o corrected tap tempo function
+
+
+MIDIboxSEQ V4.063
+~~~~~~~~~~~~~~~~~
+
+   o The "Guide Track" now synchronizes tracks and pattern changes independent
+     from the "steps per measure" option
+
+   o it's now possible to change or disable a guide track from a song position entry
+
+   o the "RATOPC" (restart all tracks on pattern change) option now resets the track
+     synchronously with the next step
+
+   o the clear button now clears the track immediately (2 second delay has been
+     removed). Please discuss in the MIDIbox forum if you don't like this change.
+
+   o the copy/paste/undo functions now also copy the track and drum instrument names
+
+
+MIDIboxSEQ V4.062
+~~~~~~~~~~~~~~~~~
+
+   o fixed potential hard fault when storing preset pattern
+
+
+MIDIboxSEQ V4.061
+~~~~~~~~~~~~~~~~~
+
+   o STM32: MBHP_ETH module working properly again
+
+
+MIDIboxSEQ V4.060
+~~~~~~~~~~~~~~~~~
+
+   o fixed initialisation of MBHP_AOUT module
+
+   o Song Mode now provides a "Guide Track" which can be configured
+     by pressing SELECT in SONG page: the length of this track defines
+     the loop length and once the last loop has been played, all tracks
+     will be synchronized to step 1.
+     This allows to program breaks with a step length which is independent
+     from the measure.
+
+   o Phrase Mode now syncs the pattern changes to the measure of SyncChange
+     is set in the UTIL->OPT page
+
+   o Phrase Mode manually triggers the "synch-to-measure" option for all tracks
+     to ensure that all tracks are re-synchronized to step 1
+
+   o MBSEQ_HW.V4 files: changed encoder mode to MIOS_ENC_MODE_DETENTED3
+     since it's compatible with most encoders
+
+
+
+MIDIboxSEQ V4.059
+~~~~~~~~~~~~~~~~~
+
+   o added Euclidean Rhythm Generator for drum and synth sequences.
+     The page can be entered by pressing&holding SELECT in the edit menu -> GP16
+
+   o fixed stack overflow which happened when incoming OSC messages were forwarded
+     to OSC in Live mode (they are now automatically filtered to avoid feedback loops)
+
+   o fixed group selection in BUTTON_DIRECT_TRACK1...16
+
+
+MIDIboxSEQ V4.058
+~~~~~~~~~~~~~~~~~
+
+   o a new Pattern Remix feature has been implemented by Midilab.
+
+     It's optimized for live sessions and got a special page:
+        - pattern names can be previewed before they are selected
+        - patterns change when the selection button is pressed a second time
+        - mixer maps are dumped with pattern change
+        - the "Remix" function allows to select tracks which should be kept
+          (not overwritten by pattern changes)
+        - allows to synchronize with Ableton Live clips
+
+     The full documentation can be found under:
+     http://svnmios.midibox.org/filedetails.php?repname=svn.mios32&path=%2Ftrunk%2Fapps%2Fsequencers%2Fmidibox_seq_v4%2Fdoc%2Fpattern_remix_manual.txt
+
+     Note that the correct function of this feature requires, that the remix page
+     is assigned to a dedicated button. This has to be done in the MBSEQ_HW.V4 file
+     (new entry: BUTTON_PATTERN_RMX) - e.g. you could assign it to F4
+
+   o corrected SysEx output for LPC17
+
+
+MIDIboxSEQ V4.057
+~~~~~~~~~~~~~~~~~
+
+   o improved MIDI OUT throughput for LPC17
+
+
+MIDIboxSEQ V4.056
+~~~~~~~~~~~~~~~~~
+
+   o pattern page: the ALL button now allows to change all patterns 
+     to the same number at once (banks won't be influenced by ALL button).
+     
+   o the ALL function will always be turned off when changing to another page.
+   
+   o song page: the previously "Stop" action has been renamed to "End" - it doesn't
+     stop the sequencer anymore, instead it only exits song mode and loops the
+     current pattern set endless (e.g. to fade out or as bridge before you select
+     the next song).
+     
+   o song page: press SELECT+GP16 to take over the current pattern set into the
+     selected song position - this function can be used for quick song/phrase edits.
+     
+   o song page: in song mode it's now possible to select a phrase with GP buttons
+     (like in Phrase mode).
+     Difference: the song positions will be played until they are looping or "End"
+     is reached. This allows to split a song into multiple parts which are 
+     interactively selected.
+
+   o song page: Fwd/Rwd button change also the edit position in song page
+ 
+   o if the sequencer is started in song page, the song will directly jump to the
+     current edit position
+
+   o the main page now displays the effective BPM. If in slave mode, the received
+     BPM will be displayed.
+     
+   o the BPM digit display shows the received BPM in slave mode.
+   
+   o new layer type: program change
+
+
+MIDIboxSEQ V4.055
+~~~~~~~~~~~~~~~~~
+
+   o LPC17 build: optimized MIDI IN handling
+
+   o LPC17 build: MIDI clock can now be received over MIDI IN1..4
+
+   o SysEx forwarding via MIDI router working (again)
+
+   o MIDI router supports 16 nodes now! (previously only 8)
+
+   o fixed bug in PitchBender Editing mode
+
+   o added new MIOS terminal commands:
+     - display network informations, modify network and OSC settings
+     - display MIDI router informations, modify MIDI router settings
+     - change BLM port remotely
+     - "store" and "restore" the session remotely
+
+   o BLM now supports Lemur on iPad
+     Example configuration (we assume that iPad IP address is 192.168.1.110):
+     - set osc_remote 3 192.168.1.110
+     - set osc_local_port 3 8000
+     - set osc_remote_port 3 8000
+     - set osc_mode 3 1
+     - set blm_port OSC3
+     - store
+     (the commands can be entered in MIOS terminal).
+     On your iPad, set the IP address of your MIDIbox with port 8000
+
+   o BLM now allows to record MIDI notes in the keyboard page
+
+
+MIDIboxSEQ V4.054
+~~~~~~~~~~~~~~~~~
+
+   o in edit page the datawheel can now be used for different purposes:
+     it can scroll the cursor, the step view, can change the value (as before)
+     and it can be used to select the parameter/trigger layer.
+     The function can be selected by pressing SELECT + GP7/8
+
+   o Rômulo aka. Midilab started to implement a footswitch function which
+     is especially useful for live recording and track modifications while
+     playing on a keyboard.
+     Press&Hold the footswitch to enable record mode, release it to disable
+     record mode.
+     Tap the footswitch shortly to delete the track.
+     The footswitch can be assigned to a free DIN pin in MBSEQ_HW.V4
+
+   o note and chords can now be edited without immediate change by pressing&holding
+     the EDIT button. The new value will be taken over once another step is
+     edited, or the EDIT button is released.
+
+   o fixed potential buffer overrun when preset is stored
+
+
+
+MIDIboxSEQ V4.053
+~~~~~~~~~~~~~~~~~
+
+   o bugfix: MIDI IN ports are working again on MBHP_CORE_STM32 build
+
+
+MIDIboxSEQ V4.052
+~~~~~~~~~~~~~~~~~
+
+   o bugfix: CC values were influenced when they were displayed on the edit page
+
+   o Hawkeye fixed the BPM/STEP digits output and added a "TPD" (track position
+     display) option for those who like to add more blink to their MIDIbox!
+
+
+MIDIboxSEQ V4.051
+~~~~~~~~~~~~~~~~~
+
+   o improved live-recording of CCs
+
+   o warning is print on screen if poly recording selected on a track with
+     only one (or none) note layer
+
+   o Drum live/step recording: disabled mapping of drum instruments
+     to keys C/C#/D/D#/... - it was too confusing.
+
+   o BPM LED Digit function: added optional 4th digit to display the value after the dot
+
+   o added optional LED digits to display the played step.
+     Anodes require a dedicated Shift Register, the 3 cathode lines can be shared with
+     the shift register which is used to drive the cathodes of the BPM LED Digits.
+
+   o added optional BPM (Tempo) encoder.
+     As usual the pinning can be configured in the MBSEQ_HW.V4 file
+
+
+MIDIboxSEQ V4.050
+~~~~~~~~~~~~~~~~~
+
+   o added LED functions for received MIDI IN/OUT events to MBSEQ_HW.V4
+
+   o added BPM LED Digit function to MBSEQ_HW.V4
+     A schematic can be found under http://www.ucapps.de/midibox_seq/mbseq_v4_bpm_digits.pdf
+
+   o SR1 working again (programming error during MBSEQV4L merge)
+
+
+MIDIboxSEQ V4.049
+~~~~~~~~~~~~~~~~~
+
+   o support for MIDI OUT4 and MIDI IN4
+     Provided by MBHP_CORE_LPC17 module only.
+     MIDI OUT4 is available at J4B.SD
+     MIDI IN4 is available at J4B.SC
+
+   o fixed USB issue under Win7 if the interface name hasn't been
+     customized in bootloader
+
+
+MIDIboxSEQ V4.048
+~~~~~~~~~~~~~~~~~
+
+   o CC and PitchBender values only send on value changes anymore to save
+     MIDI bandwith on high-speed tracks
+
+   o Step record: simplified usage of poly mode. Now the step is automatically
+     cleared when all keys were released and new notes are entered.
+
+   o Step record: duration (note length) will now be recorded as well!
+
+   o Live record: some improvements for the "forward MIDI" option
+
+   o MSD mode (SD Card Reader) can now also be enabled with the "msd" command
+     in MIOS Terminal
+
+   o Move step: doesn't overwrite new selection anymore
+
+
+
+MIDIboxSEQ V4.047
+~~~~~~~~~~~~~~~~~
+
+   o MIDIbox SEQ V4 is not beta anymore - but we continue to increment the
+     version number and just leave out "beta" :-)
+
+   o compiled for new MIOS32 Bootloader V1.005
+     You can safely enable the "fastboot" option of the bootloader, so that
+     the application starts immediately after power-on
+
+   o for MBHP_CORE_LPC17: since this board doesn't provide a J5C connector,
+     following signals are available at J28:
+     - Clock: J28.SDA
+     - Start/Stop: J28.SC
+     - Gate 7: J28.WS
+     - Gate 8: J28.MCLK
+
+   o OSC Client/Server: support for TouchOSC protocol
+
+
+MIDIboxSEQ V4.0beta46
+~~~~~~~~~~~~~~~~~~~~~
+
+   o added multi copy function: press MENU+COPY to export all selected tracks
+     into the /PRESETS folder on SD Card. The resulting files are named
+     COPY[track].V4T (the [track] numbers are independent from the actual track
+     position)
+
+   o added multi paste function: press MENU+PASTE to import "COPY[track].V4T"
+     files from the /PRESETS folder into all selected tracks, starting from
+     COPY1.V4T to (up to) COPY16.V4T
+
+   o use these new functions to quickly copy&paste tracks between patterns
+     and sessions, to create temporary backups, to duplicate tracks, or whatever.
+
+     Note that you can also import these COPY[track].V4T files from the
+     MENU->Event->PRESETS menu, e.g. to exclude certain parts of the preset
+
+   o buttons of Wilba's Frontpanel are now debounced
+
+
+MIDIboxSEQ V4.0beta45
+~~~~~~~~~~~~~~~~~~~~~
+
+   o USB update for MacOS 10.7 Lion
+
+   o Chords displayed correctly when a velocity layer is edited
+
+
+MIDIboxSEQ V4.0beta44
+~~~~~~~~~~~~~~~~~~~~~
+
+   o session can be selected again
+
+
+MIDIboxSEQ V4.0beta43
+~~~~~~~~~~~~~~~~~~~~~
+
+   o delayed mute/unmute which is synched to the measure.
+     It can be enabled individually in the global options menu (UTILITY->OPT)
+
+   o trigger assignment page: trigger layer of the current assignment automatically
+     selected (alternative way to select a trigger layer)
+
+   o random page: random values can now be generated for all parameter and trigger
+     layers (resp. drums: parameter and drum instruments).
+     The selection is scrollable with a GP encoder.
+
+   o random page: special behaviour for drum tracks: parameter layers and each
+     individual drum instrument can be randomized (no triggers in this mode
+     to keep the code simple)
+
+   o random page: new values will only be generated when "Generate" button is
+     pressed, or for a single layer if the GP button under the appr. layer is
+     pressed.
+
+
+MIDIboxSEQ V4.0beta42
+~~~~~~~~~~~~~~~~~~~~~
+
+   o Handling of Start/Stop/Pause button changed for Slave and Auto Mode to allow 
+     proper synchronisation to the measure when multiple sequencers are playing
+     together.
+
+     Whenever a MIDI clock is received:
+     - the STOP button won't stop the sequencer, but just disables the output of
+       all tracks (like a Mute). The step progression continues to run.
+     - the START button won't start the sequencer immediately.
+       Instead MBSEQ will wait for the next measure and then enable track output again.
+     - the PAUSE button will enable/disable track output, but the track progression
+       continues to run.
+
+     In order to notify that track outputs are disabled, the START/STOP/PAUSE
+     LED flashes to the beat.
+
+   o Added Live page.
+     The page can be entered by pressing UTILITY -> Live (GP Button #11)
+
+     Inside this page notes (and drum instruments) can be played with the GP buttons.
+
+     In addition the 4 MIDI IN Busses for Transposer/Arpeggiator/Live Playing can be
+     configured like in the MIDI page.
+
+     Following Live Play parameters are available:
+     - track selection
+     - track mute/unmute
+     - Octavewise transpose
+     - Velocity (only used for GP button keyboard)
+     - FTS (Force-To-Scale)
+     - FX on (enables Humanizer, LFO, Limiter and Echo)
+       Note: the Echo effect will only work when the sequencer is running!
+
+
+   o parameter layer mutes are now also working for
+     velocity/length/probability/delay/roll/roll2
+
+   o Echo Fx now also works with "zero delay". In conjunction with the Note incrementer
+     and (optionally) force to scale this results into a "poor man's chord" mechanism. ;-)
+
+   o Move function works beyond step 16 as intended again
+
+
+MIDIboxSEQ V4.0beta41
+~~~~~~~~~~~~~~~~~~~~~
+
+   o Global/Session bookmarks: the first 8 bookmarks are now stored in the root
+     directory, the remaining 8 bookmarks in the session directory
+
+   o hwcfg/wilba/MBSEQ_HW.V4: F1 button now assigned to bookmark page
+
+   o added 16 dedicated bookmark buttons which can be assigned in MBSEQ_HW.V4
+
+   o Manual Trigger Request: now synchronized to next step
+
+   o edit page in drum mode: parameter layer is displayed when parameter
+     select button is pressed
+
+   o added "RATOPC" (restart all tracks on pattern change) option to UTIL->Opt menu
+
+
+MIDIboxSEQ V4.0beta40
+~~~~~~~~~~~~~~~~~~~~~
+
+   o added bookmark function:
+     - Press MENU+SELECT to enter the bookmark page
+     - Alternatively this function can be assigned to a dedicated button/LED
+     - inside this menu, press a GP button (shortly) to recall a bookmark
+     - press&hold a GP button for 3 seconds to store a bookmark
+
+   o the bookmark function stores following UI settings:
+     - Bookmark name
+     - Current page
+     - Group
+     - Tracks
+     - Mutes
+     - Parameter Layer
+     - Trigger Layer
+     - Instrument
+     - Step View
+     - Step
+     - Edit View
+     - Solo/All/Fast/Metronome/Loop/Follow button mode
+
+   o Bookmarks are stored into the MBSEQ_BM.V4 file, which can be edited with
+     a common text editor.
+     This is the only way to change a bookmark name (5 characters)
+
+   o it's possible to prevent, that a certain UI parameter will be overwritten by a
+     bookmark. This can (only) be done by editing the MBSEQ_BM.V4 file:
+     Just replace the '+' sign at the beginning of the parameter name by a '-' sign.
+
+
+MIDIboxSEQ V4.0beta39
+~~~~~~~~~~~~~~~~~~~~~
+
+   o BUTTON_PAR_LAYER_A working again (was overwritten by BUTTON_DIRECT_TRACK16)
+
+
+MIDIboxSEQ V4.0beta38
+~~~~~~~~~~~~~~~~~~~~~
+
+   o CPU load reduced by more than 20%, this especially results into faster SD Card operations!
+
+   o fixed move step function for moves which select the next step view
+
+
+MIDIboxSEQ V4.0beta37
+~~~~~~~~~~~~~~~~~~~~~
+
+   o Length Page: quick selection now also available for loops.
+
+   o Length Page: length/loop presets are now stored in MBSEQ_C.V4 file (located
+     in session directory) under the name "QuickSelLength", "QuickSelLoopLength" and
+     "QuickSelLoopLoop".
+     They could be edited with a text editor if you would like to have different values.    
+
+   o track transpose page now always starts with "octave" item instead
+     of "semitones" item
+
+   o it's now possible to define 16 individual "direct track selection" buttons
+     in MBSEQ_HW.V4 (search for BUTTON_DIRECT_TRACK*)
+
+   o it's now possible to define 2 shift registers for outputing the current track
+     selection in MBSEQ_HW.V4 (search for TRACKS_DOUT_L_SR and TRACKS_DOUT_R_SR)
+
+   o copy function works correctly now if a track is pasted into another track
+     with different partitioning in Paste/Clr = Steps mode (selectable in Utils->Options page)
+
+
+MIDIboxSEQ V4.0beta36
+~~~~~~~~~~~~~~~~~~~~~
+
+   o The metronome function considers the "steps per measure" correctly now
+
+   o received MIDI song position command sets the track positions correctly
+     now - this is important when MBSEQ is controlled by a clock master.
+     E.g. Logic Studio sends startpoint-1 when the sequencer continues
+     in a loop
+
+
+MIDIboxSEQ V4.0beta35
+~~~~~~~~~~~~~~~~~~~~~
+
+   o bugfix: step view displays steps >= 17 correctly again
+
+   o bugfix: step length displayed correctly again in "step view"
+
+   o new feature for more comfortable editing of multi-note tracks:
+     if assigned parameter layer is Note or Chord, and currently 0, re-start at C-3 resp. A/2
+     when value is incremented
+
+
+MIDIboxSEQ V4.0beta34
+~~~~~~~~~~~~~~~~~~~~~
+
+   o implemented various "Edit Views".
+     Press SELECT button to select the view in EDIT screen.
+     Following views are available:
+     - Step View: you already know it
+     - Trigger View: left page allows to select the step, Gate,
+       Accent, Roll, Glide, Skip, Random Gate and Random Velocity.
+       Right Page allows to edit up to 8 parameter layers.
+     - Layer View: allows to select the step, Gate and up to 14
+       parameter layer. Especially nice for custom chord editing.
+     - 303 View: provides a 303ish interface to select the Step,
+       Gate, Accent, Glide, Octave, Note, Velocity and up to 9
+       additional parameter layers
+     - Step Select: allows to select the steps which are modified
+       by the ALL function
+
+   o glide trigger now handled (much) more 303-like
+
+   o added testmode for AOUT interface connections.
+     Enter "testaoutpin" in MIOS terminal for further informations
+
+   o step record function now allows to define the step incrementer (+0..16)
+     in "Record Mode" item
+
+   o BLM keyboard mode: each column plays now an assigned drum instrument
+
+   o new BLM entry mode 303:
+     - first row selects accent
+     - second row selects glide
+     - third and fourth row select octave (4 different selections)
+     - remaining rows select key of octave and set/clear gate
+
+   o new session now initialized correctly after "SaveAs..."
+
+   o optional "Tap Tempo" button is working now
+
+   o optional "Left" button is working now in all menu pages
+
+
+MIDIboxSEQ V4.0beta33
+~~~~~~~~~~~~~~~~~~~~~
+
+  o "SAVE AS.." name check now working as intended:
+    - if filename is identical to current session, only the current 4 patterns will 
+      be stored (like if you would push the SAVE button)
+    - if filename is not identical, the current session will be transfered into
+      a new directory
+      
+
+
+MIDIboxSEQ V4.0beta32
+~~~~~~~~~~~~~~~~~~~~~
+
+  o now it's possible to import/export songs/mixer maps/groove templates/local config as well
+
+  o added DEBOUNCE_DELAY to MBSEQ_HW.V4
+
+  o fixed pattern change on Normal->Drum tracks
+
+
+MIDIboxSEQ V4.0beta31
+~~~~~~~~~~~~~~~~~~~~~
+
+  o a powerful session import/export function has been added.
+    It allows you to copy one or multiple patterns to any session location.
+    Both functions are available in the Utility->Disk page
+
+  o "Save as.." shows the current session name as default name
+
+
+MIDIboxSEQ V4.0beta30
+~~~~~~~~~~~~~~~~~~~~~
+
+  o added LED and BUTTON functions for TRACK_MODE, TRACK_GROOVE, TRACK_LENGTH,
+    TRACK_DIRECTION page to MBSEQ_HW.V4 file
+    MORPH and TRANSPOSE renamed to TRACK_MORPH and TRACK_TRANSPOSE
+
+  o added LED and BUTTON function for FAST2, which is a second "fast" button with
+    dedicated button behaviour. In distance to the common FAST button, the button
+    behaviour is configured for push (and not for toggle) mode.
+    The intended usecase is to use this function with push-button encoders.
+
+  o Echo function: support for "dotted delays": 32d 16d 8d 4d 2d
+    In order to keep existing patterns compatible, they are mapped to parameter
+    value 16..21, but displayed/selected in the right order in the Fx->Echo page.
+    Please note that it isn't a bug that 32d is displayed *after* 16T, 16d *after*
+    8T etc - the entries are ordered by the resulting delay length!
+
+  o a "Forward MIDI" option has been added to the record page.
+    Previously events played by an external keyboard were always immediately 
+    forwarded to the MIDI output. Now it's possible to disable this function for 
+    keyboards w/o a "local off" function.
+
+  o the quantization of recorded MIDI events is now freely configurable in the
+    Record page.
+    Than lower the percentage value, than lower the quantization (-> events not
+    shifted to the next step)
+
+
+MIDIboxSEQ V4.0beta29
+~~~~~~~~~~~~~~~~~~~~~
+
+  o implemented tap tempo function.
+    It can be accessed in the BPM menu page (rightmost GP button), or with MENU+PLAY
+
+  o fixed "accent on stretched notes" issue
+
+  o fixed pattern synchronisation issue at very first played pattern in song mode
+
+
+MIDIboxSEQ V4.0beta28
+~~~~~~~~~~~~~~~~~~~~~
+
+  o fixed bug in session load function which happened when no MBSEQ_GC.V4 file exists on SD Card
+
+  o added new "udpmon <0..4>" terminal command which allows to monitor incoming and outgoing
+    UDP packets, e.g. to debug OSC settings and/or to determine the port of incoming OSC
+    packets.
+    In MIOS Terminal, use "udpmon 3" to display all packets with port number >= 1024
+
+  o now we have a special CV configuration page which allows:
+    - to select V/Oct, Hz/V and Inverse curve for each CV channel
+    - the slew rate 0..255 mV for each CV channel
+    - the pitch range (for pitchbend events)
+    - the gate polarity for each CV channel
+    - to calibrate each channel
+    - to set the DIN Sync Clock PPQN Divider and Pulse Width
+    - AOUT Module Type (previously hard-configured in MBSEQ_HW.V4 file)
+
+  o each CV channel has now an own notestack.
+    This is especially nice if AOUT channels are controlled through the MIDI Router
+    from an external MIDI keyboard (live)
+
+
+MIDIboxSEQ V4.0beta27
+~~~~~~~~~~~~~~~~~~~~~
+
+  o fixed a crash on rescheduled notes (caused by a gcc bug) - this bug only exists in beta26
+
+  o BLM keyboard mode: now inverted (lowest button row plays highest velocity)
+
+  o BLM keyboard mode takes octave/semitones transpose values into account
+
+  o copy/paste function: if Paste/Clr track is activated in options menu, channel and
+    port setting will be copied as well.
+    This allows to copy&paste a complete track from one pattern to another.
+
+  o Paste/Clr steps/track setting in options menu is now a global setting and will
+    be written into MBSEQ_GC.V4 instead of (the session specific) MBSEQ_C.V4 file.
+    In future versions it might be a good idea to move global settings into a separate menu page.
+
+
+MIDIboxSEQ V4.0beta26
+~~~~~~~~~~~~~~~~~~~~~
+
+  o SD Card error messages will be sent to MIOS terminal
+
+  o added MIOS terminal commands "play" and "stop", so that the sequencer can also be
+    started/stopped from MIOS Studio
+
+  o the status LED of the core module flashes on each beat now
+
+  o bugfix for FAST button
+
+  o OSC support for "Pianist Pro" format (an iPhone/iPad application)
+    Now you can send notes and pitch changes from Pianist Pro to your
+    MBSEQ, and convert them into MIDI events
+
+  o support for a third MIDI IN/OUT port.
+    The digital MIDI OUT signal (open drain!) is available at J5B.A6
+    The digital MIDI IN signal is available at J5B.A7
+    Note that the MIDI IO circuit (220 Ohm Resistors, optocoupler, etc.) is not
+    part of the MBHP_CORE_STM32 module and has to be added externally.
+    This IO port can especially be used for a dedicated BLM connection (this will
+    be my personal usecase)
+
+  o Gate #7 and #8, which were previously available at J5B.A6 and J5B.A7, are
+    now available at J5C.A10 and J5C.A11
+
+
+MIDIboxSEQ V4.0beta25
+~~~~~~~~~~~~~~~~~~~~~
+
+  o now each OSC port has an individual configuration set which consists of
+    the Remote IP, Remote Port, Local Port and Transfer Mode
+
+  o an OSC Transfer Mode has been added, it can be configured in the network
+    configuration page for each OSC port.
+
+    In MIDI mode, all events generated by the track will be embedded into a
+    'm' type packet. This mode allows to tunnel MIDI events via ethernet to
+    a proxy which runs on the host (or any device which is able to convert
+    these messages)
+
+    In "Text Msg (Integer)" and "Text Msg (Float)" mode, the OSC packets will
+    be encoded the following way:
+      - Note Events: /<chn>/note <note> <velocity>
+        Integer: note and velocity in range 0 .. 127
+        Float: note still as integer, velocity in range 0.0 .. 1.0
+      - Poly Pressure Events: /<chn>/polypressure <note> <pressure>
+        Integer: note and pressure in range 0 .. 127
+        Float: note still as integer, pressure in range 0.0 .. 1.0
+      - CC Events: /<chn>/cc <cc-number> <value>
+        Integer: value in range 0 .. 127
+        Float: cc-number still as integer, value in range 0.0 .. 1.0
+      - Program Change Events: /<chn>/programchange <value>
+        Integer: value in range 0 .. 127
+        Float: value in range 0.0 .. 1.0
+      - Aftertouch Events: /<chn>/aftertouch <pressure>
+        Integer: pressure in range 0 .. 127
+        Float: pressure in range 0.0 .. 1.0
+      - Pitchbend Events: /<chn>/pitchbend <value>
+        Integer: value in range -8192..8192
+        Float: value in range -1.0 .. 1.0
+
+    <chn> range: 1..16
+
+  o OSC option now supports SysEx transfers (SysEx stream is embedded into blobs)
+
+  o it's now possible to route USB/MIDI/IIC/AOUT ports to the OSC ports in 
+    the MIDI Router page.
+
+  o SysEx streams will now be forwarded by the MIDI Router as well.
+    The Chn setting has to be set to "All" for source and destination port.
+
+    This allows you to access the SysEx functions of your synth - it's even
+    possible to upload a new firmware to a MIDIbox which is connected 
+    to a MIDI port of MBSEQ now.
+
+  o MIDI->Misc menu: BLM can now be assigned to an OSC port
+
+
+
+MIDIboxSEQ V4.0beta24
+~~~~~~~~~~~~~~~~~~~~~
+
+  o support for OSC (requires MBHP_ETH module)
+    4 OSC ports are available, currently they only send MIDI packets.
+    A MIDI<->OSC proxy is currently only available for MacOS (on request)
+    An easy to use Juice based Proxy is planned and will be released soon.
+    (Firmware-)configurable OSC packets will be available in one of the
+    next releases.
+
+  o new network configuration page for the MBHP_ETH module
+
+  o the debug terminal now supports a "network" command to retrieve
+    the current status of the network configuration.
+
+  o now we have global configurations which are stored independent from the
+    session configuration in the "/MBSEQ_GC.V4" file 
+
+    Following parameters have been moved to this file:
+      - MetronomePort
+      - MetronomeChannel
+      - MetronomeNoteM
+      - MetronomeNoteB
+      - RemoteMode
+      - RemotePort
+      - RemoteID
+      - BLM_SCALAR_Port
+      - ETH_LocalIp
+      - ETH_Netmask
+      - ETH_Gateway
+      - ETH_Dhcp
+      - OSC_RemoteIp
+      - OSC_RemotePort
+      - OSC_LocalPort
+
+  o probability parameter now incremented correctly in edit page
+
+  o if the track plays multiple notes, gate is only cleared if
+    all notes are set to "---"
+
+  o BLM: triggers now displayed correctly in all stepviews
+
+
+MIDIboxSEQ V4.0beta23
+~~~~~~~~~~~~~~~~~~~~~
+
+  o "external restart" sends FA at the right moment now
+
+  o track transpose page now always starts with "semitones" item instead
+    of "octave" item
+
+
+MIDIboxSEQ V4.0beta22
+~~~~~~~~~~~~~~~~~~~~~
+
+  o running status optimisation can now be optionally disabled in
+    the MBSEQ_HW.V4 file for MIDI devices that don't fully comply
+    to the MIDI specification.
+    Search for "RS_OPTIMISATION" in the MBSEQ_HW.V4 templates for
+    further informations.
+
+  o chaselight issue for mono colour 4x16 BLM fixed
+
+  o trigger assignment page now works as intended in drum mode
+
+  o new MIDI Bus parameters now loaded correctly after session change
+
+  o another fix for crash if preset name is longer than 7 characters
+
+
+
+MIDIboxSEQ V4.0beta21
+~~~~~~~~~~~~~~~~~~~~~
+
+  o ongoing preparation work for BLM16x16
+    Features will be described under http://www.ucapps.de/midibox_seq_manual_blm.html
+
+  o the simple Transpose/Arpeggiator MIDI split function has been replaced by 
+    a new bus routing concept.
+
+    There are 4 busses that can be configured in the MIDI page.
+    Each bus provides a dedicated MIDI port, channel and lower/upper MIDI note
+    to define a keyboard range.
+
+  o the bus can either be routed to the transpose/arpeggiator function ("T&A Mode"),
+    or it can be used to play the currently selected track "live" ("Play Mode")
+
+  o Track Mode page: now allows to select the bus over that the transpose/arpeggiator
+    function should be controlled
+
+  o Record function: whenever active, the MIDI port and channel used for recording
+    won't be routed to Transpose/Arpeggiator/Play bus.
+
+  o the "Roll" trigger now selects a 2D10 roll instead of 3D08 since it's more
+    useful in most cases.
+    In order to apply customized roll values, please use the roll function of
+    the parameter layer instead of the Roll trigger.
+
+  o implemented "Roll2" parameter layer function.
+    This alternative solution to "Roll" allows to define the number of step repeats,
+    and the distance between them.
+
+  o added optional button/LED function for UNDO
+
+  o fixed MIDI clock issue sent to USB5..USB8 (resulted into multiplied tempo 
+    values in some DAWs)
+
+  o CC assignment displayed correctly in mixer page
+
+  o LFO CC not sent anymore if track is muted
+
+  o fixed crash if preset name is longer than 7 characters
+
+  o fixed step selection of copy function
+
+  o inverted encoder behaviour in mute page: moving clockwise will unmute,
+    moving counter clockwise will activate mute
+
+  o if a previously "empty" pattern/map/song is stored without name, it will be
+    labled with "unnamed" now.
+
+  o LFO effect now works on CC parameters as intended
+
+  o If a track is in CC mode, a CC/Pitchbender value will only be sent if
+    the gate trigger is set.
+    CCs/Pitchbender events are sent for each step regardless of the gate
+    as before if the track is in Note or Chord mode.
+
+  o transpose now works correctly on CC and Pitchbender values, but only if the
+    track is configured for CC mode.
+    Transpose will be ignored for CC/Pitchbender events if track is in
+    Note or Chord mode.
+
+  o AOUT gates now 0V after power-on
+
+  o some minor bugfixes
+
+
+MIDIboxSEQ V4.0beta20
+~~~~~~~~~~~~~~~~~~~~~
+
+  o taken over track/layer button/LED usage of MBSEQ V3 (important if you are
+    using the old frontpanel):
+    - pattern page: track buttons have the same function like group buttons.
+      They allow to quickly jump between groups to select a new pattern
+    - song page: track/group and parameter layer buttons can be used to 
+      set the cursor position while editing a song entry
+
+  o AOUT driver working again (was not working in beta19)
+
+  o there is now a separate port/channel setting for recording, it can be
+    directly changed in the UTILITY->RECORD page
+
+  o the MIDI file import function now starts with the first track that contains
+    MIDI events to ensure that MIDI file tracks are aligned properly to MBSEQ tracks.
+
+    This is a workaround if the DAW uses the first track as a "master track" to 
+    store tempo informations. Previously this always resulted into an empty 
+    G1T1 track, and sequences started at G1T2.
+
+
+MIDIboxSEQ V4.0beta19
+~~~~~~~~~~~~~~~~~~~~~
+
+  o changed order of instruments in initial drum map
+    (HiHats now at position 3, 4 and 5)
+
+  o implemented MIDI file import function (UTILITY->DISK->IMPORT)
+
+    MIDI files have to be copied into the /midi directory of the SD Card.
+
+    All tracks are imported at once (up to 16) in the same order they are stored
+    in the .mid file. Accordingly, track assignments can be done within the
+    .mid file before it is imported (e.g. edit the .mid file with your DAW)
+
+    Currently only MIDI Notes and drums are supported (no CCs, no Pitchbender).
+
+    To import drum tracks, change the import mode from "Note" to "Drum". This
+    mode especially allows to control the velocity of each step separately.
+    Currently drum instruments are only mapped to a pre-selection of 4/8/16
+    notes - this map cannot be customized yet!
+
+    Since MIDIbox SEQ is a step sequencer, notes will be quantised with a
+    selectable resolution (16th, 32th or 64th).
+
+    Also the number of layers/drum instruments is selectable (4, 8 or 16). 
+    Than more layers are available, than more notes can be played at the 
+    same step. In "Note" mode, all notes share the same velocity and length 
+    value, in "Drum" mode each step and instrument has a dedicated velocity
+    value.
+
+    If the imported track contains different velocity or length values for
+    polyphonic played notes, and this characteristic is important, it is 
+    recommented to split the track into multiple pieces (e.g. for long and
+    for short notes) and to import them into separate MBSEQ tracks.
+
+    Another hint: if notes of the imported track don't start exactly at the
+    16th/32th/64th note position (e.g. because they have a "swing" feel), it
+    is recommented to quantize the notes in a DAW before the import.
+    The swing feel can be added again after the import (GROOVE page).
+
+    All tracks will be initialized depending on the selected resolution and
+    layers before the import is started. Than higher the resolution, or than more
+    layers are selected, than less bars can be imported (number of bars is displayed
+    on screen).
+
+    The MIDI port will always be set to DEFAULT during import. The MIDI channel will
+    be set to the channel of the first played note (for each track separately).
+
+    MIDI Files can be imported while the sequencer is running. This allows you to
+    search for a certain file, but also to try different parameters during runtime.
+
+  o some minor bugfixes
+
+
+MIDIboxSEQ V4.0beta18
+~~~~~~~~~~~~~~~~~~~~~
+
+  o the current patterns/mixer map/song/groove templates will be cleared before 
+    a new session is created.
+
+  o last patterns now correctly selected after startup
+
+
+
+MIDIboxSEQ V4.0beta17
+~~~~~~~~~~~~~~~~~~~~~
+
+   o implemented "Sessions" concept. Now you can change between different setups
+     stored on a single SD Card
+     See this page for more informations: http://www.ucapps.de/midibox_seq_manual_sessions.html
+
+   o Sessions can be opened/saved/created in the main menu (press EXIT button)
+
+   o your old session isn't lost, it's just at the wrong place.
+     To take over this session:
+       - enter MSD mode (UTILITY->DISK)
+       - create a backup of all *.V4 files on your PC (recommented for Beta17!!!)
+       - create a /SESSIONS directory if it doesn't exist yet
+       - create a session subdirectory (8 characters maximum)
+         if you name it "DEFAULT", it will be loaded after startup!
+       - copy following files:
+         MBSEQ_B1.V4, MBSEQ_B2.V4, MBSEQ_B3.V4, MBSEQ_B4.V4, 
+         MBSEQ_S.V4, MBSEQ_G.V4, MBSEQ_C.V4
+       - create a second session subdirectory
+       - copy following files:
+         MBSEQ_B5.V4, MBSEQ_B6.V4, MBSEQ_B7.V4, MBSEQ_B8.V4, 
+         MBSEQ_S.V4, MBSEQ_G.V4, MBSEQ_C.V4
+       - rename these files to MBSEQ_B1.V4 to MBSEQ_B4.V4
+       - don't copy MBSEQ_HW.V4 (always read from root directory)
+       - remove the copied *.V4 files from root directory, or move
+         them to another directory for backup
+       - unmount the SD Card on your computer
+       - wait until MSD mode is disabled!
+       - press EXIT, thereafter OPEN the session by pressing GP button 9
+
+  o changed default track configuration to 256 steps/4 parameter layers
+    since it's more useful in most cases
+
+
+MIDIboxSEQ V4.0beta16
+~~~~~~~~~~~~~~~~~~~~~
+
+  o MIDI->Section Control: Octaves which are not taken for section selection
+    can now be optionally forwarded to a configurable MIDI port.
+    This saves you from adding a keyboard splitter to your MIDI keyboard, if
+    you want to play a MIDI instrument from an unused keyboard zone.
+
+  o fixed bug in live recording function (notelength sometimes not recorded correctly)
+
+  o MIOS terminal functions have been added. Just enter "help" in the terminal
+    which has been integrated into MIOS Studio 2
+
+  o copy function now works correctly together with the section concept
+
+  o Follow function now available as dedicated button and with key combination MENU+EXIT
+
+  o the Follow Song option under UTILITY->Options has been removed. The selected
+    follow mode won't be stored on SD Card anymore. Follow is deactivated after
+    power-on and has to be manually enabled (e.g. by pressing MENU+EXIT)
+
+
+MIDIboxSEQ V4.0beta15
+~~~~~~~~~~~~~~~~~~~~~
+
+  o Track sections which should be played can now be selected via MIDI
+    Keyboard as demonstrated in http://www.youtube.com/watch?v=U_RQL24j8no
+
+    Each group (G1/2/3/4) has a separate selection zone on the keyboard.
+    Key C..B select section 1..12, the first key of the octave (C) plays
+    the first section as usual, it has the same effect as if this feature
+    is disabled.
+
+    The width of a section depends on the track length.
+
+    E.g., if the track length is set to 32, and if it consists of 256 steps,
+    8 sections are available which can be selected with Key C/C#/D/D#/E/F#/F/F#/G
+
+
+    It is recommented to activate the "Follow" function under UTILITY->OPTIONS
+    when using this feature, so that the edit display gets automatically updated
+    whenever the section is changed.
+
+  o the MIDI configuration page has been overworked to handle the new parameters.
+    Track sections can be selected from a dedicated MIDI Port and Channel.
+    The keyboard zone assigned to the group can be changed, so that it's possible
+    to merge groups (e.g. all 4 groups controlled from a single octave).
+
+  o an individual section can be selected for each track in the StepView.
+    Press & Hold StepView + SELECT button, then press the GP button of the
+    appr. section.
+    This feature is also nice for editing large tracks!
+
+  o implemented CC#123 (All Notes Off) - it empties the note stacks if
+    value 0 is received. Values > 0 will be ignored
+
+  o bugfix for ALL button as reported by Gridracer
+    
+
+TODO for MBSEQ V4.0beta16
+  o TODO: sections can also be selected with the BLM4x16 on the same way like
+    with a keyboard. The currently active section is displayed by the LEDs.
+
+  o TODO: sections can also be selected with the BLM16x16. In this case, we
+    have individual selections for all 16 tracks.
+
+
+
+MIDIboxSEQ V4.0beta14
+~~~~~~~~~~~~~~~~~~~~~
+
+  o prepared support for MBHP_BLM_SCALAR.
+    The MIDI port can be configured in MIDI menu (MIDI->Misc.)
+
+  o various minor bugfixes
+
+
+MIDIboxSEQ V4.0beta13
+~~~~~~~~~~~~~~~~~~~~~
+
+  o pulsewidth of DIN Sync clock now definable in MBSEQ_HW.V4 file
+    (DIN_SYNC_CLK_PULSEWIDTH parameter)
+
+  o Parameter/Trigger Layer selection can now be quickly incremented/decremented
+    by pressing&holding Layer C button, and incrementing with Layer A button,
+    resp. decrementing with Layer B button.
+
+  o various minor bugfixes
+
+
+MIDIboxSEQ V4.0beta12
+~~~~~~~~~~~~~~~~~~~~~
+
+  o Tracks can now be stored into/loaded from preset files on SD Card.
+    This features opens some new possibilities:
+    - you can store your favourite track configurations, melody lines, 
+      drum loops, etc. in separate files to recall them later
+    - you can prepare drum maps for different instruments
+    - you can prepare CC setups for different instruments
+    - you can share the files (which are stored in the preset/ directory)
+      with other users
+    - you can view and edit the files with a common text editor.
+
+    The preset functions are available in the MENU->EVENT page
+
+    You've to create a "presets" directory in the root directory of 
+    your SD Card before using this feature (the DOSFS driver used 
+    by MBSEQ doesn't support "mkdir")
+
+
+MIDIboxSEQ V4.0beta11
+~~~~~~~~~~~~~~~~~~~~~
+
+  o paste function now only changes track partitioning if the track mode of
+    target track is different. Other settings (number of parameter/trigger
+    layers, number of parameter/trigger steps, number of instruments) won't
+    be changed if track mode is equal.
+
+  o bugfix for BLM_BUTTONS_NO_UI option
+
+
+MIDIboxSEQ V4.0beta10
+~~~~~~~~~~~~~~~~~~~~~
+
+  o Tracks/Patterns/Songs can now be exported to a MIDI file.
+    The appr. menu function is available under UTILITY->DISK->Export
+
+  o a simple MIDI In/Out monitor page has been added.
+    The page can be entered via MENU+MIDI->MIDI Monitor (GP 16 button).
+
+    MIDI Clock and Active Sense events are filtered by default. The
+    filter option can be changed by pressing SELECT in the MIDI Monitor page.
+
+  o separated "pattern length" from "measure length" parameter in UTILITY->OPT menu.
+    Pattern length is used for synchronized pattern changes, and measure
+    length for the Synch-to-Measure function.
+
+    The left encoder below the item allows to select 16 step wise, the right
+    encoder and datawheel stepwise.
+
+  o Paste/Clr behaviour option in UTILITY->OPT menu implemented now
+
+  o HWCFG file option "BLM_BUTTONS_NO_UI" implemented now
+
+
+
+MIDIboxSEQ V4.0beta9
+~~~~~~~~~~~~~~~~~~~~
+
+  o If a sequence is already running, the MIDI file player doesn't cause a restart
+    anymore. Instead in automatically synchs to the next 16 step based measure.
+
+  o Track Event page: to trigger the Init function, GP16 has to be pressed for
+    2 seconds (a message will be displayed to inform about this)
+
+  o fixed various minor bugs
+
+
+MIDIboxSEQ V4.0beta8
+~~~~~~~~~~~~~~~~~~~~
+
+  o now your MIDIbox SEQ can play MIDI files, either exclusively or in parallel to
+    the 16 sequencer tracks.
+
+    MIDI files have to be copied into the /midi directory of your SD Card.
+
+    To select a MIDI file, go to the UTILITY->DISK->PLAY page, and select
+    the desired modes (Exclusive/Parallel and Loop on/off)
+
+  o MIDI file import and export prepared in UI, but not implemented yet!
+
+  o MIDI port used to send a SysEx dump now selectable in file list browser
+
+  o fixed various minor bugs
+
+
+MIDIboxSEQ V4.0beta7
+~~~~~~~~~~~~~~~~~~~~
+
+  o a new label editor allows to enter track and pattern names so fast and easy
+    like typing a SMS on a mobile phone. Use the first 10 GP buttons or encoders
+    to cycle the characters (like on a telephone keypad), and the remaining
+    buttons/encoders to select a character directly, move the cursor, delete/insert
+    characters, selecting a preset (with the encoder) and to exit the editor.
+
+  o implemented synchronous pattern change after x steps (x=1..256)
+    This function has to be enabled in the UTILITY->OPT page.
+
+  o implemented Follow Song mode. It has to be enabled in UTILITY->OPT menu.
+
+  o a warning message will be print if Synch-to-Measure is enabled, and a 
+    track length greater than steps per measure is selected.
+
+  o CC number selected in Track Event and LFO Configuration page now has to be
+    confirmed with GP button below the appr. item.
+    A warning message will pop up to notify about this unusual data entry method.
+    In addition, the value will be marked with '!' so long it doesn't match with
+    currently active value.
+
+  o fixed various minor bugs
+
+
+MIDIboxSEQ V4.0beta6
+~~~~~~~~~~~~~~~~~~~~
+
+  o now it's possible to send SysEx dumps stored on SD Card to MIDI devices.
+
+    Preparation: create a directory called "sysex" on your SD Card, thereafter
+    create subdirectories for each MIDI Device you want to use.
+
+    For example:
+      /sysex/MBSID
+      /sysex/MBFM
+      /sysex/MicroQ
+
+    Now copy .syx files into these directories which should be sent to the
+    devices later.
+
+    Thats all! On your MIDIbox SEQ, change to the MENU->SYSEX menu, the
+    devices will be displayed on screen. Select a device to browse through
+    the file list. Select a file to send the dump.
+
+    Note: currently .syx files are only sent to the Default port (selected in
+    MIDI page). A "store .syx dump" function is planned for later releases.
+
+  o Menu page shows the current sequencer position in measure.step.microstep
+    format
+
+  o "About this MIDIbox": separated SD Card Info
+
+  o fixed various minor bugs
+
+
+MIDIboxSEQ V4.0beta5
+~~~~~~~~~~~~~~~~~~~~
+
+  o overworked menu page selection (now uses new list browser)
+
+  o added new info page "About this MIDIbox" (at the end of menu list) to
+    simplify support.
+    A lot of additional informations are sent to the MIOS Terminal when 
+    an item (displayed at left page) is selected with a GP or the SELECT
+    button. Use the datawheel or a GP encoder to browse through the list.
+
+    MIOS Terminal is part of MIOS Studio, a command line tool for MacOS 
+    available as well.
+
+  o Length 128/256 quick selection won't be displayed anymore if track
+    partition doesn't allow this number of steps
+
+  o fixed various minor bugs
+
+
+MIDIboxSEQ V4.0beta4
+~~~~~~~~~~~~~~~~~~~~
+
+  o MBSEQ Parameters are controllable via NRPN messages from external MIDI devices now.
+    See also doc/mbseqv4_cc_implementation.txt
+
+  o these parameters can also be controlled via Internal Loopback (Bus1 Port).
+
+  o Loopbacked CC Parameters are print in text format when edited
+
+  o implemented MIDI Remote Keyboard function (note: MBSEQ_HW.V4 has been updated)
+    See also doc/mbseqv4_remote_functions.txt
+
+  o fixed various minor bugs
+
+
+MIDIboxSEQ V4.0beta3
+~~~~~~~~~~~~~~~~~~~~
+
+  o if global loop mode enabled, a "*LOOPED*" message will flash at the 
+    right corner of the EDIT and STEPVIEW screen.
+
+  o following handling has been added to realize a "smooth startup" for
+    people who are in the progress of building their MBSEQ. The core is already
+    running, they connect a SD Card but don't have LCDs (so that messages
+    cannot be read):
+      - if a SD Card without Banks/Songs/Mixer Maps is connected, the appr.
+        files won't be created automatically anymore.
+      - messages are print on the PATTERN/SONG and MIXER page to inform
+        that files have to be created from the UTILITY->DISK menu
+      - in the DISK->UTILITY menu you will find a special option at the left
+        side which allows to start the formatting process (in fact, the SD
+        Card won't be formatted, but some files will be created)
+      - there is now a nice progress bar which informs about the state
+        so long formatting is in progress
+
+  o CLEAR button has to be pressed for 2 seconds before action is triggered
+
+  o fixed BLM inversion mask configuration
+
+
+MIDIboxSEQ V4.0beta2
+~~~~~~~~~~~~~~~~~~~~
+
+  o Song page got a copy/pase/clear/insert/delete function for song steps.
+    Press the SELECT button to select the utility function
+
+  o Copy/Paste/Clear button can be used in song page as well
+
+  o Song/Phrase mode not switched via SONG button anymore (this handling
+    is an artifact from MBSEQ V2/V3)
+    Instead, the mode can be changed with GP encoder #8 or #9
+
+  o a 16 step selection pattern for the ALL function is now available
+    (only selected steps will be touched by the ALL function).
+    It can be changed by pressing the SELECT button in EDIT page.
+
+  o the 16 instrument labels of a drum track can be edited now
+
+  o a nice graphical logo is now print during startup
+
+  o lower CPU load if no SD Card connected
+
+
+MIDIboxSEQ V4.0beta1
+~~~~~~~~~~~~~~~~~~~~
+
+Initial public release.
+Short list of changes:
+  o uses the new MBHP_CORE_STM32 module (ARM Cortex M3 based derivative)
+  o firmware completely rewritten in C - it can be optionally emulated 
+    under MacOS
+  o patterns/songs/grooves/configs/etc. now stored on SD Card in a FAT32 
+    filesystem
+  o USB MIDI natively supported, MIDI events are sent more than 100 times 
+    faster to a DAW/virtual synth
+  o two "common" MIDI IN and MIDI OUT ports, up to 8 additional MIDI OUT 
+    ports can be added with MBHP_IIC_MIDI modules
+  o track length increased to 256 steps
+  o track memory can be partitioned, e.g. 64 steps and 16 parameter layers, 
+    or 256 steps and 4 parameter layers. Each track provides 8 trigger layers
+  o resolution increased to 384ppqn (16 times faster than common MIDI clock)
+  o new MIDI event scheduler concept priorises and sorts queued MIDI events
+  o new parameter layer options like "Pitch Wheel", "Roll" and "Probability"
+  o special drum mode for easier editing of percusive patterns
+  o additional chords (now: 32 in Major/Minor scale)
+  o new track progression parameters like "Interval/Repeat/Skip"
+  o groove templates can now be customized and stored on SD Card
+  o Echo Fx with variable number of repeats, damp, tempo change, note 
+    incrementer (can be forced to scale!)
+  o LFO Fx with different waveforms, synchronized to track clock, step based 
+    selection of period and reset, assignable to Note/Velocity/Length
+    + separate CC with definable ppqn resolution
+  o value range Limiter Fx
+  o Loop Fx (also nice for editing)
+  o overworked realtime record function with better quantisation
+  o hardware configuration file now read from SD Card. No need to recompile 
+    the firmware on changes.
+
+
+Wishlist for future features
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  o SysEx librarian, recording and dumping function for external Synths or 
+    other MIDI gear
+  o finish the remote access function, which allows to control multiple
+    instances of MBSEQ (either running on MBHP_CORE_STM32 module or in
+    simulation) from a single CS (partly working, can be enabled in the
+    OPT menu, but not very user friendly yet)
+  o allow to switch between different sections of a track (A/B/C/D function
+    like known from MB808)
+  o "Preloading steps" as proposed by Gridracer:
+     Layer A is already active-> I press it again-> LED goes off or starts 
+     blinking. I change the note numbers of the steps without setting them, 
+     (audience hears nothing) -> I push Layer A again->  LED is On again. 
+     Now I can set the new steps which will now play the intended
+     notes right from the beginning.
+  o SysEx dump for patterns/songs
+
+
+Additional input from vcfool:
+
+---------------------------------------------------------
+
+>> Grooves to DIN Sync
+>> 
+>> [quote name='TK.' date='22 November 2009 - 21:46' timestamp='1258922761' post='121280']
+>> You could simply trigger your drummachine from a J5.A0..A7 gate, controlled from a dedicated track which plays 16 notes at the desired clock rate. The clock rate is defined by the clock divider value and normal/triplet mode.
+>> Now activate a groove style for this track -> done. :)
+>> [/quote]
+>> 
+>> Yes, I know I can do it like this, but...
+>> Would loose one track of the MB-SEQ.
+>> Would use one Gate on the AOUT and it's associated CV (ok, i have 8, ok)
+>> Then I have to make a special cable to route that Gate output to a DIN5 (ok, i already have the cable, ok).
+>> But most important it makes the Clock output useless in most situations if you use grooves (and I do love grooves).
+>> I use the Clock output not only for the DIN-Machines but also on my modular too. So I'd love to have this implemented. I don't know how much coding this implies. I feel a little bad asking for things ......... of course ultra-low priority if any.
+
+TK: low priority
+
+---------------------------------------------------------
+
+>> -Changing ALL Length is odd ... more explaining to do ....
+
+>> -When changing the Length value of ALL notes it would be nice that only the actual inserted (Gate ON) Notes would chnage it's value. The issue I find is like this:
+>> 
+>> INIT a track to get C3 quarter notes at steps 1,5,9,13. We can use this as an example. Press ALL. Increase the Length value. Once it has reached the first 16th note, first Glide, all the notes will be togheter as the empty notes also got the Length increased.
+>> 
+>> I would like to be able to continue increasing the Length of the second 16th note (steps 2,6,10,14) to reach for a 8th note duration, and so on.
+>> 
+>> -If I am making myself clear...  with the actual ALL concept, I know this would probably be hard to code, like the Fast button-changing Octaves suggestion I made sometime before.
+>> 
+>> -Also, I found myself several times wanting to change the Length and Vel. and moving the Encoder won't do anything. I needed to go to Event page and moving the Parameter Layer Assignement (Vel. -> Whatever -> back to Vel.) would make it possible to edit again. I still haven't found the exact things causing this, to know how reproduce it.
+
+----------------------------------------------------------
+
+>> SYSEX Files
+>> 
+>> -Problems dumping big files (64k of AKAI S612 sample data) over IIC Outs, works fine one the Core OUTs, but LCDs show nothing and SEQ seems frozen. Tried with the SEQ playing, just for fun: it will Stop, and then Continue when the Dump is sent. 
+>> 
+>> -Sending the same file from a computer (MIDI-OX) to the MB-SEQ USB1 IN, and routing it to a Core or IIC out, would not work correctly (MIDI TimeOut Protocol). --> GM-5 will work flawlessly here, not a PC problem.
+>> 
+>> -Also tried real (not-USB) MIDI, using a SySex editor on the ATARI ST. ATARI OUT -> SEQ IN2 -> routed to OUT2 -> S612. This won't work either.
+>> 
+>> -Would be nice if the OUT used to send the files for 'each' Sysex folder could be remembered by the SEQ. For a really intrument-ready folder.
+>> 
+>> -Scolling through the .SYX files with the DataWheel, makes the PAUSE LED to turn ON (when reaching the ends of the page). Trigger Layer C LED blinks too. This also happens when browsing .MID files in the MIDI folder.
+>> 
+>> -Note: I never experienced a problem with smaller files (6 bytes of FX data to a GM module) doesn't cause any trouble, and are sent with the SEQ running and no hicupps whatsoever... and using both Core and IIC outs caused no problem at all.
+>> 
+>> -I can send the files if you want to test on them.
+
+TK: I know the reasons. Some can be solved, some others not (like that the sequencer is stalled on large SysEx dumps)
+Technical answer: there is only one Mutex for all MIDI output ports.
+Multiple Mutex (semaphores) will decrease the general performance
+
+>> About SysEx Files:
+>> Let me make myself clearer.
+>> 
+>> -I don't expect the SEQ to be playing while sending those big sample data files. All the mentioned tests were done with the SEQ stopped. Only tried once while playing, just to see what happened.
+>> 
+>> -I just remarked the fact that, with the SEQ stopped, sending the file won't work on IIC OUTs. Only works on the CORE OUTs.
+>> 
+>> -The LCD could show "Sending..." or something, so you know the SEQ hasn't crashed or anything.
+>> 
+>> -The actual "xxx bytes Sent" message appears correctly at the end. And BTW, it would be nice that it would not appear over the files, because it takes so long to disappear and when sending small .SYX files (while the SEQ is playing, jamming with synth values on-the-fly) there's this time when you won't see the files in there. So maybe using only the upper LCD lines...
+>> 
+
+----------------------------------------------------------
+
+>> I have a question regarding the arpeggiator (and transposer)
+>> 
+>> I noticed that the arpeggiator (and transposer) behave different when they are contorlled from external eg. keyboard or from an internal track:
+>> 
+>> - If the contorl notes come from external, the settings HOLD and RESTART work as they are described in the manual
+>> - If the contorl notes come from an internal track, the arpeggiator (and transposer) always behaves like if HOLD is ON and RESTART is OFF,
+>> no matter to which value they are actual set.
+
+
+TK: the handling of loopback tracks differs from normal tracks. MIDI Events are sent
+immediately to the transpose/arpeggiator function instead of using the scheduler, so that
+note changes take place immediately and independent from the track number before new
+MIDI events are scheduled.
+Disadvantage of this method: note off events won't be generated, accordingly the gatelength
+won't be considered and HOLD/RESTART of transposed tracks won't work as expected.
+
+Possible solution: gatelength counter for note off events, only used for loopbacked tracks.
+Problem: how should polyphonic loopback tracks be handled?
+It could be sufficient to call SEQ_MIDI_IN_ResetTransArpStacks(<bus-number>) depending on
+the gatelength
+
+----------------------------------------------------------
+
+ would it be possible to get a "tempo" button just in the way of scrub? Just a shortcut to the bpm menu and selecting the current speed as long as it is pressed? This would be very cool for live tempo fades ;-) (i am aware of the very nice tempo preset button and page)
+
+----------------------------------------------------------
+
+Nuke:
+in the fx section , theres the humanizer which now can "randomize" notes, vel/cc and length...but since the whole right screen is empty, wouldn´t it be cool to have the trigger layer "humanized" also?...maybe with a percentage-value like probability...
+so it would be possible to have some nice variation with accent, slide , rolls, random value etc... each with it´s own amount...?! 
+
+----------------------------------------------------------
+FFW: Für den Humanizer könnte man rechts im Display die Möglichkeit einfügen,
+den / die CC´s auszuwählen, auf welche sich der Humanizer beziehen soll.
+
+----------------------------------------------------------
+
+Marxon http://midibox.org/forums/topic/17484-suggestion-deincrement-values-in-mixer-mode
+It would be usefull to have a mixer page to send also relative de/increment values.
+
+----------------------------------------------------------
+FFW: Man könnte bei der Global-Loop FX Funktion im rechten Display eine Option anbieten,
+welche es ermöglicht, den Loop quantisiert ein-/aussetzen zu lassen.
+Also zb der Loop setzt, nach Aktivierung (drücken des "on" Tasters) auf 1/8 Takt etc. ein.
+
+----------------------------------------------------------
+lukas412
+Has the possibility of routing a track output to another tracks input ever come up?
+
+----------------------------------------------------------
+Alex:  I'm wondering if being able to control AOUT tracks with the LRE8x2 (MBNG) is possible yet? 
+I have my ssm2044 boards hooked up to the AOUT_NG, and would like to use encoders to control cutoff and resonance through NRPN messages.
+
+----------------------------------------------------------
+fcebreros: remote control on dedicated MIDI port without the need for a remote key
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=160164
+----------------------------------------------------------
+Send MTC Timecode
+http://midibox.org/forums/topic/18798-midi-time-code
+----------------------------------------------------------
+Allow to send receive LCD messages via SysEx
+http://midibox.org/forums/topic/18813-seq-v4-firmware-question
+----------------------------------------------------------
+SAVE page, name entry: usability wise, it would be useful if pressing the <> button (GP#12) toggled cursor position between the first character of the category and the first character of the name.
+http://midibox.org/forums/topic/18999-wishlist-save-pattern-page-improvements/?p=165964
+----------------------------------------------------------
+MIDI Remote Control function:
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=166123
+Here's an idea to extend this:  It's really great to be able to quickly set CC values with a midi controller potentiometer.  It's so quick and easy to get the value to where you want it - much faster than an encoder.  It would be great if you could set all the parameter layers this way.  If the SEQ provided external CC controller numbers that were assigned to "adjust parameter layer 1", "...2", "...3" ...16 for the currently held step, then you could use an external midi controller to easily adjust all parameter layers for the currently held step without having to wade through the menus.
+ 
+For example, you could set up a Korg nanokontrol (has 8 faders and 8 potentiometer knobs) so that each fader and knob controlled one parameter layer - so one fader would control velocity, one length, probability, etc...  Depending on how you initialized your track.  Hold a step, move some faders/knobs on the nanokontrol to quickly adjust parameter layers.
+ 
+Some users might not want external faders/knobs to be able to change values in note or chord parameter layers, so maybe an option could be provided to enable/disable external control of chord and note layers via CC
+ 
+...and to extend the idea even further:  The SEQ could also provide external control CCs for the trigger layers, so the trigger layers could also be quickly enabled and disabled from an external controller when a step button is held.
+ 
+You could even activate the LED indicators on the nanokontrol or other midi controllers with LED button indicators by sending MIDI values >0 (anything >= 1 works on most, 127 is required on some controllers, some controllers with multicolor leds require specific values to light certain colors - sending a 1 would be a good default for the "on" state) out from the SEQ on the CC #s for the trigger layers that are active, and sending 0's out to the CCs that are inactive.  This would light the LEDs on a lot of commercial controllers without any further programming on the SEQ.  So the LEDs would toggle on and off to indicate the state of the corresponding trigger layer.
+ 
+For the nanokontrol2, you have to use the korg software to set the LED control to external.  Then, sending a 0 on the right channel to the MIDI CC assigned to a button will turn the LED on that button off, sending a 1 will turn it on.
+ 
+With USB Host working on the STM32f4 core and this feature implemented, a nanokontrol would be a really cheap way to extend the functionality of the SEQ - I can imagine a lot of other uses for a nanokontrol in other modes on the SEQ as well.  Lots of buttons and faders on a nanokontrol for ~$60.
+ 
+Here's the Nanokontrol's midi implementation/ parameter guide - http://i.korg.com/up...09631760000.pdf
+ 
+This could also work on a keyboard with CC-assignable knobs and faders, or any other MIDI controller with assignable controls, of course.
+----------------------------------------------------------
+Provide trigger layer function for Random Velocity and CC
+----------------------------------------------------------
+BLM enhancements:
+http://midibox.org/forums/topic/19034-novation-launchpad-blm-features-discussion-thread/?p=166270
+
+- round step buttons along the top light in dim yellow to indicate which steps in the currently visible measure have notes set? and
+- when ALT is held (to switch octaves), round track buttons on the right side light to indicate which octaves have notes set?
+- copy/paste using the top row of step view buttons: ALT+step button copies that measure, keep holding ALT and press another step button to paste the copied steps into the second step view.  Keep holding ALT and press a third, 4th, 5th, etc. step button to paste the copied steps into additional step views.  Release ALT without pressing a second step button to cancel out without pasting.
+- bugfix for drum track switching
+----------------------------------------------------------
+FTS for Random Generator
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=169562
+----------------------------------------------------------
+FTS for Recording Mode
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=169705
+----------------------------------------------------------
+http://midibox.org/forums/topic/19018-seqv4-my-collection-of-feature-proposals/?p=170899
+Optional Save&Take behaviour:
+while in phrase mode (and using the save&take over patterns function):
+-song 1  „save and take over patterns“: a1-p1
+-song 2  „save and take over patterns“: a2-p2
+-…
+-song 8  „save and take over patterns“: a8-p8
+----------------------------------------------------------
+http://midibox.org/forums/topic/19644-muting-independent-drum-lines-notes-via-midi/?p=171143
+Clear individual drum instruments
+----------------------------------------------------------
+http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=171522
+Scale Editor
+----------------------------------------------------------
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=172144
+Transpose key selection mode
+----------------------------------------------------------
+Klee Sequencer Tracks:
+http://midibox.org/forums/topic/19806-klee-sequencer-emulation/#comment-172311
+----------------------------------------------------------
+BLM16x16: allow to select two tracks for keyboard playing
+http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=172256
+----------------------------------------------------------
+Change BPM via MIDI
+http://midibox.org/forums/topic/19850-remote-bpm/
+----------------------------------------------------------
+Apply Groove pattern to CV and MIDI clock outputs
+http://midibox.org/forums/topic/19826-mb-seq-v4-clock-feature/?do=findComment&comment=172791
+----------------------------------------------------------
+Clock Dividers for MIDI clock outputs
+http://midibox.org/forums/topic/19826-mb-seq-v4-clock-feature/?do=findComment&comment=172791
+----------------------------------------------------------
+Allow to use BLM fader handling with external controllers
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=172905
+----------------------------------------------------------
+Random generator: allow to select random range (e.g. SELECT button)
+http://midibox.org/forums/topic/19867-random-generator-range/?do=findComment&comment=172921
+----------------------------------------------------------
+Allow to define number of displayed steps:
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=173142
+----------------------------------------------------------
+Allow to delete presets
+http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
+----------------------------------------------------------
+Song Page: add "Mute Pattern" (all 4 tracks) command
+http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
+----------------------------------------------------------
+Add command which copies the current pattern configurations into multiple pattern slots (e.g. current patterns -> A1/A2/A3/...)
+http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
+----------------------------------------------------------
+Add "tune" knob which sends C-3 to all MIDI and AOUTs
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174045
+----------------------------------------------------------
+Synced mute/unmute: the countdown should be displayed correctly if in song mode and guide track active
+http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174078
+----------------------------------------------------------
+Jam page: Metronome count-in on recording
+http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174078
+----------------------------------------------------------
+Check Edit pattern handling in Recording page
+http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174170
+----------------------------------------------------------
+Check Clear Track in conjunction with CC recording
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174052
+----------------------------------------------------------
+AutoSave mode
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174145
+----------------------------------------------------------
+Multi Loop
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174145
+----------------------------------------------------------
+Guide track: doesn't work as expected if clock divider is used.
+Background: the guide track defines the measure length in 16th notes unrelated to the track divider settings.
+http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174095
+----------------------------------------------------------
+Muting a track cuts off all playing notes on that track, but muting an individual note layer doesn't do the same for the note that's currently playing in that layer -> hanging notes.
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174360
+----------------------------------------------------------
+Song Mode: when a new pattern is selected, it would be helpful to sync the appr. tracks to the measures, e.g. to reset the LFO
+Add option for this behaviour.
+http://midibox.org/forums/topic/20066-question-on-lfos/
+----------------------------------------------------------
+Turn off steps by using 8th bit
+http://midibox.org/forums/topic/20182-prgch-and-cc-layers/?do=findComment&comment=175864
+----------------------------------------------------------
+BLM: zoom control
+----------------------------------------------------------
+Another small suggestion for the chord handling is as follows:
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=176731
+----------------------------------------------------------
+I'd like to request an item for the wishlist to help with Song composition.
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=176837
+----------------------------------------------------------
+Support for Jog Shuttle
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=177037
+----------------------------------------------------------
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=178870
+- There would be more performance tricks as in the BPM menue with the "fire preset function" like:
+  Selecting loops by holding a start and stop-step button (as already thought for BLM)
+  Being able to shift notes without hearing the scrolling (holding a button while scrolling, leaving the button and you hear it) & the same for other edits
+----------------------------------------------------------
+http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=177967
+BLM: I have a 4L and have been using the juice BLM as a faster more accurate way to input notes.  It would be really handy to have a horizontal zoom feature. If the bar display at the bottom were clickable. No boxes =100% zoom and the grid is in its normal current mode displaying 16 1/4 notes. One box lit and you get 200% zoom and you get 16 1/16 notes of the section of the bar you have selected displayed. Selecting two consecutive boxes for 150% zoom to get 16 1/8 notes on the grid of the two adjoining boxes of the bar selected. Maybe there is already a way to do this but all I have been able to come up with in the manual and forums is using a full seq version 4 to set note length with the jog wheel or possibly manually recording in the sequence either from software or another midi device.
+----------------------------------------------------------
+http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=178908
+How are we going with shifting views on on the y axis? It's okay to view just 16 notes, but I find it restricts the usage, especially when using a "polyphonic" track. 
+----------------------------------------------------------
+http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=178908
+Perhaps an additional idea: currently the encoder moves just one note up or down when a polyphonic track is enabled. Could the step encoder instead shift the whole shape by semitones? 
+----------------------------------------------------------
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=178721
+In the Mute menu, the encoders just duplicate the buttons while the wheel doesn't have any function. It would be great to have an option to combine the Mixer Maps with the Mute menu, so that buttons do the muting, encoders send CCs, wheel selects page. Like this, you could perform with much less menu switching.
+----------------------------------------------------------
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=178721
+The spot erase feature is still a little tricky to use I think. Now, in Live Recording mode, when you hold a key, it gets deleted. It's really easy to accidentally delete notes when recording fast  patterns (with sloppy timing). Also, it means that you always first add a note to delete it again in the second pass. I think it would be better to only delete notes when you press the delete button and a key. EG: Sequencer playing, Live recording on. Hold Clear. Nothing happens. Still holding Clear, press A1, A1 gets deleted until you release either A1 or Clear.
+----------------------------------------------------------
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=180296
+Auto-fill steps while in DRUM track mode,
+Let's say you press GP3 button (fill start) for two seconds, that would invoke FILL mode ( "FILL" flashing above the steps), without (or not?) releasing GP3 press GP11 (fill end) to set the end of the steps to be auto filled: steps 3 to 11. 
+
+
+
+Wishlist for MIDIbox SEQ V4 Plus
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+V4 Plus will require a STM32F4 core which offers much more memory.
+Accordingly, resource hungry features could be implemented.
+
+Here a list:
+
+- Expression Layer:
+  http://midibox.org/forums/topic/18732-fr-expression-layer/
+
+- Audio metronome function
+http://midibox.org/forums/topic/19300-metronome-audio-out-on-stm32f4discovery/
+
+- allocate some memory to sort the directory view instead of loading directly from SD Card
+http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
+
+
+- allow to define delays based on ports & channels instead of only the port.
+http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
+
+- MIDI filter
+  http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174145
+
+- Multi Channel Recording
+  http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=175313
+
+- Interpolate Pitch Bend values (+ more, such as CC?)
+  http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=175313
+
+- save Robotizer settings
+  http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=175585
+
+- from http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=175591
+1) Enable the option to create a file (on disk) to map "real synthesizer names" to combinations of out-port and channel.
+
+2) In the track events page, offer the option to additionally select by synthesizer name (an abbreviation of 6-8 characters would be enough). When selecting a synthesizer name (or when loading a session), it could then select the according out-port and channel (and display it).
+
+This would help tremendously, if people remap synthesizers to other out ports, if setups grow, etc. I currently have a printed out lookup-table glued next to the synths, so i can find on which wire/channel a synth is :-).
+
+- From http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=176175
+-independent bipolar LFO amount to all the destinations
+
+-a Trigger layer that can be configured as a Sample&Hold for the LFO values. When you program that trigger, the LFO value at that moment is being sent out. Alternatively, the different waveforms could just get the option "triggered" (like "SINEtrg") so the value is only sent when there is a note / trigger event. 
+
+
+- record 16 channels simultaneously: http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=179441

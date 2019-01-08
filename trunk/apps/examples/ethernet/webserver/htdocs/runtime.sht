@@ -1,0 +1,6 @@
+%!: /header.htm
+<h2>Run-time statistics</h2>
+<font face="courier"><pre>Task            Abs Time      % Time<br>****************************************<br>
+%! run-time
+</pre></font>
+%!: /footer.htm

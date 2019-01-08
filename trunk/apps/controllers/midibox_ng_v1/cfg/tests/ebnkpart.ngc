@@ -1,0 +1,91 @@
+#
+# 8 encoders are banked, 8 encoders are outside banks and always active
+#
+
+RESET_HW
+LCD "%C@(1:1:1)EncBankPartial"
+
+# encoder 1..8 are assigned to ID 21..28, 29..36, 37..44, 45..52
+BANK n=1  enc=1:8:21
+BANK n=2  enc=1:8:29
+BANK n=3  enc=1:8:37
+BANK n=4  enc=1:8:45
+
+EVENT_BUTTON id=  1  type=Meta   meta=SetBank button_mode=OnOnly range=1:1  lcd_pos=1:1:2 label="Bank #%q"
+EVENT_BUTTON id=  2  type=Meta   meta=SetBank button_mode=OnOnly range=2:2  lcd_pos=1:1:2 label="Bank #%q"
+EVENT_BUTTON id=  3  type=Meta   meta=SetBank button_mode=OnOnly range=3:3  lcd_pos=1:1:2 label="Bank #%q"
+EVENT_BUTTON id=  4  type=Meta   meta=SetBank button_mode=OnOnly range=4:4  lcd_pos=1:1:2 label="Bank #%q"
+
+
+# always assigned to encoder 9..16:
+EVENT_ENC    id=  9  fwd_id=LED_MATRIX:9    fwd_to_lcd=1  type=CC     chn= 2 cc= 16   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 10  fwd_id=LED_MATRIX:10   fwd_to_lcd=1  type=CC     chn= 2 cc= 17   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 11  fwd_id=LED_MATRIX:11   fwd_to_lcd=1  type=CC     chn= 2 cc= 18   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 12  fwd_id=LED_MATRIX:12   fwd_to_lcd=1  type=CC     chn= 2 cc= 19   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 13  fwd_id=LED_MATRIX:13   fwd_to_lcd=1  type=CC     chn= 2 cc= 20   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 14  fwd_id=LED_MATRIX:14   fwd_to_lcd=1  type=CC     chn= 2 cc= 21   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 15  fwd_id=LED_MATRIX:15   fwd_to_lcd=1  type=CC     chn= 2 cc= 22   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 16  fwd_id=LED_MATRIX:16   fwd_to_lcd=1  type=CC     chn= 2 cc= 23   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+
+# Bank 1
+EVENT_ENC    id= 21  fwd_id=LED_MATRIX:1    fwd_to_lcd=1  type=CC     chn= 1 cc= 16   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 22  fwd_id=LED_MATRIX:2    fwd_to_lcd=1  type=CC     chn= 1 cc= 17   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 23  fwd_id=LED_MATRIX:3    fwd_to_lcd=1  type=CC     chn= 1 cc= 18   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 24  fwd_id=LED_MATRIX:4    fwd_to_lcd=1  type=CC     chn= 1 cc= 19   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 25  fwd_id=LED_MATRIX:5    fwd_to_lcd=1  type=CC     chn= 1 cc= 20   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 26  fwd_id=LED_MATRIX:6    fwd_to_lcd=1  type=CC     chn= 1 cc= 21   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 27  fwd_id=LED_MATRIX:7    fwd_to_lcd=1  type=CC     chn= 1 cc= 22   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 28  fwd_id=LED_MATRIX:8    fwd_to_lcd=1  type=CC     chn= 1 cc= 23   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+
+# Bank 2
+EVENT_ENC    id= 29  fwd_id=LED_MATRIX:1    fwd_to_lcd=1  type=CC     chn= 1 cc= 24   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 30  fwd_id=LED_MATRIX:2    fwd_to_lcd=1  type=CC     chn= 1 cc= 25   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 31  fwd_id=LED_MATRIX:3    fwd_to_lcd=1  type=CC     chn= 1 cc= 26   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 32  fwd_id=LED_MATRIX:4    fwd_to_lcd=1  type=CC     chn= 1 cc= 27   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 33  fwd_id=LED_MATRIX:5    fwd_to_lcd=1  type=CC     chn= 1 cc= 28   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 34  fwd_id=LED_MATRIX:6    fwd_to_lcd=1  type=CC     chn= 1 cc= 29   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 35  fwd_id=LED_MATRIX:7    fwd_to_lcd=1  type=CC     chn= 1 cc= 30   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 36  fwd_id=LED_MATRIX:8    fwd_to_lcd=1  type=CC     chn= 1 cc= 31   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+
+# Bank 3
+EVENT_ENC    id= 37  fwd_id=LED_MATRIX:1    fwd_to_lcd=1  type=CC     chn= 1 cc= 32   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 38  fwd_id=LED_MATRIX:2    fwd_to_lcd=1  type=CC     chn= 1 cc= 33   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 39  fwd_id=LED_MATRIX:3    fwd_to_lcd=1  type=CC     chn= 1 cc= 34   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 40  fwd_id=LED_MATRIX:4    fwd_to_lcd=1  type=CC     chn= 1 cc= 35   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 41  fwd_id=LED_MATRIX:5    fwd_to_lcd=1  type=CC     chn= 1 cc= 36   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 42  fwd_id=LED_MATRIX:6    fwd_to_lcd=1  type=CC     chn= 1 cc= 37   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 43  fwd_id=LED_MATRIX:7    fwd_to_lcd=1  type=CC     chn= 1 cc= 38   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 44  fwd_id=LED_MATRIX:8    fwd_to_lcd=1  type=CC     chn= 1 cc= 39   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+
+# Bank 4
+EVENT_ENC    id= 45  fwd_id=LED_MATRIX:1    fwd_to_lcd=1  type=CC     chn= 1 cc= 40   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 46  fwd_id=LED_MATRIX:2    fwd_to_lcd=1  type=CC     chn= 1 cc= 41   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 47  fwd_id=LED_MATRIX:3    fwd_to_lcd=1  type=CC     chn= 1 cc= 42   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 48  fwd_id=LED_MATRIX:4    fwd_to_lcd=1  type=CC     chn= 1 cc= 43   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 49  fwd_id=LED_MATRIX:5    fwd_to_lcd=1  type=CC     chn= 1 cc= 44   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 50  fwd_id=LED_MATRIX:6    fwd_to_lcd=1  type=CC     chn= 1 cc= 45   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 51  fwd_id=LED_MATRIX:7    fwd_to_lcd=1  type=CC     chn= 1 cc= 46   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 52  fwd_id=LED_MATRIX:8    fwd_to_lcd=1  type=CC     chn= 1 cc= 47   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+
+
+# encoder hardware configuration
+ENC n=  1   sr= 5  pins=0:1   type=non_detented
+ENC n=  2   sr= 5  pins=2:3   type=non_detented
+ENC n=  3   sr= 5  pins=4:5   type=non_detented
+ENC n=  4   sr= 5  pins=6:7   type=non_detented
+ENC n=  5   sr= 6  pins=0:1   type=non_detented
+ENC n=  6   sr= 6  pins=2:3   type=non_detented
+ENC n=  7   sr= 6  pins=4:5   type=non_detented
+ENC n=  8   sr= 6  pins=6:7   type=non_detented
+ENC n=  9   sr= 7  pins=0:1   type=non_detented
+ENC n= 10   sr= 7  pins=2:3   type=non_detented
+ENC n= 11   sr= 7  pins=4:5   type=non_detented
+ENC n= 12   sr= 7  pins=6:7   type=non_detented
+ENC n= 13   sr= 8  pins=0:1   type=non_detented
+ENC n= 14   sr= 8  pins=2:3   type=non_detented
+ENC n= 15   sr= 8  pins=4:5   type=non_detented
+ENC n= 16   sr= 8  pins=6:7   type=non_detented
+
+
+# LEDring configuration
+DOUT_MATRIX n= 1   rows=16 inverted=0  sr_dout_sel1= 1 sr_dout_sel2= 2  sr_dout_r1= 3 sr_dout_r2= 4  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0

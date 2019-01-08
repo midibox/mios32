@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<JUCERPROJECT id="MXNnwm" name="MIOS_Studio" projectType="guiapp" version="2.4.5"
+              jucerVersion="3.0.0" bundleIdentifier="org.midibox.MIOSStudio"
+              companyName="MIDIbox">
+  <EXPORTFORMATS>
+    <VS2010 targetFolder="Builds/VisualStudio2010" libraryType="1" juceFolder="..\juce\modules"
+            extraDefs="_CRT_SECURE_NO_WARNINGS">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
+                       isDebug="1" optimisation="1" targetName="MIOS_Studio_Debug"/>
+        <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
+                       isDebug="0" optimisation="2" targetName="MIOS_Studio"/>
+      </CONFIGURATIONS>
+    </VS2010>
+    <XCODE_MAC targetFolder="Builds/MacOSX" juceFolder="../juce/modules">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
+                       isDebug="1" optimisation="1" targetName="MIOS_Studio_Debug"/>
+        <CONFIGURATION name="Release" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
+                       isDebug="0" optimisation="2" targetName="MIOS_Studio"/>
+      </CONFIGURATIONS>
+    </XCODE_MAC>
+    <LINUX_MAKE targetFolder="Builds/Linux" juceFolder="../juce/modules">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" libraryPath="/usr/X11R6/lib/" isDebug="1" optimisation="1"
+                       targetName="MIOS_Studio_Debug"/>
+        <CONFIGURATION name="Release" libraryPath="/usr/X11R6/lib/" isDebug="0" optimisation="2"
+                       targetName="MIOS_Studio"/>
+      </CONFIGURATIONS>
+    </LINUX_MAKE>
+  </EXPORTFORMATS>
+  <MAINGROUP id="v6A9pi" name="MIOS_Studio">
+    <GROUP id="{21AE3CF3-DE72-43D3-6321-7EF6A8529AA1}" name="src">
+      <GROUP id="{4295D57C-C3EE-AD2B-7E77-332FCD9652E2}" name="gui">
+        <FILE id="M9OabF" name="CommandLineEditor.cpp" compile="1" resource="0"
+              file="src/gui/CommandLineEditor.cpp"/>
+        <FILE id="UMbxps" name="CommandLineEditor.h" compile="0" resource="0"
+              file="src/gui/CommandLineEditor.h"/>
+        <FILE id="cYZBac" name="ConfigTableComponents.cpp" compile="1" resource="0"
+              file="src/gui/ConfigTableComponents.cpp"/>
+        <FILE id="QQvnSD" name="ConfigTableComponents.h" compile="0" resource="0"
+              file="src/gui/ConfigTableComponents.h"/>
+        <FILE id="jSY3Mo" name="HexTextEditor.cpp" compile="1" resource="0"
+              file="src/gui/HexTextEditor.cpp"/>
+        <FILE id="JjuZTz" name="HexTextEditor.h" compile="0" resource="0" file="src/gui/HexTextEditor.h"/>
+        <FILE id="ipKPRG" name="LogBox.cpp" compile="1" resource="0" file="src/gui/LogBox.cpp"/>
+        <FILE id="ncVrsq" name="LogBox.h" compile="0" resource="0" file="src/gui/LogBox.h"/>
+        <FILE id="mq1w3h" name="MbCvTool.cpp" compile="1" resource="0" file="src/gui/MbCvTool.cpp"/>
+        <FILE id="HHzZ2C" name="MbCvTool.h" compile="0" resource="0" file="src/gui/MbCvTool.h"/>
+        <FILE id="psS8CU" name="MbhpMfTool.cpp" compile="1" resource="0" file="src/gui/MbhpMfTool.cpp"/>
+        <FILE id="ETyhNd" name="MbhpMfTool.h" compile="0" resource="0" file="src/gui/MbhpMfTool.h"/>
+        <FILE id="IEF3Mj" name="MidiKeyboard.cpp" compile="1" resource="0"
+              file="src/gui/MidiKeyboard.cpp"/>
+        <FILE id="UADh0S" name="MidiKeyboard.h" compile="0" resource="0" file="src/gui/MidiKeyboard.h"/>
+        <FILE id="oskGM7" name="MidiMonitor.cpp" compile="1" resource="0" file="src/gui/MidiMonitor.cpp"/>
+        <FILE id="WRd1yc" name="MidiMonitor.h" compile="0" resource="0" file="src/gui/MidiMonitor.h"/>
+        <FILE id="ffG5xn" name="Midio128Tool.cpp" compile="1" resource="0"
+              file="src/gui/Midio128Tool.cpp"/>
+        <FILE id="rbIOAc" name="Midio128Tool.h" compile="0" resource="0" file="src/gui/Midio128Tool.h"/>
+        <FILE id="dCPTDX" name="MidiSlider.cpp" compile="1" resource="0" file="src/gui/MidiSlider.cpp"/>
+        <FILE id="TOM0Cx" name="MidiSlider.h" compile="0" resource="0" file="src/gui/MidiSlider.h"/>
+        <FILE id="b3vnvG" name="MiosFileBrowser.cpp" compile="1" resource="0"
+              file="src/gui/MiosFileBrowser.cpp"/>
+        <FILE id="CnTYOW" name="MiosFileBrowser.h" compile="0" resource="0"
+              file="src/gui/MiosFileBrowser.h"/>
+        <FILE id="EO09zO" name="MiosStudio.cpp" compile="1" resource="0" file="src/gui/MiosStudio.cpp"/>
+        <FILE id="f5eG2w" name="MiosStudio.h" compile="0" resource="0" file="src/gui/MiosStudio.h"/>
+        <FILE id="IIj5Re" name="MiosTerminal.cpp" compile="1" resource="0"
+              file="src/gui/MiosTerminal.cpp"/>
+        <FILE id="RVVEVi" name="MiosTerminal.h" compile="0" resource="0" file="src/gui/MiosTerminal.h"/>
+        <FILE id="PVdBET" name="OscMonitor.cpp" compile="1" resource="0" file="src/gui/OscMonitor.cpp"/>
+        <FILE id="FBAi1s" name="OscMonitor.h" compile="0" resource="0" file="src/gui/OscMonitor.h"/>
+        <FILE id="aMLS9r" name="OscTextEditor.cpp" compile="1" resource="0"
+              file="src/gui/OscTextEditor.cpp"/>
+        <FILE id="H6iIew" name="OscTextEditor.h" compile="0" resource="0" file="src/gui/OscTextEditor.h"/>
+        <FILE id="WOOxM0" name="OscTool.cpp" compile="1" resource="0" file="src/gui/OscTool.cpp"/>
+        <FILE id="ATY2Rv" name="OscTool.h" compile="0" resource="0" file="src/gui/OscTool.h"/>
+        <FILE id="BQhKVO" name="SysexLibrarian.cpp" compile="1" resource="0"
+              file="src/gui/SysexLibrarian.cpp"/>
+        <FILE id="Cc3P00" name="SysexLibrarian.h" compile="0" resource="0"
+              file="src/gui/SysexLibrarian.h"/>
+        <FILE id="Qp83UI" name="SysexTool.cpp" compile="1" resource="0" file="src/gui/SysexTool.cpp"/>
+        <FILE id="MRK96i" name="SysexTool.h" compile="0" resource="0" file="src/gui/SysexTool.h"/>
+        <FILE id="TBuRiQ" name="UploadWindow.cpp" compile="1" resource="0"
+              file="src/gui/UploadWindow.cpp"/>
+        <FILE id="OjEsFJ" name="UploadWindow.h" compile="0" resource="0" file="src/gui/UploadWindow.h"/>
+      </GROUP>
+      <FILE id="pUyQYH" name="HexFileLoader.cpp" compile="1" resource="0"
+            file="src/HexFileLoader.cpp"/>
+      <FILE id="G7Vlrz" name="HexFileLoader.h" compile="0" resource="0" file="src/HexFileLoader.h"/>
+      <FILE id="O8oTa2" name="includes.h" compile="0" resource="0" file="src/includes.h"/>
+      <FILE id="Rr8GFA" name="Main.cpp" compile="1" resource="0" file="src/Main.cpp"/>
+      <FILE id="h3NcCL" name="OscHelper.cpp" compile="1" resource="0" file="src/OscHelper.cpp"/>
+      <FILE id="pay5Ka" name="OscHelper.h" compile="0" resource="0" file="src/OscHelper.h"/>
+      <FILE id="D8HT8B" name="SysexHelper.cpp" compile="1" resource="0" file="src/SysexHelper.cpp"/>
+      <FILE id="uVRgyt" name="SysexHelper.h" compile="0" resource="0" file="src/SysexHelper.h"/>
+      <FILE id="KNxhU3" name="SysexPatchDb.cpp" compile="1" resource="0"
+            file="src/SysexPatchDb.cpp"/>
+      <FILE id="u6uSMk" name="SysexPatchDb.h" compile="0" resource="0" file="src/SysexPatchDb.h"/>
+      <FILE id="DD3QRb" name="UdpSocket.cpp" compile="1" resource="0" file="src/UdpSocket.cpp"/>
+      <FILE id="pQ5B0a" name="UdpSocket.h" compile="0" resource="0" file="src/UdpSocket.h"/>
+      <FILE id="JmQiuJ" name="UploadHandler.cpp" compile="1" resource="0"
+            file="src/UploadHandler.cpp"/>
+      <FILE id="pZgzOe" name="UploadHandler.h" compile="0" resource="0" file="src/UploadHandler.h"/>
+      <FILE id="SaqkC9" name="version.h" compile="0" resource="0" file="src/version.h"/>
+    </GROUP>
+  </MAINGROUP>
+  <MODULES>
+    <MODULE id="juce_core" showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_events" showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_gui_audio" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_audio_devices" showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_audio_processors" showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="0"/>
+  </MODULES>
+  <JUCEOPTIONS/>
+</JUCERPROJECT>

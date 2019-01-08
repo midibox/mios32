@@ -1,0 +1,54 @@
+<html>
+<head>
+	<title>MIDI Notifications</title>
+</head>
+
+<body>
+
+<h1>MIDI Setup Changes</h1>
+
+
+<h2>Setup Change Notifications</h2>
+
+<p>By registering with your application's default notification center
+to receive the the <code>PYMIDISetupChanged</code> notification you
+can be notified whenever any changes in the MIDI system take place.
+These include:
+
+<ul>
+	<li>disconnection or connection of MIDI interfaces</li>
+	<li>property changes on MIDI endpoints, including name changes</li>
+	<li>creation of deletion of virtual endpoints by other applications</li>
+</ul>
+
+<p>Any changes that you make to MIDI endpoints will not cause a
+<code>PYMIDISetupChanged</code> notification to take place within
+your application.  You are responsible for handling these changes
+yourself.</p>
+
+<p>The following is a simple example of registering to receive
+MIDI setup changed notifications:</p>
+
+<blockquote>
+<pre>
+[[NSNotificationCenter defaultCenter]
+	addObserver:self selector:@selector(midiSetupChanged:)
+	name:@"PYMIDISetupChanged" object:nil
+];
+</pre>
+</blockquote>
+
+
+<h2>Offline Endpoints</h2>
+
+<p>Removed devices will be marked as offline. The correspoing
+endpoint will continue to exist but it's <code>isOffline</code>
+method will return <code>YES</code>.  Should the device be
+re-connected, the endpoint will once again be marked as online and
+linked to the device.</p>
+
+<p>PYMIDIEndpoint's <code>displayName</code> method will append
+the string " (offline)" to the name of the endpoint when it's offline.</p>
+
+</body>
+</html>

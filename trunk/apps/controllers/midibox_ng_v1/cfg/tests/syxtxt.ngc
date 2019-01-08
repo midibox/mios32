@@ -1,0 +1,41 @@
+RESET_HW
+
+LCD "%CSysEx Messages"
+
+# various checks
+
+# try f0 01 00 40 41 42 f7
+# -> expect @AB at x=1/y=1
+EVENT_RECEIVER id=1 \
+               type=SysEx stream="0xf0 0x01 ^cursor ^txt" \
+	       lcd_pos=1:1:1
+
+# try f0 02 43 44 45 f7
+# -> expect CDE at x=1/y=1
+EVENT_RECEIVER id=2 \
+               type=SysEx stream="0xf0 0x02 ^txt" \
+	       lcd_pos=1:1:1
+
+# try f0 03 43 44 45 f7
+# -> expect CDE at x=5/y=2
+EVENT_RECEIVER id=3 \
+               type=SysEx stream="0xf0 0x03 ^txt" \
+	       lcd_pos=1:5:2
+
+# try f0 04 00 40 41 42 f7
+# -> expect @AB at x=1/y=1
+EVENT_RECEIVER id=4 \
+               type=SysEx stream="0xf0 0x04 ^cursor ^txt" \
+	       lcd_pos=1:1:1
+
+# try f0 05 38 40 41 42 f7
+# -> expect @AB at x=1/y=2
+EVENT_RECEIVER id=5 \
+               type=SysEx stream="0xf0 0x05 ^cursor ^txt56" \
+	       lcd_pos=1:1:1
+
+# try f0 06 43 44 45 f7
+# -> expect @AB at x=1/y=2
+EVENT_RECEIVER id=6 \
+               type=SysEx stream="0xf0 0x06 ^txt56" \
+	       lcd_pos=1:1:2

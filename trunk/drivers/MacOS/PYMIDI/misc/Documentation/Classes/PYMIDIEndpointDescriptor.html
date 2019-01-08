@@ -1,0 +1,135 @@
+<html>
+<head>
+
+<title>PYMIDIEndpointDescriptor</title>
+
+</head>
+<body>
+
+<h1><font color="#000066">PYMIDIEndpointDescriptor</font></h1>
+
+<blockquote>
+<dl>
+	<dt><b>Inherits from:</b></dt>
+		<dd><a href="file:///System/Library/Frameworks/Foundation.framework/Versions/C/Resources/English.lproj/Documentation/Reference/ObjC_classic/Classes/NSObject.html#//apple_ref/occ/cl/NSObject">NSObject</a></dd>
+</dl>
+
+<dl>
+	<dt><b>Conforms to:</b></dt>
+		<dd><a href="file:///System/Library/Frameworks/Foundation.framework/Versions/C/Resources/English.lproj/Documentation/Reference/ObjC_classic/Protocols/NSCoding.html#//apple_ref/occ/intf/NSCoding">NSCoding</a></dd>
+		<dd><a href="file:///System/Library/Frameworks/Foundation.framework/Versions/C/Resources/English.lproj/Documentation/Reference/ObjC_classic/Protocols/NSObject.html#//apple_ref/occ/intf/NSObject">NSObject</a> (NSObject)</dd>
+</dl>
+
+<dl>
+	<dt><b>Declared in:</b></dt>
+		<dd>PYMIDI/PYMIDIEndpointDescriptor.h</dd>
+</blockquote>
+
+<hr />
+
+
+<h2>Class Description<hr /></h2>
+
+<p>The PYMIDIEndpointDescriptor class encapsulates all the information necessary to
+uniquely identify a particular endpoint and can be used to store a
+reference to an endpoint.</p>
+
+<p>Currently this information consists of the endpoint's name and its
+internal unique ID, but you should try not depend on this implementation.</p>
+
+<p>Descriptors are rarely created explicitly.  Normally you will
+get the descriptor for an endpoint using the PYMIDIEndpoint descriptor
+method or by using unarchiving techniques.</p>
+
+
+<h2>Method Types<hr /></h2>
+
+<blockquote>
+	
+	Creating and initialiazing a PYMIDIEndpointDescriptor
+	
+	<dl>
+		<dt></dt>
+		<dd><a href="#descriptorWithName:uniqueID:">+ descriptorWithName:uniqueID:</a></dd>
+		<dd><a href="#initWithName:uniqueID:">- initWithName:UniqueID:</a></dd>
+	</dl>
+	
+	Getting descriptor attributes
+	
+	<dl>
+		<dt></dt>
+		<dd><a href="#name">- name</a></dd>
+		<dd><a href="#uniqueID">- uniqueID</a></dd>
+	</dl>
+	
+</blockquote>
+
+
+<h2>Class Methods<hr /></h2>
+
+<h3><a name="descriptorWithName:uniqueID:">descriptorWithName:uniqueID:</a></h3>
+
+<p><code>
+	+ (id)<b>descriptorWithName:</b>(NSString*)<em>name</em>
+	<b>uniqueID:</b>(SInt32)<em>uniqueID</em>
+</code></p>
+
+<p>Creates and returns a descriptor with the given name and uniqueID.</p>
+
+<hr width="25%" align="left" />
+
+
+<h2>Instance Methods<hr /></h2>
+
+<h3><a name="initWithName:uniqueID:">initWithName:uniqueID:</a></h3>
+
+<p><code>
+	- (id)<b>initWithName:</b>(NSString*)<em>name</em>
+	<b>uniqueID:</b>(SInt32)<em>uniqueID</em>
+</code></p>
+
+<p>Initializes a newly allocated descriptor with the given name and
+uniqueID.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#descriptorWithName:uniqueID:">- descriptorWithName:uniqueID:</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="name">name</a></h3>
+
+<p><code>
+	- (NSString*)<b>name</b>
+</code></p>
+
+<p>Returns the name of the descriptor.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#uniqueID">- uniqueID</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="uniqueID">uniqueID</a></h3>
+
+<p><code>
+	- (SInt32)<b>uniqueID</b>
+</code></p>
+
+<p>Returns the unique ID of the descriptor.</p>
+
+<p>
+	<b>See Also:</b>
+	<a href="#name">- name</a>
+</p>
+
+<hr width="25%" align="left" />
+
+
+</body>
+</html>

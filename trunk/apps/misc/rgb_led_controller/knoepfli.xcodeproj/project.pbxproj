@@ -1,0 +1,511 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 42;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		11E6EE980F76EC3A001298A9 /* MBHP_STM32 */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 11E6EE9F0F76EC4A001298A9 /* Build configuration list for PBXAggregateTarget "MBHP_STM32" */;
+			buildPhases = (
+				11E6EE970F76EC3A001298A9 /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = MBHP_STM32;
+			productName = STM32;
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXFileReference section */
+		1144BF950FB9C8D40065DF26 /* control_config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = control_config.c; sourceTree = "<group>"; };
+		1180AF7C0F76F5D600103AD4 /* app.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = app.h; sourceTree = "<group>"; };
+		1180AF7D0F76F5D600103AD4 /* app.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = app.c; sourceTree = "<group>"; };
+		1180AF800F76F5D600103AD4 /* display.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = display.h; sourceTree = "<group>"; };
+		1180AF810F76F5D600103AD4 /* mios32_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mios32_config.h; sourceTree = "<group>"; };
+		1180AF820F76F5D600103AD4 /* display.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = display.c; sourceTree = "<group>"; };
+		1180AF830F76F5D600103AD4 /* display_config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = display_config.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		1180AF840F76F5D600103AD4 /* README.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README.txt; sourceTree = "<group>"; };
+		1180AF850F76F5D600103AD4 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		1181F83A0FD81F2F003066A5 /* stm32f10x_exti.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_exti.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_exti.c; sourceTree = SOURCE_ROOT; };
+		1181F83B0FD81F2F003066A5 /* stm32f10x_dac.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_dac.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_dac.c; sourceTree = SOURCE_ROOT; };
+		1181F83C0FD81F2F003066A5 /* stm32f10x_usart.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_usart.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_usart.c; sourceTree = SOURCE_ROOT; };
+		1181F83D0FD81F2F003066A5 /* stm32f10x_sdio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_sdio.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_sdio.c; sourceTree = SOURCE_ROOT; };
+		1181F83E0FD81F2F003066A5 /* stm32f10x_adc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_adc.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_adc.c; sourceTree = SOURCE_ROOT; };
+		1181F83F0FD81F2F003066A5 /* stm32f10x_gpio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_gpio.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_gpio.c; sourceTree = SOURCE_ROOT; };
+		1181F8400FD81F2F003066A5 /* stm32f10x_tim.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_tim.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_tim.c; sourceTree = SOURCE_ROOT; };
+		1181F8410FD81F2F003066A5 /* stm32f10x_flash.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_flash.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_flash.c; sourceTree = SOURCE_ROOT; };
+		1181F8420FD81F2F003066A5 /* stm32f10x_dbgmcu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_dbgmcu.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_dbgmcu.c; sourceTree = SOURCE_ROOT; };
+		1181F8430FD81F2F003066A5 /* stm32f10x_bkp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_bkp.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_bkp.c; sourceTree = SOURCE_ROOT; };
+		1181F8440FD81F2F003066A5 /* stm32f10x_fsmc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_fsmc.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_fsmc.c; sourceTree = SOURCE_ROOT; };
+		1181F8450FD81F2F003066A5 /* stm32f10x_pwr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_pwr.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_pwr.c; sourceTree = SOURCE_ROOT; };
+		1181F8460FD81F2F003066A5 /* stm32f10x_crc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_crc.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_crc.c; sourceTree = SOURCE_ROOT; };
+		1181F8470FD81F2F003066A5 /* stm32f10x_rcc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_rcc.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_rcc.c; sourceTree = SOURCE_ROOT; };
+		1181F8480FD81F2F003066A5 /* stm32f10x_can.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_can.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_can.c; sourceTree = SOURCE_ROOT; };
+		1181F8490FD81F2F003066A5 /* stm32f10x_i2c.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_i2c.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_i2c.c; sourceTree = SOURCE_ROOT; };
+		1181F84A0FD81F2F003066A5 /* stm32f10x_dma.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_dma.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_dma.c; sourceTree = SOURCE_ROOT; };
+		1181F84B0FD81F2F003066A5 /* stm32f10x_rtc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_rtc.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_rtc.c; sourceTree = SOURCE_ROOT; };
+		1181F84C0FD81F2F003066A5 /* stm32f10x_iwdg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_iwdg.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_iwdg.c; sourceTree = SOURCE_ROOT; };
+		1181F84D0FD81F2F003066A5 /* stm32f10x_wwdg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_wwdg.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_wwdg.c; sourceTree = SOURCE_ROOT; };
+		1181F84E0FD81F2F003066A5 /* stm32f10x_spi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stm32f10x_spi.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/stm32f10x_spi.c; sourceTree = SOURCE_ROOT; };
+		1181F84F0FD81F2F003066A5 /* misc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = misc.c; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/src/misc.c; sourceTree = SOURCE_ROOT; };
+		1181F8500FD81F3D003066A5 /* stm32f10x_gpio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_gpio.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_gpio.h; sourceTree = SOURCE_ROOT; };
+		1181F8510FD81F3D003066A5 /* stm32f10x_wwdg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_wwdg.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_wwdg.h; sourceTree = SOURCE_ROOT; };
+		1181F8520FD81F3D003066A5 /* stm32f10x_crc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_crc.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_crc.h; sourceTree = SOURCE_ROOT; };
+		1181F8530FD81F3D003066A5 /* stm32f10x_sdio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_sdio.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_sdio.h; sourceTree = SOURCE_ROOT; };
+		1181F8540FD81F3D003066A5 /* stm32f10x_exti.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_exti.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_exti.h; sourceTree = SOURCE_ROOT; };
+		1181F8550FD81F3D003066A5 /* stm32f10x_dbgmcu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_dbgmcu.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_dbgmcu.h; sourceTree = SOURCE_ROOT; };
+		1181F8560FD81F3D003066A5 /* stm32f10x_rcc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_rcc.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_rcc.h; sourceTree = SOURCE_ROOT; };
+		1181F8570FD81F3D003066A5 /* stm32f10x_fsmc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_fsmc.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_fsmc.h; sourceTree = SOURCE_ROOT; };
+		1181F8580FD81F3D003066A5 /* misc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = misc.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/misc.h; sourceTree = SOURCE_ROOT; };
+		1181F8590FD81F3D003066A5 /* stm32f10x_adc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_adc.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_adc.h; sourceTree = SOURCE_ROOT; };
+		1181F85A0FD81F3D003066A5 /* stm32f10x_dac.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_dac.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_dac.h; sourceTree = SOURCE_ROOT; };
+		1181F85B0FD81F3D003066A5 /* stm32f10x_rtc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_rtc.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_rtc.h; sourceTree = SOURCE_ROOT; };
+		1181F85C0FD81F3D003066A5 /* stm32f10x_pwr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_pwr.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_pwr.h; sourceTree = SOURCE_ROOT; };
+		1181F85D0FD81F3D003066A5 /* stm32f10x_spi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_spi.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_spi.h; sourceTree = SOURCE_ROOT; };
+		1181F85E0FD81F3D003066A5 /* stm32f10x_can.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_can.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_can.h; sourceTree = SOURCE_ROOT; };
+		1181F85F0FD81F3D003066A5 /* stm32f10x_flash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_flash.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_flash.h; sourceTree = SOURCE_ROOT; };
+		1181F8600FD81F3D003066A5 /* stm32f10x_tim.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_tim.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_tim.h; sourceTree = SOURCE_ROOT; };
+		1181F8610FD81F3D003066A5 /* stm32f10x_i2c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_i2c.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_i2c.h; sourceTree = SOURCE_ROOT; };
+		1181F8620FD81F3D003066A5 /* stm32f10x_iwdg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_iwdg.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_iwdg.h; sourceTree = SOURCE_ROOT; };
+		1181F8630FD81F3D003066A5 /* stm32f10x_usart.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_usart.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_usart.h; sourceTree = SOURCE_ROOT; };
+		1181F8640FD81F3D003066A5 /* stm32f10x_bkp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_bkp.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_bkp.h; sourceTree = SOURCE_ROOT; };
+		1181F8650FD81F3D003066A5 /* stm32f10x_dma.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stm32f10x_dma.h; path = ../../MIOS32/drivers/STM32F10x/v3.0.0/STM32F10x_StdPeriph_Driver/inc/stm32f10x_dma.h; sourceTree = SOURCE_ROOT; };
+		1183EDF20FC581F10051734C /* mios32_irq.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_irq.c; path = ../../MIOS32/mios32/STM32F10x/mios32_irq.c; sourceTree = SOURCE_ROOT; };
+		1183EDF30FC581F10051734C /* mios32_iic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_iic.c; path = ../../MIOS32/mios32/STM32F10x/mios32_iic.c; sourceTree = SOURCE_ROOT; };
+		1183EDF40FC581F10051734C /* mios32_stopwatch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_stopwatch.c; path = ../../MIOS32/mios32/STM32F10x/mios32_stopwatch.c; sourceTree = SOURCE_ROOT; };
+		1183EDF50FC581F10051734C /* mios32_spi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_spi.c; path = ../../MIOS32/mios32/STM32F10x/mios32_spi.c; sourceTree = SOURCE_ROOT; };
+		1183EDF60FC581F10051734C /* mios32_i2s.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_i2s.c; path = ../../MIOS32/mios32/STM32F10x/mios32_i2s.c; sourceTree = SOURCE_ROOT; };
+		1183EDF70FC581F10051734C /* mios32_board.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_board.c; path = ../../MIOS32/mios32/STM32F10x/mios32_board.c; sourceTree = SOURCE_ROOT; };
+		1183EDF80FC581F10051734C /* mios32_bsl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_bsl.c; path = ../../MIOS32/mios32/STM32F10x/mios32_bsl.c; sourceTree = SOURCE_ROOT; };
+		1183EDF90FC581F10051734C /* mios32_delay.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_delay.c; path = ../../MIOS32/mios32/STM32F10x/mios32_delay.c; sourceTree = SOURCE_ROOT; };
+		1183EDFA0FC581F10051734C /* mios32_ain.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_ain.c; path = ../../MIOS32/mios32/STM32F10x/mios32_ain.c; sourceTree = SOURCE_ROOT; };
+		1183EDFB0FC581F10051734C /* mios32_usb_midi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_usb_midi.c; path = ../../MIOS32/mios32/STM32F10x/mios32_usb_midi.c; sourceTree = SOURCE_ROOT; };
+		1183EDFC0FC581F10051734C /* mios32_usb_com.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_usb_com.c; path = ../../MIOS32/mios32/STM32F10x/mios32_usb_com.c; sourceTree = SOURCE_ROOT; };
+		1183EDFD0FC581F10051734C /* mios32_usb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_usb.c; path = ../../MIOS32/mios32/STM32F10x/mios32_usb.c; sourceTree = SOURCE_ROOT; };
+		1183EDFE0FC581F10051734C /* mios32_uart.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_uart.c; path = ../../MIOS32/mios32/STM32F10x/mios32_uart.c; sourceTree = SOURCE_ROOT; };
+		1183EDFF0FC581F10051734C /* mios32_timer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_timer.c; path = ../../MIOS32/mios32/STM32F10x/mios32_timer.c; sourceTree = SOURCE_ROOT; };
+		1183EE000FC581F10051734C /* mios32_sys.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_sys.c; path = ../../MIOS32/mios32/STM32F10x/mios32_sys.c; sourceTree = SOURCE_ROOT; };
+		1183EE010FC582040051734C /* mios32_dout.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_dout.c; path = ../../MIOS32/mios32/common/mios32_dout.c; sourceTree = SOURCE_ROOT; };
+		1183EE020FC582040051734C /* mios32_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_lcd.c; path = ../../MIOS32/mios32/common/mios32_lcd.c; sourceTree = SOURCE_ROOT; };
+		1183EE030FC582040051734C /* mios32_iic_midi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_iic_midi.c; path = ../../MIOS32/mios32/common/mios32_iic_midi.c; sourceTree = SOURCE_ROOT; };
+		1183EE040FC582040051734C /* mios32_com.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_com.c; path = ../../MIOS32/mios32/common/mios32_com.c; sourceTree = SOURCE_ROOT; };
+		1183EE050FC582040051734C /* mios32_midi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_midi.c; path = ../../MIOS32/mios32/common/mios32_midi.c; sourceTree = SOURCE_ROOT; };
+		1183EE060FC582040051734C /* mios32_mf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_mf.c; path = ../../MIOS32/mios32/common/mios32_mf.c; sourceTree = SOURCE_ROOT; };
+		1183EE070FC582040051734C /* printf-stdarg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "printf-stdarg.c"; path = "../../MIOS32/mios32/common/printf-stdarg.c"; sourceTree = SOURCE_ROOT; };
+		1183EE080FC582040051734C /* mios32_uart_midi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_uart_midi.c; path = ../../MIOS32/mios32/common/mios32_uart_midi.c; sourceTree = SOURCE_ROOT; };
+		1183EE090FC582040051734C /* mios32_srio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_srio.c; path = ../../MIOS32/mios32/common/mios32_srio.c; sourceTree = SOURCE_ROOT; };
+		1183EE0A0FC582040051734C /* mios32_sdcard.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_sdcard.c; path = ../../MIOS32/mios32/common/mios32_sdcard.c; sourceTree = SOURCE_ROOT; };
+		1183EE0B0FC582040051734C /* mios32_osc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_osc.c; path = ../../MIOS32/mios32/common/mios32_osc.c; sourceTree = SOURCE_ROOT; };
+		1183EE0C0FC582040051734C /* mios32_enc28j60.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_enc28j60.c; path = ../../MIOS32/mios32/common/mios32_enc28j60.c; sourceTree = SOURCE_ROOT; };
+		1183EE0D0FC582040051734C /* mios32_iic_bs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_iic_bs.c; path = ../../MIOS32/mios32/common/mios32_iic_bs.c; sourceTree = SOURCE_ROOT; };
+		1183EE0E0FC582040051734C /* mios32_din.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_din.c; path = ../../MIOS32/mios32/common/mios32_din.c; sourceTree = SOURCE_ROOT; };
+		1183EE0F0FC582040051734C /* mios32_enc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_enc.c; path = ../../MIOS32/mios32/common/mios32_enc.c; sourceTree = SOURCE_ROOT; };
+		1183EE100FC5821E0051734C /* mios32_usb_midi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_usb_midi.h; path = ../../MIOS32/include/mios32/mios32_usb_midi.h; sourceTree = SOURCE_ROOT; };
+		1183EE110FC5821E0051734C /* mios32_usb_com.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_usb_com.h; path = ../../MIOS32/include/mios32/mios32_usb_com.h; sourceTree = SOURCE_ROOT; };
+		1183EE120FC5821E0051734C /* mios32_usb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_usb.h; path = ../../MIOS32/include/mios32/mios32_usb.h; sourceTree = SOURCE_ROOT; };
+		1183EE130FC5821E0051734C /* mios32_uart_midi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_uart_midi.h; path = ../../MIOS32/include/mios32/mios32_uart_midi.h; sourceTree = SOURCE_ROOT; };
+		1183EE140FC5821E0051734C /* mios32_uart.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_uart.h; path = ../../MIOS32/include/mios32/mios32_uart.h; sourceTree = SOURCE_ROOT; };
+		1183EE150FC5821E0051734C /* mios32_timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_timer.h; path = ../../MIOS32/include/mios32/mios32_timer.h; sourceTree = SOURCE_ROOT; };
+		1183EE160FC5821E0051734C /* mios32_sys.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_sys.h; path = ../../MIOS32/include/mios32/mios32_sys.h; sourceTree = SOURCE_ROOT; };
+		1183EE170FC5821E0051734C /* mios32_stopwatch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_stopwatch.h; path = ../../MIOS32/include/mios32/mios32_stopwatch.h; sourceTree = SOURCE_ROOT; };
+		1183EE180FC5821E0051734C /* mios32_srio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_srio.h; path = ../../MIOS32/include/mios32/mios32_srio.h; sourceTree = SOURCE_ROOT; };
+		1183EE190FC5821E0051734C /* mios32_spi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_spi.h; path = ../../MIOS32/include/mios32/mios32_spi.h; sourceTree = SOURCE_ROOT; };
+		1183EE1A0FC5821E0051734C /* mios32_sdcard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_sdcard.h; path = ../../MIOS32/include/mios32/mios32_sdcard.h; sourceTree = SOURCE_ROOT; };
+		1183EE1B0FC5821E0051734C /* mios32_board.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_board.h; path = ../../MIOS32/include/mios32/mios32_board.h; sourceTree = SOURCE_ROOT; };
+		1183EE1C0FC5821E0051734C /* mios32_com.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_com.h; path = ../../MIOS32/include/mios32/mios32_com.h; sourceTree = SOURCE_ROOT; };
+		1183EE1D0FC5821E0051734C /* mios32_delay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_delay.h; path = ../../MIOS32/include/mios32/mios32_delay.h; sourceTree = SOURCE_ROOT; };
+		1183EE1E0FC5821E0051734C /* mios32_osc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_osc.h; path = ../../MIOS32/include/mios32/mios32_osc.h; sourceTree = SOURCE_ROOT; };
+		1183EE1F0FC5821E0051734C /* mios32_midi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_midi.h; path = ../../MIOS32/include/mios32/mios32_midi.h; sourceTree = SOURCE_ROOT; };
+		1183EE200FC5821E0051734C /* mios32_mf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_mf.h; path = ../../MIOS32/include/mios32/mios32_mf.h; sourceTree = SOURCE_ROOT; };
+		1183EE210FC5821E0051734C /* mios32_lcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_lcd.h; path = ../../MIOS32/include/mios32/mios32_lcd.h; sourceTree = SOURCE_ROOT; };
+		1183EE220FC5821E0051734C /* mios32_irq.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_irq.h; path = ../../MIOS32/include/mios32/mios32_irq.h; sourceTree = SOURCE_ROOT; };
+		1183EE230FC5821E0051734C /* mios32_iic_midi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_iic_midi.h; path = ../../MIOS32/include/mios32/mios32_iic_midi.h; sourceTree = SOURCE_ROOT; };
+		1183EE240FC5821E0051734C /* mios32_iic_bs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_iic_bs.h; path = ../../MIOS32/include/mios32/mios32_iic_bs.h; sourceTree = SOURCE_ROOT; };
+		1183EE250FC5821E0051734C /* mios32_iic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_iic.h; path = ../../MIOS32/include/mios32/mios32_iic.h; sourceTree = SOURCE_ROOT; };
+		1183EE260FC5821E0051734C /* mios32_i2s.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_i2s.h; path = ../../MIOS32/include/mios32/mios32_i2s.h; sourceTree = SOURCE_ROOT; };
+		1183EE270FC5821E0051734C /* mios32_enc28j60_regs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_enc28j60_regs.h; path = ../../MIOS32/include/mios32/mios32_enc28j60_regs.h; sourceTree = SOURCE_ROOT; };
+		1183EE280FC5821E0051734C /* mios32_dout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_dout.h; path = ../../MIOS32/include/mios32/mios32_dout.h; sourceTree = SOURCE_ROOT; };
+		1183EE290FC5821E0051734C /* mios32.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32.h; path = ../../MIOS32/include/mios32/mios32.h; sourceTree = SOURCE_ROOT; };
+		1183EE2A0FC5821E0051734C /* mios32_datatypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_datatypes.h; path = ../../MIOS32/include/mios32/mios32_datatypes.h; sourceTree = SOURCE_ROOT; };
+		1183EE2B0FC5821E0051734C /* mios32_ain.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_ain.h; path = ../../MIOS32/include/mios32/mios32_ain.h; sourceTree = SOURCE_ROOT; };
+		1183EE2C0FC5821E0051734C /* mios32_enc28j60.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_enc28j60.h; path = ../../MIOS32/include/mios32/mios32_enc28j60.h; sourceTree = SOURCE_ROOT; };
+		1183EE2D0FC5821E0051734C /* mios32_enc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_enc.h; path = ../../MIOS32/include/mios32/mios32_enc.h; sourceTree = SOURCE_ROOT; };
+		1183EE2E0FC5821E0051734C /* mios32_din.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mios32_din.h; path = ../../MIOS32/include/mios32/mios32_din.h; sourceTree = SOURCE_ROOT; };
+		11A609AC0F7BF0BE00ADB917 /* control.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = control.h; sourceTree = "<group>"; };
+		11A609AD0F7BF0BE00ADB917 /* control.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = control.c; sourceTree = "<group>"; };
+		11BA6C7A0FE1328A000DC1B3 /* FreeRTOSConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FreeRTOSConfig.h; sourceTree = "<group>"; };
+		11BA6C7B0FE1328A000DC1B3 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		11BA6C7D0FE1328A000DC1B3 /* programming_model.mk */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = programming_model.mk; sourceTree = "<group>"; };
+		11BA6C7E0FE1328A000DC1B3 /* startup_stm32f10x_hd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = startup_stm32f10x_hd.c; sourceTree = "<group>"; };
+		11BA6C800FE1328A000DC1B3 /* stm32f10x_conf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stm32f10x_conf.h; sourceTree = "<group>"; };
+		11C2CC5F0F7A63020035B85F /* sysex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sysex.c; sourceTree = "<group>"; };
+		11C2CC600F7A63020035B85F /* sysex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sysex.h; sourceTree = "<group>"; };
+		11D01EBC0F8AA52100176485 /* externalheaders.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = externalheaders.h; sourceTree = "<group>"; };
+		11FD5D2D0F8E8DC1004C68EC /* externalheaders.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = externalheaders.c; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		1183EDE80FC581C10051734C /* MIOS32 Code */ = {
+			isa = PBXGroup;
+			children = (
+				1181F83A0FD81F2F003066A5 /* stm32f10x_exti.c */,
+				1181F83B0FD81F2F003066A5 /* stm32f10x_dac.c */,
+				1181F83C0FD81F2F003066A5 /* stm32f10x_usart.c */,
+				1181F83D0FD81F2F003066A5 /* stm32f10x_sdio.c */,
+				1181F83E0FD81F2F003066A5 /* stm32f10x_adc.c */,
+				1181F83F0FD81F2F003066A5 /* stm32f10x_gpio.c */,
+				1181F8400FD81F2F003066A5 /* stm32f10x_tim.c */,
+				1181F8410FD81F2F003066A5 /* stm32f10x_flash.c */,
+				1181F8420FD81F2F003066A5 /* stm32f10x_dbgmcu.c */,
+				1181F8430FD81F2F003066A5 /* stm32f10x_bkp.c */,
+				1181F8440FD81F2F003066A5 /* stm32f10x_fsmc.c */,
+				1181F8450FD81F2F003066A5 /* stm32f10x_pwr.c */,
+				1181F8460FD81F2F003066A5 /* stm32f10x_crc.c */,
+				1181F8470FD81F2F003066A5 /* stm32f10x_rcc.c */,
+				1181F8480FD81F2F003066A5 /* stm32f10x_can.c */,
+				1181F8490FD81F2F003066A5 /* stm32f10x_i2c.c */,
+				1181F84A0FD81F2F003066A5 /* stm32f10x_dma.c */,
+				1181F84B0FD81F2F003066A5 /* stm32f10x_rtc.c */,
+				1181F84C0FD81F2F003066A5 /* stm32f10x_iwdg.c */,
+				1181F84D0FD81F2F003066A5 /* stm32f10x_wwdg.c */,
+				1181F84E0FD81F2F003066A5 /* stm32f10x_spi.c */,
+				1181F84F0FD81F2F003066A5 /* misc.c */,
+				1183EE010FC582040051734C /* mios32_dout.c */,
+				1183EE020FC582040051734C /* mios32_lcd.c */,
+				1183EE030FC582040051734C /* mios32_iic_midi.c */,
+				1183EE040FC582040051734C /* mios32_com.c */,
+				1183EE050FC582040051734C /* mios32_midi.c */,
+				1183EE060FC582040051734C /* mios32_mf.c */,
+				1183EE070FC582040051734C /* printf-stdarg.c */,
+				1183EE080FC582040051734C /* mios32_uart_midi.c */,
+				1183EE090FC582040051734C /* mios32_srio.c */,
+				1183EE0A0FC582040051734C /* mios32_sdcard.c */,
+				1183EE0B0FC582040051734C /* mios32_osc.c */,
+				1183EE0C0FC582040051734C /* mios32_enc28j60.c */,
+				1183EE0D0FC582040051734C /* mios32_iic_bs.c */,
+				1183EE0E0FC582040051734C /* mios32_din.c */,
+				1183EE0F0FC582040051734C /* mios32_enc.c */,
+				1183EDF20FC581F10051734C /* mios32_irq.c */,
+				1183EDF30FC581F10051734C /* mios32_iic.c */,
+				1183EDF40FC581F10051734C /* mios32_stopwatch.c */,
+				1183EDF50FC581F10051734C /* mios32_spi.c */,
+				1183EDF60FC581F10051734C /* mios32_i2s.c */,
+				1183EDF70FC581F10051734C /* mios32_board.c */,
+				1183EDF80FC581F10051734C /* mios32_bsl.c */,
+				1183EDF90FC581F10051734C /* mios32_delay.c */,
+				1183EDFA0FC581F10051734C /* mios32_ain.c */,
+				1183EDFB0FC581F10051734C /* mios32_usb_midi.c */,
+				1183EDFC0FC581F10051734C /* mios32_usb_com.c */,
+				1183EDFD0FC581F10051734C /* mios32_usb.c */,
+				1183EDFE0FC581F10051734C /* mios32_uart.c */,
+				1183EDFF0FC581F10051734C /* mios32_timer.c */,
+				1183EE000FC581F10051734C /* mios32_sys.c */,
+			);
+			name = "MIOS32 Code";
+			sourceTree = "<group>";
+		};
+		1183EDEA0FC581C90051734C /* MIOS32 Headers */ = {
+			isa = PBXGroup;
+			children = (
+				1181F8500FD81F3D003066A5 /* stm32f10x_gpio.h */,
+				1181F8510FD81F3D003066A5 /* stm32f10x_wwdg.h */,
+				1181F8520FD81F3D003066A5 /* stm32f10x_crc.h */,
+				1181F8530FD81F3D003066A5 /* stm32f10x_sdio.h */,
+				1181F8540FD81F3D003066A5 /* stm32f10x_exti.h */,
+				1181F8550FD81F3D003066A5 /* stm32f10x_dbgmcu.h */,
+				1181F8560FD81F3D003066A5 /* stm32f10x_rcc.h */,
+				1181F8570FD81F3D003066A5 /* stm32f10x_fsmc.h */,
+				1181F8580FD81F3D003066A5 /* misc.h */,
+				1181F8590FD81F3D003066A5 /* stm32f10x_adc.h */,
+				1181F85A0FD81F3D003066A5 /* stm32f10x_dac.h */,
+				1181F85B0FD81F3D003066A5 /* stm32f10x_rtc.h */,
+				1181F85C0FD81F3D003066A5 /* stm32f10x_pwr.h */,
+				1181F85D0FD81F3D003066A5 /* stm32f10x_spi.h */,
+				1181F85E0FD81F3D003066A5 /* stm32f10x_can.h */,
+				1181F85F0FD81F3D003066A5 /* stm32f10x_flash.h */,
+				1181F8600FD81F3D003066A5 /* stm32f10x_tim.h */,
+				1181F8610FD81F3D003066A5 /* stm32f10x_i2c.h */,
+				1181F8620FD81F3D003066A5 /* stm32f10x_iwdg.h */,
+				1181F8630FD81F3D003066A5 /* stm32f10x_usart.h */,
+				1181F8640FD81F3D003066A5 /* stm32f10x_bkp.h */,
+				1181F8650FD81F3D003066A5 /* stm32f10x_dma.h */,
+				1183EE100FC5821E0051734C /* mios32_usb_midi.h */,
+				1183EE110FC5821E0051734C /* mios32_usb_com.h */,
+				1183EE120FC5821E0051734C /* mios32_usb.h */,
+				1183EE130FC5821E0051734C /* mios32_uart_midi.h */,
+				1183EE140FC5821E0051734C /* mios32_uart.h */,
+				1183EE150FC5821E0051734C /* mios32_timer.h */,
+				1183EE160FC5821E0051734C /* mios32_sys.h */,
+				1183EE170FC5821E0051734C /* mios32_stopwatch.h */,
+				1183EE180FC5821E0051734C /* mios32_srio.h */,
+				1183EE190FC5821E0051734C /* mios32_spi.h */,
+				1183EE1A0FC5821E0051734C /* mios32_sdcard.h */,
+				1183EE1B0FC5821E0051734C /* mios32_board.h */,
+				1183EE1C0FC5821E0051734C /* mios32_com.h */,
+				1183EE1D0FC5821E0051734C /* mios32_delay.h */,
+				1183EE1E0FC5821E0051734C /* mios32_osc.h */,
+				1183EE1F0FC5821E0051734C /* mios32_midi.h */,
+				1183EE200FC5821E0051734C /* mios32_mf.h */,
+				1183EE210FC5821E0051734C /* mios32_lcd.h */,
+				1183EE220FC5821E0051734C /* mios32_irq.h */,
+				1183EE230FC5821E0051734C /* mios32_iic_midi.h */,
+				1183EE240FC5821E0051734C /* mios32_iic_bs.h */,
+				1183EE250FC5821E0051734C /* mios32_iic.h */,
+				1183EE260FC5821E0051734C /* mios32_i2s.h */,
+				1183EE270FC5821E0051734C /* mios32_enc28j60_regs.h */,
+				1183EE280FC5821E0051734C /* mios32_dout.h */,
+				1183EE290FC5821E0051734C /* mios32.h */,
+				1183EE2A0FC5821E0051734C /* mios32_datatypes.h */,
+				1183EE2B0FC5821E0051734C /* mios32_ain.h */,
+				1183EE2C0FC5821E0051734C /* mios32_enc28j60.h */,
+				1183EE2D0FC5821E0051734C /* mios32_enc.h */,
+				1183EE2E0FC5821E0051734C /* mios32_din.h */,
+			);
+			name = "MIOS32 Headers";
+			sourceTree = "<group>";
+		};
+		11BA6C780FE1328A000DC1B3 /* Programming Model */ = {
+			isa = PBXGroup;
+			children = (
+				11BA6C7A0FE1328A000DC1B3 /* FreeRTOSConfig.h */,
+				11BA6C7B0FE1328A000DC1B3 /* main.c */,
+				11BA6C7D0FE1328A000DC1B3 /* programming_model.mk */,
+				11BA6C7E0FE1328A000DC1B3 /* startup_stm32f10x_hd.c */,
+				11BA6C800FE1328A000DC1B3 /* stm32f10x_conf.h */,
+			);
+			name = "Programming Model";
+			path = ../../MIOS32/programming_models/traditional;
+			sourceTree = SOURCE_ROOT;
+		};
+		11E6EE830F76EC16001298A9 = {
+			isa = PBXGroup;
+			children = (
+				11BA6C780FE1328A000DC1B3 /* Programming Model */,
+				1183EDEA0FC581C90051734C /* MIOS32 Headers */,
+				1183EDE80FC581C10051734C /* MIOS32 Code */,
+				1180AF810F76F5D600103AD4 /* mios32_config.h */,
+				1180AF7C0F76F5D600103AD4 /* app.h */,
+				1180AF7D0F76F5D600103AD4 /* app.c */,
+				11A609AC0F7BF0BE00ADB917 /* control.h */,
+				11A609AD0F7BF0BE00ADB917 /* control.c */,
+				1144BF950FB9C8D40065DF26 /* control_config.c */,
+				1180AF800F76F5D600103AD4 /* display.h */,
+				1180AF820F76F5D600103AD4 /* display.c */,
+				1180AF830F76F5D600103AD4 /* display_config.c */,
+				11C2CC600F7A63020035B85F /* sysex.h */,
+				11C2CC5F0F7A63020035B85F /* sysex.c */,
+				1180AF850F76F5D600103AD4 /* Makefile */,
+				1180AF840F76F5D600103AD4 /* README.txt */,
+				11D01EBC0F8AA52100176485 /* externalheaders.h */,
+				11FD5D2D0F8E8DC1004C68EC /* externalheaders.c */,
+			);
+			comments = f;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXProject section */
+		11E6EE850F76EC16001298A9 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 11E6EE880F76EC16001298A9 /* Build configuration list for PBXProject "knoepfli" */;
+			compatibilityVersion = "Xcode 2.4";
+			hasScannedForEncodings = 0;
+			mainGroup = 11E6EE830F76EC16001298A9;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				11E6EE980F76EC3A001298A9 /* MBHP_STM32 */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		11E6EE970F76EC3A001298A9 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "export PATH=$PATH:/usr/local/stm32/bin\nexport MIOS32_PATH=~/Development/Working_Copies/MIOS32\nexport MIOS32_BIN_PATH=$MIOS32_PATH/bin\nexport MIOS32_GCC_PREFIX=arm-none-eabi\nexport MIOS32_FAMILY=STM32F10x\nexport MIOS32_PROCESSOR=STM32F103RE\nexport MIOS32_BOARD=MBHP_CORE_STM32\nexport MIOS32_LCD=clcd\nmake\t-s\nexit 0";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		111D2DB70FB235AE00B8D245 /* Debug Level 4 */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_VERBOSE_LEVEL = 4;
+			};
+			name = "Debug Level 4";
+		};
+		111D2DB80FB235AE00B8D245 /* Debug Level 4 */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_PARAMETERS = "-g -Wimplicit-function-declaration -Wunused-value";
+				GCC_DYNAMIC_NO_PIC = NO;
+				OPTIMIZATION_PARAMETERS = "-O0";
+				PRODUCT_NAME = STM32;
+			};
+			name = "Debug Level 4";
+		};
+		11415B520F7D033D00D85B25 /* No Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_VERBOSE_LEVEL = 0;
+			};
+			name = "No Debug";
+		};
+		11415B530F7D033D00D85B25 /* No Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_PARAMETERS = "";
+				GCC_DYNAMIC_NO_PIC = NO;
+				OPTIMIZATION_PARAMETERS = "-O3";
+				PRODUCT_NAME = STM32;
+			};
+			name = "No Debug";
+		};
+		11415B560F7D037000D85B25 /* Debug Level 1 */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_VERBOSE_LEVEL = 1;
+			};
+			name = "Debug Level 1";
+		};
+		11415B570F7D037000D85B25 /* Debug Level 1 */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_PARAMETERS = "-g -Wimplicit-function-declaration -Wunused-value";
+				GCC_DYNAMIC_NO_PIC = NO;
+				OPTIMIZATION_PARAMETERS = "-O0";
+				PRODUCT_NAME = STM32;
+			};
+			name = "Debug Level 1";
+		};
+		11415BFF0F7D0AEB00D85B25 /* Debug Level 2 */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_VERBOSE_LEVEL = 2;
+			};
+			name = "Debug Level 2";
+		};
+		11415C000F7D0AEB00D85B25 /* Debug Level 2 */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_PARAMETERS = "-g -Wimplicit-function-declaration -Wunused-value";
+				GCC_DYNAMIC_NO_PIC = NO;
+				OPTIMIZATION_PARAMETERS = "-O0";
+				PRODUCT_NAME = STM32;
+			};
+			name = "Debug Level 2";
+		};
+		11415C010F7D0AEB00D85B25 /* Debug Level 3 */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_VERBOSE_LEVEL = 3;
+			};
+			name = "Debug Level 3";
+		};
+		11415C020F7D0AEB00D85B25 /* Debug Level 3 */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_PARAMETERS = "-g -Wimplicit-function-declaration -Wunused-value";
+				GCC_DYNAMIC_NO_PIC = NO;
+				OPTIMIZATION_PARAMETERS = "-O0";
+				PRODUCT_NAME = STM32;
+			};
+			name = "Debug Level 3";
+		};
+		11415C190F7D0E6200D85B25 /* Debug Level 9 (Stopwatches) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_VERBOSE_LEVEL = 9;
+			};
+			name = "Debug Level 9 (Stopwatches)";
+		};
+		11415C1A0F7D0E6200D85B25 /* Debug Level 9 (Stopwatches) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_PARAMETERS = "-g -Wimplicit-function-declaration -Wunused-value";
+				GCC_DYNAMIC_NO_PIC = NO;
+				OPTIMIZATION_PARAMETERS = "-O3";
+				PRODUCT_NAME = STM32;
+			};
+			name = "Debug Level 9 (Stopwatches)";
+		};
+		11A6A7B90FB3327400FDE0D0 /* Debug Level 5 */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_VERBOSE_LEVEL = 5;
+			};
+			name = "Debug Level 5";
+		};
+		11A6A7BA0FB3327400FDE0D0 /* Debug Level 5 */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUG_PARAMETERS = "-g -Wimplicit-function-declaration -Wunused-value";
+				GCC_DYNAMIC_NO_PIC = NO;
+				OPTIMIZATION_PARAMETERS = "-O0";
+				PRODUCT_NAME = STM32;
+			};
+			name = "Debug Level 5";
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		11E6EE880F76EC16001298A9 /* Build configuration list for PBXProject "knoepfli" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				11415B520F7D033D00D85B25 /* No Debug */,
+				11415B560F7D037000D85B25 /* Debug Level 1 */,
+				11415BFF0F7D0AEB00D85B25 /* Debug Level 2 */,
+				11415C010F7D0AEB00D85B25 /* Debug Level 3 */,
+				111D2DB70FB235AE00B8D245 /* Debug Level 4 */,
+				11A6A7B90FB3327400FDE0D0 /* Debug Level 5 */,
+				11415C190F7D0E6200D85B25 /* Debug Level 9 (Stopwatches) */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = "No Debug";
+		};
+		11E6EE9F0F76EC4A001298A9 /* Build configuration list for PBXAggregateTarget "MBHP_STM32" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				11415B530F7D033D00D85B25 /* No Debug */,
+				11415B570F7D037000D85B25 /* Debug Level 1 */,
+				11415C000F7D0AEB00D85B25 /* Debug Level 2 */,
+				11415C020F7D0AEB00D85B25 /* Debug Level 3 */,
+				111D2DB80FB235AE00B8D245 /* Debug Level 4 */,
+				11A6A7BA0FB3327400FDE0D0 /* Debug Level 5 */,
+				11415C1A0F7D0E6200D85B25 /* Debug Level 9 (Stopwatches) */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = "No Debug";
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 11E6EE850F76EC16001298A9 /* Project object */;
+}

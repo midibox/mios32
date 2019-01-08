@@ -1,0 +1,20 @@
+
+# demonstrates how different events can be processed depending on a condition
+
+RESET_HW
+
+LCD "%C"
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+# send CC#96 if value is incremented
+EVENT_ENC  id=2000  hw_id=2000  enc_mode=Inc01_Dec7F  if_equal=0x01  type=CC cc=96 lcd_pos=1:1:2 label="Enc INC"
+
+# send CC#97 if value is decremented
+EVENT_ENC  id=2001  hw_id=2000  enc_mode=Inc01_Dec7F  if_equal=0x7f  type=CC cc=97 lcd_pos=1:1:2 label="Enc DEC"

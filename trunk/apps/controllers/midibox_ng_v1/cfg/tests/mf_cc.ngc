@@ -1,0 +1,55 @@
+
+################################################################################
+# Reset the setup to default settings
+# This command ensures, that previous hardware definitions will be overwritten
+# by a new setup without the need to set defintions for all components
+################################################################################
+RESET_HW
+
+LCD "%C@(1:1:1)MF CC Test"
+
+# we've a single MBHP_MF_NG module with 8 motorfaders
+# It has to be configured for Motormix protocol!
+MF n=1  enabled=1  midi_in_port=IN3  midi_out_port=OUT3  chn=1  ts_first_button_id=2001  config_port=USB3
+
+# for testing purposes we can control motorfaders from encoders
+ENC n=  1   sr=13 pins=0:1   type=non_detented
+ENC n=  2   sr=13 pins=2:3   type=non_detented
+ENC n=  3   sr=13 pins=4:5   type=non_detented
+ENC n=  4   sr=13 pins=6:7   type=non_detented
+ENC n=  5   sr=14 pins=0:1   type=non_detented
+ENC n=  6   sr=14 pins=2:3   type=non_detented
+ENC n=  7   sr=14 pins=4:5   type=non_detented
+ENC n=  8   sr=14 pins=6:7   type=non_detented
+
+################################################################################
+
+# on motorfader movements
+EVENT_MF  id= 1  fwd_id=ENC:1  type=CC  chn= 1 cc=16  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 2  fwd_id=ENC:2  type=CC  chn= 1 cc=17  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 3  fwd_id=ENC:3  type=CC  chn= 1 cc=18  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 4  fwd_id=ENC:4  type=CC  chn= 1 cc=19  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 5  fwd_id=ENC:5  type=CC  chn= 1 cc=20  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 6  fwd_id=ENC:6  type=CC  chn= 1 cc=21  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 7  fwd_id=ENC:7  type=CC  chn= 1 cc=22  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 8  fwd_id=ENC:8  type=CC  chn= 1 cc=23  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+
+# on touchsensor event (first id has been specified in the MF configuration above)
+EVENT_BUTTON  id= 2001  type=NoteOn chn= 1 key=0x68  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2002  type=NoteOn chn= 1 key=0x69  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2003  type=NoteOn chn= 1 key=0x70  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2004  type=NoteOn chn= 1 key=0x71  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2005  type=NoteOn chn= 1 key=0x72  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2006  type=NoteOn chn= 1 key=0x73  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2007  type=NoteOn chn= 1 key=0x74  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2008  type=NoteOn chn= 1 key=0x75  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+
+# on encoder movements
+EVENT_ENC id= 1  fwd_id=MF:1  type=CC  chn= 2 cc=16  enc_mode=Absolute  range=0:127  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC id= 2  fwd_id=MF:2  type=CC  chn= 2 cc=17  enc_mode=Absolute  range=0:127  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC id= 3  fwd_id=MF:3  type=CC  chn= 2 cc=18  enc_mode=Absolute  range=0:127  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC id= 4  fwd_id=MF:4  type=CC  chn= 2 cc=19  enc_mode=Absolute  range=0:127  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC id= 5  fwd_id=MF:5  type=CC  chn= 2 cc=20  enc_mode=Absolute  range=0:127  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC id= 6  fwd_id=MF:6  type=CC  chn= 2 cc=21  enc_mode=Absolute  range=0:127  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC id= 7  fwd_id=MF:7  type=CC  chn= 2 cc=22  enc_mode=Absolute  range=0:127  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC id= 8  fwd_id=MF:8  type=CC  chn= 2 cc=23  enc_mode=Absolute  range=0:127  lcd_pos=1:1:1  label="^std_enc"
