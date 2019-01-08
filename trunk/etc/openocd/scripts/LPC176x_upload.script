@@ -1,9 +1,0 @@
-# $Id$
-
-halt
-flash erase_address 0x00000000 0x00080000
-flash write_image project_build/project.bin 0x00000000 bin
-reset
-halt
-flash write_image project_build/project.bin 0x00000000 bin
-reset

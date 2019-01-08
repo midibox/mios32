@@ -1,4 +1,0 @@
-# $Id$
-
-reset_config srst_only
-reset run 
