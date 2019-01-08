@@ -75,6 +75,14 @@ typedef enum {
   USB5 = 0x15,
   USB6 = 0x16,
   USB7 = 0x17,
+  USB8 = 0x10,
+  USB9 = 0x11,
+  USB10 = 0x12,
+  USB11 = 0x13,
+  USB12 = 0x14,
+  USB13 = 0x15,
+  USB14 = 0x16,
+  USB15 = 0x17,
 
   UART0 = 0x20,
   UART1 = 0x21,
@@ -106,8 +114,33 @@ typedef enum {
   SPIM4 = 0x54,
   SPIM5 = 0x55,
   SPIM6 = 0x56,
-  SPIM7 = 0x57
+  SPIM7 = 0x57,
+  SPIM8 = 0x58,
+  SPIM9 = 0x59,
+  SPIM10 = 0x5a,
+  SPIM11 = 0x5b,
+  SPIM12 = 0x5c,
+  SPIM13 = 0x5d,
+  SPIM14 = 0x5e,
+  SPIM15 = 0x5f,
 
+  MCAN0 = 0x60,
+  MCAN1 = 0x61,
+  MCAN2 = 0x62,
+  MCAN3 = 0x63,
+  MCAN4 = 0x64,
+  MCAN5 = 0x65,
+  MCAN6 = 0x66,
+  MCAN7 = 0x67,
+  MCAN8 = 0x68,
+  MCAN9 = 0x69,
+  MCAN10 = 0x6a,
+  MCAN11 = 0x6b,
+  MCAN12 = 0x6c,
+  MCAN13 = 0x6d,
+  MCAN14 = 0x6e,
+  MCAN15 = 0x6f
+ 
 } mios32_midi_port_t;
 
 
@@ -145,6 +178,9 @@ typedef enum {
 typedef union {
   struct {
     u32 ALL;
+  };
+  struct {
+    u8 bytes[4];
   };
   struct {
     u8 cin_cable;

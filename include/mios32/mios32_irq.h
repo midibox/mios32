@@ -67,6 +67,10 @@
 // priority should be high to avoid data loss
 #define MIOS32_IRQ_UART_PRIORITY        MIOS32_IRQ_PRIO_HIGHEST
 
+// CAN IRQs used by MIOS32_CAN
+// This interrupt can run at low priority (but higher than RTOS tasks)
+// The interrupt is called at least each mS
+#define MIOS32_IRQ_CAN_PRIORITY        MIOS32_IRQ_PRIO_MID
 
 // USB provides flow control - this interrupt can run at low priority (but higher than RTOS tasks)
 // The interrupt is called at least each mS and takes ca. 1 uS to service the SOF (Start of Frame) flag

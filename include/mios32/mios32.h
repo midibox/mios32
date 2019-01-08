@@ -86,6 +86,7 @@ extern "C" {
 #include <mios32_usb.h>
 #include <mios32_usb_midi.h>
 #include <mios32_usb_com.h>
+#include <mios32_usb_hid.h>
 #include <mios32_uart.h>
 #include <mios32_uart_midi.h>
 #include <mios32_spi_midi.h>
@@ -99,6 +100,8 @@ extern "C" {
 #include <mios32_delay.h>
 #include <mios32_sdcard.h>
 #include <mios32_enc28j60.h>
+#include <mios32_can.h>
+#include <mios32_can_midi.h>
 
 
 /////////////////////////////////////////////////////////////////////////////
