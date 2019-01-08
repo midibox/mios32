@@ -28,6 +28,7 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/mios32/common/mios32_uart_midi.c \
 	$(MIOS32_PATH)/mios32/common/mios32_spi_midi.c \
 	$(MIOS32_PATH)/mios32/common/mios32_iic_midi.c \
+	$(MIOS32_PATH)/mios32/common/mios32_can_midi.c \
 	$(MIOS32_PATH)/mios32/common/mios32_iic_bs.c \
 	$(MIOS32_PATH)/mios32/common/mios32_mf.c \
 	$(MIOS32_PATH)/mios32/common/mios32_sdcard.c \
@@ -46,8 +47,10 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_usb.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_usb_midi.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_usb_com.c \
+	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_usb_hid.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_uart.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_iic.c \
+	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_can.c \
 	$(MIOS32_PATH)/mios32/common/printf-stdarg.c
 
 
