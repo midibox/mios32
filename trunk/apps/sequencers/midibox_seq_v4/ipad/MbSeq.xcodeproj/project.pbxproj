@@ -1,0 +1,1022 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 45;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1D3623260D0F684500981E51 /* MbSeqAppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1D3623250D0F684500981E51 /* MbSeqAppDelegate.mm */; };
+		1D60589B0D05DD56006BFB54 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; };
+		1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
+		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
+		288765A50DF7441C002DB57D /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 288765A40DF7441C002DB57D /* CoreGraphics.framework */; };
+		2899E5220DE3E06400AC0155 /* MbSeqViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2899E5210DE3E06400AC0155 /* MbSeqViewController.xib */; };
+		28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 28AD733E0D9D9553002E5188 /* MainWindow.xib */; };
+		520512561177BDCC00B60101 /* app_lcd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 520512501177BDCC00B60101 /* app_lcd.cpp */; };
+		520512571177BDCC00B60101 /* CLcd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 520512521177BDCC00B60101 /* CLcd.cpp */; };
+		520512581177BDCC00B60101 /* CLcdView.mm in Sources */ = {isa = PBXBuildFile; fileRef = 520512551177BDCC00B60101 /* CLcdView.mm */; };
+		520512991177C21900B60101 /* mios32_lcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 520512981177C21900B60101 /* mios32_lcd.c */; };
+		520512AC1177C3BF00B60101 /* MbSeqViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 520512AB1177C3BF00B60101 /* MbSeqViewController.mm */; };
+		522E380711B478C70078410E /* seq_file_g.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA83211790B6700293622 /* seq_file_g.c */; };
+		524324701229B27E003B950B /* seq_file_gc.c in Sources */ = {isa = PBXBuildFile; fileRef = 5243246E1229B27E003B950B /* seq_file_gc.c */; };
+		524324721229B29B003B950B /* seq_ui_eth.c in Sources */ = {isa = PBXBuildFile; fileRef = 524324711229B29B003B950B /* seq_ui_eth.c */; };
+		525C5D6213983A6D004DE8E4 /* seq_ui_trklive.c in Sources */ = {isa = PBXBuildFile; fileRef = 525C5D6013983A6D004DE8E4 /* seq_ui_trklive.c */; };
+		525C5D6B13983AB4004DE8E4 /* seq_live.c in Sources */ = {isa = PBXBuildFile; fileRef = 525C5D6913983AB4004DE8E4 /* seq_live.c */; };
+		5268E79C13845ED800520B92 /* seq_file_bm.c in Sources */ = {isa = PBXBuildFile; fileRef = 5268E79A13845ED800520B92 /* seq_file_bm.c */; };
+		5268E79E13845EF000520B92 /* seq_ui_bookmarks.c in Sources */ = {isa = PBXBuildFile; fileRef = 5268E79D13845EF000520B92 /* seq_ui_bookmarks.c */; };
+		5276AAFA13D2FC16006788B6 /* file.c in Sources */ = {isa = PBXBuildFile; fileRef = 5276AAF713D2FC16006788B6 /* file.c */; };
+		5276AAFB13D2FC16006788B6 /* file.mk in Resources */ = {isa = PBXBuildFile; fileRef = 5276AAF913D2FC16006788B6 /* file.mk */; };
+		527779BC11B72BF6009D9083 /* OscPort.m in Sources */ = {isa = PBXBuildFile; fileRef = 527779B911B72BF6009D9083 /* OscPort.m */; };
+		527779BD11B72BF6009D9083 /* OscServer_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 527779BB11B72BF6009D9083 /* OscServer_Wrapper.m */; };
+		527779C011B72C00009D9083 /* UDPEcho.m in Sources */ = {isa = PBXBuildFile; fileRef = 527779BF11B72C00009D9083 /* UDPEcho.m */; };
+		527779E211B72F2F009D9083 /* seq_midi_osc.c in Sources */ = {isa = PBXBuildFile; fileRef = 527779E011B72F2F009D9083 /* seq_midi_osc.c */; };
+		527779EE11B72F5D009D9083 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 527779ED11B72F5D009D9083 /* CFNetwork.framework */; };
+		529FA6701178CC8C00293622 /* SeqButton.mm in Sources */ = {isa = PBXBuildFile; fileRef = 529FA66F1178CC8C00293622 /* SeqButton.mm */; };
+		529FA74E1178EF1F00293622 /* SeqEncoder.mm in Sources */ = {isa = PBXBuildFile; fileRef = 529FA74D1178EF1F00293622 /* SeqEncoder.mm */; };
+		529FA7F6117909A400293622 /* FreeRTOS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7DB117909A400293622 /* FreeRTOS_Wrapper.m */; };
+		529FA7F7117909A400293622 /* MIOS32_BOARD_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7DD117909A400293622 /* MIOS32_BOARD_Wrapper.m */; };
+		529FA7F8117909A400293622 /* MIOS32_COM_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7DF117909A400293622 /* MIOS32_COM_Wrapper.m */; };
+		529FA7F9117909A400293622 /* MIOS32_DELAY_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7E1117909A400293622 /* MIOS32_DELAY_Wrapper.m */; };
+		529FA7FA117909A400293622 /* MIOS32_ENC_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7E3117909A400293622 /* MIOS32_ENC_Wrapper.m */; };
+		529FA7FB117909A400293622 /* MIOS32_IRQ_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7E5117909A400293622 /* MIOS32_IRQ_Wrapper.m */; };
+		529FA7FC117909A400293622 /* MIOS32_MIDI_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7E7117909A400293622 /* MIOS32_MIDI_Wrapper.m */; };
+		529FA7FD117909A400293622 /* MIOS32_SDCARD_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7E9117909A400293622 /* MIOS32_SDCARD_Wrapper.m */; };
+		529FA7FE117909A400293622 /* MIOS32_SPI_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7EB117909A400293622 /* MIOS32_SPI_Wrapper.m */; };
+		529FA7FF117909A400293622 /* MIOS32_SRIO_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7ED117909A400293622 /* MIOS32_SRIO_Wrapper.m */; };
+		529FA800117909A400293622 /* MIOS32_STOPWATCH_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7EF117909A400293622 /* MIOS32_STOPWATCH_Wrapper.m */; };
+		529FA801117909A400293622 /* MIOS32_SYS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7F1117909A400293622 /* MIOS32_SYS_Wrapper.m */; };
+		529FA802117909A400293622 /* MIOS32_TIMER_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7F3117909A400293622 /* MIOS32_TIMER_Wrapper.m */; };
+		529FA803117909A400293622 /* Tasks.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA7F5117909A400293622 /* Tasks.m */; };
+		529FA8F211790B6700293622 /* app.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA81D11790B6700293622 /* app.c */; };
+		529FA8F411790B6700293622 /* seq_cc_labels.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA82011790B6700293622 /* seq_cc_labels.c */; };
+		529FA8F611790B6700293622 /* seq_cc.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA82311790B6700293622 /* seq_cc.c */; };
+		529FA8F811790B6700293622 /* seq_chord.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA82611790B6700293622 /* seq_chord.c */; };
+		529FA8FA11790B6700293622 /* seq_core.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA82911790B6700293622 /* seq_core.c */; };
+		529FA8FC11790B6700293622 /* seq_file_b.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA82C11790B6700293622 /* seq_file_b.c */; };
+		529FA8FE11790B6700293622 /* seq_file_c.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA82F11790B6700293622 /* seq_file_c.c */; };
+		529FA90211790B6700293622 /* seq_file_hw.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA83511790B6700293622 /* seq_file_hw.c */; };
+		529FA90411790B6700293622 /* seq_file_m.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA83811790B6700293622 /* seq_file_m.c */; };
+		529FA90611790B6700293622 /* seq_file_s.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA83B11790B6700293622 /* seq_file_s.c */; };
+		529FA90811790B6700293622 /* seq_file_t.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA83E11790B6700293622 /* seq_file_t.c */; };
+		529FA90A11790B6700293622 /* seq_file.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA84111790B6700293622 /* seq_file.c */; };
+		529FA90C11790B6700293622 /* seq_groove.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA84411790B6700293622 /* seq_groove.c */; };
+		529FA90E11790B6700293622 /* seq_humanize.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA84711790B6700293622 /* seq_humanize.c */; };
+		529FA91011790B6700293622 /* seq_hwcfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA84A11790B6700293622 /* seq_hwcfg.c */; };
+		529FA91211790B6700293622 /* seq_label.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA84D11790B6700293622 /* seq_label.c */; };
+		529FA91411790B6700293622 /* seq_layer.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA85011790B6700293622 /* seq_layer.c */; };
+		529FA91611790B6700293622 /* seq_lcd_logo.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA85311790B6700293622 /* seq_lcd_logo.c */; };
+		529FA91911790B6700293622 /* seq_lcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA85711790B6700293622 /* seq_lcd.c */; };
+		529FA91B11790B6700293622 /* seq_led.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA85A11790B6700293622 /* seq_led.c */; };
+		529FA91D11790B6700293622 /* seq_lfo.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA85D11790B6700293622 /* seq_lfo.c */; };
+		529FA91F11790B6700293622 /* seq_midexp.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA86011790B6700293622 /* seq_midexp.c */; };
+		529FA92311790B6700293622 /* seq_midi_in.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA86611790B6700293622 /* seq_midi_in.c */; };
+		529FA92511790B6700293622 /* seq_midi_port.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA86911790B6700293622 /* seq_midi_port.c */; };
+		529FA92711790B6700293622 /* seq_midi_router.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA86C11790B6700293622 /* seq_midi_router.c */; };
+		529FA92911790B6700293622 /* seq_midi_sysex.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA86F11790B6700293622 /* seq_midi_sysex.c */; };
+		529FA92B11790B6700293622 /* seq_midimp.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA87211790B6700293622 /* seq_midimp.c */; };
+		529FA92D11790B6700293622 /* seq_midply.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA87511790B6700293622 /* seq_midply.c */; };
+		529FA92F11790B6700293622 /* seq_mixer.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA87811790B6700293622 /* seq_mixer.c */; };
+		529FA93111790B6700293622 /* seq_morph.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA87B11790B6700293622 /* seq_morph.c */; };
+		529FA93311790B6700293622 /* seq_par.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA87E11790B6700293622 /* seq_par.c */; };
+		529FA93511790B6700293622 /* seq_pattern.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA88111790B6700293622 /* seq_pattern.c */; };
+		529FA93711790B6700293622 /* seq_random.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA88411790B6700293622 /* seq_random.c */; };
+		529FA93911790B6700293622 /* seq_record.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA88711790B6700293622 /* seq_record.c */; };
+		529FA93B11790B6700293622 /* seq_scale.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA88A11790B6700293622 /* seq_scale.c */; };
+		529FA93D11790B6700293622 /* seq_song.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA88D11790B6700293622 /* seq_song.c */; };
+		529FA93F11790B6700293622 /* seq_statistics.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA89011790B6700293622 /* seq_statistics.c */; };
+		529FA94111790B6700293622 /* seq_terminal.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA89311790B6700293622 /* seq_terminal.c */; };
+		529FA94311790B6700293622 /* seq_trg.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA89611790B6700293622 /* seq_trg.c */; };
+		529FA94511790B6700293622 /* seq_ui_bpm_presets.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA89911790B6700293622 /* seq_ui_bpm_presets.c */; };
+		529FA94711790B6700293622 /* seq_ui_bpm.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA89B11790B6700293622 /* seq_ui_bpm.c */; };
+		529FA94911790B6700293622 /* seq_ui_disk.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA89D11790B6700293622 /* seq_ui_disk.c */; };
+		529FA94B11790B6700293622 /* seq_ui_edit.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA89F11790B6700293622 /* seq_ui_edit.c */; };
+		529FA94D11790B6700293622 /* seq_ui_fx_echo.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8A111790B6700293622 /* seq_ui_fx_echo.c */; };
+		529FA94F11790B6700293622 /* seq_ui_fx_humanize.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8A311790B6700293622 /* seq_ui_fx_humanize.c */; };
+		529FA95111790B6700293622 /* seq_ui_fx_lfo.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8A511790B6700293622 /* seq_ui_fx_lfo.c */; };
+		529FA95311790B6700293622 /* seq_ui_fx_limit.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8A711790B6700293622 /* seq_ui_fx_limit.c */; };
+		529FA95511790B6700293622 /* seq_ui_fx_loop.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8A911790B6700293622 /* seq_ui_fx_loop.c */; };
+		529FA95711790B6700293622 /* seq_ui_fx_scale.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8AB11790B6700293622 /* seq_ui_fx_scale.c */; };
+		529FA95911790B6700293622 /* seq_ui_fx.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8AD11790B6700293622 /* seq_ui_fx.c */; };
+		529FA95B11790B6700293622 /* seq_ui_info.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8AF11790B6700293622 /* seq_ui_info.c */; };
+		529FA95D11790B6700293622 /* seq_ui_manual.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8B111790B6700293622 /* seq_ui_manual.c */; };
+		529FA95F11790B6700293622 /* seq_ui_menu.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8B311790B6700293622 /* seq_ui_menu.c */; };
+		529FA96111790B6700293622 /* seq_ui_metronome.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8B511790B6700293622 /* seq_ui_metronome.c */; };
+		529FA96311790B6700293622 /* seq_ui_midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8B711790B6700293622 /* seq_ui_midi.c */; };
+		529FA96511790B6700293622 /* seq_ui_midimon.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8B911790B6700293622 /* seq_ui_midimon.c */; };
+		529FA96711790B6700293622 /* seq_ui_mixer.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8BB11790B6700293622 /* seq_ui_mixer.c */; };
+		529FA96911790B6700293622 /* seq_ui_mute.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8BD11790B6700293622 /* seq_ui_mute.c */; };
+		529FA96B11790B6700293622 /* seq_ui_opt.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8BF11790B6700293622 /* seq_ui_opt.c */; };
+		529FA96E11790B6700293622 /* seq_ui_parsel.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8C211790B6700293622 /* seq_ui_parsel.c */; };
+		529FA97011790B6700293622 /* seq_ui_pattern.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8C411790B6700293622 /* seq_ui_pattern.c */; };
+		529FA97211790B6700293622 /* seq_ui_pmute.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8C611790B6700293622 /* seq_ui_pmute.c */; };
+		529FA97411790B6700293622 /* seq_ui_save.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8C811790B6700293622 /* seq_ui_save.c */; };
+		529FA97611790B6700293622 /* seq_ui_song.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8CA11790B6700293622 /* seq_ui_song.c */; };
+		529FA97811790B6700293622 /* seq_ui_stepsel.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8CC11790B6700293622 /* seq_ui_stepsel.c */; };
+		529FA97A11790B6700293622 /* seq_ui_sysex.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8CE11790B6700293622 /* seq_ui_sysex.c */; };
+		529FA97C11790B6700293622 /* seq_ui_todo.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8D011790B6700293622 /* seq_ui_todo.c */; };
+		529FA97E11790B6700293622 /* seq_ui_tracksel.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8D211790B6700293622 /* seq_ui_tracksel.c */; };
+		529FA98011790B6700293622 /* seq_ui_trgasg.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8D411790B6700293622 /* seq_ui_trgasg.c */; };
+		529FA98211790B6700293622 /* seq_ui_trgsel.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8D611790B6700293622 /* seq_ui_trgsel.c */; };
+		529FA98411790B6700293622 /* seq_ui_trkdir.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8D811790B6700293622 /* seq_ui_trkdir.c */; };
+		529FA98611790B6700293622 /* seq_ui_trkdiv.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8DA11790B6700293622 /* seq_ui_trkdiv.c */; };
+		529FA98811790B6700293622 /* seq_ui_trkevnt.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8DC11790B6700293622 /* seq_ui_trkevnt.c */; };
+		529FA98A11790B6700293622 /* seq_ui_trkgrv.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8DE11790B6700293622 /* seq_ui_trkgrv.c */; };
+		529FA98C11790B6700293622 /* seq_ui_trklen.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8E011790B6700293622 /* seq_ui_trklen.c */; };
+		529FA98E11790B6700293622 /* seq_ui_trkmode.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8E211790B6700293622 /* seq_ui_trkmode.c */; };
+		529FA99011790B6700293622 /* seq_ui_trkmorph.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8E411790B6700293622 /* seq_ui_trkmorph.c */; };
+		529FA99211790B6700293622 /* seq_ui_trkrec.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8E611790B6700293622 /* seq_ui_trkrec.c */; };
+		529FA99411790B6700293622 /* seq_ui_trkrnd.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8E811790B6700293622 /* seq_ui_trkrnd.c */; };
+		529FA99611790B6700293622 /* seq_ui_trktran.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8EA11790B6700293622 /* seq_ui_trktran.c */; };
+		529FA99811790B6700293622 /* seq_ui_util.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8EC11790B6700293622 /* seq_ui_util.c */; };
+		529FA99A11790B6700293622 /* seq_ui.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA8EE11790B6700293622 /* seq_ui.c */; };
+		529FA9AB11790CAB00293622 /* aout.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9A911790CAB00293622 /* aout.c */; };
+		529FA9AE11790CB900293622 /* blm.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9AC11790CB900293622 /* blm.c */; };
+		529FA9B111790CC800293622 /* blm_x.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9AF11790CC800293622 /* blm_x.c */; };
+		529FA9B411790CE000293622 /* mid_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9B211790CE000293622 /* mid_parser.c */; };
+		529FA9B711790CF900293622 /* notestack.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9B511790CF900293622 /* notestack.c */; };
+		529FA9BA11790D0900293622 /* jsw_rand.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9B811790D0900293622 /* jsw_rand.c */; };
+		529FA9BF11790D2100293622 /* seq_bpm.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9BB11790D2100293622 /* seq_bpm.c */; };
+		529FA9C011790D2100293622 /* seq_midi_out.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9BD11790D2100293622 /* seq_midi_out.c */; };
+		529FA9E21179107800293622 /* mios32_din.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9DB1179107800293622 /* mios32_din.c */; };
+		529FA9E31179107800293622 /* mios32_dout.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9DC1179107800293622 /* mios32_dout.c */; };
+		529FA9E51179107800293622 /* mios32_midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9DE1179107800293622 /* mios32_midi.c */; };
+		529FA9E61179107800293622 /* mios32_osc.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9DF1179107800293622 /* mios32_osc.c */; };
+		529FA9F4117911CE00293622 /* mios32_uart_midi.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9F3117911CE00293622 /* mios32_uart_midi.c */; };
+		529FA9FA1179121300293622 /* FATFS_Wrapper_Dir.c in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9F71179121300293622 /* FATFS_Wrapper_Dir.c */; };
+		529FA9FB1179121300293622 /* FATFS_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529FA9F91179121300293622 /* FATFS_Wrapper.m */; };
+		52E114421256BD41001E6E43 /* seq_cv.c in Sources */ = {isa = PBXBuildFile; fileRef = 52E1143F1256BD41001E6E43 /* seq_cv.c */; };
+		52E114431256BD41001E6E43 /* seq_ui_cv.c in Sources */ = {isa = PBXBuildFile; fileRef = 52E114411256BD41001E6E43 /* seq_ui_cv.c */; };
+		52F15C42119C9D0900E40C6C /* seq_blm.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F15C40119C9D0900E40C6C /* seq_blm.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1D30AB110D05D00D00671497 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		1D3623240D0F684500981E51 /* MbSeqAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MbSeqAppDelegate.h; sourceTree = "<group>"; };
+		1D3623250D0F684500981E51 /* MbSeqAppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MbSeqAppDelegate.mm; sourceTree = "<group>"; };
+		1D6058910D05DD3D006BFB54 /* MbSeq.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MbSeq.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1DF5F4DF0D08C38300B7A737 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		288765A40DF7441C002DB57D /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		2899E5210DE3E06400AC0155 /* MbSeqViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MbSeqViewController.xib; sourceTree = "<group>"; };
+		28AD733E0D9D9553002E5188 /* MainWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MainWindow.xib; sourceTree = "<group>"; };
+		28D7ACF60DDB3853001CB0EB /* MbSeqViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MbSeqViewController.h; sourceTree = "<group>"; };
+		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		32CA4F630368D1EE00C91783 /* MbSeq_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MbSeq_Prefix.pch; sourceTree = "<group>"; };
+		520512501177BDCC00B60101 /* app_lcd.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = app_lcd.cpp; path = ../../../../modules/app_lcd/ipad/app_lcd.cpp; sourceTree = SOURCE_ROOT; };
+		520512511177BDCC00B60101 /* app_lcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = app_lcd.h; path = ../../../../modules/app_lcd/ipad/app_lcd.h; sourceTree = SOURCE_ROOT; };
+		520512521177BDCC00B60101 /* CLcd.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CLcd.cpp; path = ../../../../modules/app_lcd/ipad/CLcd.cpp; sourceTree = SOURCE_ROOT; };
+		520512531177BDCC00B60101 /* CLcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CLcd.h; path = ../../../../modules/app_lcd/ipad/CLcd.h; sourceTree = SOURCE_ROOT; };
+		520512541177BDCC00B60101 /* CLcdView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CLcdView.h; path = ../../../../modules/app_lcd/ipad/CLcdView.h; sourceTree = SOURCE_ROOT; };
+		520512551177BDCC00B60101 /* CLcdView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CLcdView.mm; path = ../../../../modules/app_lcd/ipad/CLcdView.mm; sourceTree = SOURCE_ROOT; };
+		520512981177C21900B60101 /* mios32_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_lcd.c; path = ../../../../mios32/common/mios32_lcd.c; sourceTree = SOURCE_ROOT; };
+		520512AB1177C3BF00B60101 /* MbSeqViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MbSeqViewController.mm; sourceTree = "<group>"; };
+		5243246E1229B27E003B950B /* seq_file_gc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_gc.c; path = ../core/seq_file_gc.c; sourceTree = SOURCE_ROOT; };
+		5243246F1229B27E003B950B /* seq_file_gc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_gc.h; path = ../core/seq_file_gc.h; sourceTree = SOURCE_ROOT; };
+		524324711229B29B003B950B /* seq_ui_eth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_eth.c; path = ../core/seq_ui_eth.c; sourceTree = SOURCE_ROOT; };
+		525C5D6013983A6D004DE8E4 /* seq_ui_trklive.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trklive.c; path = ../core/seq_ui_trklive.c; sourceTree = SOURCE_ROOT; };
+		525C5D6913983AB4004DE8E4 /* seq_live.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_live.c; path = ../core/seq_live.c; sourceTree = SOURCE_ROOT; };
+		525C5D6A13983AB4004DE8E4 /* seq_live.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_live.h; path = ../core/seq_live.h; sourceTree = SOURCE_ROOT; };
+		5268E79A13845ED800520B92 /* seq_file_bm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_bm.c; path = ../core/seq_file_bm.c; sourceTree = SOURCE_ROOT; };
+		5268E79B13845ED800520B92 /* seq_file_bm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_bm.h; path = ../core/seq_file_bm.h; sourceTree = SOURCE_ROOT; };
+		5268E79D13845EF000520B92 /* seq_ui_bookmarks.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_bookmarks.c; path = ../core/seq_ui_bookmarks.c; sourceTree = SOURCE_ROOT; };
+		5276AAF713D2FC16006788B6 /* file.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = file.c; path = ../../../../modules/file/file.c; sourceTree = SOURCE_ROOT; };
+		5276AAF813D2FC16006788B6 /* file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = file.h; path = ../../../../modules/file/file.h; sourceTree = SOURCE_ROOT; };
+		5276AAF913D2FC16006788B6 /* file.mk */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = file.mk; path = ../../../../modules/file/file.mk; sourceTree = SOURCE_ROOT; };
+		527779B811B72BF6009D9083 /* OscPort.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OscPort.h; sourceTree = "<group>"; };
+		527779B911B72BF6009D9083 /* OscPort.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OscPort.m; sourceTree = "<group>"; };
+		527779BA11B72BF6009D9083 /* OscServer_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OscServer_Wrapper.h; sourceTree = "<group>"; };
+		527779BB11B72BF6009D9083 /* OscServer_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OscServer_Wrapper.m; sourceTree = "<group>"; };
+		527779BE11B72C00009D9083 /* UDPEcho.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UDPEcho.h; sourceTree = "<group>"; };
+		527779BF11B72C00009D9083 /* UDPEcho.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UDPEcho.m; sourceTree = "<group>"; };
+		527779E011B72F2F009D9083 /* seq_midi_osc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_osc.c; path = ../core/seq_midi_osc.c; sourceTree = SOURCE_ROOT; };
+		527779E111B72F2F009D9083 /* seq_midi_osc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_osc.h; path = ../core/seq_midi_osc.h; sourceTree = SOURCE_ROOT; };
+		527779ED11B72F5D009D9083 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
+		529FA66E1178CC8C00293622 /* SeqButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SeqButton.h; sourceTree = "<group>"; };
+		529FA66F1178CC8C00293622 /* SeqButton.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SeqButton.mm; sourceTree = "<group>"; };
+		529FA74C1178EF1F00293622 /* SeqEncoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SeqEncoder.h; sourceTree = "<group>"; };
+		529FA74D1178EF1F00293622 /* SeqEncoder.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SeqEncoder.mm; sourceTree = "<group>"; };
+		529FA7DA117909A400293622 /* FreeRTOS_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FreeRTOS_Wrapper.h; sourceTree = "<group>"; };
+		529FA7DB117909A400293622 /* FreeRTOS_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FreeRTOS_Wrapper.m; sourceTree = "<group>"; };
+		529FA7DC117909A400293622 /* MIOS32_BOARD_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_BOARD_Wrapper.h; sourceTree = "<group>"; };
+		529FA7DD117909A400293622 /* MIOS32_BOARD_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_BOARD_Wrapper.m; sourceTree = "<group>"; };
+		529FA7DE117909A400293622 /* MIOS32_COM_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_COM_Wrapper.h; sourceTree = "<group>"; };
+		529FA7DF117909A400293622 /* MIOS32_COM_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_COM_Wrapper.m; sourceTree = "<group>"; };
+		529FA7E0117909A400293622 /* MIOS32_DELAY_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_DELAY_Wrapper.h; sourceTree = "<group>"; };
+		529FA7E1117909A400293622 /* MIOS32_DELAY_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_DELAY_Wrapper.m; sourceTree = "<group>"; };
+		529FA7E2117909A400293622 /* MIOS32_ENC_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_ENC_Wrapper.h; sourceTree = "<group>"; };
+		529FA7E3117909A400293622 /* MIOS32_ENC_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_ENC_Wrapper.m; sourceTree = "<group>"; };
+		529FA7E4117909A400293622 /* MIOS32_IRQ_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_IRQ_Wrapper.h; sourceTree = "<group>"; };
+		529FA7E5117909A400293622 /* MIOS32_IRQ_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_IRQ_Wrapper.m; sourceTree = "<group>"; };
+		529FA7E6117909A400293622 /* MIOS32_MIDI_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_MIDI_Wrapper.h; sourceTree = "<group>"; };
+		529FA7E7117909A400293622 /* MIOS32_MIDI_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_MIDI_Wrapper.m; sourceTree = "<group>"; };
+		529FA7E8117909A400293622 /* MIOS32_SDCARD_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_SDCARD_Wrapper.h; sourceTree = "<group>"; };
+		529FA7E9117909A400293622 /* MIOS32_SDCARD_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_SDCARD_Wrapper.m; sourceTree = "<group>"; };
+		529FA7EA117909A400293622 /* MIOS32_SPI_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_SPI_Wrapper.h; sourceTree = "<group>"; };
+		529FA7EB117909A400293622 /* MIOS32_SPI_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_SPI_Wrapper.m; sourceTree = "<group>"; };
+		529FA7EC117909A400293622 /* MIOS32_SRIO_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_SRIO_Wrapper.h; sourceTree = "<group>"; };
+		529FA7ED117909A400293622 /* MIOS32_SRIO_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_SRIO_Wrapper.m; sourceTree = "<group>"; };
+		529FA7EE117909A400293622 /* MIOS32_STOPWATCH_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_STOPWATCH_Wrapper.h; sourceTree = "<group>"; };
+		529FA7EF117909A400293622 /* MIOS32_STOPWATCH_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_STOPWATCH_Wrapper.m; sourceTree = "<group>"; };
+		529FA7F0117909A400293622 /* MIOS32_SYS_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_SYS_Wrapper.h; sourceTree = "<group>"; };
+		529FA7F1117909A400293622 /* MIOS32_SYS_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_SYS_Wrapper.m; sourceTree = "<group>"; };
+		529FA7F2117909A400293622 /* MIOS32_TIMER_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIOS32_TIMER_Wrapper.h; sourceTree = "<group>"; };
+		529FA7F3117909A400293622 /* MIOS32_TIMER_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIOS32_TIMER_Wrapper.m; sourceTree = "<group>"; };
+		529FA7F4117909A400293622 /* Tasks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tasks.h; sourceTree = "<group>"; };
+		529FA7F5117909A400293622 /* Tasks.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Tasks.m; sourceTree = "<group>"; };
+		529FA81D11790B6700293622 /* app.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = app.c; path = ../core/app.c; sourceTree = SOURCE_ROOT; };
+		529FA81E11790B6700293622 /* app.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = app.h; path = ../core/app.h; sourceTree = SOURCE_ROOT; };
+		529FA82011790B6700293622 /* seq_cc_labels.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_cc_labels.c; path = ../core/seq_cc_labels.c; sourceTree = SOURCE_ROOT; };
+		529FA82111790B6700293622 /* seq_cc_labels.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_cc_labels.h; path = ../core/seq_cc_labels.h; sourceTree = SOURCE_ROOT; };
+		529FA82311790B6700293622 /* seq_cc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_cc.c; path = ../core/seq_cc.c; sourceTree = SOURCE_ROOT; };
+		529FA82411790B6700293622 /* seq_cc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_cc.h; path = ../core/seq_cc.h; sourceTree = SOURCE_ROOT; };
+		529FA82611790B6700293622 /* seq_chord.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_chord.c; path = ../core/seq_chord.c; sourceTree = SOURCE_ROOT; };
+		529FA82711790B6700293622 /* seq_chord.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_chord.h; path = ../core/seq_chord.h; sourceTree = SOURCE_ROOT; };
+		529FA82911790B6700293622 /* seq_core.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_core.c; path = ../core/seq_core.c; sourceTree = SOURCE_ROOT; };
+		529FA82A11790B6700293622 /* seq_core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_core.h; path = ../core/seq_core.h; sourceTree = SOURCE_ROOT; };
+		529FA82C11790B6700293622 /* seq_file_b.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_b.c; path = ../core/seq_file_b.c; sourceTree = SOURCE_ROOT; };
+		529FA82D11790B6700293622 /* seq_file_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_b.h; path = ../core/seq_file_b.h; sourceTree = SOURCE_ROOT; };
+		529FA82F11790B6700293622 /* seq_file_c.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_c.c; path = ../core/seq_file_c.c; sourceTree = SOURCE_ROOT; };
+		529FA83011790B6700293622 /* seq_file_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_c.h; path = ../core/seq_file_c.h; sourceTree = SOURCE_ROOT; };
+		529FA83211790B6700293622 /* seq_file_g.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_g.c; path = ../core/seq_file_g.c; sourceTree = SOURCE_ROOT; };
+		529FA83311790B6700293622 /* seq_file_g.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_g.h; path = ../core/seq_file_g.h; sourceTree = SOURCE_ROOT; };
+		529FA83511790B6700293622 /* seq_file_hw.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_hw.c; path = ../core/seq_file_hw.c; sourceTree = SOURCE_ROOT; };
+		529FA83611790B6700293622 /* seq_file_hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_hw.h; path = ../core/seq_file_hw.h; sourceTree = SOURCE_ROOT; };
+		529FA83811790B6700293622 /* seq_file_m.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_m.c; path = ../core/seq_file_m.c; sourceTree = SOURCE_ROOT; };
+		529FA83911790B6700293622 /* seq_file_m.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_m.h; path = ../core/seq_file_m.h; sourceTree = SOURCE_ROOT; };
+		529FA83B11790B6700293622 /* seq_file_s.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_s.c; path = ../core/seq_file_s.c; sourceTree = SOURCE_ROOT; };
+		529FA83C11790B6700293622 /* seq_file_s.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_s.h; path = ../core/seq_file_s.h; sourceTree = SOURCE_ROOT; };
+		529FA83E11790B6700293622 /* seq_file_t.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_t.c; path = ../core/seq_file_t.c; sourceTree = SOURCE_ROOT; };
+		529FA83F11790B6700293622 /* seq_file_t.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_t.h; path = ../core/seq_file_t.h; sourceTree = SOURCE_ROOT; };
+		529FA84111790B6700293622 /* seq_file.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file.c; path = ../core/seq_file.c; sourceTree = SOURCE_ROOT; };
+		529FA84211790B6700293622 /* seq_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file.h; path = ../core/seq_file.h; sourceTree = SOURCE_ROOT; };
+		529FA84411790B6700293622 /* seq_groove.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_groove.c; path = ../core/seq_groove.c; sourceTree = SOURCE_ROOT; };
+		529FA84511790B6700293622 /* seq_groove.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_groove.h; path = ../core/seq_groove.h; sourceTree = SOURCE_ROOT; };
+		529FA84711790B6700293622 /* seq_humanize.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_humanize.c; path = ../core/seq_humanize.c; sourceTree = SOURCE_ROOT; };
+		529FA84811790B6700293622 /* seq_humanize.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_humanize.h; path = ../core/seq_humanize.h; sourceTree = SOURCE_ROOT; };
+		529FA84A11790B6700293622 /* seq_hwcfg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_hwcfg.c; path = ../core/seq_hwcfg.c; sourceTree = SOURCE_ROOT; };
+		529FA84B11790B6700293622 /* seq_hwcfg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_hwcfg.h; path = ../core/seq_hwcfg.h; sourceTree = SOURCE_ROOT; };
+		529FA84D11790B6700293622 /* seq_label.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_label.c; path = ../core/seq_label.c; sourceTree = SOURCE_ROOT; };
+		529FA84E11790B6700293622 /* seq_label.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_label.h; path = ../core/seq_label.h; sourceTree = SOURCE_ROOT; };
+		529FA85011790B6700293622 /* seq_layer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_layer.c; path = ../core/seq_layer.c; sourceTree = SOURCE_ROOT; };
+		529FA85111790B6700293622 /* seq_layer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_layer.h; path = ../core/seq_layer.h; sourceTree = SOURCE_ROOT; };
+		529FA85311790B6700293622 /* seq_lcd_logo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_lcd_logo.c; path = ../core/seq_lcd_logo.c; sourceTree = SOURCE_ROOT; };
+		529FA85411790B6700293622 /* seq_lcd_logo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_lcd_logo.h; path = ../core/seq_lcd_logo.h; sourceTree = SOURCE_ROOT; };
+		529FA85711790B6700293622 /* seq_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_lcd.c; path = ../core/seq_lcd.c; sourceTree = SOURCE_ROOT; };
+		529FA85811790B6700293622 /* seq_lcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_lcd.h; path = ../core/seq_lcd.h; sourceTree = SOURCE_ROOT; };
+		529FA85A11790B6700293622 /* seq_led.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_led.c; path = ../core/seq_led.c; sourceTree = SOURCE_ROOT; };
+		529FA85B11790B6700293622 /* seq_led.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_led.h; path = ../core/seq_led.h; sourceTree = SOURCE_ROOT; };
+		529FA85D11790B6700293622 /* seq_lfo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_lfo.c; path = ../core/seq_lfo.c; sourceTree = SOURCE_ROOT; };
+		529FA85E11790B6700293622 /* seq_lfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_lfo.h; path = ../core/seq_lfo.h; sourceTree = SOURCE_ROOT; };
+		529FA86011790B6700293622 /* seq_midexp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midexp.c; path = ../core/seq_midexp.c; sourceTree = SOURCE_ROOT; };
+		529FA86111790B6700293622 /* seq_midexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midexp.h; path = ../core/seq_midexp.h; sourceTree = SOURCE_ROOT; };
+		529FA86611790B6700293622 /* seq_midi_in.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_in.c; path = ../core/seq_midi_in.c; sourceTree = SOURCE_ROOT; };
+		529FA86711790B6700293622 /* seq_midi_in.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_in.h; path = ../core/seq_midi_in.h; sourceTree = SOURCE_ROOT; };
+		529FA86911790B6700293622 /* seq_midi_port.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_port.c; path = ../core/seq_midi_port.c; sourceTree = SOURCE_ROOT; };
+		529FA86A11790B6700293622 /* seq_midi_port.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_port.h; path = ../core/seq_midi_port.h; sourceTree = SOURCE_ROOT; };
+		529FA86C11790B6700293622 /* seq_midi_router.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_router.c; path = ../core/seq_midi_router.c; sourceTree = SOURCE_ROOT; };
+		529FA86D11790B6700293622 /* seq_midi_router.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_router.h; path = ../core/seq_midi_router.h; sourceTree = SOURCE_ROOT; };
+		529FA86F11790B6700293622 /* seq_midi_sysex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_sysex.c; path = ../core/seq_midi_sysex.c; sourceTree = SOURCE_ROOT; };
+		529FA87011790B6700293622 /* seq_midi_sysex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_sysex.h; path = ../core/seq_midi_sysex.h; sourceTree = SOURCE_ROOT; };
+		529FA87211790B6700293622 /* seq_midimp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midimp.c; path = ../core/seq_midimp.c; sourceTree = SOURCE_ROOT; };
+		529FA87311790B6700293622 /* seq_midimp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midimp.h; path = ../core/seq_midimp.h; sourceTree = SOURCE_ROOT; };
+		529FA87511790B6700293622 /* seq_midply.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midply.c; path = ../core/seq_midply.c; sourceTree = SOURCE_ROOT; };
+		529FA87611790B6700293622 /* seq_midply.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midply.h; path = ../core/seq_midply.h; sourceTree = SOURCE_ROOT; };
+		529FA87811790B6700293622 /* seq_mixer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_mixer.c; path = ../core/seq_mixer.c; sourceTree = SOURCE_ROOT; };
+		529FA87911790B6700293622 /* seq_mixer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_mixer.h; path = ../core/seq_mixer.h; sourceTree = SOURCE_ROOT; };
+		529FA87B11790B6700293622 /* seq_morph.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_morph.c; path = ../core/seq_morph.c; sourceTree = SOURCE_ROOT; };
+		529FA87C11790B6700293622 /* seq_morph.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_morph.h; path = ../core/seq_morph.h; sourceTree = SOURCE_ROOT; };
+		529FA87E11790B6700293622 /* seq_par.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_par.c; path = ../core/seq_par.c; sourceTree = SOURCE_ROOT; };
+		529FA87F11790B6700293622 /* seq_par.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_par.h; path = ../core/seq_par.h; sourceTree = SOURCE_ROOT; };
+		529FA88111790B6700293622 /* seq_pattern.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_pattern.c; path = ../core/seq_pattern.c; sourceTree = SOURCE_ROOT; };
+		529FA88211790B6700293622 /* seq_pattern.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_pattern.h; path = ../core/seq_pattern.h; sourceTree = SOURCE_ROOT; };
+		529FA88411790B6700293622 /* seq_random.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_random.c; path = ../core/seq_random.c; sourceTree = SOURCE_ROOT; };
+		529FA88511790B6700293622 /* seq_random.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_random.h; path = ../core/seq_random.h; sourceTree = SOURCE_ROOT; };
+		529FA88711790B6700293622 /* seq_record.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_record.c; path = ../core/seq_record.c; sourceTree = SOURCE_ROOT; };
+		529FA88811790B6700293622 /* seq_record.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_record.h; path = ../core/seq_record.h; sourceTree = SOURCE_ROOT; };
+		529FA88A11790B6700293622 /* seq_scale.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_scale.c; path = ../core/seq_scale.c; sourceTree = SOURCE_ROOT; };
+		529FA88B11790B6700293622 /* seq_scale.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_scale.h; path = ../core/seq_scale.h; sourceTree = SOURCE_ROOT; };
+		529FA88D11790B6700293622 /* seq_song.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_song.c; path = ../core/seq_song.c; sourceTree = SOURCE_ROOT; };
+		529FA88E11790B6700293622 /* seq_song.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_song.h; path = ../core/seq_song.h; sourceTree = SOURCE_ROOT; };
+		529FA89011790B6700293622 /* seq_statistics.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_statistics.c; path = ../core/seq_statistics.c; sourceTree = SOURCE_ROOT; };
+		529FA89111790B6700293622 /* seq_statistics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_statistics.h; path = ../core/seq_statistics.h; sourceTree = SOURCE_ROOT; };
+		529FA89311790B6700293622 /* seq_terminal.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_terminal.c; path = ../core/seq_terminal.c; sourceTree = SOURCE_ROOT; };
+		529FA89411790B6700293622 /* seq_terminal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_terminal.h; path = ../core/seq_terminal.h; sourceTree = SOURCE_ROOT; };
+		529FA89611790B6700293622 /* seq_trg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_trg.c; path = ../core/seq_trg.c; sourceTree = SOURCE_ROOT; };
+		529FA89711790B6700293622 /* seq_trg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_trg.h; path = ../core/seq_trg.h; sourceTree = SOURCE_ROOT; };
+		529FA89911790B6700293622 /* seq_ui_bpm_presets.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_bpm_presets.c; path = ../core/seq_ui_bpm_presets.c; sourceTree = SOURCE_ROOT; };
+		529FA89B11790B6700293622 /* seq_ui_bpm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_bpm.c; path = ../core/seq_ui_bpm.c; sourceTree = SOURCE_ROOT; };
+		529FA89D11790B6700293622 /* seq_ui_disk.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_disk.c; path = ../core/seq_ui_disk.c; sourceTree = SOURCE_ROOT; };
+		529FA89F11790B6700293622 /* seq_ui_edit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_edit.c; path = ../core/seq_ui_edit.c; sourceTree = SOURCE_ROOT; };
+		529FA8A111790B6700293622 /* seq_ui_fx_echo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx_echo.c; path = ../core/seq_ui_fx_echo.c; sourceTree = SOURCE_ROOT; };
+		529FA8A311790B6700293622 /* seq_ui_fx_humanize.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx_humanize.c; path = ../core/seq_ui_fx_humanize.c; sourceTree = SOURCE_ROOT; };
+		529FA8A511790B6700293622 /* seq_ui_fx_lfo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx_lfo.c; path = ../core/seq_ui_fx_lfo.c; sourceTree = SOURCE_ROOT; };
+		529FA8A711790B6700293622 /* seq_ui_fx_limit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx_limit.c; path = ../core/seq_ui_fx_limit.c; sourceTree = SOURCE_ROOT; };
+		529FA8A911790B6700293622 /* seq_ui_fx_loop.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx_loop.c; path = ../core/seq_ui_fx_loop.c; sourceTree = SOURCE_ROOT; };
+		529FA8AB11790B6700293622 /* seq_ui_fx_scale.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx_scale.c; path = ../core/seq_ui_fx_scale.c; sourceTree = SOURCE_ROOT; };
+		529FA8AD11790B6700293622 /* seq_ui_fx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx.c; path = ../core/seq_ui_fx.c; sourceTree = SOURCE_ROOT; };
+		529FA8AF11790B6700293622 /* seq_ui_info.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_info.c; path = ../core/seq_ui_info.c; sourceTree = SOURCE_ROOT; };
+		529FA8B111790B6700293622 /* seq_ui_manual.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_manual.c; path = ../core/seq_ui_manual.c; sourceTree = SOURCE_ROOT; };
+		529FA8B311790B6700293622 /* seq_ui_menu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_menu.c; path = ../core/seq_ui_menu.c; sourceTree = SOURCE_ROOT; };
+		529FA8B511790B6700293622 /* seq_ui_metronome.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_metronome.c; path = ../core/seq_ui_metronome.c; sourceTree = SOURCE_ROOT; };
+		529FA8B711790B6700293622 /* seq_ui_midi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_midi.c; path = ../core/seq_ui_midi.c; sourceTree = SOURCE_ROOT; };
+		529FA8B911790B6700293622 /* seq_ui_midimon.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_midimon.c; path = ../core/seq_ui_midimon.c; sourceTree = SOURCE_ROOT; };
+		529FA8BB11790B6700293622 /* seq_ui_mixer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_mixer.c; path = ../core/seq_ui_mixer.c; sourceTree = SOURCE_ROOT; };
+		529FA8BD11790B6700293622 /* seq_ui_mute.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_mute.c; path = ../core/seq_ui_mute.c; sourceTree = SOURCE_ROOT; };
+		529FA8BF11790B6700293622 /* seq_ui_opt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_opt.c; path = ../core/seq_ui_opt.c; sourceTree = SOURCE_ROOT; };
+		529FA8C211790B6700293622 /* seq_ui_parsel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_parsel.c; path = ../core/seq_ui_parsel.c; sourceTree = SOURCE_ROOT; };
+		529FA8C411790B6700293622 /* seq_ui_pattern.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_pattern.c; path = ../core/seq_ui_pattern.c; sourceTree = SOURCE_ROOT; };
+		529FA8C611790B6700293622 /* seq_ui_pmute.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_pmute.c; path = ../core/seq_ui_pmute.c; sourceTree = SOURCE_ROOT; };
+		529FA8C811790B6700293622 /* seq_ui_save.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_save.c; path = ../core/seq_ui_save.c; sourceTree = SOURCE_ROOT; };
+		529FA8CA11790B6700293622 /* seq_ui_song.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_song.c; path = ../core/seq_ui_song.c; sourceTree = SOURCE_ROOT; };
+		529FA8CC11790B6700293622 /* seq_ui_stepsel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_stepsel.c; path = ../core/seq_ui_stepsel.c; sourceTree = SOURCE_ROOT; };
+		529FA8CE11790B6700293622 /* seq_ui_sysex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_sysex.c; path = ../core/seq_ui_sysex.c; sourceTree = SOURCE_ROOT; };
+		529FA8D011790B6700293622 /* seq_ui_todo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_todo.c; path = ../core/seq_ui_todo.c; sourceTree = SOURCE_ROOT; };
+		529FA8D211790B6700293622 /* seq_ui_tracksel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_tracksel.c; path = ../core/seq_ui_tracksel.c; sourceTree = SOURCE_ROOT; };
+		529FA8D411790B6700293622 /* seq_ui_trgasg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trgasg.c; path = ../core/seq_ui_trgasg.c; sourceTree = SOURCE_ROOT; };
+		529FA8D611790B6700293622 /* seq_ui_trgsel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trgsel.c; path = ../core/seq_ui_trgsel.c; sourceTree = SOURCE_ROOT; };
+		529FA8D811790B6700293622 /* seq_ui_trkdir.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkdir.c; path = ../core/seq_ui_trkdir.c; sourceTree = SOURCE_ROOT; };
+		529FA8DA11790B6700293622 /* seq_ui_trkdiv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkdiv.c; path = ../core/seq_ui_trkdiv.c; sourceTree = SOURCE_ROOT; };
+		529FA8DC11790B6700293622 /* seq_ui_trkevnt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkevnt.c; path = ../core/seq_ui_trkevnt.c; sourceTree = SOURCE_ROOT; };
+		529FA8DE11790B6700293622 /* seq_ui_trkgrv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkgrv.c; path = ../core/seq_ui_trkgrv.c; sourceTree = SOURCE_ROOT; };
+		529FA8E011790B6700293622 /* seq_ui_trklen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trklen.c; path = ../core/seq_ui_trklen.c; sourceTree = SOURCE_ROOT; };
+		529FA8E211790B6700293622 /* seq_ui_trkmode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkmode.c; path = ../core/seq_ui_trkmode.c; sourceTree = SOURCE_ROOT; };
+		529FA8E411790B6700293622 /* seq_ui_trkmorph.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkmorph.c; path = ../core/seq_ui_trkmorph.c; sourceTree = SOURCE_ROOT; };
+		529FA8E611790B6700293622 /* seq_ui_trkrec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkrec.c; path = ../core/seq_ui_trkrec.c; sourceTree = SOURCE_ROOT; };
+		529FA8E811790B6700293622 /* seq_ui_trkrnd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkrnd.c; path = ../core/seq_ui_trkrnd.c; sourceTree = SOURCE_ROOT; };
+		529FA8EA11790B6700293622 /* seq_ui_trktran.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trktran.c; path = ../core/seq_ui_trktran.c; sourceTree = SOURCE_ROOT; };
+		529FA8EC11790B6700293622 /* seq_ui_util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_util.c; path = ../core/seq_ui_util.c; sourceTree = SOURCE_ROOT; };
+		529FA8EE11790B6700293622 /* seq_ui.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui.c; path = ../core/seq_ui.c; sourceTree = SOURCE_ROOT; };
+		529FA8EF11790B6700293622 /* seq_ui.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_ui.h; path = ../core/seq_ui.h; sourceTree = SOURCE_ROOT; };
+		529FA8F111790B6700293622 /* tasks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tasks.h; path = ../core/tasks.h; sourceTree = SOURCE_ROOT; };
+		529FA9A911790CAB00293622 /* aout.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = aout.c; path = ../../../../modules/aout/aout.c; sourceTree = SOURCE_ROOT; };
+		529FA9AA11790CAB00293622 /* aout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = aout.h; path = ../../../../modules/aout/aout.h; sourceTree = SOURCE_ROOT; };
+		529FA9AC11790CB900293622 /* blm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = blm.c; path = ../../../../modules/blm/blm.c; sourceTree = SOURCE_ROOT; };
+		529FA9AD11790CB900293622 /* blm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = blm.h; path = ../../../../modules/blm/blm.h; sourceTree = SOURCE_ROOT; };
+		529FA9AF11790CC800293622 /* blm_x.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = blm_x.c; path = ../../../../modules/blm_x/blm_x.c; sourceTree = SOURCE_ROOT; };
+		529FA9B011790CC800293622 /* blm_x.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = blm_x.h; path = ../../../../modules/blm_x/blm_x.h; sourceTree = SOURCE_ROOT; };
+		529FA9B211790CE000293622 /* mid_parser.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mid_parser.c; path = ../../../../modules/midifile/mid_parser.c; sourceTree = SOURCE_ROOT; };
+		529FA9B311790CE000293622 /* mid_parser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mid_parser.h; path = ../../../../modules/midifile/mid_parser.h; sourceTree = SOURCE_ROOT; };
+		529FA9B511790CF900293622 /* notestack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = notestack.c; path = ../../../../modules/notestack/notestack.c; sourceTree = SOURCE_ROOT; };
+		529FA9B611790CF900293622 /* notestack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = notestack.h; path = ../../../../modules/notestack/notestack.h; sourceTree = SOURCE_ROOT; };
+		529FA9B811790D0900293622 /* jsw_rand.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = jsw_rand.c; path = ../../../../modules/random/jsw_rand.c; sourceTree = SOURCE_ROOT; };
+		529FA9B911790D0900293622 /* jsw_rand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = jsw_rand.h; path = ../../../../modules/random/jsw_rand.h; sourceTree = SOURCE_ROOT; };
+		529FA9BB11790D2100293622 /* seq_bpm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_bpm.c; path = ../../../../modules/sequencer/seq_bpm.c; sourceTree = SOURCE_ROOT; };
+		529FA9BC11790D2100293622 /* seq_bpm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_bpm.h; path = ../../../../modules/sequencer/seq_bpm.h; sourceTree = SOURCE_ROOT; };
+		529FA9BD11790D2100293622 /* seq_midi_out.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_out.c; path = ../../../../modules/sequencer/seq_midi_out.c; sourceTree = SOURCE_ROOT; };
+		529FA9BE11790D2100293622 /* seq_midi_out.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_out.h; path = ../../../../modules/sequencer/seq_midi_out.h; sourceTree = SOURCE_ROOT; };
+		529FA9DB1179107800293622 /* mios32_din.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_din.c; path = ../../../../mios32/common/mios32_din.c; sourceTree = SOURCE_ROOT; };
+		529FA9DC1179107800293622 /* mios32_dout.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_dout.c; path = ../../../../mios32/common/mios32_dout.c; sourceTree = SOURCE_ROOT; };
+		529FA9DE1179107800293622 /* mios32_midi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_midi.c; path = ../../../../mios32/common/mios32_midi.c; sourceTree = SOURCE_ROOT; };
+		529FA9DF1179107800293622 /* mios32_osc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_osc.c; path = ../../../../mios32/common/mios32_osc.c; sourceTree = SOURCE_ROOT; };
+		529FA9F3117911CE00293622 /* mios32_uart_midi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_uart_midi.c; path = ../../../../mios32/common/mios32_uart_midi.c; sourceTree = SOURCE_ROOT; };
+		529FA9F71179121300293622 /* FATFS_Wrapper_Dir.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = FATFS_Wrapper_Dir.c; sourceTree = "<group>"; };
+		529FA9F81179121300293622 /* FATFS_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FATFS_Wrapper.h; sourceTree = "<group>"; };
+		529FA9F91179121300293622 /* FATFS_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FATFS_Wrapper.m; sourceTree = "<group>"; };
+		52E1143F1256BD41001E6E43 /* seq_cv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_cv.c; path = ../core/seq_cv.c; sourceTree = SOURCE_ROOT; };
+		52E114401256BD41001E6E43 /* seq_cv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_cv.h; path = ../core/seq_cv.h; sourceTree = SOURCE_ROOT; };
+		52E114411256BD41001E6E43 /* seq_ui_cv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_cv.c; path = ../core/seq_ui_cv.c; sourceTree = SOURCE_ROOT; };
+		52F15C40119C9D0900E40C6C /* seq_blm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_blm.c; path = ../core/seq_blm.c; sourceTree = SOURCE_ROOT; };
+		52F15C41119C9D0900E40C6C /* seq_blm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_blm.h; path = ../core/seq_blm.h; sourceTree = SOURCE_ROOT; };
+		8D1107310486CEB800E47090 /* MbSeq-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "MbSeq-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1D60588F0D05DD3D006BFB54 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */,
+				1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */,
+				288765A50DF7441C002DB57D /* CoreGraphics.framework in Frameworks */,
+				527779EE11B72F5D009D9083 /* CFNetwork.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		080E96DDFE201D6D7F000001 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				527779BE11B72C00009D9083 /* UDPEcho.h */,
+				527779BF11B72C00009D9083 /* UDPEcho.m */,
+				527779B811B72BF6009D9083 /* OscPort.h */,
+				527779B911B72BF6009D9083 /* OscPort.m */,
+				527779BA11B72BF6009D9083 /* OscServer_Wrapper.h */,
+				527779BB11B72BF6009D9083 /* OscServer_Wrapper.m */,
+				529FA9F71179121300293622 /* FATFS_Wrapper_Dir.c */,
+				529FA9F81179121300293622 /* FATFS_Wrapper.h */,
+				529FA9F91179121300293622 /* FATFS_Wrapper.m */,
+				529FA7DA117909A400293622 /* FreeRTOS_Wrapper.h */,
+				529FA7DB117909A400293622 /* FreeRTOS_Wrapper.m */,
+				529FA7DC117909A400293622 /* MIOS32_BOARD_Wrapper.h */,
+				529FA7DD117909A400293622 /* MIOS32_BOARD_Wrapper.m */,
+				529FA7DE117909A400293622 /* MIOS32_COM_Wrapper.h */,
+				529FA7DF117909A400293622 /* MIOS32_COM_Wrapper.m */,
+				529FA7E0117909A400293622 /* MIOS32_DELAY_Wrapper.h */,
+				529FA7E1117909A400293622 /* MIOS32_DELAY_Wrapper.m */,
+				529FA7E2117909A400293622 /* MIOS32_ENC_Wrapper.h */,
+				529FA7E3117909A400293622 /* MIOS32_ENC_Wrapper.m */,
+				529FA7E4117909A400293622 /* MIOS32_IRQ_Wrapper.h */,
+				529FA7E5117909A400293622 /* MIOS32_IRQ_Wrapper.m */,
+				529FA7E6117909A400293622 /* MIOS32_MIDI_Wrapper.h */,
+				529FA7E7117909A400293622 /* MIOS32_MIDI_Wrapper.m */,
+				529FA7E8117909A400293622 /* MIOS32_SDCARD_Wrapper.h */,
+				529FA7E9117909A400293622 /* MIOS32_SDCARD_Wrapper.m */,
+				529FA7EA117909A400293622 /* MIOS32_SPI_Wrapper.h */,
+				529FA7EB117909A400293622 /* MIOS32_SPI_Wrapper.m */,
+				529FA7EC117909A400293622 /* MIOS32_SRIO_Wrapper.h */,
+				529FA7ED117909A400293622 /* MIOS32_SRIO_Wrapper.m */,
+				529FA7EE117909A400293622 /* MIOS32_STOPWATCH_Wrapper.h */,
+				529FA7EF117909A400293622 /* MIOS32_STOPWATCH_Wrapper.m */,
+				529FA7F0117909A400293622 /* MIOS32_SYS_Wrapper.h */,
+				529FA7F1117909A400293622 /* MIOS32_SYS_Wrapper.m */,
+				529FA7F2117909A400293622 /* MIOS32_TIMER_Wrapper.h */,
+				529FA7F3117909A400293622 /* MIOS32_TIMER_Wrapper.m */,
+				529FA7F4117909A400293622 /* Tasks.h */,
+				529FA7F5117909A400293622 /* Tasks.m */,
+				529FA74C1178EF1F00293622 /* SeqEncoder.h */,
+				529FA74D1178EF1F00293622 /* SeqEncoder.mm */,
+				529FA66E1178CC8C00293622 /* SeqButton.h */,
+				529FA66F1178CC8C00293622 /* SeqButton.mm */,
+				520512521177BDCC00B60101 /* CLcd.cpp */,
+				520512531177BDCC00B60101 /* CLcd.h */,
+				520512541177BDCC00B60101 /* CLcdView.h */,
+				520512551177BDCC00B60101 /* CLcdView.mm */,
+				1D3623240D0F684500981E51 /* MbSeqAppDelegate.h */,
+				1D3623250D0F684500981E51 /* MbSeqAppDelegate.mm */,
+				28D7ACF60DDB3853001CB0EB /* MbSeqViewController.h */,
+				520512AB1177C3BF00B60101 /* MbSeqViewController.mm */,
+			);
+			path = Classes;
+			sourceTree = "<group>";
+		};
+		19C28FACFE9D520D11CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1D6058910D05DD3D006BFB54 /* MbSeq.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
+			isa = PBXGroup;
+			children = (
+				529FA9DA11790E1400293622 /* MIOS32 */,
+				529FA9A811790C9000293622 /* Modules */,
+				529FA81C11790B5600293622 /* Core */,
+				080E96DDFE201D6D7F000001 /* Classes */,
+				29B97315FDCFA39411CA2CEA /* Other Sources */,
+				29B97317FDCFA39411CA2CEA /* Resources */,
+				29B97323FDCFA39411CA2CEA /* Frameworks */,
+				19C28FACFE9D520D11CA2CBB /* Products */,
+			);
+			name = CustomTemplate;
+			sourceTree = "<group>";
+		};
+		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
+			isa = PBXGroup;
+			children = (
+				32CA4F630368D1EE00C91783 /* MbSeq_Prefix.pch */,
+				29B97316FDCFA39411CA2CEA /* main.m */,
+			);
+			name = "Other Sources";
+			sourceTree = "<group>";
+		};
+		29B97317FDCFA39411CA2CEA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				2899E5210DE3E06400AC0155 /* MbSeqViewController.xib */,
+				28AD733E0D9D9553002E5188 /* MainWindow.xib */,
+				8D1107310486CEB800E47090 /* MbSeq-Info.plist */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1DF5F4DF0D08C38300B7A737 /* UIKit.framework */,
+				1D30AB110D05D00D00671497 /* Foundation.framework */,
+				288765A40DF7441C002DB57D /* CoreGraphics.framework */,
+				527779ED11B72F5D009D9083 /* CFNetwork.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		529FA81C11790B5600293622 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				525C5D6913983AB4004DE8E4 /* seq_live.c */,
+				525C5D6A13983AB4004DE8E4 /* seq_live.h */,
+				525C5D6013983A6D004DE8E4 /* seq_ui_trklive.c */,
+				5268E79D13845EF000520B92 /* seq_ui_bookmarks.c */,
+				5268E79A13845ED800520B92 /* seq_file_bm.c */,
+				5268E79B13845ED800520B92 /* seq_file_bm.h */,
+				52E1143F1256BD41001E6E43 /* seq_cv.c */,
+				52E114401256BD41001E6E43 /* seq_cv.h */,
+				52E114411256BD41001E6E43 /* seq_ui_cv.c */,
+				524324711229B29B003B950B /* seq_ui_eth.c */,
+				5243246E1229B27E003B950B /* seq_file_gc.c */,
+				5243246F1229B27E003B950B /* seq_file_gc.h */,
+				527779E011B72F2F009D9083 /* seq_midi_osc.c */,
+				527779E111B72F2F009D9083 /* seq_midi_osc.h */,
+				52F15C40119C9D0900E40C6C /* seq_blm.c */,
+				52F15C41119C9D0900E40C6C /* seq_blm.h */,
+				529FA81D11790B6700293622 /* app.c */,
+				529FA81E11790B6700293622 /* app.h */,
+				529FA82011790B6700293622 /* seq_cc_labels.c */,
+				529FA82111790B6700293622 /* seq_cc_labels.h */,
+				529FA82311790B6700293622 /* seq_cc.c */,
+				529FA82411790B6700293622 /* seq_cc.h */,
+				529FA82611790B6700293622 /* seq_chord.c */,
+				529FA82711790B6700293622 /* seq_chord.h */,
+				529FA82911790B6700293622 /* seq_core.c */,
+				529FA82A11790B6700293622 /* seq_core.h */,
+				529FA82C11790B6700293622 /* seq_file_b.c */,
+				529FA82D11790B6700293622 /* seq_file_b.h */,
+				529FA82F11790B6700293622 /* seq_file_c.c */,
+				529FA83011790B6700293622 /* seq_file_c.h */,
+				529FA83211790B6700293622 /* seq_file_g.c */,
+				529FA83311790B6700293622 /* seq_file_g.h */,
+				529FA83511790B6700293622 /* seq_file_hw.c */,
+				529FA83611790B6700293622 /* seq_file_hw.h */,
+				529FA83811790B6700293622 /* seq_file_m.c */,
+				529FA83911790B6700293622 /* seq_file_m.h */,
+				529FA83B11790B6700293622 /* seq_file_s.c */,
+				529FA83C11790B6700293622 /* seq_file_s.h */,
+				529FA83E11790B6700293622 /* seq_file_t.c */,
+				529FA83F11790B6700293622 /* seq_file_t.h */,
+				529FA84111790B6700293622 /* seq_file.c */,
+				529FA84211790B6700293622 /* seq_file.h */,
+				529FA84411790B6700293622 /* seq_groove.c */,
+				529FA84511790B6700293622 /* seq_groove.h */,
+				529FA84711790B6700293622 /* seq_humanize.c */,
+				529FA84811790B6700293622 /* seq_humanize.h */,
+				529FA84A11790B6700293622 /* seq_hwcfg.c */,
+				529FA84B11790B6700293622 /* seq_hwcfg.h */,
+				529FA84D11790B6700293622 /* seq_label.c */,
+				529FA84E11790B6700293622 /* seq_label.h */,
+				529FA85011790B6700293622 /* seq_layer.c */,
+				529FA85111790B6700293622 /* seq_layer.h */,
+				529FA85311790B6700293622 /* seq_lcd_logo.c */,
+				529FA85411790B6700293622 /* seq_lcd_logo.h */,
+				529FA85711790B6700293622 /* seq_lcd.c */,
+				529FA85811790B6700293622 /* seq_lcd.h */,
+				529FA85A11790B6700293622 /* seq_led.c */,
+				529FA85B11790B6700293622 /* seq_led.h */,
+				529FA85D11790B6700293622 /* seq_lfo.c */,
+				529FA85E11790B6700293622 /* seq_lfo.h */,
+				529FA86011790B6700293622 /* seq_midexp.c */,
+				529FA86111790B6700293622 /* seq_midexp.h */,
+				529FA86611790B6700293622 /* seq_midi_in.c */,
+				529FA86711790B6700293622 /* seq_midi_in.h */,
+				529FA86911790B6700293622 /* seq_midi_port.c */,
+				529FA86A11790B6700293622 /* seq_midi_port.h */,
+				529FA86C11790B6700293622 /* seq_midi_router.c */,
+				529FA86D11790B6700293622 /* seq_midi_router.h */,
+				529FA86F11790B6700293622 /* seq_midi_sysex.c */,
+				529FA87011790B6700293622 /* seq_midi_sysex.h */,
+				529FA87211790B6700293622 /* seq_midimp.c */,
+				529FA87311790B6700293622 /* seq_midimp.h */,
+				529FA87511790B6700293622 /* seq_midply.c */,
+				529FA87611790B6700293622 /* seq_midply.h */,
+				529FA87811790B6700293622 /* seq_mixer.c */,
+				529FA87911790B6700293622 /* seq_mixer.h */,
+				529FA87B11790B6700293622 /* seq_morph.c */,
+				529FA87C11790B6700293622 /* seq_morph.h */,
+				529FA87E11790B6700293622 /* seq_par.c */,
+				529FA87F11790B6700293622 /* seq_par.h */,
+				529FA88111790B6700293622 /* seq_pattern.c */,
+				529FA88211790B6700293622 /* seq_pattern.h */,
+				529FA88411790B6700293622 /* seq_random.c */,
+				529FA88511790B6700293622 /* seq_random.h */,
+				529FA88711790B6700293622 /* seq_record.c */,
+				529FA88811790B6700293622 /* seq_record.h */,
+				529FA88A11790B6700293622 /* seq_scale.c */,
+				529FA88B11790B6700293622 /* seq_scale.h */,
+				529FA88D11790B6700293622 /* seq_song.c */,
+				529FA88E11790B6700293622 /* seq_song.h */,
+				529FA89011790B6700293622 /* seq_statistics.c */,
+				529FA89111790B6700293622 /* seq_statistics.h */,
+				529FA89311790B6700293622 /* seq_terminal.c */,
+				529FA89411790B6700293622 /* seq_terminal.h */,
+				529FA89611790B6700293622 /* seq_trg.c */,
+				529FA89711790B6700293622 /* seq_trg.h */,
+				529FA89911790B6700293622 /* seq_ui_bpm_presets.c */,
+				529FA89B11790B6700293622 /* seq_ui_bpm.c */,
+				529FA89D11790B6700293622 /* seq_ui_disk.c */,
+				529FA89F11790B6700293622 /* seq_ui_edit.c */,
+				529FA8A111790B6700293622 /* seq_ui_fx_echo.c */,
+				529FA8A311790B6700293622 /* seq_ui_fx_humanize.c */,
+				529FA8A511790B6700293622 /* seq_ui_fx_lfo.c */,
+				529FA8A711790B6700293622 /* seq_ui_fx_limit.c */,
+				529FA8A911790B6700293622 /* seq_ui_fx_loop.c */,
+				529FA8AB11790B6700293622 /* seq_ui_fx_scale.c */,
+				529FA8AD11790B6700293622 /* seq_ui_fx.c */,
+				529FA8AF11790B6700293622 /* seq_ui_info.c */,
+				529FA8B111790B6700293622 /* seq_ui_manual.c */,
+				529FA8B311790B6700293622 /* seq_ui_menu.c */,
+				529FA8B511790B6700293622 /* seq_ui_metronome.c */,
+				529FA8B711790B6700293622 /* seq_ui_midi.c */,
+				529FA8B911790B6700293622 /* seq_ui_midimon.c */,
+				529FA8BB11790B6700293622 /* seq_ui_mixer.c */,
+				529FA8BD11790B6700293622 /* seq_ui_mute.c */,
+				529FA8BF11790B6700293622 /* seq_ui_opt.c */,
+				529FA8C211790B6700293622 /* seq_ui_parsel.c */,
+				529FA8C411790B6700293622 /* seq_ui_pattern.c */,
+				529FA8C611790B6700293622 /* seq_ui_pmute.c */,
+				529FA8C811790B6700293622 /* seq_ui_save.c */,
+				529FA8CA11790B6700293622 /* seq_ui_song.c */,
+				529FA8CC11790B6700293622 /* seq_ui_stepsel.c */,
+				529FA8CE11790B6700293622 /* seq_ui_sysex.c */,
+				529FA8D011790B6700293622 /* seq_ui_todo.c */,
+				529FA8D211790B6700293622 /* seq_ui_tracksel.c */,
+				529FA8D411790B6700293622 /* seq_ui_trgasg.c */,
+				529FA8D611790B6700293622 /* seq_ui_trgsel.c */,
+				529FA8D811790B6700293622 /* seq_ui_trkdir.c */,
+				529FA8DA11790B6700293622 /* seq_ui_trkdiv.c */,
+				529FA8DC11790B6700293622 /* seq_ui_trkevnt.c */,
+				529FA8DE11790B6700293622 /* seq_ui_trkgrv.c */,
+				529FA8E011790B6700293622 /* seq_ui_trklen.c */,
+				529FA8E211790B6700293622 /* seq_ui_trkmode.c */,
+				529FA8E411790B6700293622 /* seq_ui_trkmorph.c */,
+				529FA8E611790B6700293622 /* seq_ui_trkrec.c */,
+				529FA8E811790B6700293622 /* seq_ui_trkrnd.c */,
+				529FA8EA11790B6700293622 /* seq_ui_trktran.c */,
+				529FA8EC11790B6700293622 /* seq_ui_util.c */,
+				529FA8EE11790B6700293622 /* seq_ui.c */,
+				529FA8EF11790B6700293622 /* seq_ui.h */,
+				529FA8F111790B6700293622 /* tasks.h */,
+			);
+			name = Core;
+			sourceTree = "<group>";
+		};
+		529FA9A811790C9000293622 /* Modules */ = {
+			isa = PBXGroup;
+			children = (
+				5276AAF713D2FC16006788B6 /* file.c */,
+				5276AAF813D2FC16006788B6 /* file.h */,
+				5276AAF913D2FC16006788B6 /* file.mk */,
+				529FA9BB11790D2100293622 /* seq_bpm.c */,
+				529FA9BC11790D2100293622 /* seq_bpm.h */,
+				529FA9BD11790D2100293622 /* seq_midi_out.c */,
+				529FA9BE11790D2100293622 /* seq_midi_out.h */,
+				529FA9B811790D0900293622 /* jsw_rand.c */,
+				529FA9B911790D0900293622 /* jsw_rand.h */,
+				529FA9B511790CF900293622 /* notestack.c */,
+				529FA9B611790CF900293622 /* notestack.h */,
+				529FA9B211790CE000293622 /* mid_parser.c */,
+				529FA9B311790CE000293622 /* mid_parser.h */,
+				529FA9AF11790CC800293622 /* blm_x.c */,
+				529FA9B011790CC800293622 /* blm_x.h */,
+				529FA9AC11790CB900293622 /* blm.c */,
+				529FA9AD11790CB900293622 /* blm.h */,
+				529FA9A911790CAB00293622 /* aout.c */,
+				529FA9AA11790CAB00293622 /* aout.h */,
+				520512501177BDCC00B60101 /* app_lcd.cpp */,
+				520512511177BDCC00B60101 /* app_lcd.h */,
+			);
+			name = Modules;
+			sourceTree = "<group>";
+		};
+		529FA9DA11790E1400293622 /* MIOS32 */ = {
+			isa = PBXGroup;
+			children = (
+				529FA9F3117911CE00293622 /* mios32_uart_midi.c */,
+				529FA9DB1179107800293622 /* mios32_din.c */,
+				529FA9DC1179107800293622 /* mios32_dout.c */,
+				529FA9DE1179107800293622 /* mios32_midi.c */,
+				529FA9DF1179107800293622 /* mios32_osc.c */,
+				520512981177C21900B60101 /* mios32_lcd.c */,
+			);
+			name = MIOS32;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1D6058900D05DD3D006BFB54 /* MbSeq */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "MbSeq" */;
+			buildPhases = (
+				1D60588D0D05DD3D006BFB54 /* Resources */,
+				1D60588E0D05DD3D006BFB54 /* Sources */,
+				1D60588F0D05DD3D006BFB54 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MbSeq;
+			productName = MbSeq;
+			productReference = 1D6058910D05DD3D006BFB54 /* MbSeq.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		29B97313FDCFA39411CA2CEA /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "MbSeq" */;
+			compatibilityVersion = "Xcode 3.1";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 29B97314FDCFA39411CA2CEA /* CustomTemplate */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1D6058900D05DD3D006BFB54 /* MbSeq */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1D60588D0D05DD3D006BFB54 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */,
+				2899E5220DE3E06400AC0155 /* MbSeqViewController.xib in Resources */,
+				5276AAFB13D2FC16006788B6 /* file.mk in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1D60588E0D05DD3D006BFB54 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1D60589B0D05DD56006BFB54 /* main.m in Sources */,
+				1D3623260D0F684500981E51 /* MbSeqAppDelegate.mm in Sources */,
+				520512561177BDCC00B60101 /* app_lcd.cpp in Sources */,
+				520512571177BDCC00B60101 /* CLcd.cpp in Sources */,
+				520512581177BDCC00B60101 /* CLcdView.mm in Sources */,
+				520512991177C21900B60101 /* mios32_lcd.c in Sources */,
+				520512AC1177C3BF00B60101 /* MbSeqViewController.mm in Sources */,
+				529FA6701178CC8C00293622 /* SeqButton.mm in Sources */,
+				529FA74E1178EF1F00293622 /* SeqEncoder.mm in Sources */,
+				529FA7F6117909A400293622 /* FreeRTOS_Wrapper.m in Sources */,
+				529FA7F7117909A400293622 /* MIOS32_BOARD_Wrapper.m in Sources */,
+				529FA7F8117909A400293622 /* MIOS32_COM_Wrapper.m in Sources */,
+				529FA7F9117909A400293622 /* MIOS32_DELAY_Wrapper.m in Sources */,
+				529FA7FA117909A400293622 /* MIOS32_ENC_Wrapper.m in Sources */,
+				529FA7FB117909A400293622 /* MIOS32_IRQ_Wrapper.m in Sources */,
+				529FA7FC117909A400293622 /* MIOS32_MIDI_Wrapper.m in Sources */,
+				529FA7FD117909A400293622 /* MIOS32_SDCARD_Wrapper.m in Sources */,
+				529FA7FE117909A400293622 /* MIOS32_SPI_Wrapper.m in Sources */,
+				529FA7FF117909A400293622 /* MIOS32_SRIO_Wrapper.m in Sources */,
+				529FA800117909A400293622 /* MIOS32_STOPWATCH_Wrapper.m in Sources */,
+				529FA801117909A400293622 /* MIOS32_SYS_Wrapper.m in Sources */,
+				529FA802117909A400293622 /* MIOS32_TIMER_Wrapper.m in Sources */,
+				529FA803117909A400293622 /* Tasks.m in Sources */,
+				529FA8F211790B6700293622 /* app.c in Sources */,
+				529FA8F411790B6700293622 /* seq_cc_labels.c in Sources */,
+				529FA8F611790B6700293622 /* seq_cc.c in Sources */,
+				529FA8F811790B6700293622 /* seq_chord.c in Sources */,
+				529FA8FA11790B6700293622 /* seq_core.c in Sources */,
+				529FA8FC11790B6700293622 /* seq_file_b.c in Sources */,
+				529FA8FE11790B6700293622 /* seq_file_c.c in Sources */,
+				529FA90211790B6700293622 /* seq_file_hw.c in Sources */,
+				529FA90411790B6700293622 /* seq_file_m.c in Sources */,
+				529FA90611790B6700293622 /* seq_file_s.c in Sources */,
+				529FA90811790B6700293622 /* seq_file_t.c in Sources */,
+				529FA90A11790B6700293622 /* seq_file.c in Sources */,
+				529FA90C11790B6700293622 /* seq_groove.c in Sources */,
+				529FA90E11790B6700293622 /* seq_humanize.c in Sources */,
+				529FA91011790B6700293622 /* seq_hwcfg.c in Sources */,
+				529FA91211790B6700293622 /* seq_label.c in Sources */,
+				529FA91411790B6700293622 /* seq_layer.c in Sources */,
+				529FA91611790B6700293622 /* seq_lcd_logo.c in Sources */,
+				529FA91911790B6700293622 /* seq_lcd.c in Sources */,
+				529FA91B11790B6700293622 /* seq_led.c in Sources */,
+				529FA91D11790B6700293622 /* seq_lfo.c in Sources */,
+				529FA91F11790B6700293622 /* seq_midexp.c in Sources */,
+				529FA92311790B6700293622 /* seq_midi_in.c in Sources */,
+				529FA92511790B6700293622 /* seq_midi_port.c in Sources */,
+				529FA92711790B6700293622 /* seq_midi_router.c in Sources */,
+				529FA92911790B6700293622 /* seq_midi_sysex.c in Sources */,
+				529FA92B11790B6700293622 /* seq_midimp.c in Sources */,
+				529FA92D11790B6700293622 /* seq_midply.c in Sources */,
+				529FA92F11790B6700293622 /* seq_mixer.c in Sources */,
+				529FA93111790B6700293622 /* seq_morph.c in Sources */,
+				529FA93311790B6700293622 /* seq_par.c in Sources */,
+				529FA93511790B6700293622 /* seq_pattern.c in Sources */,
+				529FA93711790B6700293622 /* seq_random.c in Sources */,
+				529FA93911790B6700293622 /* seq_record.c in Sources */,
+				529FA93B11790B6700293622 /* seq_scale.c in Sources */,
+				529FA93D11790B6700293622 /* seq_song.c in Sources */,
+				529FA93F11790B6700293622 /* seq_statistics.c in Sources */,
+				529FA94111790B6700293622 /* seq_terminal.c in Sources */,
+				529FA94311790B6700293622 /* seq_trg.c in Sources */,
+				529FA94511790B6700293622 /* seq_ui_bpm_presets.c in Sources */,
+				529FA94711790B6700293622 /* seq_ui_bpm.c in Sources */,
+				529FA94911790B6700293622 /* seq_ui_disk.c in Sources */,
+				529FA94B11790B6700293622 /* seq_ui_edit.c in Sources */,
+				529FA94D11790B6700293622 /* seq_ui_fx_echo.c in Sources */,
+				529FA94F11790B6700293622 /* seq_ui_fx_humanize.c in Sources */,
+				529FA95111790B6700293622 /* seq_ui_fx_lfo.c in Sources */,
+				529FA95311790B6700293622 /* seq_ui_fx_limit.c in Sources */,
+				529FA95511790B6700293622 /* seq_ui_fx_loop.c in Sources */,
+				529FA95711790B6700293622 /* seq_ui_fx_scale.c in Sources */,
+				529FA95911790B6700293622 /* seq_ui_fx.c in Sources */,
+				529FA95B11790B6700293622 /* seq_ui_info.c in Sources */,
+				529FA95D11790B6700293622 /* seq_ui_manual.c in Sources */,
+				529FA95F11790B6700293622 /* seq_ui_menu.c in Sources */,
+				529FA96111790B6700293622 /* seq_ui_metronome.c in Sources */,
+				529FA96311790B6700293622 /* seq_ui_midi.c in Sources */,
+				529FA96511790B6700293622 /* seq_ui_midimon.c in Sources */,
+				529FA96711790B6700293622 /* seq_ui_mixer.c in Sources */,
+				529FA96911790B6700293622 /* seq_ui_mute.c in Sources */,
+				529FA96B11790B6700293622 /* seq_ui_opt.c in Sources */,
+				529FA96E11790B6700293622 /* seq_ui_parsel.c in Sources */,
+				529FA97011790B6700293622 /* seq_ui_pattern.c in Sources */,
+				529FA97211790B6700293622 /* seq_ui_pmute.c in Sources */,
+				529FA97411790B6700293622 /* seq_ui_save.c in Sources */,
+				529FA97611790B6700293622 /* seq_ui_song.c in Sources */,
+				529FA97811790B6700293622 /* seq_ui_stepsel.c in Sources */,
+				529FA97A11790B6700293622 /* seq_ui_sysex.c in Sources */,
+				529FA97C11790B6700293622 /* seq_ui_todo.c in Sources */,
+				529FA97E11790B6700293622 /* seq_ui_tracksel.c in Sources */,
+				529FA98011790B6700293622 /* seq_ui_trgasg.c in Sources */,
+				529FA98211790B6700293622 /* seq_ui_trgsel.c in Sources */,
+				529FA98411790B6700293622 /* seq_ui_trkdir.c in Sources */,
+				529FA98611790B6700293622 /* seq_ui_trkdiv.c in Sources */,
+				529FA98811790B6700293622 /* seq_ui_trkevnt.c in Sources */,
+				529FA98A11790B6700293622 /* seq_ui_trkgrv.c in Sources */,
+				529FA98C11790B6700293622 /* seq_ui_trklen.c in Sources */,
+				529FA98E11790B6700293622 /* seq_ui_trkmode.c in Sources */,
+				529FA99011790B6700293622 /* seq_ui_trkmorph.c in Sources */,
+				529FA99211790B6700293622 /* seq_ui_trkrec.c in Sources */,
+				529FA99411790B6700293622 /* seq_ui_trkrnd.c in Sources */,
+				529FA99611790B6700293622 /* seq_ui_trktran.c in Sources */,
+				529FA99811790B6700293622 /* seq_ui_util.c in Sources */,
+				529FA99A11790B6700293622 /* seq_ui.c in Sources */,
+				529FA9AB11790CAB00293622 /* aout.c in Sources */,
+				529FA9AE11790CB900293622 /* blm.c in Sources */,
+				529FA9B111790CC800293622 /* blm_x.c in Sources */,
+				529FA9B411790CE000293622 /* mid_parser.c in Sources */,
+				529FA9B711790CF900293622 /* notestack.c in Sources */,
+				529FA9BA11790D0900293622 /* jsw_rand.c in Sources */,
+				529FA9BF11790D2100293622 /* seq_bpm.c in Sources */,
+				529FA9C011790D2100293622 /* seq_midi_out.c in Sources */,
+				529FA9E21179107800293622 /* mios32_din.c in Sources */,
+				529FA9E31179107800293622 /* mios32_dout.c in Sources */,
+				529FA9E51179107800293622 /* mios32_midi.c in Sources */,
+				529FA9E61179107800293622 /* mios32_osc.c in Sources */,
+				529FA9F4117911CE00293622 /* mios32_uart_midi.c in Sources */,
+				529FA9FA1179121300293622 /* FATFS_Wrapper_Dir.c in Sources */,
+				529FA9FB1179121300293622 /* FATFS_Wrapper.m in Sources */,
+				52F15C42119C9D0900E40C6C /* seq_blm.c in Sources */,
+				522E380711B478C70078410E /* seq_file_g.c in Sources */,
+				527779BC11B72BF6009D9083 /* OscPort.m in Sources */,
+				527779BD11B72BF6009D9083 /* OscServer_Wrapper.m in Sources */,
+				527779C011B72C00009D9083 /* UDPEcho.m in Sources */,
+				527779E211B72F2F009D9083 /* seq_midi_osc.c in Sources */,
+				524324701229B27E003B950B /* seq_file_gc.c in Sources */,
+				524324721229B29B003B950B /* seq_ui_eth.c in Sources */,
+				52E114421256BD41001E6E43 /* seq_cv.c in Sources */,
+				52E114431256BD41001E6E43 /* seq_ui_cv.c in Sources */,
+				5268E79C13845ED800520B92 /* seq_file_bm.c in Sources */,
+				5268E79E13845EF000520B92 /* seq_ui_bookmarks.c in Sources */,
+				525C5D6213983A6D004DE8E4 /* seq_ui_trklive.c in Sources */,
+				525C5D6B13983AB4004DE8E4 /* seq_live.c in Sources */,
+				5276AAFA13D2FC16006788B6 /* file.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1D6058940D05DD3E006BFB54 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = MbSeq_Prefix.pch;
+				INFOPLIST_FILE = "MbSeq-Info.plist";
+				PRODUCT_NAME = MbSeq;
+			};
+			name = Debug;
+		};
+		1D6058950D05DD3E006BFB54 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = YES;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = MbSeq_Prefix.pch;
+				INFOPLIST_FILE = "MbSeq-Info.plist";
+				PRODUCT_NAME = MbSeq;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		C01FCF4F08A954540054247B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				"ARCHS[sdk=iphoneos*]" = armv7;
+				"ARCHS[sdk=iphonesimulator*]" = i386;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MIOS32_FAMILY_EMULATION,
+					"MIOS32_FAMILY_STR=\\\"EMULATION\\\"",
+					MIOS32_BOARD_IPAD,
+					"MIOS32_BOARD_STR=\\\"IPAD\\\"",
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					../../../../modules/notestack,
+					../core,
+					../../../../modules/midifile,
+					../../../../modules/random,
+					../../../../modules/blm,
+					../../../../modules/sequencer,
+					../../../../modules/aout,
+					../../../../modules/app_lcd/ipad,
+					../../../../modules/fatfs/src,
+					../../../../modules/blm_x,
+					../../../../include/mios32,
+					.,
+				);
+				PREBINDING = NO;
+				SDKROOT = iphoneos3.2;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		C01FCF5008A954540054247B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				"ARCHS[sdk=iphoneos*]" = armv7;
+				"ARCHS[sdk=iphonesimulator*]" = i386;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MIOS32_FAMILY_EMULATION,
+					"MIOS32_FAMILY_STR=\\\"EMULATION\\\"",
+					MIOS32_BOARD_IPAD,
+					"MIOS32_BOARD_STR=\\\"IPAD\\\"",
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					../../../../modules/notestack,
+					../core,
+					../../../../modules/midifile,
+					../../../../modules/random,
+					../../../../modules/blm,
+					../../../../modules/sequencer,
+					../../../../modules/aout,
+					../../../../modules/app_lcd/ipad,
+					../../../../modules/fatfs/src,
+					../../../../modules/blm_x,
+					../../../../include/mios32,
+					.,
+				);
+				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
+				PREBINDING = NO;
+				SDKROOT = iphoneos3.2;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "MbSeq" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1D6058940D05DD3E006BFB54 /* Debug */,
+				1D6058950D05DD3E006BFB54 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "MbSeq" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C01FCF4F08A954540054247B /* Debug */,
+				C01FCF5008A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;
+}

@@ -1,0 +1,37 @@
+RESET_HW
+
+LCD "%CMap MF Values"
+
+# use various maps
+EVENT_MF id=  1  fwd_to_lcd=1  type=CC  chn= 1 cc= 16   range=map1   lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF id=  2  fwd_to_lcd=1  type=CC  chn= 1 cc= 17   range=map2   lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF id=  3  fwd_to_lcd=1  type=CC  chn= 1 cc= 18   range=map3   lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF id=  4  fwd_to_lcd=1  type=CC  chn= 1 cc= 19   range=map4   lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF id=  5  fwd_to_lcd=1  type=CC  chn= 1 cc= 20   range=map5   lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF id=  6  fwd_to_lcd=1  type=PitchBend chn=1     range=map6   lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF id=  7  fwd_to_lcd=1  type=CC  chn= 1 cc= 22   range=map7   lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF id=  8  fwd_to_lcd=1  type=PitchBend chn=2     range=map8   lcd_pos=1:1:1  label="^std_mf"
+
+
+# map definitions
+MAP1   1 2 4 8 16 32 64
+MAP2   0x01 0x02 0x03 0x04 0x08 0x10 0x11 0x12 0x13 0x14 0x15 0x16 0x17 0x18 0x19 0x1a 0x1b 0x1c 0x1d 0x1e 0x1f 0x7f
+MAP3   1 10 2 20 3 30
+MAP4   0 1 2 3 4 5 6 7
+
+# 7bit curve
+MAP5/HWORDI 0:0    32:1000    64:14000   127:16383
+
+# 14bit curve
+MAP6/HWORDI 0:0  4096:1000  8192:14000 16383:16383
+
+# 7bit curve reversed
+MAP7/HWORDI 0:16383    32:15000    64:2000    127:0
+
+# 14bit curve reversed
+MAP8/HWORDI 0:16383  4096:15000  8192:2000  16383:0
+
+
+# we've a single MBHP_MF_NG module with 8 motorfaders
+# It has to be configured for Motormix protocol!
+MF n=1  enabled=1  midi_in_port=IN3  midi_out_port=OUT3  chn=1  ts_first_button_id=2001  config_port=USB3

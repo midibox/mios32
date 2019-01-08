@@ -1,0 +1,57 @@
+; $Id$
+; 
+; STMicroelectronics Communication Device Class driver installation file
+; (C)2006 Copyright STMicroelectronics
+; 
+; Adapted for MIOS32 based COM (search for VID_ and PID_)
+; 
+
+[Version] 
+Signature="$Windows NT$"
+Class=Ports
+ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
+Provider=%MIDIBOX%
+LayoutFile=layout.inf
+
+[Manufacturer] 
+%MFGNAME%=VirComDevice,NT,NTamd64
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[VirComDevice.NT]
+%DESCRIPTION%=DriverInstall,USB\VID_16C0&PID_07FF
+
+[VirComDevice.NTamd64]
+%DESCRIPTION%=DriverInstall,USB\VID_16C0&PID_07FF
+
+[DriverInstall.NT]
+Include=mdmcpq.inf
+CopyFiles=FakeModemCopyFileSection
+AddReg=DriverInstall.NT.AddReg
+
+[DriverInstall.NT.AddReg]
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,usbser.sys
+HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
+
+[DriverInstall.NT.Services]
+AddService=usbser, 0x00000002, DriverServiceInst
+
+[DriverServiceInst]
+DisplayName=%SERVICE%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%12%\usbser.sys 
+
+;------------------------------------------------------------------------------
+;  String Definitions
+;------------------------------------------------------------------------------
+
+
+[Strings] 
+MIDIBOX     = "MIDIbox.org"
+MFGNAME     = "uCApps.de"
+DESCRIPTION = "MIOS32 Virtual COM Port"
+SERVICE     = "USB Virtual COM port"

@@ -1,0 +1,61 @@
+# Reset to default
+RESET_HW
+
+LCD "%C@(1:1:1)Multicolour Test"
+
+# Fade-in the three LEDs over 16 brightness levels
+# All three LEDs are assigned to the same MIDI event, but they range over different value maps which specify the brightness
+# maps have been generated with generated with tools/gen_colour_maps.pl
+
+# prepared for Common-Anode RGB LED, therefore dim values are inverted! (15 - dim_level)
+
+MAP1    15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  \
+        15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  \
+        15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  \
+        15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  \
+        15  15  15  15  15  15  14  14  13  13  12  12  11  11  10  10  \
+        9   9   8   7   7   6   6   5   5   4   4   3   3   2   2   1   \
+        1   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   \
+        0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   
+
+MAP2    15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  14  \
+        14  14  14  13  13  13  12  12  11  11  11  10  10  9   8   8   \
+        7   7   6   5   5   4   3   3   3   2   2   2   1   1   1   0   \
+        0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   \
+        0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   \
+        0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   \
+        0   0   0   0   1   1   2   2   3   3   4   4   5   5   6   6   \
+        7   7   8   9   9   10  10  11  11  12  12  13  13  14  14  15  
+
+MAP3    15  15  15  15  14  14  14  13  13  13  12  12  12  11  11  11  \
+        10  10  10  9   9   9   8   8   8   7   7   7   7   6   6   6   \
+        5   5   5   4   4   4   3   3   4   4   4   4   4   4   5   5   \
+        5   6   6   6   7   7   8   9   9   10  10  11  11  12  12  13  \
+        13  14  14  15  15  15  15  15  15  15  15  15  15  15  15  15  \
+        15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  \
+        15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  \
+        15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  
+
+
+# common anode connected Vdd
+# RGB connected to LED:1..3 (SR1, D7..D5)
+EVENT_LED id=1 dimmed=1 range=map1 type=CC chn=1 cc=16
+EVENT_LED id=2 dimmed=1 range=map2 type=CC chn=1 cc=16
+EVENT_LED id=3 dimmed=1 range=map3 type=CC chn=1 cc=16
+
+
+# the three LEDs are controlled from the SCS encoder
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+EVENT_ENC id=2000 range=0:127 enc_speed_mode=Fast:3 fwd_id=SENDER:1 lcd_pos=1:1:2 label="Value: %3d"
+
+# ENC forwards to SENDER:1, and we define 3 senders which are assigned to this hw_id in order to forward the value to the R/G/B LEDs
+EVENT_SENDER hw_id=1 id=100 fwd_id=LED:1
+EVENT_SENDER hw_id=1 id=200 fwd_id=LED:2
+EVENT_SENDER hw_id=1 id=300 fwd_id=LED:3

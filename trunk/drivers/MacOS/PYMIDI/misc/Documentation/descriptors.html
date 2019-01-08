@@ -1,0 +1,41 @@
+<html>
+<head>
+	<title>Endpoint Descriptors and Sets</title>
+</head>
+
+<body>
+
+
+<h1>Endpoint Descriptors</h1>
+
+<p>Every endpoint is uniquely identified by a descriptor as returned
+by its <code>descriptor</code> method.  This descriptor can easily be
+stored and then used to locate the same endpoint at a later time.</p>
+
+<p>You can use the PYMIDIManager <code>realSourceWithDescriptor:</code>
+and <code>realDestinationWithDescriptor:</code> methods to find a real
+endpoint matching a particular descriptor.</p>
+
+
+<h1>Endpoint Sets</h1>
+
+<p>The PYMIDIEndpointSet class allows you to search an NSArray of
+PYMIDIEndpoints for an endpoint matching a particular descriptor:</p>
+
+<blockquote>
+<pre>
+PYMIDIEndpointSet* endpointSet;
+PYMIDIEndpoint* endpoint;
+
+endpointSet = [PYMIDIEndpointSet endpointSetWithArray:endpointArray];
+endpoint = [endpointSet endpointWithDescriptor:descriptor];
+</pre>
+</blockquote>
+
+<p>Endpoint sets can also be used as delegates for <code>NSKeyedArchiver</code>
+and <code>NSKeyedUnarchiver</code>.  See the documentation on
+<a href="archiving.html">Archiving Endpoints</a> for more information.</p>
+
+
+</body>
+</html>

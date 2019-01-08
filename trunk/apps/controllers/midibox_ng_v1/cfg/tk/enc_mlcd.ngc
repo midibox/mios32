@@ -1,0 +1,95 @@
+
+# Purpose:
+# - 8 OLEDs connected to the core
+# - 16 rotary encoder
+# - each rotary encoder prints message on a dedicated LCD position
+
+RESET_HW
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+
+# Controlled from SCS buttons at J10 in main page
+
+# just send note for DAW control
+EVENT_BUTTON id=2000  type=Note chn=1 key=36
+EVENT_BUTTON id=2001  type=Note chn=1 key=37
+EVENT_BUTTON id=2002  type=Note chn=1 key=38
+EVENT_BUTTON id=2003  type=Note chn=1 key=39
+
+# Encoder fast/slow
+EVENT_BUTTON id=2004  type=Meta   meta=EncFast:4 button_mode=OnOff  range=0:2
+
+# just send a CC for DAW control
+EVENT_ENC    id=2000  type=CC chn=1 cc=1
+
+# encoder events
+EVENT_ENC    id=  1  hw_id =  1  bank=1  fwd_id=LED_MATRIX:1    fwd_to_lcd=1  type=CC     chn= 1 cc= 16   range=  0:127   lcd_pos=1:1:1  label="&v@(1:1:1)%B&b@(1:2:4)1&n@(1:1:7)%3d"
+EVENT_ENC    id=  2  hw_id =  2  bank=1  fwd_id=LED_MATRIX:2    fwd_to_lcd=1  type=CC     chn= 1 cc= 17   range=  0:127   lcd_pos=1:1:1  label="&v@(1:16:1)%B&b@(1:7:4)2&n@(1:19:7)%3d"
+EVENT_ENC    id=  3  hw_id =  3  bank=1  fwd_id=LED_MATRIX:3    fwd_to_lcd=1  type=CC     chn= 1 cc= 18   range=  0:127   lcd_pos=2:1:1  label="&v@(2:1:1)%B&b@(2:2:4)3&n@(2:1:7)%3d"
+EVENT_ENC    id=  4  hw_id =  4  bank=1  fwd_id=LED_MATRIX:4    fwd_to_lcd=1  type=CC     chn= 1 cc= 19   range=  0:127   lcd_pos=2:1:1  label="&v@(2:16:1)%B&b@(2:7:4)4&n@(2:19:7)%3d"
+EVENT_ENC    id=  5  hw_id =  5  bank=1  fwd_id=LED_MATRIX:5    fwd_to_lcd=1  type=CC     chn= 1 cc= 20   range=  0:127   lcd_pos=3:1:1  label="&v@(3:1:1)%B&b@(3:2:4)5&n@(3:1:7)%3d"
+EVENT_ENC    id=  6  hw_id =  6  bank=1  fwd_id=LED_MATRIX:6    fwd_to_lcd=1  type=CC     chn= 1 cc= 21   range=  0:127   lcd_pos=3:1:1  label="&v@(3:16:1)%B&b@(3:7:4)6&n@(3:19:7)%3d"
+EVENT_ENC    id=  7  hw_id =  7  bank=1  fwd_id=LED_MATRIX:7    fwd_to_lcd=1  type=CC     chn= 1 cc= 22   range=  0:127   lcd_pos=4:1:1  label="&v@(4:1:1)%B&b@(4:2:4)7&n@(4:1:7)%3d"
+EVENT_ENC    id=  8  hw_id =  8  bank=1  fwd_id=LED_MATRIX:8    fwd_to_lcd=1  type=CC     chn= 1 cc= 23   range=  0:127   lcd_pos=4:1:1  label="&v@(4:16:1)%B&b@(4:7:4)8&n@(4:19:7)%3d"
+EVENT_ENC    id=  9  hw_id =  9  bank=1  fwd_id=LED_MATRIX:9    fwd_to_lcd=1  type=CC     chn= 1 cc= 24   range=  0:127   lcd_pos=5:1:1  label="&v@(5:1:1)%B&b@(5:2:4)9&n@(5:1:7)%3d"
+EVENT_ENC    id= 10  hw_id = 10  bank=1  fwd_id=LED_MATRIX:10   fwd_to_lcd=1  type=CC     chn= 1 cc= 25   range=  0:127   lcd_pos=5:1:1  label="&v@(5:16:1)%B&b@(5:6:4)10&n@(5:19:7)%3d"
+EVENT_ENC    id= 11  hw_id = 11  bank=1  fwd_id=LED_MATRIX:11   fwd_to_lcd=1  type=CC     chn= 1 cc= 26   range=  0:127   lcd_pos=6:1:1  label="&v@(6:1:1)%B&b@(6:2:4)11&n@(6:1:7)%3d"
+EVENT_ENC    id= 12  hw_id = 12  bank=1  fwd_id=LED_MATRIX:12   fwd_to_lcd=1  type=CC     chn= 1 cc= 27   range=  0:127   lcd_pos=6:1:1  label="&v@(6:16:1)%B&b@(6:6:4)12&n@(6:19:7)%3d"
+EVENT_ENC    id= 13  hw_id = 13  bank=1  fwd_id=LED_MATRIX:13   fwd_to_lcd=1  type=CC     chn= 1 cc= 28   range=  0:127   lcd_pos=7:1:1  label="&v@(7:1:1)%B&b@(7:2:4)13&n@(7:1:7)%3d"
+EVENT_ENC    id= 14  hw_id = 14  bank=1  fwd_id=LED_MATRIX:14   fwd_to_lcd=1  type=CC     chn= 1 cc= 29   range=  0:127   lcd_pos=7:1:1  label="&v@(7:16:1)%B&b@(7:6:4)14&n@(7:19:7)%3d"
+EVENT_ENC    id= 15  hw_id = 15  bank=1  fwd_id=LED_MATRIX:15   fwd_to_lcd=1  type=CC     chn= 1 cc= 30   range=  0:127   lcd_pos=8:1:1  label="&v@(8:1:1)%B&b@(8:2:4)15&n@(8:1:7)%3d"
+EVENT_ENC    id= 16  hw_id = 16  bank=1  fwd_id=LED_MATRIX:16   fwd_to_lcd=1  type=CC     chn= 1 cc= 31   range=  0:127   lcd_pos=8:1:1  label="&v@(8:16:1)%B&b@(8:6:4)16&n@(8:19:7)%3d"
+
+
+# encoder hardware configuration
+ENC n=  1   sr= 1  pins=0:1   type=non_detented
+ENC n=  2   sr= 1  pins=2:3   type=non_detented
+ENC n=  3   sr= 1  pins=4:5   type=non_detented
+ENC n=  4   sr= 1  pins=6:7   type=non_detented
+ENC n=  5   sr= 2  pins=0:1   type=non_detented
+ENC n=  6   sr= 2  pins=2:3   type=non_detented
+ENC n=  7   sr= 2  pins=4:5   type=non_detented
+ENC n=  8   sr= 2  pins=6:7   type=non_detented
+ENC n=  9   sr= 3  pins=0:1   type=non_detented
+ENC n= 10   sr= 3  pins=2:3   type=non_detented
+ENC n= 11   sr= 3  pins=4:5   type=non_detented
+ENC n= 12   sr= 3  pins=6:7   type=non_detented
+ENC n= 13   sr= 4  pins=0:1   type=non_detented
+ENC n= 14   sr= 4  pins=2:3   type=non_detented
+ENC n= 15   sr= 4  pins=4:5   type=non_detented
+ENC n= 16   sr= 4  pins=6:7   type=non_detented
+
+
+# LEDring configuration
+# NOTE: with ULN2803 based transistor arrays we've to invert the selection lines!
+# -> inverted=1
+# if you don't use these arrays, please set inverted=0
+DOUT_MATRIX n= 1   rows=16 inverted=1  sr_dout_sel1= 1 sr_dout_sel2= 2  sr_dout_r1= 3 sr_dout_r2= 4  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+
+
+# modified ledring patterns for 16 LEDs
+# LED_MATRIX_PATTERNs
+LED_MATRIX_PATTERN n= 1  pos= 0  pattern=1000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 1  pattern=1100000000000000
+LED_MATRIX_PATTERN n= 1  pos= 2  pattern=1110000000000000
+LED_MATRIX_PATTERN n= 1  pos= 3  pattern=1111000000000000
+LED_MATRIX_PATTERN n= 1  pos= 4  pattern=1111100000000000
+LED_MATRIX_PATTERN n= 1  pos= 5  pattern=1111110000000000
+LED_MATRIX_PATTERN n= 1  pos= 6  pattern=1111111000000000
+LED_MATRIX_PATTERN n= 1  pos= 7  pattern=1111111100000000
+LED_MATRIX_PATTERN n= 1  pos= M  pattern=1111111110000000
+LED_MATRIX_PATTERN n= 1  pos= 8  pattern=1111111110000000
+LED_MATRIX_PATTERN n= 1  pos= 9  pattern=1111111111000000
+LED_MATRIX_PATTERN n= 1  pos=10  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 1  pos=11  pattern=1111111111110000
+LED_MATRIX_PATTERN n= 1  pos=12  pattern=1111111111111000
+LED_MATRIX_PATTERN n= 1  pos=13  pattern=1111111111111100
+LED_MATRIX_PATTERN n= 1  pos=14  pattern=1111111111111110
+LED_MATRIX_PATTERN n= 1  pos=15  pattern=1111111111111111

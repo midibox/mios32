@@ -1,0 +1,252 @@
+$Id$
+
+MIDIboxSEQ V4L.086
+~~~~~~~~~~~~~~~~~~
+
+   o Step Recording: note length measurements now also working correctly when
+     the sequencer is clocked in slave mode.
+
+
+MIDIboxSEQ V4L.085
+~~~~~~~~~~~~~~~~~~
+
+   o new parameter LiveKeepChannel in MBSEQ_C.V4 file to change the MIDI forwarding function
+     so that the MIDI channel won't be changed according to the selected sequence, but will
+     be kept.
+
+   o clock divider (configured while pressing the Tempo button) handled correctly for PitchBend and CC tracks
+
+
+MIDIboxSEQ V4L.082
+~~~~~~~~~~~~~~~~~~
+
+   o CLEAR button now allows to clear individual tracks with the GP buttons:
+     - CLEAR+SEQ1: clear entire Seq1 + configuration (*)
+     - CLEAR+SEQ2: clear entire Seq2 + configuration (*)
+     - CLEAR+GP1: clear note triggers (values are kept but not played)
+     - CLEAR+GP2: reset velocity values to 64
+     - CLEAR+GP3: reset note length values to half step
+     - CLEAR+GP4: clear Track 4 (Pitchbend + last CC lines)
+     - CLEAR+GP5: clear CCs of Track 5
+     - CLEAR+GP6: clear CCs of Track 6
+     - CLEAR+GP7: clear CCs of Track 7
+     - CLEAR+GP8: clear CCs of Track 8
+     Same for GP9..16 for Seq2
+
+     (*) track configuration won't be changed if 'PasteClrAll' set to 0 in MBSEQ_GC.V4 file
+
+   o changed the track and layer assignment algorithm for CCs in recording mode:
+     Previously new CC lines were recorded into Track 4, Layer B upwards.
+
+     Now they are assigned the following way:
+     - 1st CC line is recorded into Track 5, Layer A
+     - 2nd CC line is recorded into Track 6, Layer A
+     - 3rd CC line is recorded into Track 7, Layer A
+     - 4th CC line is recorded into Track 8, Layer A
+     - 5th CC line is recorded into Track 8, Layer B
+     - 6th CC line is recorded into Track 8, Layer C
+     - 7th CC line is recorded into Track 8, Layer D
+     - 8th CC line is recorded into Track 7, Layer B
+     - 9th CC line is recorded into Track 7, Layer C
+     - 10th CC line is recorded into Track 7, Layer D
+     - 11th CC line is recorded into Track 6, Layer B
+     - 12th CC line is recorded into Track 6, Layer C
+     - 13th CC line is recorded into Track 6, Layer D
+     - 14th CC line is recorded into Track 5, Layer B
+     - 15th CC line is recorded into Track 5, Layer C
+     - 16th CC line is recorded into Track 5, Layer D
+     - 17th CC line is recorded into Track 4, Layer B
+     - 18th CC line is recorded into Track 4, Layer C
+     - 19th CC line is recorded into Track 4, Layer D
+     Same for Track 12..16 for Seq2
+
+     Advantage: if only a few CC lines are recorded, we've dedicated tracks
+     for PitchBend and CCs (Track 4-8, Layer A) which can be individually muted
+     and cleared.
+     Additional CCs populate the remaining layers from Track 8 backwards, so that
+     PitchBend remains an individual track if not more than 17 CC lines are recorded.
+
+
+
+MIDIboxSEQ V4L.081
+~~~~~~~~~~~~~~~~~~
+
+   o added USB MIDI workaround for Windows
+
+
+MIDIboxSEQ V4L.079
+~~~~~~~~~~~~~~~~~~
+
+   o added new MIOS Terminal commands:
+     new, saveas, save, load, delete, session, sessions
+
+     Similar to "the big brother" MIDIbox SEQ V4, you are now able to create multiple
+     sessions on SD Card, or to create a backup of your current session.
+
+
+MIDIboxSEQ V4L.076
+~~~~~~~~~~~~~~~~~~
+
+   o the MIDI router forwards SysEx messages regardless if channels are filtered,
+     or "All" is used. It's ensured that messages are only sent once if multiple
+     router nodes forward to the same destination port.
+
+
+MIDIboxSEQ V4L.075
+~~~~~~~~~~~~~~~~~~
+
+   o MIDI remote keyboard function now also deactivated when Note On with velocity 0 received
+
+
+MIDIboxSEQ V4L.074
+~~~~~~~~~~~~~~~~~~
+
+   o added "set rec_quantisation" command to set the quantisation used for
+     recording Note On/Off events from MIOS Terminal.
+
+
+MIDIboxSEQ V4L.073
+~~~~~~~~~~~~~~~~~~
+
+   o bugfix for "single_usb" option
+
+   o Martijn adapted the MIDI Remote Keyboard functions for MBSEQV4L
+     The key assignments are documented in doc/mbseq_lite_remote_functions.pdf
+
+
+MIDIboxSEQ V4L.072
+~~~~~~~~~~~~~~~~~~
+
+   o support for the "single_usb" option, which can be enabled with the
+     bootloader update application V1.012 ("set usb_single 1")
+
+     Use this option if you are working with a Windows PC which can't handle
+     the 4 USB ports correctly (e.g. stucking MIDI, Filebrowser operations are failing, etc.)
+
+
+MIDIboxSEQ V4L.071
+~~~~~~~~~~~~~~~~~~
+
+   o enabled 4 USB-MIDI ports
+
+
+MIDIboxSEQ V4L.069
+~~~~~~~~~~~~~~~~~~
+
+   o USB MSD driver: changed endpoint to avoid conflict with MIDI driver.
+     Note that it's still not possible to use MSD and MIDI in parallel,
+     but Windows and MacOS should accept the connection (again).
+
+   o corrected tap tempo function
+
+
+MIDIboxSEQ V4L.068
+~~~~~~~~~~~~~~~~~~
+
+   o support for GM5 driver under Windows.
+     MacOS and Linux users: just install this update, no additional changes required.
+     Windows users:
+     - upload the application with MIOS Studio
+     - close MIOS Studio
+     - install the GM5 driver which can be downloaded from http://www.ucapps.de/mios32_download.html
+     - start MIOS Studio -> 4 "GM5" USB ports should be visible
+
+
+MIDIboxSEQ V4L.067
+~~~~~~~~~~~~~~~~~~
+
+   o USB device settings have been changed.
+     IMPORTANT: please install MIOS32 Bootloader V1.010 before uploading
+     the application! Otherwise code upload via USB won't work anymore!
+     (Backup: upload via MIDI IN1/OUT1)
+
+   o support for MIOS Filebrowser, which will be part of MIOS Studio 2.4
+
+
+MIDIboxSEQ V4L.064
+~~~~~~~~~~~~~~~~~~
+
+   o corrected tap tempo function
+
+
+MIDIboxSEQ V4L.059
+~~~~~~~~~~~~~~~~~~
+
+   o fixed stack overflow which happened when incoming OSC messages were forwarded
+     to OSC in Live mode (they are now automatically filtered to avoid feedback loops)
+
+
+MIDIboxSEQ V4L.058
+~~~~~~~~~~~~~~~~~~
+
+   o corrected SysEx output for LPC17
+
+
+MIDIboxSEQ V4L.057
+~~~~~~~~~~~~~~~~~~
+
+   o improved MIDI OUT throughput
+
+
+MIDIboxSEQ V4L.056
+~~~~~~~~~~~~~~~~~~
+
+   o the step lengths (clock divider) can now be configured in new "Tempo" page
+     (press Tempo button)
+     Following step lengths are available:
+     GP button 1..7: 64th, 32th, 16th (default), 8th, 4th, 2th, 1
+     GP button 9..15: 64T, 32T, 16T, 8T, 4T, 2T, 1T (triplets)
+     The tracks will be automatically re-synchronized to the measure on divider changes.
+
+
+MIDIboxSEQ V4L.055
+~~~~~~~~~~~~~~~~~~
+
+   o LPC17 build: optimized MIDI IN handling
+
+   o LPC17 build: MIDI clock can now be received over MIDI IN1..4
+
+   o SysEx forwarding via MIDI router working (again)
+
+   o MIDI router supports 16 nodes now! (previously only 8)
+
+   o added new MIOS terminal commands:
+     - display network informations, modify network and OSC settings
+     - display MIDI router informations, modify MIDI router settings
+     - change BLM port remotely
+     - "store" and "restore" the session remotely
+
+   o it's now possible to set the loop point of a track:
+     press&hold the LENGTH button, thereafter select the loop point with a GP button.
+
+   o BLM now supports Lemur on iPad
+     Example configuration (we assume that iPad IP address is 192.168.1.110):
+     - set osc_remote 3 192.168.1.110
+     - set osc_local_port 3 8000
+     - set osc_remote_port 3 8000
+     - set osc_mode 3 1
+     - set blm_port OSC3
+     - store
+     These commands can be entered in MIOS terminal
+     On your iPad, set the IP address of your MIDIbox with port 8000
+
+   o BLM now allows to record MIDI notes in the keyboard page
+
+
+MIDIboxSEQ V4L.052
+~~~~~~~~~~~~~~~~~~
+
+   o initial version (aligned with MIDIbox SEQ V4.052)
+
+
+
+
+
+Wishlist (TODO)
+~~~~~~~~~~~~~~~
+
+o http://midibox.org/forums/topic/17568-drum-mode-seqv4l/
+
+I understand the SeqV4 has the option to run a track in 'drum mode' to trigger up to sixteen different sounds.
+Would it be possible to modify the firmware to be in this mode, and just use one of the buttons as a part selector?
+(I was thinking the Echo/LFO ones would be less useful for something that just acted like a simple trigger sequencer).

@@ -1,0 +1,168 @@
+<html>
+<head>
+
+<!-- $Id: Release Notes.html 137 2008-11-30 14:28:22Z tk $ -->
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<title>PYMIDI Release Notes</title>
+
+<style type="text/css">
+    body {
+        background: #fff;
+        margin: 1.5em 3em;
+    }
+    
+    #banner {
+        margin: 0;
+        padding: 0;
+    }
+    
+    #banner span.site-name {
+        font-family: "Lucida Grande", Arial, sans-serif;
+        font-weight: normal;
+        font-size: 14px;
+    }
+
+    #contents {
+        width: 30%;
+        float: right;
+        font-family: "Lucida Grande", Arial, sans-serif;
+        font-weight: normal;
+        font-size: 11px;
+        border: 1px solid #ccc;
+        background: #fff;
+        margin: 0;
+        margin-left: 1.2em;
+        margin-bottom: 0.6em;
+        padding: 0.6em;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-family: Helvetica, sans-serif;
+        font-weight: bold;
+        clear: both;
+    }
+    
+    h1 {
+        font-size: 24px;
+        color: #800;
+        border-top: 1px solid #ccc;
+        margin-top: 0;
+        padding-top: 2px;
+    }
+    
+    h1 span.note {
+        font-size: 14px
+    }
+    
+    h2 {
+        font-size: 17px;
+        color: #036;
+        border-top: 1px solid #ccc;
+        margin-top: 25px;
+        padding-top: 2px;
+    }
+    
+    h2 span.note {
+        font-size: 12px
+    }
+    
+    h3 {
+        font-size: 14px;
+        color: #036;
+    }
+    
+    p,ul,td {
+        font-family: "Lucida Grande", Verdana, sans-serif;
+        font-size: 13px;
+        line-height: 1.3em;
+    }
+    
+    #footer {
+        text-align: center;
+    }
+    
+    p.footer {
+        font-size: 11px;
+    }
+</style>
+
+</head>
+<body>
+
+<div id="banner">
+    <span class="site-name">Pete.Yandell.com</span>
+</div>
+
+<h1>PYMIDI Framework Release Notes</h1>
+
+
+<h2>Version 1.1 <span class="note">(3 February 2004)</span></h2>
+
+<font size="-1">
+    Framework version: B<br />
+	Dynamic library current version: 1<br />
+	Dynamic library compatibility version: 1
+</font>
+
+<p>There are a few interface changes that will require changes to your
+code, but it should all just be search-and-replace type stuff.</p>
+
+<h3>The onlineRealSources and onlineRealDestinations methods have been removed</h3>
+
+<p>For almost all purposes you should now use
+<a href="Documentation/Classes/PYMIDIManager.html#realSources">realSources</a> or
+<a href="Documentation/Classes/PYMIDIManager.html#realDestinations">realDestinations</a>.</p>
+
+<p>If you really need the old functionality then the old methods have
+been renamed to
+<a href="Documentation/Classes/PYMIDIManager.html#realSourcesOnlineOrInUse">realSourcesOnlineOrInUse</a>
+and
+<a href="Documentation/Classes/PYMIDIManager.html#realDestinationsOnlineOrInUse">realDestinationsOnlineOrInUse</a>.</p>
+
+<p>So why the change? The problem with the old methods, apart from
+their non-descriptive names, is that they behave
+in some unexpected ways for offline endpoints.</p>
+
+<p>If you stop using an
+offline endpoint then that endpoint will still be returned in the
+endpoint list until some other MIDI configuration change causes the
+list to be updated. From a user perspective that means that offline
+endpoints can seemingly randomly disappear from the list when other
+things happen on the system.</p>
+
+<p>The newer methods just keeps offline endpoints around as long as
+the application is open.</p>
+
+
+<h3>PYMIDIIsEndpointNameIsTaken has been changed to PYMIDIIsEndpointNameTaken</h3>
+
+<p>Obviously the original name was a typo, so it's been corrected.</p>
+
+
+<h3>Other Changes</h3>
+
+<ul>
+    <li>Endpoint display names now work correctly with external devices on panther</li>
+</ul>
+
+
+<h2>Version 1.0 <span class="note">(1 February 2003)</span></h2>
+
+<font size="-1">
+	Framework version: A<br />
+	Dynamic library current version: 1<br />
+	Dynamic library compatibility version: 1
+</font>
+
+
+
+<div id="footer">
+    <br /><br />
+    <p class="footer">Copyright &copy; 2003-2004 <a href="mailto:pete@yandell.com">Peter Yandell</a>.
+    All Rights Reserved.</p>
+</div>
+
+</body>
+</html>

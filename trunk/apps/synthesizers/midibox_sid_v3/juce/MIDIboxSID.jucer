@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<JUCERPROJECT id="Plrhe1" name="MIDIboxSID" projectType="audioplug" version="2.0.0"
+              bundleIdentifier="org.midibox.MIDIboxSID" buildVST="0" buildAU="1"
+              pluginName="MIDIboxSID" pluginDesc="MIDIboxSID Emulation" pluginManufacturer="MIDIbox"
+              pluginManufacturerCode="MBox" pluginCode="MSID" pluginChannelConfigs="{0, 1}, {0, 2}"
+              pluginIsSynth="1" pluginWantsMidiIn="1" pluginProducesMidiOut="1"
+              pluginSilenceInIsSilenceOut="0" pluginTailLength="0" pluginEditorRequiresKeys="0"
+              pluginAUExportPrefix="MIDIboxSIDAU" pluginAUViewClass="MIDIboxSIDAU_V1"
+              pluginRTASCategory="" aaxIdentifier="com.yourcompany.MIDIboxSID"
+              pluginAAXCategory="AAX_ePlugInCategory_Dynamics" jucerVersion="3.0.0"
+              companyName="MIDIbox">
+  <MAINGROUP id="iE5ZL6" name="MIDIboxSID">
+    <GROUP id="{FE3AD022-F1F6-FA97-716F-D3B08C68D527}" name="Source">
+      <FILE id="MwdRdN" name="mios32_lcd.c" compile="1" resource="0" file="../../../../mios32/common/mios32_lcd.c"/>
+      <GROUP id="{4DEBF9BE-4757-5426-7A98-3CF8FC6CE379}" name="gui">
+        <GROUP id="{5920F6B4-88D1-E667-1D83-91B6EF21381F}" name="bitmaps">
+          <FILE id="ipRPfe" name="knob_blue.png" compile="0" resource="1" file="Source/gui/bitmaps/knob_blue.png"/>
+          <FILE id="PHgIc4" name="knob_negpos.png" compile="0" resource="1" file="Source/gui/bitmaps/knob_negpos.png"/>
+          <FILE id="qplLCk" name="knob_orange.png" compile="0" resource="1" file="Source/gui/bitmaps/knob_orange.png"/>
+          <FILE id="HQDQYf" name="knob_small.png" compile="0" resource="1" file="Source/gui/bitmaps/knob_small.png"/>
+          <FILE id="wzZZdI" name="README.txt" compile="0" resource="1" file="Source/gui/bitmaps/README.txt"/>
+        </GROUP>
+        <GROUP id="{093418B2-9BD7-58CF-DC6E-CBD8F4530C9D}" name="components">
+          <FILE id="VYyClp" name="ControlGroup.cpp" compile="1" resource="0"
+                file="Source/gui/components/ControlGroup.cpp"/>
+          <FILE id="ZLBjTR" name="ControlGroup.h" compile="0" resource="0" file="Source/gui/components/ControlGroup.h"/>
+          <FILE id="hE4ojV" name="Knob.cpp" compile="1" resource="0" file="Source/gui/components/Knob.cpp"/>
+          <FILE id="waRK0p" name="Knob.h" compile="0" resource="0" file="Source/gui/components/Knob.h"/>
+          <FILE id="CFI2ov" name="KnobBlue.cpp" compile="1" resource="0" file="Source/gui/components/KnobBlue.cpp"/>
+          <FILE id="QsNQ6H" name="KnobBlue.h" compile="0" resource="0" file="Source/gui/components/KnobBlue.h"/>
+          <FILE id="OaUG9D" name="KnobNegPos.cpp" compile="1" resource="0" file="Source/gui/components/KnobNegPos.cpp"/>
+          <FILE id="Q5r5UX" name="KnobNegPos.h" compile="0" resource="0" file="Source/gui/components/KnobNegPos.h"/>
+          <FILE id="WBj4za" name="KnobOrange.cpp" compile="1" resource="0" file="Source/gui/components/KnobOrange.cpp"/>
+          <FILE id="Z6w7tu" name="KnobOrange.h" compile="0" resource="0" file="Source/gui/components/KnobOrange.h"/>
+          <FILE id="pvbBTZ" name="KnobSmall.cpp" compile="1" resource="0" file="Source/gui/components/KnobSmall.cpp"/>
+          <FILE id="eTSUQr" name="KnobSmall.h" compile="0" resource="0" file="Source/gui/components/KnobSmall.h"/>
+        </GROUP>
+        <FILE id="EsE87E" name="ControlGroupKnobs.cpp" compile="1" resource="0"
+              file="Source/gui/ControlGroupKnobs.cpp"/>
+        <FILE id="wr7gy8" name="ControlGroupKnobs.h" compile="0" resource="0"
+              file="Source/gui/ControlGroupKnobs.h"/>
+      </GROUP>
+      <FILE id="w1hC7c" name="includes.h" compile="0" resource="0" file="Source/includes.h"/>
+      <FILE id="ZQzwRG" name="MidiProcessing.cpp" compile="1" resource="0"
+            file="Source/MidiProcessing.cpp"/>
+      <FILE id="b5Oqrf" name="MidiProcessing.h" compile="0" resource="0"
+            file="Source/MidiProcessing.h"/>
+      <FILE id="l9zR7x" name="mios32_config.h" compile="0" resource="0" file="Source/mios32_config.h"/>
+      <FILE id="uTzW9I" name="mios32_wrapper_code.c" compile="1" resource="0"
+            file="Source/mios32_wrapper_code.c"/>
+      <GROUP id="{13AEF4EC-699B-BA40-2B64-61C2E339E3D6}" name="resid">
+        <FILE id="sNflq2" name="aclocal.m4" compile="0" resource="1" file="resid/aclocal.m4"/>
+        <FILE id="zKOREn" name="AUTHORS" compile="0" resource="1" file="resid/AUTHORS"/>
+        <FILE id="XkG84a" name="ChangeLog" compile="0" resource="1" file="resid/ChangeLog"/>
+        <FILE id="rrZihU" name="config.cache" compile="0" resource="1" file="resid/config.cache"/>
+        <FILE id="g6qLfI" name="config.guess" compile="0" resource="1" file="resid/config.guess"/>
+        <FILE id="RoG7tk" name="config.log" compile="0" resource="1" file="resid/config.log"/>
+        <FILE id="W7ryZy" name="config.status" compile="0" resource="1" file="resid/config.status"/>
+        <FILE id="RrjCPk" name="config.sub" compile="0" resource="1" file="resid/config.sub"/>
+        <FILE id="kppLjU" name="configure" compile="0" resource="1" file="resid/configure"/>
+        <FILE id="qYMKJ8" name="configure.in" compile="0" resource="1" file="resid/configure.in"/>
+        <FILE id="FvLxfe" name="COPYING" compile="0" resource="1" file="resid/COPYING"/>
+        <FILE id="w8cfoX" name="depcomp" compile="0" resource="1" file="resid/depcomp"/>
+        <FILE id="a8sYRh" name="envelope.cc" compile="1" resource="0" file="resid/envelope.cc"/>
+        <FILE id="NXRsqg" name="envelope.h" compile="0" resource="0" file="resid/envelope.h"/>
+        <FILE id="EvhPHw" name="extfilt.cc" compile="1" resource="0" file="resid/extfilt.cc"/>
+        <FILE id="KgrNBi" name="extfilt.h" compile="0" resource="0" file="resid/extfilt.h"/>
+        <FILE id="EUZA0C" name="filter.cc" compile="1" resource="0" file="resid/filter.cc"/>
+        <FILE id="t49k41" name="filter.h" compile="0" resource="0" file="resid/filter.h"/>
+        <FILE id="iwsi5N" name="INSTALL" compile="0" resource="1" file="resid/INSTALL"/>
+        <FILE id="AVVQwc" name="install-sh" compile="0" resource="1" file="resid/install-sh"/>
+        <FILE id="SjYk2B" name="libtool" compile="0" resource="1" file="resid/libtool"/>
+        <FILE id="QiWchi" name="ltconfig" compile="0" resource="1" file="resid/ltconfig"/>
+        <FILE id="rqLz5d" name="ltmain.sh" compile="0" resource="1" file="resid/ltmain.sh"/>
+        <FILE id="fdiv0E" name="Makefile" compile="0" resource="1" file="resid/Makefile"/>
+        <FILE id="Wa9Fjn" name="Makefile.am" compile="0" resource="1" file="resid/Makefile.am"/>
+        <FILE id="mu3aCA" name="Makefile.in" compile="0" resource="1" file="resid/Makefile.in"/>
+        <FILE id="PSbO9F" name="missing" compile="0" resource="1" file="resid/missing"/>
+        <FILE id="G4fU2z" name="mkinstalldirs" compile="0" resource="1" file="resid/mkinstalldirs"/>
+        <FILE id="ST469E" name="NEWS" compile="0" resource="1" file="resid/NEWS"/>
+        <FILE id="NVfmrj" name="pot.cc" compile="1" resource="0" file="resid/pot.cc"/>
+        <FILE id="fqqIcr" name="pot.h" compile="0" resource="0" file="resid/pot.h"/>
+        <FILE id="Vo3mMK" name="README" compile="0" resource="1" file="resid/README"/>
+        <FILE id="MGRHC2" name="resid.cc" compile="1" resource="0" file="resid/resid.cc"/>
+        <FILE id="NMtgBB" name="resid.h" compile="0" resource="0" file="resid/resid.h"/>
+        <FILE id="c13KIs" name="samp2src.pl" compile="0" resource="1" file="resid/samp2src.pl"/>
+        <FILE id="rxn7U7" name="siddefs.h" compile="0" resource="0" file="resid/siddefs.h"/>
+        <FILE id="zwt7HJ" name="siddefs.h.in" compile="0" resource="1" file="resid/siddefs.h.in"/>
+        <FILE id="RQBYhV" name="spline.h" compile="0" resource="0" file="resid/spline.h"/>
+        <FILE id="UKTs4O" name="THANKS" compile="0" resource="1" file="resid/THANKS"/>
+        <FILE id="FZcQbE" name="TODO" compile="0" resource="1" file="resid/TODO"/>
+        <FILE id="pTzZXP" name="version.cc" compile="1" resource="0" file="resid/version.cc"/>
+        <FILE id="fc6k0R" name="voice.cc" compile="1" resource="0" file="resid/voice.cc"/>
+        <FILE id="yt8cG2" name="voice.h" compile="0" resource="0" file="resid/voice.h"/>
+        <FILE id="UlAZb3" name="wave.cc" compile="1" resource="0" file="resid/wave.cc"/>
+        <FILE id="gwrKWp" name="wave.h" compile="0" resource="0" file="resid/wave.h"/>
+        <FILE id="cIqns6" name="wave6581__ST.cc" compile="1" resource="0" file="resid/wave6581__ST.cc"/>
+        <FILE id="zCEmRD" name="wave6581__ST.dat" compile="0" resource="1"
+              file="resid/wave6581__ST.dat"/>
+        <FILE id="fsjxK1" name="wave6581_P_T.cc" compile="1" resource="0" file="resid/wave6581_P_T.cc"/>
+        <FILE id="FM6qsH" name="wave6581_P_T.dat" compile="0" resource="1"
+              file="resid/wave6581_P_T.dat"/>
+        <FILE id="gF7bXa" name="wave6581_PS_.cc" compile="1" resource="0" file="resid/wave6581_PS_.cc"/>
+        <FILE id="Dj7cJq" name="wave6581_PS_.dat" compile="0" resource="1"
+              file="resid/wave6581_PS_.dat"/>
+        <FILE id="K5NTeV" name="wave6581_PST.cc" compile="1" resource="0" file="resid/wave6581_PST.cc"/>
+        <FILE id="dVKSEz" name="wave6581_PST.dat" compile="0" resource="1"
+              file="resid/wave6581_PST.dat"/>
+        <FILE id="YHzfF5" name="wave8580__ST.cc" compile="1" resource="0" file="resid/wave8580__ST.cc"/>
+        <FILE id="eOheSX" name="wave8580__ST.dat" compile="0" resource="1"
+              file="resid/wave8580__ST.dat"/>
+        <FILE id="DoLWvw" name="wave8580_P_T.cc" compile="1" resource="0" file="resid/wave8580_P_T.cc"/>
+        <FILE id="PgBxFU" name="wave8580_P_T.dat" compile="0" resource="1"
+              file="resid/wave8580_P_T.dat"/>
+        <FILE id="OnPUgh" name="wave8580_PS_.cc" compile="1" resource="0" file="resid/wave8580_PS_.cc"/>
+        <FILE id="jE5bAC" name="wave8580_PS_.dat" compile="0" resource="1"
+              file="resid/wave8580_PS_.dat"/>
+        <FILE id="lUQl1d" name="wave8580_PST.cc" compile="1" resource="0" file="resid/wave8580_PST.cc"/>
+        <FILE id="F9jRLg" name="wave8580_PST.dat" compile="0" resource="1"
+              file="resid/wave8580_PST.dat"/>
+      </GROUP>
+      <GROUP id="{6C4E77A8-15E0-2123-7AFA-020B436F86B7}" name="core">
+        <FILE id="l0uIVy" name="app.cpp" compile="1" resource="0" file="../core/app.cpp"/>
+        <FILE id="lb6QSm" name="app.h" compile="0" resource="0" file="../core/app.h"/>
+        <GROUP id="{11D22F46-6BC5-1AA2-CF21-DAC005A6AF5F}" name="components">
+          <FILE id="OsvKM9" name="MbSidArp.cpp" compile="1" resource="0" file="../core/components/MbSidArp.cpp"/>
+          <FILE id="MrrNFF" name="MbSidArp.h" compile="0" resource="0" file="../core/components/MbSidArp.h"/>
+          <FILE id="cg46Kz" name="MbSidClock.cpp" compile="1" resource="0" file="../core/components/MbSidClock.cpp"/>
+          <FILE id="PZmgqR" name="MbSidClock.h" compile="0" resource="0" file="../core/components/MbSidClock.h"/>
+          <FILE id="v4WWhW" name="MbSidDrum.cpp" compile="1" resource="0" file="../core/components/MbSidDrum.cpp"/>
+          <FILE id="WqnsUZ" name="MbSidDrum.h" compile="0" resource="0" file="../core/components/MbSidDrum.h"/>
+          <FILE id="jEa5uG" name="MbSidEnv.cpp" compile="1" resource="0" file="../core/components/MbSidEnv.cpp"/>
+          <FILE id="NeiFZk" name="MbSidEnv.h" compile="0" resource="0" file="../core/components/MbSidEnv.h"/>
+          <FILE id="gfsFS7" name="MbSidEnvLead.cpp" compile="1" resource="0"
+                file="../core/components/MbSidEnvLead.cpp"/>
+          <FILE id="JfbUyB" name="MbSidEnvLead.h" compile="0" resource="0" file="../core/components/MbSidEnvLead.h"/>
+          <FILE id="M3F0Rt" name="MbSidFilter.cpp" compile="1" resource="0" file="../core/components/MbSidFilter.cpp"/>
+          <FILE id="rDcKHh" name="MbSidFilter.h" compile="0" resource="0" file="../core/components/MbSidFilter.h"/>
+          <FILE id="VzxtgW" name="MbSidLfo.cpp" compile="1" resource="0" file="../core/components/MbSidLfo.cpp"/>
+          <FILE id="C2elF4" name="MbSidLfo.h" compile="0" resource="0" file="../core/components/MbSidLfo.h"/>
+          <FILE id="ZWMZrc" name="MbSidMidiVoice.cpp" compile="1" resource="0"
+                file="../core/components/MbSidMidiVoice.cpp"/>
+          <FILE id="wJep7S" name="MbSidMidiVoice.h" compile="0" resource="0"
+                file="../core/components/MbSidMidiVoice.h"/>
+          <FILE id="kCdxjo" name="MbSidMod.cpp" compile="1" resource="0" file="../core/components/MbSidMod.cpp"/>
+          <FILE id="iM1mep" name="MbSidMod.h" compile="0" resource="0" file="../core/components/MbSidMod.h"/>
+          <FILE id="oPA2ga" name="MbSidRandomGen.cpp" compile="1" resource="0"
+                file="../core/components/MbSidRandomGen.cpp"/>
+          <FILE id="Sk4MLG" name="MbSidRandomGen.h" compile="0" resource="0"
+                file="../core/components/MbSidRandomGen.h"/>
+          <FILE id="XS5JYa" name="MbSidSeq.cpp" compile="1" resource="0" file="../core/components/MbSidSeq.cpp"/>
+          <FILE id="YeImnP" name="MbSidSeq.h" compile="0" resource="0" file="../core/components/MbSidSeq.h"/>
+          <FILE id="uqMJGM" name="MbSidSeqBassline.cpp" compile="1" resource="0"
+                file="../core/components/MbSidSeqBassline.cpp"/>
+          <FILE id="Qfer78" name="MbSidSeqBassline.h" compile="0" resource="0"
+                file="../core/components/MbSidSeqBassline.h"/>
+          <FILE id="E2Qbyb" name="MbSidSeqDrum.cpp" compile="1" resource="0"
+                file="../core/components/MbSidSeqDrum.cpp"/>
+          <FILE id="Z5w1Qm" name="MbSidSeqDrum.h" compile="0" resource="0" file="../core/components/MbSidSeqDrum.h"/>
+          <FILE id="OvVjuB" name="MbSidVoice.cpp" compile="1" resource="0" file="../core/components/MbSidVoice.cpp"/>
+          <FILE id="XNUQYW" name="MbSidVoice.h" compile="0" resource="0" file="../core/components/MbSidVoice.h"/>
+          <FILE id="my6tQo" name="MbSidVoiceDrum.cpp" compile="1" resource="0"
+                file="../core/components/MbSidVoiceDrum.cpp"/>
+          <FILE id="MeCYsv" name="MbSidVoiceDrum.h" compile="0" resource="0"
+                file="../core/components/MbSidVoiceDrum.h"/>
+          <FILE id="NcurnS" name="MbSidVoiceQueue.cpp" compile="1" resource="0"
+                file="../core/components/MbSidVoiceQueue.cpp"/>
+          <FILE id="nqH3Y2" name="MbSidVoiceQueue.h" compile="0" resource="0"
+                file="../core/components/MbSidVoiceQueue.h"/>
+          <FILE id="jOGXcz" name="MbSidWt.cpp" compile="1" resource="0" file="../core/components/MbSidWt.cpp"/>
+          <FILE id="vbjHiJ" name="MbSidWt.h" compile="0" resource="0" file="../core/components/MbSidWt.h"/>
+          <FILE id="LA45sF" name="MbSidWtDrum.cpp" compile="1" resource="0" file="../core/components/MbSidWtDrum.cpp"/>
+          <FILE id="V760Ri" name="MbSidWtDrum.h" compile="0" resource="0" file="../core/components/MbSidWtDrum.h"/>
+        </GROUP>
+        <FILE id="RHyX6A" name="MbSid.cpp" compile="1" resource="0" file="../core/MbSid.cpp"/>
+        <FILE id="Dofqkp" name="MbSid.h" compile="0" resource="0" file="../core/MbSid.h"/>
+        <FILE id="OvNnAX" name="MbSidAsid.cpp" compile="1" resource="0" file="../core/MbSidAsid.cpp"/>
+        <FILE id="B2IIDi" name="MbSidAsid.h" compile="0" resource="0" file="../core/MbSidAsid.h"/>
+        <FILE id="vi9Fns" name="MbSidEnvironment.cpp" compile="1" resource="0"
+              file="../core/MbSidEnvironment.cpp"/>
+        <FILE id="hD2Uzr" name="MbSidEnvironment.h" compile="0" resource="0"
+              file="../core/MbSidEnvironment.h"/>
+        <FILE id="qxNGc9" name="MbSidPatch.cpp" compile="1" resource="0" file="../core/MbSidPatch.cpp"/>
+        <FILE id="Yy5biw" name="MbSidPatch.h" compile="0" resource="0" file="../core/MbSidPatch.h"/>
+        <FILE id="e5wTFy" name="MbSidSe.cpp" compile="1" resource="0" file="../core/MbSidSe.cpp"/>
+        <FILE id="cbafNA" name="MbSidSe.h" compile="0" resource="0" file="../core/MbSidSe.h"/>
+        <FILE id="UQy6bd" name="MbSidSeBassline.cpp" compile="1" resource="0"
+              file="../core/MbSidSeBassline.cpp"/>
+        <FILE id="RH5Jzf" name="MbSidSeBassline.h" compile="0" resource="0"
+              file="../core/MbSidSeBassline.h"/>
+        <FILE id="OFL263" name="MbSidSeDrum.cpp" compile="1" resource="0" file="../core/MbSidSeDrum.cpp"/>
+        <FILE id="Q5Oq72" name="MbSidSeDrum.h" compile="0" resource="0" file="../core/MbSidSeDrum.h"/>
+        <FILE id="JiMeoR" name="MbSidSeLead.cpp" compile="1" resource="0" file="../core/MbSidSeLead.cpp"/>
+        <FILE id="IngvP6" name="MbSidSeLead.h" compile="0" resource="0" file="../core/MbSidSeLead.h"/>
+        <FILE id="BesBHO" name="MbSidSeMulti.cpp" compile="1" resource="0"
+              file="../core/MbSidSeMulti.cpp"/>
+        <FILE id="eFhzkS" name="MbSidSeMulti.h" compile="0" resource="0" file="../core/MbSidSeMulti.h"/>
+        <FILE id="eZ9FZi" name="MbSidStructs.h" compile="0" resource="0" file="../core/MbSidStructs.h"/>
+        <FILE id="kVebcJ" name="MbSidSysEx.cpp" compile="1" resource="0" file="../core/MbSidSysEx.cpp"/>
+        <FILE id="SQXfCR" name="MbSidSysEx.h" compile="0" resource="0" file="../core/MbSidSysEx.h"/>
+        <FILE id="jXLwCE" name="MbSidTables.cpp" compile="1" resource="0" file="../core/MbSidTables.cpp"/>
+        <FILE id="GWNYhU" name="MbSidTables.h" compile="0" resource="0" file="../core/MbSidTables.h"/>
+        <FILE id="GNdhQz" name="sid_bank_preset_a.inc" compile="0" resource="1"
+              file="../core/sid_bank_preset_a.inc"/>
+        <FILE id="gfPbzf" name="tasks.h" compile="0" resource="0" file="../core/tasks.h"/>
+      </GROUP>
+      <GROUP id="{A8E0B45B-1B71-52B5-C701-F20A4CF52C54}" name="random">
+        <FILE id="iqF742" name="jsw_rand.c" compile="1" resource="0" file="../../../../modules/random/jsw_rand.c"/>
+        <FILE id="MHFR1U" name="jsw_rand.h" compile="0" resource="0" file="../../../../modules/random/jsw_rand.h"/>
+        <FILE id="LAJER2" name="random.mk" compile="0" resource="1" file="../../../../modules/random/random.mk"/>
+      </GROUP>
+      <GROUP id="{35FBAEF5-F301-7F54-795B-554F46B7E1C5}" name="notestack">
+        <FILE id="aRfSTA" name="notestack.c" compile="1" resource="0" file="../../../../modules/notestack/notestack.c"/>
+        <FILE id="zuetdM" name="notestack.h" compile="0" resource="0" file="../../../../modules/notestack/notestack.h"/>
+        <FILE id="noqfyH" name="notestack.mk" compile="0" resource="1" file="../../../../modules/notestack/notestack.mk"/>
+      </GROUP>
+      <FILE id="GtIM5L" name="tasks.c" compile="1" resource="0" file="Source/tasks.c"/>
+      <GROUP id="{388B43DD-602E-0C80-CC80-7C8C8595AFBE}" name="aout">
+        <FILE id="BLRbKl" name="aout.c" compile="1" resource="0" file="../../../../../../mios32/trunk/modules/aout/aout.c"/>
+        <FILE id="IFWP54" name="aout.h" compile="0" resource="0" file="../../../../../../mios32/trunk/modules/aout/aout.h"/>
+        <FILE id="qRAdCO" name="aout.mk" compile="0" resource="1" file="../../../../../../mios32/trunk/modules/aout/aout.mk"/>
+        <FILE id="JtdocU" name="aout_hz_v_table.inc" compile="0" resource="1"
+              file="../../../../../../mios32/trunk/modules/aout/aout_hz_v_table.inc"/>
+      </GROUP>
+      <GROUP id="{98BBB1FA-8BF0-9E83-FABA-FAA771096467}" name="sid">
+        <FILE id="ddA8ly" name="sid.c" compile="1" resource="0" file="../../../../../../mios32/trunk/modules/sid/sid.c"/>
+        <FILE id="OQ4Vu5" name="sid.h" compile="0" resource="0" file="../../../../../../mios32/trunk/modules/sid/sid.h"/>
+        <FILE id="qnvYjp" name="sid.mk" compile="0" resource="1" file="../../../../../../mios32/trunk/modules/sid/sid.mk"/>
+      </GROUP>
+      <GROUP id="{211EC651-D542-5DDD-2834-8E74940CB36F}" name="juce">
+        <FILE id="Y0JgPu" name="app_lcd.cpp" compile="1" resource="0" file="../../../../../../mios32/trunk/modules/app_lcd/juce/app_lcd.cpp"/>
+        <FILE id="U3woCY" name="app_lcd.h" compile="0" resource="0" file="../../../../../../mios32/trunk/modules/app_lcd/juce/app_lcd.h"/>
+        <FILE id="N4Rokl" name="CLCDView.cpp" compile="1" resource="0" file="../../../../../../mios32/trunk/modules/app_lcd/juce/CLCDView.cpp"/>
+        <FILE id="vxo4MN" name="CLCDView.h" compile="0" resource="0" file="../../../../../../mios32/trunk/modules/app_lcd/juce/CLCDView.h"/>
+        <FILE id="irDnHf" name="CLCDView_charset.inc" compile="0" resource="1"
+              file="../../../../../../mios32/trunk/modules/app_lcd/juce/CLCDView_charset.inc"/>
+      </GROUP>
+      <FILE id="jrbND0" name="PluginProcessor.cpp" compile="1" resource="0"
+            file="Source/PluginProcessor.cpp"/>
+      <FILE id="VZsgei" name="PluginProcessor.h" compile="0" resource="0"
+            file="Source/PluginProcessor.h"/>
+      <FILE id="fnhmUP" name="PluginEditor.cpp" compile="1" resource="0"
+            file="Source/PluginEditor.cpp"/>
+      <FILE id="JM6zL1" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+    </GROUP>
+  </MAINGROUP>
+  <MODULES>
+    <MODULE id="juce_core" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_events" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_gui_audio" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_cryptography" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_video" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_opengl" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_audio_devices" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_audio_processors" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_audio_plugin_client" showAllCode="1" useLocalCopy="1"/>
+    <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="1"/>
+  </MODULES>
+  <JUCEOPTIONS JUCE_QUICKTIME="disabled"/>
+  <EXPORTFORMATS>
+    <XCODE_MAC targetFolder="Builds/MacOSX" juceFolder="../../../../../../mios32/trunk/tools/juce/modules"
+               vstFolder="~/SDKs/vstsdk2.4" postbuildCommand="&#10;# This script takes the build product and copies it to the AU, VST, and RTAS folders, depending on &#10;# which plugin types you've built&#10;&#10;original=$CONFIGURATION_BUILD_DIR/$FULL_PRODUCT_NAME&#10;&#10;# this looks inside the binary to detect which platforms are needed.. &#10;copyAU=&#96;nm -g &quot;$CONFIGURATION_BUILD_DIR/$EXECUTABLE_PATH&quot; | grep -i 'AudioUnit' | wc -l&#96;&#10;copyVST=&#96;nm -g &quot;$CONFIGURATION_BUILD_DIR/$EXECUTABLE_PATH&quot; | grep -i 'VSTPlugin' | wc -l&#96;&#10;copyRTAS=&#96;nm -g &quot;$CONFIGURATION_BUILD_DIR/$EXECUTABLE_PATH&quot; | grep -i 'CProcess' | wc -l&#96;&#10;copyAAX=&#96;nm -g &quot;$CONFIGURATION_BUILD_DIR/$EXECUTABLE_PATH&quot; | grep -i 'GetEffectDescriptions' | wc -l&#96;&#10;&#10;if [ $copyAU -gt 0 ]; then&#10;  echo &quot;Copying to AudioUnit folder...&quot;&#10;  AU=~/Library/Audio/Plug-Ins/Components/$PRODUCT_NAME.component&#10;  if [ -d &quot;$AU&quot; ]; then &#10;    rm -r &quot;$AU&quot;&#10;  fi&#10;&#10;  cp -r &quot;$original&quot; &quot;$AU&quot;&#10;  sed -i &quot;&quot; -e 's/TDMwPTul/BNDLPTul/g' &quot;$AU/Contents/PkgInfo&quot;&#10;  sed -i &quot;&quot; -e 's/TDMw/BNDL/g' &quot;$AU/Contents/$INFOPLIST_FILE&quot;&#10;fi&#10;&#10;if [ $copyVST -gt 0 ]; then&#10;  echo &quot;Copying to VST folder...&quot;&#10;  VST=~/Library/Audio/Plug-Ins/VST/$PRODUCT_NAME.vst&#10;  if [ -d &quot;$VST&quot; ]; then &#10;    rm -r &quot;$VST&quot;&#10;  fi&#10;&#10;  cp -r &quot;$original&quot; &quot;$VST&quot;&#10;  sed -i &quot;&quot; -e 's/TDMwPTul/BNDLPTul/g' &quot;$VST/Contents/PkgInfo&quot;&#10;  sed -i &quot;&quot; -e 's/TDMw/BNDL/g' &quot;$VST/Contents/$INFOPLIST_FILE&quot;&#10;fi&#10;&#10;if [ $copyRTAS -gt 0 ]; then&#10;  echo &quot;Copying to RTAS folder...&quot;&#10;  RTAS=/Library/Application\ Support/Digidesign/Plug-Ins/$PRODUCT_NAME.dpm&#10;  if [ -d &quot;$RTAS&quot; ]; then&#10;    rm -r &quot;$RTAS&quot;&#10;  fi&#10;&#10;  cp -r &quot;$original&quot; &quot;$RTAS&quot;&#10;fi&#10;&#10;if [ $copyAAX -gt 0 ]; then&#10;  echo &quot;Copying to AAX folder...&quot;&#10;&#10;  if [ -d &quot;/Applications/ProTools_3PDev/Plug-Ins&quot; ]; then&#10;    AAX1=&quot;/Applications/ProTools_3PDev/Plug-Ins/$PRODUCT_NAME.aaxplugin&quot;&#10;&#10;    if [ -d &quot;$AAX1&quot; ]; then&#10;      rm -r &quot;$AAX1&quot;&#10;    fi&#10;&#10;    cp -r &quot;$original&quot; &quot;$AAX1&quot;&#10;  fi&#10;&#10;  if [ -d &quot;/Library/Application Support/Avid/Audio/Plug-Ins&quot; ]; then&#10;    AAX2=&quot;/Library/Application Support/Avid/Audio/Plug-Ins/$PRODUCT_NAME.aaxplugin&quot;&#10;&#10;    if [ -d &quot;$AAX2&quot; ]; then&#10;      rm -r &quot;$AAX2&quot;&#10;    fi&#10;&#10;    cp -r &quot;$original&quot; &quot;$AAX2&quot;&#10;  fi&#10;fi&#10;">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
+                       isDebug="1" optimisation="1" targetName="MIDIboxSID" headerPath="../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
+        <CONFIGURATION name="Release" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
+                       isDebug="0" optimisation="2" targetName="MIDIboxSID" headerPath="../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
+      </CONFIGURATIONS>
+    </XCODE_MAC>
+    <VS2010 targetFolder="Builds/VisualStudio2010" libraryType="1" juceFolder="../../../../tools/juce/modules">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
+                       isDebug="1" optimisation="1" targetName="MIDIboxSID" headerPath="../../Source&#10;../../../core&#10;../../../core/components&#10;../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
+        <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
+                       isDebug="0" optimisation="2" targetName="MIDIboxSID" headerPath="../../Source&#10;../../../core&#10;../../../core/components&#10;../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
+      </CONFIGURATIONS>
+    </VS2010>
+    <LINUX_MAKE targetFolder="Builds/Linux" juceFolder="../../../../tools/juce/modules">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" libraryPath="/usr/X11R6/lib/" isDebug="1" optimisation="1"
+                       targetName="MIDIboxSID" headerPath="../../Source&#10;../../../core&#10;../../../core/components&#10;../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
+        <CONFIGURATION name="Release" libraryPath="/usr/X11R6/lib/" isDebug="0" optimisation="2"
+                       targetName="MIDIboxSID" headerPath="../../Source&#10;../../../core&#10;../../../core/components&#10;../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
+      </CONFIGURATIONS>
+    </LINUX_MAKE>
+  </EXPORTFORMATS>
+</JUCERPROJECT>

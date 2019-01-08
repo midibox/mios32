@@ -1,0 +1,54 @@
+RESET_HW
+
+LCD "%CRanges Test"
+
+
+EVENT_BUTTON id=  1  fwd_id=LED:1  type=NoteOn key=36 range=0:127  lcd_pos=1:1:2 label="^std_btn"
+EVENT_BUTTON id=  2  fwd_id=LED:2  type=NoteOn key=37 range=127:0  lcd_pos=1:1:2 label="^std_btn"
+EVENT_BUTTON id=  3  fwd_id=LED:3  type=NoteOn key=38 range=63:65  lcd_pos=1:1:2 label="^std_btn"
+EVENT_BUTTON id=  4  fwd_id=LED:4  type=NoteOn key=39 range=0:10   lcd_pos=1:1:2 label="^std_btn"
+
+
+
+EVENT_AINSER id=  1  fwd_id=LED_MATRIX:1    type=CC     chn= 1 cc= 16   range=  0:127   lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  2  fwd_id=LED_MATRIX:2    type=CC     chn= 1 cc= 17   range=127:0     lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  3  fwd_id=LED_MATRIX:3    type=CC     chn= 1 cc= 18   range= 63:65    lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  4  fwd_id=LED_MATRIX:4    type=CC     chn= 1 cc= 19   range=  1:10    lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  5  fwd_id=LED_MATRIX:5    type=CC     chn= 1 cc= 20   range= 10:1     lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  6  fwd_id=LED_MATRIX:6    type=CC     chn= 1 cc= 21   range=  0:255   lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  7  fwd_id=LED_MATRIX:7    type=CC     chn= 1 cc= 22   range=255:0     lcd_pos=1:1:1  label="^std_aser"
+
+
+
+EVENT_ENC    id=  1  fwd_id=LED_MATRIX:1    type=CC     chn= 1 cc= 16   range=  0:127   lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  2  fwd_id=LED_MATRIX:2    type=CC     chn= 1 cc= 17   range=127:0     lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  3  fwd_id=LED_MATRIX:3    type=CC     chn= 1 cc= 18   range= 63:65    lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  4  fwd_id=LED_MATRIX:4    type=CC     chn= 1 cc= 19   range=  1:10    lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  5  fwd_id=LED_MATRIX:5    type=CC     chn= 1 cc= 20   range= 10:1     lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  6  fwd_id=LED_MATRIX:6    type=CC     chn= 1 cc= 21   range=  0:255   lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  7  fwd_id=LED_MATRIX:7    type=CC     chn= 1 cc= 22   range=255:0     lcd_pos=1:1:1  label="^std_enc"
+
+
+# encoder hardware configuration
+ENC n=  1   sr= 5  pins=0:1   type=non_detented
+ENC n=  2   sr= 5  pins=2:3   type=non_detented
+ENC n=  3   sr= 5  pins=4:5   type=non_detented
+ENC n=  4   sr= 5  pins=6:7   type=non_detented
+ENC n=  5   sr= 6  pins=0:1   type=non_detented
+ENC n=  6   sr= 6  pins=2:3   type=non_detented
+ENC n=  7   sr= 6  pins=4:5   type=non_detented
+ENC n=  8   sr= 6  pins=6:7   type=non_detented
+ENC n=  9   sr= 7  pins=0:1   type=non_detented
+ENC n= 10   sr= 7  pins=2:3   type=non_detented
+ENC n= 11   sr= 7  pins=4:5   type=non_detented
+ENC n= 12   sr= 7  pins=6:7   type=non_detented
+ENC n= 13   sr= 8  pins=0:1   type=non_detented
+ENC n= 14   sr= 8  pins=2:3   type=non_detented
+ENC n= 15   sr= 8  pins=4:5   type=non_detented
+ENC n= 16   sr= 8  pins=6:7   type=non_detented
+
+# LEDring configuration
+DOUT_MATRIX n= 1   rows=16 inverted=0  sr_dout_sel1= 1 sr_dout_sel2= 2  sr_dout_r1= 3 sr_dout_r2= 4  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+
+# enable first AINSER module
+AINSER n=  1   enabled=1  cs=0  resolution=7bit

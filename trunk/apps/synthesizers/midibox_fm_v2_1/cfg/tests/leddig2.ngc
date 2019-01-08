@@ -1,0 +1,86 @@
+
+# How to implement the LED Digit handling for the Logic Control protocol
+
+RESET_HW
+
+LCD "%CLED Digit Demo"
+
+# HW definitions for "Common Cathode" Digits
+# see also http://www.ucapps.de/midibox_ng/mbng_led_digits_mtc.pdf
+DOUT_MATRIX n=1   rows=8   sr_dout_r1=1  inverted_row=0  mirrored_row=0  sr_dout_sel1=2  inverted_sel=0
+DOUT_MATRIX n=2   rows=8   sr_dout_r1=3  inverted_row=0  mirrored_row=0  sr_dout_sel1=4  inverted_sel=0
+
+# for "Common Anode" set inverted_row=1 and inverted_sel=1
+# if the segment connections are mirrored, set mirrored_row=1
+
+
+# the digits are accessible with:
+# first matrix:  LED_MATRIX:1 ... LED_MATRIX:8 
+# second matrix: LED_MATRIX:17 .. LED_MATRIX:24
+
+
+# direct access to the digits via CC#64..CC#73
+EVENT_LED_MATRIX id=17 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 64  syxdump_pos=10:0
+EVENT_LED_MATRIX id=18 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 65  syxdump_pos=10:1
+EVENT_LED_MATRIX id=1  led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 66  syxdump_pos=10:2
+EVENT_LED_MATRIX id=2  led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 67  syxdump_pos=10:3
+EVENT_LED_MATRIX id=3  led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 68  syxdump_pos=10:4
+EVENT_LED_MATRIX id=4  led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 69  syxdump_pos=10:5
+EVENT_LED_MATRIX id=5  led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 70  syxdump_pos=10:6
+EVENT_LED_MATRIX id=6  led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 71  syxdump_pos=10:7
+EVENT_LED_MATRIX id=7  led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 72  syxdump_pos=10:8
+EVENT_LED_MATRIX id=8  led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 73  syxdump_pos=10:9
+
+# status digits
+EVENT_LED_MATRIX id=23 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 75  syxdump_pos=11:1
+EVENT_LED_MATRIX id=24 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 74  syxdump_pos=11:0
+
+
+# receive via SysEx
+
+# Device ID selects the device:
+#   0x10 : Logic Control
+#   0x11 : Logic Control XT
+#   0x14 : Mackie Control
+#   0x15 : Mackie Control XT
+SYSEX_VAR dev=0x10
+
+# this generic receiver (without controller assignment) receives the MTC digits
+# and notifies all events which select syxdump_pos=10:<pos-in-dump>
+EVENT_RECEIVER id=10  type=SysEx  stream="0xf0 0x00 0x00 0x66 ^dev 0x10 ^dump"
+
+# this generic receiver (without controller assignment) receives the status digits
+# and notifies all events which select syxdump_pos=11:<pos-in-dump>
+EVENT_RECEIVER id=11  type=SysEx  stream="0xf0 0x00 0x00 0x66 ^dev 0x11 ^dump"
+
+
+
+
+# to activate the LC protocol
+# complete example can be found under cfg/templates/logictrl.ngc
+# Receive Device Query -> send Host Connection Query
+EVENT_RECEIVER id=  1  fwd_id=SENDER:1 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x00 0xf7"
+EVENT_SENDER   id=  1 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x01 0x4d 0x42 0x4e 0x47 0x56 0x31 0x00 0x00 0x00 0x00 0xf7"
+
+
+# Receive Host Connection Reply -> send Host Connection Confirmation
+EVENT_RECEIVER id=  2  fwd_id=SENDER:2 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x02 0xf7"
+EVENT_SENDER   id=  2 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x03 0x4d 0x42 0x4e 0x47 0x56 0x31 0xf7"
+
+
+# Firmware version request
+EVENT_RECEIVER id=  3  fwd_id=SENDER:3 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x13 00 0xf7"
+EVENT_SENDER   id=  3 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x14 0x56 0x31 0x2e 0x34 0x32 0xf7"
+
+
+# Special Query for Mackie Control
+EVENT_RECEIVER id=  3  fwd_id=SENDER:3 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1a 0xf7"
+EVENT_SENDER   id=  3 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1b 0x42 0xf7"

@@ -1,0 +1,101 @@
+<html>
+<head>
+
+<title>PYMIDIVirtualEndpoint</title>
+
+</head>
+<body>
+
+<h1><font color="#000066">PYMIDIVirtualEndpoint</font></h1>
+
+<blockquote>
+<dl>
+	<dt><b>Inherits from:</b></dt>
+		<dd><a href="PYMIDIEndpoint.html">PYMIDIEndpoint</a></dd>
+		<dd><a href="file:///System/Library/Frameworks/Foundation.framework/Versions/C/Resources/English.lproj/Documentation/Reference/ObjC_classic/Classes/NSObject.html#//apple_ref/occ/cl/NSObject">NSObject</a></dd>
+</dl>
+
+<dl>
+	<dt><b>Conforms to:</b></dt>
+		<dd><a href="file:///System/Library/Frameworks/Foundation.framework/Versions/C/Resources/English.lproj/Documentation/Reference/ObjC_classic/Protocols/NSCoding.html#//apple_ref/occ/intf/NSCoding">NSCoding</a></dd>
+		<dd><a href="file:///System/Library/Frameworks/Foundation.framework/Versions/C/Resources/English.lproj/Documentation/Reference/ObjC_classic/Protocols/NSObject.html#//apple_ref/occ/intf/NSObject">NSObject</a> (NSObject)</dd>
+</dl>
+
+<dl>
+	<dt><b>Declared in:</b></dt>
+		<dd>PYMIDI/PYMIDIVirtualEndpoint.h</dd>
+</blockquote>
+
+<hr />
+
+
+<h2>Class Description<hr /></h2>
+
+<p>This is an abstract base class for virtual source and destination
+endpoints.</p>
+
+
+<h2>Method Types<hr /></h2>
+
+<blockquote>
+	
+	Initializing newly allocated endpoints
+	
+	<dl>
+		<dt></dt>
+		<dd><a href="#initWithName:">- initWithName:</a></dd>
+	</dl>
+	
+	Endpoint privacy
+	
+	<dl>
+		<dt></dt>
+		<dd><a href="#isPrivate">- isPrivate</a></dd>
+		<dd><a href="#makePrivate:">- makePrivate</a></dd>
+	</dl>
+
+</blockquote>
+
+
+<h2>Instance Methods<hr /></h2>
+
+
+<h3><a name="initWithName:">initWithName:</a></h3>
+
+<p><code>
+	- (id)<b>initWithName:</b>(NSString*)<em>name</em>
+</code></p>
+
+<p>Initializes a newly allocated virtual endpoint and sets its name to
+the given value.</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="isPrivate">isPrivate</a></h3>
+
+<p><code>
+	- (BOOL)<b>isPrivate</b>
+</code></p>
+
+<p>Returns YES if the receiver is private.</p>
+
+<hr width="25%" align="left" />
+
+
+<h3><a name="makePrivate:">makePrivate:</a></h3>
+
+<p><code>
+	- (void)<b>makePrivate:</b>(BOOL)<em>isPrivate</em>
+</code></p>
+
+<p>Marks the receive as private if isPrivate is YES.</p>
+
+<p>Making an endpoint private makes it invisible to other applications.</p>
+
+<hr width="25%" align="left" />
+
+
+
+</body>
+</html>

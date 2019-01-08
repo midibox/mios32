@@ -1,0 +1,26 @@
+RESET_HW
+
+LCD "%CMap Button Values"
+
+# the used map:
+MAP1  0 1 2 4 8 16 32 64
+
+# define a radio group with a single toggle button but multiple LEDs
+EVENT_BUTTON id=  1  fwd_to_lcd=1  type=CC chn=1 cc=16  button_mode=Toggle  range=map1  radio_group=1  lcd_pos=1:1:1 label="^std_btn"
+
+# Note: the map will only be considered if a button is configured for button_mode=Toggle !
+
+# these LEDs are mapped to radio_group1, and therefore will get an "automatic feedback" whenever the toggle button changes the value (or receives a new value)
+EVENT_LED id=  1  range=0:0    radio_group=1
+EVENT_LED id=  2  range=1:1    radio_group=1
+EVENT_LED id=  3  range=2:2    radio_group=1
+EVENT_LED id=  4  range=4:4    radio_group=1
+EVENT_LED id=  5  range=8:8    radio_group=1
+EVENT_LED id=  6  range=16:16  radio_group=1
+EVENT_LED id=  7  range=32:32  radio_group=1
+EVENT_LED id=  8  range=64:64  radio_group=1
+
+
+# a button which doesn't toggle, but just turns on/off
+# in this case either the lowest or highest item of a map will be taken
+EVENT_BUTTON id=  2  fwd_to_lcd=1  type=CC chn=1 cc=17  button_mode=OnOff  range=map1  radio_group=1  lcd_pos=1:1:1 label="^std_btn"

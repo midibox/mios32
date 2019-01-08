@@ -1,0 +1,34 @@
+# this tricky script shows how to program a keypad for Program Change number entry with 12 buttons (0..9, ENTER, CLEAR)
+#
+# You've to upload three files:
+# - RUNSCR5.NGC (this file)
+# - RUNSCR5.NGR (the run script)
+# - RUNSCR5.NGL (the label file which defines strings for the entry status)
+
+RESET_HW
+
+# start script with ^section == 1..10 for digit button 1, 2, 3, 4, ..., 9, 0
+EVENT_BUTTON id=1  type=Meta  meta=RunSection:1   button_mode=OnOnly
+EVENT_BUTTON id=2  type=Meta  meta=RunSection:2   button_mode=OnOnly
+EVENT_BUTTON id=3  type=Meta  meta=RunSection:3   button_mode=OnOnly
+EVENT_BUTTON id=4  type=Meta  meta=RunSection:4   button_mode=OnOnly
+EVENT_BUTTON id=5  type=Meta  meta=RunSection:5   button_mode=OnOnly
+EVENT_BUTTON id=6  type=Meta  meta=RunSection:6   button_mode=OnOnly
+EVENT_BUTTON id=7  type=Meta  meta=RunSection:7   button_mode=OnOnly
+EVENT_BUTTON id=8  type=Meta  meta=RunSection:8   button_mode=OnOnly
+EVENT_BUTTON id=9  type=Meta  meta=RunSection:9   button_mode=OnOnly
+EVENT_BUTTON id=10 type=Meta  meta=RunSection:10  button_mode=OnOnly
+
+# button 11 is the "enter" button which will send a program change depending
+# on the previous number entry
+EVENT_BUTTON id=11 type=Meta  meta=RunSection:11  button_mode=OnOnly
+
+# button 12 is the "clear" button which will clear the entered value
+EVENT_BUTTON id=12 type=Meta  meta=RunSection:12  button_mode=OnOnly
+
+# this is a dummy event which stores and displays the program change value
+EVENT_LED id=2000 value=0  lcd_pos=1:1:1 label="PrgChange: %3d"
+
+# this dummy event is set when the next keypress should clear the LED:2000 value
+EVENT_LED id=2001 value=0  lcd_pos=1:1:2 label="^pcstate"
+

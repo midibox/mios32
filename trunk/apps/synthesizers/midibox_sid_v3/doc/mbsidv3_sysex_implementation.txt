@@ -1,0 +1,1256 @@
+$Id$
+
+MIDIbox SID V2 SysEx Implementation
+===================================
+
+Implemented SysEx Commands
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  01/a) F0 00 00 7E 4B <device-number> 01 00 <bank> <patch> F7
+        Request a dump of <patch> in <bank>
+
+  01/b) F0 00 00 7E 4B <device-number> 01 08 00 00 F7
+        Request the current patch edit buffer (direct read from RAM)
+
+  01/c) F0 00 00 7E 4B <device-number> 01 70 00 <ensemble> F7
+        Request a dump of <ensemble>
+
+  01/d) F0 00 00 7E 4B <device-number> 01 78 00 <ensemble> F7
+        Request the current ensemble edit buffer (direct read from RAM)
+        The locations of unavailable SID slaves will be read from EEPROM/BankStick,
+        therefore the "default" <ensemble> number has to be specified as well.
+
+
+  02/a) F0 00 00 7E 4B <device-number> 02 00 <bank> <patch> <1024 bytes of dump data> <checksum> F7
+        Write a dump to <patch> in <bank>
+        Checksum is 2s complement over the 1024 bytes dump
+        The actual patch size is only 512 bytes - the 8bit values are
+        divided into low- and high-nibble (low-nibble is sent first),
+        therefore 1024 bytes have to be sent
+
+  02/b) F0 00 00 7E 4B <device-number> 02 08 00 00 <1024 bytes of dump data> <checksum> F7
+        Write a patch dump into edit buffer (direct write into RAM)
+
+  02/c) F0 00 00 7E 4B <device-number> 02 70 00 <ensemble> <512 bytes of dump data> <checksum> F7
+        Write a dump to <ensemble>
+        Checksum is 2s complement over the 512 bytes dump
+        The actual ensemble size is only 256 bytes - the 8bit values are
+        divided into low- and high-nibble (low-nibble is sent first),
+        therefore 512 bytes have to be sent
+
+  02/b) F0 00 00 7E 4B <device-number> 02 78 00 00 <512 bytes of dump data> <checksum> F7
+        Write an ensemble dump into edit buffer (direct write into RAM)
+
+
+  03/a) F0 00 00 7E 4B <device-number> 03 00 <bank> F7
+        Request a dump of the whole patch <bank> (128 patches)
+        Only 64 patches are sent when a 32k BankStick is accessed
+
+  03/b) F0 00 00 7E 4B <device-number> 03 70 00 F7
+        Request a dump of all ensembles (128 ensembles)
+
+
+  06/a) F0 00 00 7E 4B <device-number> 06 <WOPT> <AH> <AL> <value_l> <value_h> F7
+        Direct Write of parameter into patch buffer (<AH> = 0..3, <AL> = 0..7F)
+        Patch address: (<AH> << 7) | <AL>
+        <WOPT>: options to speed up communication with editor, behaviour depends on engine
+        See topic "Direct Write Options" at the end of this document
+
+  06/b) F0 00 00 7E 4B <device-number> 06 70 <AH> <AL> <value_l> <value_h> F7
+        Direct Write of parameter into ensemble buffer (<AH> = 0..1, <AL> = 0..7F)
+        Ensemble address: (<AH> << 7) | <AL>
+
+
+  0C/a) F0 00 00 7E 4B <device-number> 0C 00 <sids> F7
+        This command is only available for the SID master core. A SID slave
+        core will respond with "invalid command"
+
+        Selects the SID cores with a binary mask, to which the upcoming SysEx 
+        commands should be forwarded. Examples:
+           <sids> == 0x01: SID1
+           <sids> == 0x02: SID2
+           <sids> == 0x04: SID3
+           <sids> == 0x08: SID4
+           <sids> == 0x0f: SID1+SID2+SID3+SID4
+           <sids> == 0x05: SID1+SID3
+           etc.
+        With <sids> == 0x00, SID1 will be selected (like 0x01)
+        By checking the acknowledge response message, it is possible
+        to determine which cores are connected to the master core.
+
+  0C/b) F0 00 00 7E 4B <device-number> 0C 08 F7
+        All notes/sequences off
+
+  0C/c) F0 00 00 7E 4B <device-number> 0C 09 [<ins>] F7
+        Plays the current patch (C-3 with max velocity is played, can be used 
+        to test the patch independent of the MIDI channel)
+
+        <ins> is an optional parameter, the effect depends on the
+        selected engine:
+        - Lead Engine: no effect
+        - Bassline Engine: 0: play both basslines
+                           1: play left bassline
+                           2: play right bassline
+          Note: for proper handling of <ins>, separate keyboard zones for both
+          basslines are currently required - this is no bug, but just an
+          imperfection (I was too lazy to overwork SID_PATCH_NotesOn yet)
+        - Drum Engine: if no sequence selected: <ins> selects the
+          instrument which should be played
+          If sequence selected: no effect (sequence plays all tracks)
+        - Multi Engine: <ins> == 0..5 selects the instrument which should
+          be played
+          Note: for proper handling of <ins>, separate keyboard zones or MIDI channels
+          for multi instruments are currently required - this is no bug, 
+          but just an imperfection (I was too lazy to overwork SID_PATCH_NotesOn yet)
+
+  0F/a) F0 00 00 7E 4B <device number> 0F F7
+        Ping (just sends back the same SysEx string + <sids>)
+
+
+
+Response Messages
+~~~~~~~~~~~~~~~~~
+
+   Acknowledge:
+      F0 00 00 7E 4B <device> 0F <sids> F7
+
+      Master SID (Device ID 00)
+        <sids>: contains flags for the SID cores which have processed the
+        previous SysEx string successfully.
+
+        Note that the destination SIDs can be selected with ...0C 00 <sids>...
+        If SID cores are not available, or have been disconnected during
+        runtime, the appr. flags in the acknowledge response are automatically
+        cleared to notify about this
+
+     Slave SID (Device ID 01, 02, 03)
+        <sids> is always 00
+
+
+   DisAcknowledge (Error)
+      F0 00 00 7E 4B <device> 0E <error-code> F7
+
+      <error-code>:
+         01 == received less bytes then expected
+         03 == wrong checksum
+         0a == bankstick or patch/drumset/ensemble not available
+         0b == parameter not available
+         0c == invalid command
+         10 == RAM access not supported
+         11 == BankStick too small (only 32k BS connected, patch number >= 64)
+	 12 == wrong type
+	 13 == selected SID not available
+
+
+Patch Structure --- Address 0x000-0x04f is identical for all Engines
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ Addr | Parameter
+======+==========================================================================
+0x000 | Patch Name (16 ASCII characters)
+ ...  |
+0x00f |
+------+--------------------------------------------------------------------------
+0x010 | [1:0] Engine: 0=Lead, 1=Bassline, 2=Drum, 3=Multi
+      | [7:2] reserved
+------+--------------------------------------------------------------------------
+0x011 | Hardware Info Flags, not used yet but reserved for evtl. future functions
+      | [1:0] 0=no SID restriction, 1=6581, 2=6582/8580, 3=SwinSID
+      | [3] stereo
+      | [7:4] caps: 0=470pF, 1=1nF, 2=2.2nF, 3=4.7nF, 4=6.8nF,
+      |             5=10nF, 6=22nF, 7=47nF, 8=100nF
+------+--------------------------------------------------------------------------
+0x012 | OPT1 Flags (global options)
+      | [0] ABW (ADSR Bug Workaround)
+      | [7:1] reserved
+------+--------------------------------------------------------------------------
+0x013 | OPT2 Flags (global options)
+      | [7:0] reserved
+------+--------------------------------------------------------------------------
+0x014 | [7:0] External Switches on/off
+------+--------------------------------------------------------------------------
+0x015 | reserved for future extensions
+0x016 | reserved for future extensions
+0x017 | reserved for future extensions
+======+==========================================================================
+      | Knob #1 (Modulation Wheel)
+0x018 | [7:0] Parameter Assignment #1
+0x019 | [7:0] Parameter Assignment #2
+0x01a | [7:0] Initial Value
+0x01b | [7:0] Min. Value
+0x01c | [7:0] Max. Value
+------+--------------------------------------------------------------------------
+0x01d | 
+ ...  | Knob #2 (CC#17) (same Structure as for Knob #1)
+0x021 | [7:0] Max. Value
+------+--------------------------------------------------------------------------
+0x022 |
+ ...  | Knob #3 (CC#18) (same Structure as for Knob #1)
+0x026 |
+------+--------------------------------------------------------------------------
+0x027 |
+ ...  | Knob #4 (CC#19) (same Structure as for Knob #1)
+0x029 | [7:0] Initial Value
+------+--------------------------------------------------------------------------
+0x02c |
+ ...  | Knob #5 (CC#20) (same Structure as for Knob #1)
+0x030 |
+------+--------------------------------------------------------------------------
+0x031 |
+ ...  | Knob #V (Velocity) (same Structure as for Knob #1)
+0x035 |
+------+--------------------------------------------------------------------------
+0x036 |
+ ...  | Knob #P (Pitch Bender) (same Structure as for Knob #1)
+0x03a |
+------+--------------------------------------------------------------------------
+0x03b |
+ ...  | Knob #A (Aftertouch) (same Structure as for Knob #1)
+0x03f |
+======+==========================================================================
+0x040 | [3:0] reserved
+      | [7:4] Low nibble of 12bit External Parameter CV Channel #1
+0x041 | [7:0] High byte of 12bit External Parameter CV Channel #1
+------+--------------------------------------------------------------------------
+0x042 | [3:0] reserved
+      | [7:4] Low nibble of 12bit External Parameter CV Channel #1
+0x043 | [7:0] High byte of 12bit External Parameter CV Channel #1
+------+--------------------------------------------------------------------------
+0x044 | [3:0] reserved
+      | [7:4] Low nibble of 12bit External Parameter CV Channel #1
+0x045 | [7:0] High byte of 12bit External Parameter CV Channel #1
+------+--------------------------------------------------------------------------
+0x046 | [3:0] reserved
+      | [7:4] Low nibble of 12bit External Parameter CV Channel #1
+0x047 | [7:0] High byte of 12bit External Parameter CV Channel #1
+------+--------------------------------------------------------------------------
+0x048 | [3:0] reserved
+      | [7:4] Low nibble of 12bit External Parameter CV Channel #1
+0x049 | [7:0] High byte of 12bit External Parameter CV Channel #1
+------+--------------------------------------------------------------------------
+0x04a | [3:0] reserved
+      | [7:4] Low nibble of 12bit External Parameter CV Channel #1
+0x04b | [7:0] High byte of 12bit External Parameter CV Channel #1
+------+--------------------------------------------------------------------------
+0x04c | [3:0] reserved
+      | [7:4] Low nibble of 12bit External Parameter CV Channel #1
+0x04d | [7:0] High byte of 12bit External Parameter CV Channel #1
+------+--------------------------------------------------------------------------
+0x04e | [3:0] reserved
+      | [7:4] Low nibble of 12bit External Parameter CV Channel #1
+0x04f | [7:0] High byte of 12bit External Parameter CV Channel #1
+======+==========================================================================
+0x050 |
+ ...  | Engine Specific Parameters (see tables below)
+0x053 |
+======+==========================================================================
+      | Filter of Left SID Channel
+0x054 | [0] OSC1 routed through filter
+      | [1] OSC2 routed through filter
+      | [2] OSC3 routed through filter
+      | [3] External Input routed through filter
+      | [4] LP (Low Pass)
+      | [5] BP (Band Pass)
+      | [6] HP (High Pass)
+      | [7] Oscillator 3 off
+0x055 | [7:0] Low byte of 12bit CutOff Frequency
+0x056 | [3:0] High nibble of 12bit CutOff Frequency
+      | [6:4] reserved
+      | [7] 1=FIP enabled (Filter Interpolation)
+0x057 | [7:0] Resonance (0-255), SID uses only the 4 most significant bits
+0x058 | [7:0] Key Tracking (0-255)
+0x059 | [7:0] reserved
+------+--------------------------------------------------------------------------
+      | Filter of Right SID Channel
+0x05a |
+ ...  | same structure as for Left SID Channel
+0x05f | 
+======+==========================================================================
+
+
+Patch Structure --- Voice (used by Lead/Bassline and Multi Engine)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ Addr | Parameter
+======+==========================================================================
+      | Voice #1 Parameters
+0x060 | [1:0] Portamento Mode: 0=portamento, 1=constant time glide, 2=glissando
+      | [2] GAE (Gate Always Enabled)
+      | [7:3] reserved
+0x061 | [0] Triangle Waveform
+      | [1] Saw Waveform
+      | [2] Pulse Waveform
+      | [3] Noise Waveform
+      | [4] Disable Oscillator
+      | [5] Sync
+      | [6] Ringmodulation
+      | [7] reserved
+0x062 | [7:4] DCA Attack Rate
+      | [3:0] DCA Decay Rate
+0x063 | [7:4] DCA Sustain Level
+      | [3:0] DCA Release Rate
+0x064 | [7:0] Pulsewidth Low byte
+0x065 | [3:0] Pulsewidth High nibble
+      | [7:4] reserved
+0x066 | [7:0] Accent (0-255) (not relevant for Lead/Multi, only used by Bassline Engine)
+      | [7:0] SwinSID Phase (only used by Lead, only relevant if SwinSID option enabled)
+0x067 | [7:0] DCA Envelope Delay (0-255)
+0x068 | [6:0] Transpose (-64..63)
+      | [7] reserved
+0x069 | [7:0] Finetune (-128..127)
+0x06a | [6:0] Pitchrange (0..127)
+      | [7] reserved
+0x06b | [7:0] Portamento rate (0..255)
+0x06c | Arp Mode
+      | [0] 0=Arp disabled, 1=Arp enabled
+      | [3:1] Direction: 0=up, 1=down, 2=Up&Down, 3=Down&Up, 4=Up&Down 2, 5=Down&Up 2, 6=random
+      | [4] Sorted
+      | [5] Hold
+      | [6] Sync with keys
+      | [7] CAC (Constant Arp Cycle)
+0x06d | Arp Speed Divider
+      | [5:0] Clock Divider (0..63) (derived from global clock)
+      | [6] Easy Chord
+      | [7] Oneshot
+0x06e | Arp Gatelength and Range
+      | [4:0] Gatelength (0..31)
+      | [7:5] Octave range (0..7 = 1..8 octaves)
+0x06f | SwinSID Mode
+      | [3:0] Waveform of second oscillator
+      | [4] enable second oscillator
+      | [5] x2 Pitch
+      | [6] reverse Waveform
+      | [7] reserved
+======+==========================================================================
+
+
+Patch Structure --- Lead Engine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ Addr | Parameter
+======+==========================================================================
+0x000 |
+  ..  | Global Parameters (see table above)
+0x04f |
+======+==========================================================================
+0x050 | [0] 0=Mono, 1=Legato
+      | [1] WTO (Wavetable Only)
+      | [2] SusKey (Fingered Portamento)
+      | [7:3] reserved
+------+--------------------------------------------------------------------------
+0x051 | [7:0] Oscillators Detune (0-255)
+------+--------------------------------------------------------------------------
+0x052 | [6:0] Volume (0-127, only most significant 4bits are used by SID)
+      | [7] reserved
+------+--------------------------------------------------------------------------
+0x053 | Oscillators Phase Offset (0-255)
+======+==========================================================================
+0x054 |
+ ...  | Filter Parameters (see table above)
+0x05f |
+======+==========================================================================
+0x060 |
+ ...  | Voice #1 (OSC1, Left Channel) Parameters (see table above)
+0x06f |
+------+--------------------------------------------------------------------------
+0x070 |
+ ...  | Voice #2 (OSC2, Left Channel) Parameters (see table above)
+0x07f |
+------+--------------------------------------------------------------------------
+0x080 |
+ ...  | Voice #3 (OSC3, Left Channel) Parameters (see table above)
+0x08f |
+------+--------------------------------------------------------------------------
+0x090 |
+ ...  | Voice #4 (OSC1, Right Channel) Parameters (see table above)
+0x09f |
+------+--------------------------------------------------------------------------
+0x0a0 |
+ ...  | Voice #5 (OSC2, Right Channel) Parameters (see table above)
+0x0af |
+------+--------------------------------------------------------------------------
+0x0b0 |
+ ...  | Voice #6 (OSC3, Right Channel) Parameters (see table above)
+0x0bf |
+======+==========================================================================
+      | LFO1
+0x0c0 | LFO Mode
+      | [0] 0=LFO disabled, 1=LFO enabled
+      | [1] Not used by Lead engine (MIDI Note Sync via trigger matrix)
+      | [2] CSn: Synchronisation to global clock generator
+      | [3] Oneshot
+      | [7:4] Waveform: 0=Sine, 1=Triangle, 2=Saw, 3=Pulse, 4=Random,
+      |                 5=Pos.Sine, 6=Pos.Triangle, 7=Pos.Saw, 8=Pos.Pulse
+0x0c1 | [7:0] LFO Depth (-128..127)
+0x0c2 | [7:0] LFO Rate (0..255)
+      |       if CSn flag enabled: 245=64/1, 246=32/1, 247=16/1, 248=8/1, 
+      |       249=4/1, 250=2/1, 251=1/1, 252=1/2, 253=1/4, 254=1/8, 255=1/16
+0x0c3 | [7:0] LFO Delay (0..255)
+0x0c4 | [7:0] LFO Phase (0..255)
+------+--------------------------------------------------------------------------
+0x0c5 | 
+ ...  | LFO2 (same structure as for LFO1)
+0x0c9 | 
+------+--------------------------------------------------------------------------
+0x0ca | 
+ ...  | LFO3 (same structure as for LFO1)
+0x0ce | 
+------+--------------------------------------------------------------------------
+0x0cf | 
+ ...  | LFO4 (same structure as for LFO1)
+0x0d3 | 
+------+--------------------------------------------------------------------------
+0x0d4 | 
+ ...  | LFO5 (same structure as for LFO1)
+0x0d8 | 
+------+--------------------------------------------------------------------------
+0x0d9 | 
+ ...  | LFO6 (same structure as for LFO1)
+0x0dd | 
+======+==========================================================================
+0x0de | reserved for future extensions
+0x0df | reserved for future extensions
+======+==========================================================================
+      | ENV1
+0x0e0 | Envelope Mode
+      | [2:0] Loop Begin: 0=off, 1=Att1, 2=Att2, 3=Dec1, 4=Dec2, 5=Sus, 6=Rel1, 7=Rel2
+      | [3] reserved
+      | [6:4] Loop End: 0=off, 1=Att1, 2=Att2, 3=Dec1, 4=Dec2, 5=Sus, 6=Rel1, 7=Rel2
+      | [7] Global Clock Synchronisation
+0x0e1 | Envelope Depth (-128..127)
+0x0e2 | Envelope Delay (0..255)
+0x0e3 | Envelope Attack1 Rate (0..255)
+0x0e4 | Envelope Attack Level (0..255)
+0x0e5 | Envelope Attack2 Rate (0..255)
+0x0e6 | Envelope Decay1 Rate (0..255)
+0x0e7 | Envelope Decay Level (0..255)
+0x0e8 | Envelope Decay2 Rate (0..255)
+0x0e9 | Envelope Sustain Level (0..255)
+0x0ea | Envelope Release1 Rate (0..255)
+0x0eb | Envelope Release Level (0..255)
+0x0ec | Envelope Release2 Rate (0..255)
+0x0ed | Envelope Attack Curve (-128..127)
+0x0ee | Envelope Decay Curve (-128..127)
+0x0ef | Envelope Release Curve (-128..127)
+------+--------------------------------------------------------------------------
+0x0f0 | 
+ ...  | ENV2 (same structure as for ENV1)
+0x0ff | 
+======+==========================================================================
+      | MP1 (Modulation Path)
+0x100 | Source #1: 0=off, 1=ENV1, 2=ENV2, 3=LFO1, 4=LFO2, 5=LFO3, 6=LFO4, 7=LFO5,
+      | 8=LFO6, 9=MP1, 10=MP2, 11=MP3, 12=MP4, 13=MP5, 14=MP6, 15=MP7, 16=MP8, 
+      | 17=ModWheel, 18=Key, 19=Knob#1, 20=Knob#2, 21=Knob#3, 22=Knob#4, 23=Knob#5
+      | 24=Knob#V, 25=Knob#P, 26=Knob#A, 27=WT1, 28=WT2, 29=WT3, 30=WT4
+      | 31..127: reserved
+      | 128-255: constant value 0..127
+0x101 | Source #2 (same source numbers like above)
+0x102 | Operator
+      | [3:0] 0=off, 1=Source1, 2=Source2, 3=1+2, 4=1-2, 5=1*2, 6=XOR, 
+      |       7=OR, 8=AND, 9=MIN, 10=MAX, 11=1<2, 12=1>2, 13=1=2, 14=S&H, 15=reserved
+      | [5:4] reserved
+      | [6] invert target 1/L
+      | [7] invert target 2/R
+0x103 | Depth (-128..127)
+0x104 | Direct Assignment to Target of Left Channel:
+      | [0] OSC1 Pitch
+      | [1] OSC2 Pitch
+      | [2] OSC3 Pitch
+      | [3] OSC1 Pulsewidth
+      | [4] OSC2 Pulsewidth
+      | [5] OSC3 Pulsewidth
+      | [6] Filter CutOff
+      | [7] Volume
+0x105 | Direct Assignment to Target of Right Channel (same coding as above)
+0x106 | Target #1: 0=off, 1=Pitch OSC1, 2=Pitch OSC2, 3=Pitch OSC3, 4=Pitch OSC4, 
+      | 5=Pitch OSC5, 6=Pitch OSC6, 7=PW OSC1, 8=PW OSC2, 9=PW OSC3, 10=PW OSC4, 
+      | 11=PW OSC5, 12=PW OSC6, 13=CutOff L, 14=CutOff R, 15=Volume L, 16=Volume R
+      | 17=LFO1 Depth, 18=LFO2 Depth, 19=LFO3 Depth, 20=LFO4 Depth, 21=LFO5 Depth, 
+      | 22=LFO6 Depth, 23=LFO1 Rate, 24=LFO2 Rate, 25=LFO3 Rate, 26=LFO4 Rate, 
+      | 27=LFO5 Rate, 28=LFO6 Rate, 29=Ext1, 30=Ext2, 31=Ext3, 32=Ext4, 33=Ext5,
+      | 34=Ext6, 35=Ext7, 36=Ext8, 37=WT1 Pos, 38=WT2 Pos, 39=WT3 Pos, 40=WT4 Pos
+0x107 | Target #2 (same target numbers like above)
+------+--------------------------------------------------------------------------
+0x108 | 
+ ...  | MP2 (same structure as for MP1)
+0x10f | 
+------+--------------------------------------------------------------------------
+0x110 | 
+ ...  | MP3 (same structure as for MP1)
+0x117 | 
+------+--------------------------------------------------------------------------
+0x118 | 
+ ...  | MP4 (same structure as for MP1)
+0x11f | 
+------+--------------------------------------------------------------------------
+0x120 | 
+ ...  | MP5 (same structure as for MP1)
+0x127 | 
+------+--------------------------------------------------------------------------
+0x128 | 
+ ...  | MP6 (same structure as for MP1)
+0x12f | 
+------+--------------------------------------------------------------------------
+0x130 | 
+ ...  | MP7 (same structure as for MP1)
+0x137 | 
+------+--------------------------------------------------------------------------
+0x138 | 
+ ...  | MP8 (same structure as for MP1)
+0x13f | 
+======+==========================================================================
+      | Trigger Matrix Node: Note On
+0x140 | [0] OSC1 Left Channel
+      | [1] OSC2 Left Channel
+      | [2] OSC3 Left Channel
+      | [3] OSC1 Right Channel
+      | [4] OSC2 Right Channel
+      | [5] OSC3 Right Channel
+      | [6] ENV1 Attack
+      | [7] ENV2 Attack
+0x141 | [0] ENV1 Release
+      | [1] ENV2 Release
+      | [2] LFO1 Reset
+      | [3] LFO2 Reset
+      | [4] LFO3 Reset
+      | [5] LFO4 Reset
+      | [6] LFO5 Reset
+      | [7] LFO6 Reset
+0x142 | [0] WT1 Reset
+      | [1] WT2 Reset
+      | [2] WT3 Reset
+      | [3] WT4 Reset
+      | [4] WT1 Step
+      | [5] WT2 Step
+      | [6] WT3 Step
+      | [7] WT4 Step
+------+--------------------------------------------------------------------------
+0x143 |
+ ...  | Trigger Matrix Node: Note Off (same structure as for Note On)
+0x145 | 
+------+--------------------------------------------------------------------------
+0x146 |
+ ...  | Trigger Matrix Node: ENV1 Sustain Phase (same structure as for Note On)
+0x148 | 
+------+--------------------------------------------------------------------------
+0x149 |
+ ...  | Trigger Matrix Node: ENV2 Sustain Phase (same structure as for Note On)
+0x14b | 
+------+--------------------------------------------------------------------------
+0x14c |
+ ...  | Trigger Matrix Node: LFO1 Period (same structure as for Note On)
+0x14e | 
+------+--------------------------------------------------------------------------
+0x14f |
+ ...  | Trigger Matrix Node: LFO2 Period (same structure as for Note On)
+0x151 | 
+------+--------------------------------------------------------------------------
+0x152 |
+ ...  | Trigger Matrix Node: LFO3 Period (same structure as for Note On)
+0x154 | 
+------+--------------------------------------------------------------------------
+0x155 |
+ ...  | Trigger Matrix Node: LFO4 Period (same structure as for Note On)
+0x157 | 
+------+--------------------------------------------------------------------------
+0x158 |
+ ...  | Trigger Matrix Node: LFO5 Period (same structure as for Note On)
+0x15a | 
+------+--------------------------------------------------------------------------
+0x15b |
+ ...  | Trigger Matrix Node: LFO6 Period (same structure as for Note On)
+0x15d | 
+------+--------------------------------------------------------------------------
+0x15e |
+ ...  | Trigger Matrix Node: Global Clock (same structure as for Note On)
+0x160 | 
+------+--------------------------------------------------------------------------
+0x161 |
+ ...  | Trigger Matrix Node: Global Clock / 6 (same structure as for Note On)
+0x163 | 
+------+--------------------------------------------------------------------------
+0x164 |
+ ...  | Trigger Matrix Node: Global Clock / 24 (same structure as for Note On)
+0x166 | 
+------+--------------------------------------------------------------------------
+0x167 |
+ ...  | Trigger Matrix Node: MIDI Clock Start (same structure as for Note On)
+0x169 | 
+======+==========================================================================
+0x16a | reserved for future extensions
+0x16b | reserved for future extensions
+------+--------------------------------------------------------------------------
+      | Wavetable Sequencer #1
+0x16c | [5:0] Clock Divider (0..63)
+      | [6] parameter forwarded to left channel
+      | [7] parameter forwarded to right channel
+0x16d | [7:0] parameter assignment (0..255)
+0x16e | [6:0] start position in wavetable
+      | [7] position controlled by modulation path
+0x16f | [6:0] end position in wavetable
+      | [7] position controlled by played key, the loop parameter will define
+      |     the loop length in this case, and not the start position!
+      |     This function has higher priority than modulation path control!
+0x170 | [6:0] loop position in wavetable
+      | [7] Oneshot
+------+--------------------------------------------------------------------------
+0x171 |
+ ...  | Wavetable Sequencer #2 (same structure as for Wavetable #1)
+0x175 | 
+------+--------------------------------------------------------------------------
+0x176 |
+ ...  | Wavetable Sequencer #3 (same structure as for Wavetable #1)
+0x17a | 
+------+--------------------------------------------------------------------------
+0x17b |
+ ...  | Wavetable Sequencer #4 (same structure as for Wavetable #1)
+0x17f | 
+======+==========================================================================
+0x180 |
+ ...  | Wavetable Value Storage
+ ...  | Values 0x00..0x7f: relative change -64..63
+ ...  | Values 0x80..0xff: absolute value 0..127
+0x1ff |
+======+==========================================================================
+
+
+
+Patch Structure --- Bassline Engine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ Addr | Parameter
+======+==========================================================================
+0x000 |
+  ..  | Global Parameters (see table above)
+0x04f |
+======+==========================================================================
+0x050 | reserved for future extensions
+------+--------------------------------------------------------------------------
+0x051 | [7:0] Oscillators Detune (0-255)
+------+--------------------------------------------------------------------------
+0x052 | [6:0] Volume (0-127, only most significant 4bits are used by SID)
+      | [7] reserved
+------+--------------------------------------------------------------------------
+0x053 | reserved for future extensions
+======+==========================================================================
+0x054 |
+ ...  | Filter Parameters (see table above)
+0x05f |
+======+==========================================================================
+0x060 | \
+ ...  |  >- Lower Voice Structure of Left Channel Bassline (see table above)
+0x06f | /
+------+--------------------------------------------------------------------------
+0x070 | [0] 0=Mono, 1=Legato
+      | [1] 0=MIDI Note playing, 1=Sequencer mode
+      | [2] SysKey (Fingered Portamento)
+      | [3] Oscillator Phase Synchronisation
+      | [7:4] reserved
+0x071 | reserved for future extensions
+0x072 | reserved for future extensions
+0x073 | reserved for future extensions
+------+--------------------------------------------------------------------------
+      | LFO1 Parameters
+0x074 | LFO Mode
+      | [0] 0=LFO disabled, 1=LFO enabled
+      | [1] Sync: Synchronisation to MIDI Note
+      | [2] CSn: Synchronisation to global clock generator
+      | [3] Oneshot
+      | [7:4] Waveform: 0=Sine, 1=Triangle, 2=Saw, 3=Pulse, 4=Random,
+      |                 5=Pos.Sine, 6=Pos.Triangle, 7=Pos.Saw, 8=Pos.Pulse
+0x075 | [7:0] LFO Depth Pitch (-128..127)
+0x076 | [7:0] LFO Rate (0..255)
+      |       if CSn flag enabled: 245=64/1, 246=32/1, 247=16/1, 248=8/1, 
+      |       249=4/1, 250=2/1, 251=1/1, 252=1/2, 253=1/4, 254=1/8, 255=1/16
+0x077 | [7:0] LFO Delay (0..255)
+0x078 | [7:0] LFO Phase (0..255)
+0x079 | [7:0] LFO Depth Pulsewidth (-128..127)
+0x07a | [7:0] LFO Depth Filter CutOff (-128..127)
+------+--------------------------------------------------------------------------
+0x07b |
+ ...  | LFO2 Parameters (same structure as for LFO1)
+0x081 |
+------+--------------------------------------------------------------------------
+      | Envelope
+0x082 | [3:0] reserved
+      | [4] Curve assigned to Attack Rate
+      | [5] Curve assigned to Decay Rate
+      | [6] Curve assigned to Sustain Rate
+      | [7] Global Clock Synchronisation
+0x083 | Envelope Depth Pitch (-128..127)
+0x084 | Envelope Depth Pulsewidth (-128..127)
+0x085 | Envelope Depth Filter CutOff (-128..127)
+0x086 | Envelope Attack Rate (0..255)
+0x087 | Envelope Decay Rate (0..255)
+0x088 | Envelope Sustain Level (0..255)
+0x089 | Envelope Release Rate (0..255)
+0x08a | Envelope Curve (-128..127)
+------+--------------------------------------------------------------------------
+      | Sequencer
+0x08b | [5:0] Clock Divider (0..63)
+      | [6] reserved
+      | [7] pattern changes synched to measure
+0x08c | [3:0] 0-7: sequence number, 8=disable pattern
+      | [7:4] reserved
+0x08d | [3:0] number of steps (0..15)
+      | [7:4] reserved
+0x08e | parameter assignment (0-255)
+0x08f | reserved
+------+--------------------------------------------------------------------------
+0x090 | Envelope Decay Rate used on accented notes (0-255)
+------+--------------------------------------------------------------------------
+0x091 |
+ ...  | reserved for future extensions
+0x09f |
+------+--------------------------------------------------------------------------
+0x0a0 | OSC2 
+      | [0] Triangle Waveform
+      | [1] Saw Waveform
+      | [2] Pulse Waveform
+      | [3] Noise Waveform
+      | [4] Disable Oscillator
+      | [5] Sync
+      | [6] Ringmodulation
+      | [7] reserved
+0x0a1 | [7:0] Pulsewidth Low byte
+0x0a2 | [3:0] Pulsewidth High nibble
+0x0a3 | [2:0] Octave Transpose: 0=off, 1..3=+1..+3 octaves, 4..7: -4..-1 octaves
+      | [7:3] reserved
+0x0a4 | [6:0] static note (0=off, track with master oscillator OSC1)
+      | [7] reserved
+------+--------------------------------------------------------------------------
+0x0a5 |
+ ...  | reserved for future extensions
+0x0a7 |
+------+--------------------------------------------------------------------------
+0x0a8 | OSC3
+      | [0] Triangle Waveform
+      | [1] Saw Waveform
+      | [2] Pulse Waveform
+      | [3] Noise Waveform
+      | [4] Disable Oscillator
+      | [5] Sync
+      | [6] Ringmodulation
+      | [7] reserved
+0x0a9 | [7:0] Pulsewidth Low byte
+0x0aa | [3:0] Pulsewidth High nibble
+0x0ab | [2:0] Octave Transpose: 0=off, 1..3=+1..+3 octaves, 4..7: -4..-1 octaves
+      | [7:3] reserved
+0x0ac | [6:0] static note (0=off, track with master oscillator OSC1)
+      | [7] reserved
+------+--------------------------------------------------------------------------
+0x0ad |
+ ...  | reserved for future extensions
+0x0af |
+======+==========================================================================
+0x0b0 |
+ ...  | Right Channel Bassline (same voice structure as for Left Bassline)
+0x0ff | 
+======+==========================================================================
+0x100 |
+ ...  | Sequence Storage - Structure:
+ ...  |   2 bytes for each step (selected with address bit #7)
+ ...  |   lower byte: [3:0] note, [5:4] octave, [6] glide, [7] gate
+ ...  |   upper byte: [6:0] parameter value, [7] accent
+ ...  | 16 Steps per sequence (offset 0x00..0x0f)
+ ...  | 8 sequences:
+ ...  |  0x100..0x10f/0x180..0x18f: sequence #1
+ ...  |  0x110..0x11f/0x190..0x19f: sequence #2
+ ...  |  0x120..0x12f/0x1a0..0x1af: sequence #3
+ ...  |  0x130..0x13f/0x1b0..0x1bf: sequence #4
+ ...  |  0x140..0x14f/0x1c0..0x1cf: sequence #5
+ ...  |  0x150..0x15f/0x1d0..0x1df: sequence #6
+ ...  |  0x160..0x16f/0x1e0..0x1ef: sequence #7
+ ...  |  0x170..0x17f/0x1f0..0x1ff: sequence #8
+0x1ff | 
+======+==========================================================================
+
+
+Patch Structure --- Drum Engine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ Addr | Parameter
+======+==========================================================================
+0x000 |
+  ..  | Global Parameters (see table above)
+0x04f |
+======+==========================================================================
+      | Sequencer
+0x050 | [5:0] Clock Divider (0..63)
+      | [6] 0=MIDI Note playing, 1=Sequencer mode
+      | [7] pattern changes synched to measure
+0x051 | [3:0] 0-7: sequence number, 8=disable pattern
+      | [7:4] reserved
+------+--------------------------------------------------------------------------
+0x052 | [6:0] Volume (0-127, only most significant 4bits are used by SID)
+      | [7] reserved
+      | (not part of sequencer, but address selected due to compatibility
+      | reasons with other engines)
+------+--------------------------------------------------------------------------
+0x053 | [3:0] number of steps (0..15)
+      | [7:4] reserved
+======+==========================================================================
+0x054 |
+ ...  | Filter Parameters (see table above)
+0x05f |
+======+==========================================================================
+      | Drum Instrument #1 Parameters
+0x060 | [3:0] reserved
+      | [7:4] Voice assignment: 0=LR, 1=L-, 2=-R, 3=O1, 4=O2, 5=O3, 6=O4,
+      |       7=O5, 8=O6
+0x061 | [7:0] Drum Model: 0=BD1, 1=BD3, 2=BD3, 3=SD1, 4=SD2, 5=SD3, 6=HH1, 7=HH2,
+      |                   8=TOM1, 9=TOM2, 10=CLAP, 11=FX1, 12=FX2, 13=FX3, 14=FX4,
+      |                   15=FX5, 16=FX6, 17=FX7, 18=FX8, 19=FX9
+0x062 | [7:4] DCA Attack Rate
+      | [3:0] DCA Decay Rate
+0x063 | [7:4] DCA Sustain Level
+      | [3:0] DCA Release Rate
+0x064 | [7:0] Tune (-128..127)
+0x065 | [7:0] Parameter #1 (-128..127): Gatelength
+0x066 | [7:0] Parameter #2 (-128..127): Speed
+0x067 | [7:0] Parameter #3 (-128..127): usage depends on Drum Model
+0x068 | [7:0] Velocity Parameter Assignment (0-255)
+0x069 | reserved for future extensions
+------+--------------------------------------------------------------------------
+0x06a |
+ ...  | Drum Instrument #2 Parameters (see table above)
+0x073 |
+------+--------------------------------------------------------------------------
+0x074 |
+ ...  | Drum Instrument #3 Parameters (see table above)
+0x07d |
+------+--------------------------------------------------------------------------
+0x07e |
+ ...  | Drum Instrument #4 Parameters (see table above)
+0x087 |
+------+--------------------------------------------------------------------------
+0x088 |
+ ...  | Drum Instrument #5 Parameters (see table above)
+0x091 |
+------+--------------------------------------------------------------------------
+0x092 |
+ ...  | Drum Instrument #6 Parameters (see table above)
+0x09b |
+------+--------------------------------------------------------------------------
+0x09c |
+ ...  | Drum Instrument #7 Parameters (see table above)
+0x0a5 |
+------+--------------------------------------------------------------------------
+0x0a6 |
+ ...  | Drum Instrument #8 Parameters (see table above)
+0x0af |
+------+--------------------------------------------------------------------------
+0x0b0 |
+ ...  | Drum Instrument #9 Parameters (see table above)
+0x0b9 |
+------+--------------------------------------------------------------------------
+0x0ba |
+ ...  | Drum Instrument #10 Parameters (see table above)
+0x0c3 |
+------+--------------------------------------------------------------------------
+0x0c4 |
+ ...  | Drum Instrument #11 Parameters (see table above)
+0x0cd |
+------+--------------------------------------------------------------------------
+0x0ce |
+ ...  | Drum Instrument #12 Parameters (see table above)
+0x0d7 |
+------+--------------------------------------------------------------------------
+0x0d8 |
+ ...  | Drum Instrument #13 Parameters (see table above)
+0x0e1 |
+------+--------------------------------------------------------------------------
+0x0e2 |
+ ...  | Drum Instrument #14 Parameters (see table above)
+0x0eb |
+------+--------------------------------------------------------------------------
+0x0ec |
+ ...  | Drum Instrument #15 Parameters (see table above)
+0x0f5 |
+------+--------------------------------------------------------------------------
+0x0f6 |
+ ...  | Drum Instrument #16 Parameters (see table above)
+0x0ff |
+======+==========================================================================
+0x100 |
+ ...  | Sequence Storage - Structure:
+ ...  | 4 bytes for 16 steps:
+ ...  |  - first byte: [0] gate step #1 ... [7] gate step #8
+ ...  |  - second byte: [0] accent step #1 ... [7] accent step #8
+ ...  |  - third byte: [0] gate step #9 ... [7] gate step #16
+ ...  |  - fourth byte: [0] accent step #9 ... [7] accent step #16
+ ...  |
+ ...  | 8 tracks per sequence:
+ ...  |  offset 0x00-0x03: track #1
+ ...  |  offset 0x04-0x07: track #2
+ ...  |  offset 0x08-0x0b: track #3
+ ...  |  offset 0x0c-0x0f: track #4
+ ...  |  offset 0x00-0x03: track #5
+ ...  |  offset 0x04-0x07: track #6
+ ...  |  offset 0x08-0x0b: track #7
+ ...  |  offset 0x0c-0x0f: track #8
+ ...  | 8 sequences:
+ ...  |  0x100..0x11f: sequence #1
+ ...  |  0x120..0x13f: sequence #2
+ ...  |  0x140..0x15f: sequence #3
+ ...  |  0x160..0x17f: sequence #4
+ ...  |  0x180..0x19f: sequence #5
+ ...  |  0x1a0..0x1bf: sequence #6
+ ...  |  0x1c0..0x1df: sequence #7
+ ...  |  0x1e0..0x1ff: sequence #8
+0x1ff | 
+======+==========================================================================
+
+
+Patch Structure --- Multi Engine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ Addr | Parameter
+======+==========================================================================
+0x000 |
+  ..  | Global Parameters (see table above)
+0x04f |
+======+==========================================================================
+0x050 | reserved for future extensions
+0x051 | reserved for future extensions
+------+--------------------------------------------------------------------------
+0x052 | [6:0] Volume (0-127, only most significant 4bits are used by SID)
+      | [7] reserved
+------+--------------------------------------------------------------------------
+0x053 | reserved for future extensions
+======+==========================================================================
+0x054 |
+ ...  | Filter Parameters (see table above)
+0x05f |
+======+==========================================================================
+0x060 | \
+ ...  |  >- Lower Voice Structure of Instrument #1 (see table above)
+0x06f | /
+------+--------------------------------------------------------------------------
+0x070 | [0] 0=Mono, 1=Legato
+      | [1] WTO (Wavetable Only)
+      | [2] SusKey (Fingered Portamento)
+      | [3] 0=take Mono/Legato setting from Bit #0, 1=Poly
+      | [7:4] reserved
+0x071 | [3:0] Voice assignment: 0=LR, 1=L-, 2=-R, 3=O1, 4=O2, 5=O3, 6=O4,
+      |       7=O5, 8=O6
+      | [7:4] reserved
+0x072 | [7:0] Velocity Parameter Assignment (0-255)
+0x073 | [7:0] Pitch Bender Assignment (0-255)
+------+--------------------------------------------------------------------------
+      | LFO1 Parameters
+0x074 | LFO Mode
+      | [0] 0=LFO disabled, 1=LFO enabled
+      | [1] Sync: Synchronisation to MIDI Note
+      | [2] CSn: Synchronisation to global clock generator
+      | [3] Oneshot
+      | [7:4] Waveform: 0=Sine, 1=Triangle, 2=Saw, 3=Pulse, 4=Random,
+      |                 5=Pos.Sine, 6=Pos.Triangle, 7=Pos.Saw, 8=Pos.Pulse
+0x075 | [7:0] LFO Depth Pitch (-128..127)
+0x076 | [7:0] LFO Rate (0..255)
+      |       if CSn flag enabled: 245=64/1, 246=32/1, 247=16/1, 248=8/1, 
+      |       249=4/1, 250=2/1, 251=1/1, 252=1/2, 253=1/4, 254=1/8, 255=1/16
+0x077 | [7:0] LFO Delay (0..255)
+0x078 | [7:0] LFO Phase (0..255)
+0x079 | [7:0] LFO Depth Pulsewidth (-128..127)
+0x07a | [7:0] LFO Depth Filter CutOff (-128..127)
+------+--------------------------------------------------------------------------
+0x07b |
+ ...  | LFO2 Parameters (same structure as for LFO1)
+0x081 |
+------+--------------------------------------------------------------------------
+      | Envelope
+0x082 | [3:0] reserved
+      | [4] Curve assigned to Attack Rate
+      | [5] Curve assigned to Decay Rate
+      | [6] Curve assigned to Sustain Rate
+      | [7] Global Clock Synchronisation
+0x083 | Envelope Depth Pitch (-128..127)
+0x084 | Envelope Depth Pulsewidth (-128..127)
+0x085 | Envelope Depth Filter CutOff (-128..127)
+0x086 | Envelope Attack Rate (0..255)
+0x087 | Envelope Decay Rate (0..255)
+0x088 | Envelope Sustain Level (0..255)
+0x089 | Envelope Release Rate (0..255)
+0x08a | Envelope Curve (-128..127)
+------+--------------------------------------------------------------------------
+      | Wavetable Sequencer
+0x08b | [5:0] Clock Divider (0..63)
+      | [6] reserved
+      | [7] reserved
+0x08c | [7:0] parameter assignment (0..255)
+0x08d | [6:0] start position in wavetable
+      | [7] reserved
+0x08e | [6:0] end position in wavetable
+      | [7] reserved
+0x08f | [6:0] loop position in wavetable
+      | [7] Oneshot
+======+==========================================================================
+0x090 |
+ ...  | Voice Structure of Instrument #2 (same structure as for Instrument #1)
+0x0bf | 
+======+==========================================================================
+0x0c0 |
+ ...  | Voice Structure of Instrument #3 (same structure as for Instrument #1)
+0x0ef | 
+======+==========================================================================
+0x0f0 |
+ ...  | Voice Structure of Instrument #4 (same structure as for Instrument #1)
+0x11f | 
+======+==========================================================================
+0x120 |
+ ...  | Voice Structure of Instrument #5 (same structure as for Instrument #1)
+0x14f | 
+======+==========================================================================
+0x150 |
+ ...  | Voice Structure of Instrument #6 (same structure as for Instrument #1)
+0x17f | 
+======+==========================================================================
+0x180 |
+ ...  | Wavetable Value Storage
+ ...  | Values 0x00..0x7f: relative change -64..63
+ ...  | Values 0x80..0xff: absolute value 0..127
+0x1ff |
+======+==========================================================================
+
+
+Patch Structure --- Ensemble
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ Addr | Parameter
+======+==========================================================================
+      | SID1
+ 0x00 | [2:0] Bank (0-7 for A-H)
+      | [7:3] reserved
+ 0x01 | [6:0] Patch (0-127)
+      | [7] reserved
+ 0x02 | [1:0] BPM generator mode: 0=Master, 1=Slave, 2=Auto
+      | [3] reserved
+      | [4] FilLog (CutOff uses logartithmic curve for linearisation of 8580 filter)
+      | [5] reserved
+      | [6] Mono
+      | [7] DOR (Disable automatic Oscillator Reset during patch change - also called DAORDPC)
+ 0x03 | [0] F2A
+      | [1] V2A
+      | [2] P2A
+      | [3] K2A
+      | [4] O2A
+      | [7:6] reserved
+ 0x04 | reserved for future extensions (take care: was clock divider - could be != 0)
+ 0x05 | BPM rate (50..255)
+ 0x06 | Superpoly Control:
+      | [2:0] number of voices (0..4)
+      | [7:3] reserved
+ 0x07 | Inversion Flags for AOUT Channel 1..8 ([0]: Channel #1 ... [7]: Channel #8)
+------+--------------------------------------------------------------------------
+ 0x08 | [7:0] Left Channel Filter Calibration Value, Min, 16bit, Low Byte
+ 0x09 | [3:0] Left Channel Filter Calibration Value, Min, 16bit, High Byte
+ 0x0a | [7:0] Left Channel Filter Calibration Value, Max, 16bit, Low Byte
+ 0x0b | [3:0] Left Channel Filter Calibration Value, Max, 16bit, High Byte
+ 0x0c | [7:0] Right Channel Filter Calibration Value, Min, 16bit, Low Byte
+ 0x0d | [3:0] Right Channel Filter Calibration Value, Min, 16bit, High Byte
+ 0x0e | [7:0] Right Channel Filter Calibration Value, Max, 16bit, Low Byte
+ 0x0f | [3:0] Right Channel Filter Calibration Value, Max, 16bit, High Byte
+      | Note: Calibration values are 16bit, but only the upper 12 bit are taken
+      | for SID filters and AOUTs. The lower 4 bits are reserved for future 
+      | enhancements of (e.g. higher resolution AOUTs)
+------+--------------------------------------------------------------------------
+      | Instrument #1 Settings
+ 0x10 | [3:0] MIDI Channel
+      | [4] 0=Channel Enabled, 1=Channel Disabled
+      | [7:5] reserved
+ 0x11 | [6:0] MIDI Note Number of Lower Split Point (0..127)
+      | [7] reserved
+ 0x12 | [6:0] MIDI Note Number of Upper Split Point (0..127)
+      | [7] reserved
+ 0x13 | [6:0] Transpose (-64..63)
+      | [7] reserved
+ 0x14 | reserved for future extensions
+ 0x15 | reserved for future extensions
+ 0x16 | reserved for future extensions
+ 0x17 | reserved for future extensions
+======+==========================================================================
+ 0x18 |
+  ..  | Instrument #2 Settings (same structure as for Instrument #1)
+ 0x1f |
+======+==========================================================================
+ 0x20 |
+  ..  | Instrument #3 Settings (same structure as for Instrument #1)
+ 0x27 |
+======+==========================================================================
+ 0x28 |
+  ..  | Instrument #4 Settings (same structure as for Instrument #1)
+ 0x2f |
+======+==========================================================================
+ 0x30 |
+  ..  | Instrument #5 Settings (same structure as for Instrument #1)
+ 0x37 |
+======+==========================================================================
+ 0x38 |
+  ..  | Instrument #6 Settings (same structure as for Instrument #1)
+ 0x3f |
+======+==========================================================================
+0x040 | \
+ ...  |  >- SID2 Structure (same as for SID1: 0x00-0x3f)
+0x07f | /
+======+==========================================================================
+0x080 | \
+ ...  |  >- SID3 Structure (same as for SID1: 0x00-0x3f)
+0x0bf | /
+======+==========================================================================
+0x0c0 | \
+ ...  |  >- SID4 Structure (same as for SID1: 0x00-0x3f)
+0x0ff | /
+======+==========================================================================
+
+
+
+Direct Write Options
+~~~~~~~~~~~~~~~~~~~~
+
+In order to speed up parameter changes of multiple parameters which belong together
+(e.g. CutOff Frequency of Left/Right Channel), special write options are available,
+which copy the received value into the selected registers.
+
+Please only use these options within the specified parameter address ranges, outside
+these ranges they currently behave like <WOPT>=0, but they could get a special
+meaning in future!
+
+
+For all Engines:
+
+  <WOPT>=00  normal behaviour, parameter will be written into the given address
+
+  <WOPT>=01  Left/Right Flag
+     Range 0x040-0x041: Ext #1 parameters will be written into Ext #1 and Ext #2 register
+                        e.g., value of 0x040 will be copied to 0x042
+     Range 0x042-0x043: (Ext #2) same as above
+     Range 0x044-0x045: Ext #3 parameters will be written into Ext #3 and Ext #4 register
+                        e.g., value of 0x044 will be copied to 0x046
+     Range 0x046-0x047: (Ext #4) same as above
+     Range 0x048-0x049: Ext #5 parameters will be written into Ext #5 and Ext #6 register
+                        e.g., value of 0x048 will be copied to 0x04a
+     Range 0x04a-0x04b: (Ext #6) same as above
+     Range 0x04c-0x04d: Ext #7 parameters will be written into Ext #7 and Ext #8 register
+                        e.g., value of 0x04c will be copied to 0x04e
+     Range 0x04e-0x04f: (Ext #8) same as above
+     Range 0x054-0x059: Filter parameters will be written into left and right channel register
+                        e.g., value of 0x054 will be copied to 0x05a
+     Range 0x05a-0x05f: (Right Channel Filter) same as above
+
+
+Additional ranges of Lead Engine:
+
+  <WOPT>=01  Left/Right Flag
+     Ext# and Filter ranges: see above
+     Range 0x060-0x06f: Voice1 Parameter will be written into Voice1 and Voice4
+                        e.g., value of 0x060 will be copied to 0x090
+     Range 0x090-0x09f: (Voice4 range) same as above
+     Range 0x070-0x07f: Voice2 Parameter will be written into Voice2 and Voice5
+                        e.g., value of 0x070 will be copied to 0x0a0
+     Range 0x0a0-0x0af: (Voice5 range) same as above
+     Range 0x080-0x08f: Voice3 Parameter will be written into Voice3 and Voice6
+                        e.g., value of 0x080 will be copied to 0x0b0
+     Range 0x0b0-0x0bf: (Voice6 range) same as above
+     Address 0x104:     Target Assignment will be written into 0x104 and 0x105 (L/R)
+     Address 0x105:     (Right Channel Assignment register) same as above
+     Address 0x10c:     Target Assignment will be written into 0x11c and 0x11d (L/R)
+     Address 0x10d:     (Right Channel Assignment register) same as above
+     Address 0x114:     Target Assignment will be written into 0x104 and 0x105 (L/R)
+     Address 0x115:     (Right Channel Assignment register) same as above
+     Address 0x11c:     Target Assignment will be written into 0x11c and 0x11d (L/R)
+     Address 0x11d:     (Right Channel Assignment register) same as above
+     Address 0x124:     Target Assignment will be written into 0x104 and 0x105 (L/R)
+     Address 0x125:     (Right Channel Assignment register) same as above
+     Address 0x12c:     Target Assignment will be written into 0x11c and 0x11d (L/R)
+     Address 0x12d:     (Right Channel Assignment register) same as above
+     Address 0x134:     Target Assignment will be written into 0x104 and 0x105 (L/R)
+     Address 0x135:     (Right Channel Assignment register) same as above
+     Address 0x13c:     Target Assignment will be written into 0x11c and 0x11d (L/R)
+     Address 0x13d:     (Right Channel Assignment register) same as above
+
+     All other ranges should not be accessed in this mode!
+
+  <WOPT>=02  Voice123/456 Flag
+     Range 0x060-0x06f: Voice1 Parameter will be written into Voice1, Voice2 and Voice3
+                        e.g., value of 0x060 will be copied to 0x070 and 0x080
+     Range 0x070-0x07f: (Voice2 range) same as above
+     Range 0x080-0x08f: (Voice3 range) same as above
+     Range 0x090-0x09f: Voice4 Parameter will be written into Voice4, Voice5 and Voice6
+                        e.g., value of 0x090 will be copied to 0x0a0 and 0x0b0
+     Range 0x0a0-0x0af: (Voice5 range) same as above
+     Range 0x0b0-0x0bf: (Voice6 range) same as above
+     All other ranges should not be accessed in this mode!
+
+  <WOPT>=03  Combined Left/Right and Voice123/456 Flag
+     Range 0x060-0x0bf: Voice Parameter will be written into Voice1-6
+                        e.g., value of 0x060 will be copied to 0x070, 0x080, 0x090, 0x0a0 and 0x0b0
+     Address 0x104:     Target Assignment will be written into 0x104 and 0x105 (L/R)
+     Address 0x105:     (Right Channel Assignment register) same as above
+     Address 0x10c:     Target Assignment will be written into 0x11c and 0x11d (L/R)
+     Address 0x10d:     (Right Channel Assignment register) same as above
+     Address 0x114:     Target Assignment will be written into 0x104 and 0x105 (L/R)
+     Address 0x115:     (Right Channel Assignment register) same as above
+     Address 0x11c:     Target Assignment will be written into 0x11c and 0x11d (L/R)
+     Address 0x11d:     (Right Channel Assignment register) same as above
+     Address 0x124:     Target Assignment will be written into 0x104 and 0x105 (L/R)
+     Address 0x125:     (Right Channel Assignment register) same as above
+     Address 0x12c:     Target Assignment will be written into 0x11c and 0x11d (L/R)
+     Address 0x12d:     (Right Channel Assignment register) same as above
+     Address 0x134:     Target Assignment will be written into 0x104 and 0x105 (L/R)
+     Address 0x135:     (Right Channel Assignment register) same as above
+     Address 0x13c:     Target Assignment will be written into 0x11c and 0x11d (L/R)
+     Address 0x13d:     (Right Channel Assignment register) same as above
+
+
+Additional ranges of Bassline Engine:
+
+  <WOPT>=01  Left/Right Flag
+     Ext# and Filter ranges: see above
+     Range 0x060-0x0af: Bassline L Parameter will be written into Bassline L and R
+                        e.g., value of 0x060 will be copied to 0x0b0
+     Range 0x0b0-0x0ff: (Bassline R) same as above
+     All other ranges should not be accessed in this mode!
+
+
+Additional ranges of Multi Engine:
+
+  <WOPT>=01  Left/Right Flag
+     Ext# and Filter ranges: see above
+     Range 0x060-0x08f: Voice1 Parameter will be written into Voice1 and Voice4
+                        e.g., value of 0x060 will be copied to 0x0f0
+     Range 0x0f0-0x11f: (Voice4) same as above
+     Range 0x090-0x0bf: Voice2 Parameter will be written into Voice2 and Voice5
+                        e.g., value of 0x090 will be copied to 0x120
+     Range 0x120-0x14f: (Voice5) same as above
+     Range 0x0c0-0x0ef: Voice3 Parameter will be written into Voice3 and Voice6
+                        e.g., value of 0x080 will be copied to 0x150
+     Range 0x150-0x17f: (Voice6) same as above
+     All other ranges should not be accessed in this mode!
+
+  <WOPT>=02  Voice123/456 Flag
+     Range 0x060-0x08f: Voice1 Parameter will be written into Voice1, Voice2 and Voice3
+                        e.g., value of 0x060 will be copied to 0x090 and 0x0c0
+     Range 0x090-0x0bf: (Voice2) same as above
+     Range 0x0c0-0x0ef: (Voice3) same as above
+     Range 0x0f0-0x11f: Voice4 Parameter will be written into Voice4, Voice5 and Voice6
+                        e.g., value of 0x0f0 will be copied to 0x120 and 0x150
+     Range 0x120-0x14f: (Voice5) same as above
+     Range 0x150-0x17f: (Voice6) same as above
+     All other ranges should not be accessed in this mode!
+
+  <WOPT>=03  Combined Left/Right and Voice123/456 Flag
+     Range 0x060-0x17f: Voice Parameter will be written into Voice1-6
+                        e.g., value of 0x060 will be copied to 0x090, 0x0c0, 0x0f0, 0x120 and 0x150
+     All other ranges should not be accessed in this mode!
+
+
+Additional ranges of Drum Engine:
+
+  <WOPT>=01  Left/Right Flag
+     Ext# and Filter ranges: see above
+     All other ranges should not be accessed in this mode!
+
+
+
+(c) Thorsten.Klose@midibox.org

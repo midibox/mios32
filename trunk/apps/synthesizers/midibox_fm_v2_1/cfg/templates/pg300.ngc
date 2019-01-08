@@ -1,0 +1,58 @@
+
+# Starting point for a PG-300 clone for an Alpha Juno
+
+# Documentation of SysEx parameters:
+# -> http://www.vintagesynth.com/roland/sysex.php
+
+
+# Reset to default
+RESET_HW
+
+# LCD message after load
+LCD "%C@(1:1:1)PG-300 Ready"
+
+
+# AINSER64 hardware
+AINSER n=  1   enabled=1  muxed=1  cs=0  resolution=7bit
+
+
+# Envelope assigned to the first 8 faders
+EVENT_AINSER id=  1   type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x1a ^val 0xf7" lcd_pos=1:1:2 label="ENV T1 Attack:   %3d"
+EVENT_AINSER id=  2   type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x1b ^val 0xf7" lcd_pos=1:1:2 label="ENV L1 Attack:   %3d"
+EVENT_AINSER id=  3   type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x1c ^val 0xf7" lcd_pos=1:1:2 label="ENV T2 Break:    %3d"
+EVENT_AINSER id=  4   type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x1d ^val 0xf7" lcd_pos=1:1:2 label="ENV L2 Break:    %3d"
+EVENT_AINSER id=  5   type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x1e ^val 0xf7" lcd_pos=1:1:2 label="ENV T3 Decay:    %3d"
+EVENT_AINSER id=  6   type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x1f ^val 0xf7" lcd_pos=1:1:2 label="ENV L3 Sustain:  %3d"
+EVENT_AINSER id=  7   type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x20 ^val 0xf7" lcd_pos=1:1:2 label="ENV T4 Release:  %3d"
+EVENT_AINSER id=  8   type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x21 ^val 0xf7" lcd_pos=1:1:2 label="ENV Key Follow:  %3d"
+
+# Convert incoming CC to Envelope SysEx:
+EVENT_RECEIVER id=1   type=CC  cc=16  fwd_id=AINSER:1
+EVENT_RECEIVER id=2   type=CC  cc=17  fwd_id=AINSER:2
+EVENT_RECEIVER id=3   type=CC  cc=18  fwd_id=AINSER:3
+EVENT_RECEIVER id=4   type=CC  cc=19  fwd_id=AINSER:4
+EVENT_RECEIVER id=5   type=CC  cc=20  fwd_id=AINSER:5
+EVENT_RECEIVER id=6   type=CC  cc=21  fwd_id=AINSER:6
+EVENT_RECEIVER id=7   type=CC  cc=22  fwd_id=AINSER:7
+EVENT_RECEIVER id=8   type=CC  cc=23  fwd_id=AINSER:8
+
+
+# Example for parameters controlled by radio group and single cycle button:
+
+# DCO ENV. Mode (0=Normal, 1=Inverted, 2=Normal-Dynamic, 3=Inv.-Dynamic)
+EVENT_SENDER id=1001  radio_group=1  range=0:0  type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x00 0x00 0xf7"   fwd_id=LED:1
+EVENT_SENDER id=1002  radio_group=1  range=1:1  type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x00 0x01 0xf7"   fwd_id=LED:2
+EVENT_SENDER id=1003  radio_group=1  range=2:2  type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x00 0x02 0xf7"   fwd_id=LED:3
+EVENT_SENDER id=1004  radio_group=1  range=3:3  type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x00 0x03 0xf7"   fwd_id=LED:4
+
+MAP1 0 1 2 3
+EVENT_BUTTON id=1     radio_group=1  range=map1  button_mode=Toggle
+
+# VCF ENV. Mode (0=Normal, 1=Inverted, 2=Normal-Dynamic, 3=Inv.-Dynamic)
+EVENT_SENDER id=1011  radio_group=2  range=0:0  type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x01 0x00 0xf7"   fwd_id=LED:5
+EVENT_SENDER id=1012  radio_group=2  range=1:1  type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x01 0x01 0xf7"   fwd_id=LED:6
+EVENT_SENDER id=1013  radio_group=2  range=2:2  type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x01 0x02 0xf7"   fwd_id=LED:7
+EVENT_SENDER id=1014  radio_group=2  range=3:3  type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x01 0x03 0xf7"   fwd_id=LED:8
+
+MAP2 0 1 2 3
+EVENT_BUTTON id=2     radio_group=2  range=map2  button_mode=Toggle

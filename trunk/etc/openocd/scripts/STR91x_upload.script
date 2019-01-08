@@ -1,0 +1,10 @@
+# $Id$
+
+wait_halt
+str9x flash_config 0 4 2 0 0x80000
+flash protect 0 0 7 off
+flash erase_sector 0 0 7
+flash write_bank 0 project.bin 0
+reset run
+sleep 10
+#shutdown

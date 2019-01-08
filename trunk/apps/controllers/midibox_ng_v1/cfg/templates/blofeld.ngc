@@ -1,0 +1,367 @@
+
+################################################################################
+# Reset the setup to default settings
+# This command ensures, that previous hardware definitions will be overwritten
+# by a new setup without the need to set defintions for all components
+################################################################################
+RESET_HW
+
+LCD "%C@(1:1:1)Blofeld Ctrl"
+
+
+################################################################################
+# SCS configuration
+################################################################################
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+
+
+################################################################################
+# We provide 5 banks
+# The rotary encoder on the SCS selects the bank
+# The selected bank will be displayed at lcd_pos=1:1:1 (first LCD, X=1, Y=1)
+# as a mapped label
+################################################################################
+EVENT_ENC    id=2000  type=Meta   meta=SetBank   range=1:5
+
+# This is a dummy LED without assigned hardware (hw_id=2000 not used anywhere else) and without MIDI event.
+# the purpose of this EVENT item is to print the bank whenever the LCD is refreshed (e.g. after startup or bank change)
+EVENT_LED id=2000 fwd_to_lcd=1 lcd_pos=1:1:1 label="^bank"
+
+
+################################################################################
+# this button requests a SysEx dump
+# note: instead of "^bnk ^pat" we specify "0x7f 0x00" to request the edit buffer!
+################################################################################
+EVENT_BUTTON id=2000  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x00 0x7f 0x00 0xf7" \
+             range=  0:1 offset=  0  ports=1000100000001000  button_mode=OnOnly \
+             lcd_pos=1:1:2 label="*** Dump Request ***"
+
+# this generic receiver (without controller assignment) receives the SysEx dump
+# and notifies all events which select syxdump_pos=1:<pos-in-dump>
+EVENT_RECEIVER id=  1  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x10 ^ignore ^ignore ^dump" \
+             ports=1000100000001000 \
+             fwd_to_lcd=1 lcd_pos=1:1:2 label="* Received SyxDump *"
+
+
+########################################################################################################################
+# OSC1
+#######################################################################################################################
+EVENT_ENC    id=  1  hw_id= 1  bank=1  fwd_id=LED_MATRIX:1  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   1 ^val 0xf7"  syxdump_pos=1:1 \
+             range= 16:112 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC1 Octave ^octave %03d"
+
+EVENT_ENC    id=  2  hw_id= 2  bank=1  fwd_id=LED_MATRIX:2  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   2 ^val 0xf7"  syxdump_pos=1:2 \
+             range= 52:76  offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC1 Semitone    %03d"
+
+EVENT_ENC    id=  3  hw_id= 3  bank=1  fwd_id=LED_MATRIX:3  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   3 ^val 0xf7"  syxdump_pos=1:3 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC1 Detune      %03d"
+
+EVENT_ENC    id=  4  hw_id= 4  bank=1  fwd_id=LED_MATRIX:4  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   4 ^val 0xf7"  syxdump_pos=1:4 \
+             range= 40:88  offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC1 BendRange   %03d"
+
+EVENT_ENC    id=  5  hw_id= 5  bank=1  fwd_id=LED_MATRIX:5  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   5 ^val 0xf7"  syxdump_pos=1:5 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC1 Keytrack    %03d"
+
+EVENT_ENC    id=  6  hw_id= 6  bank=1  fwd_id=LED_MATRIX:6  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   6 ^val 0xf7"  syxdump_pos=1:6 \
+             range=  0:11  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC1 FMSrc:^fm_src"
+
+EVENT_ENC    id=  7  hw_id= 7  bank=1  fwd_id=LED_MATRIX:7  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   7 ^val 0xf7"  syxdump_pos=1:7 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC1 FM Amount   %03d"
+
+EVENT_ENC    id=  8  hw_id= 8  bank=1  fwd_id=LED_MATRIX:8  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   8 ^val 0xf7"  syxdump_pos=1:8 \
+             range=  0:72  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC1 Shape:^shape"
+
+EVENT_ENC    id=  9  hw_id= 9  bank=1  fwd_id=LED_MATRIX:9  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   9 ^val 0xf7"  syxdump_pos=1:9 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC1 Pulsewidth  %03d"
+
+EVENT_ENC    id= 10  hw_id=10  bank=1  fwd_id=LED_MATRIX:10 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  10 ^val 0xf7"  syxdump_pos=1:10 \
+             range=  0:30  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC1 PWSrc:^mod_src"
+
+EVENT_ENC    id= 11  hw_id=11  bank=1  fwd_id=LED_MATRIX:11 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  11 ^val 0xf7"  syxdump_pos=1:11 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC1 PWM Amount  %03d"
+
+EVENT_ENC    id= 12  hw_id=12  bank=1  fwd_id=LED_MATRIX:12 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  14 ^val 0xf7"  syxdump_pos=1:14 \
+             range=  0:1   offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC1 Limit WT      %b"
+
+EVENT_ENC    id= 13  hw_id=13  bank=1  fwd_id=LED_MATRIX:13 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  16 ^val 0xf7"  syxdump_pos=1:16 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC1 Brilliance  %03d"
+
+
+########################################################################################################################
+# OSC2
+#######################################################################################################################
+EVENT_ENC    id= 17  hw_id= 1  bank=2  fwd_id=LED_MATRIX:1  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  17 ^val 0xf7"  syxdump_pos=1:17 \
+             range= 16:112 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC2 Octave ^octave %03d"
+
+EVENT_ENC    id= 18  hw_id= 2  bank=2  fwd_id=LED_MATRIX:2  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  18 ^val 0xf7"  syxdump_pos=1:18 \
+             range= 52:76  offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC2 Semitone    %03d"
+
+EVENT_ENC    id= 19  hw_id= 3  bank=2  fwd_id=LED_MATRIX:3  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  19 ^val 0xf7"  syxdump_pos=1:19 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC2 Detune      %03d"
+
+EVENT_ENC    id= 20  hw_id= 4  bank=2  fwd_id=LED_MATRIX:4  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  20 ^val 0xf7"  syxdump_pos=1:20 \
+             range= 40:88  offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC2 BendRange   %03d"
+
+EVENT_ENC    id= 21  hw_id= 5  bank=2  fwd_id=LED_MATRIX:5  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  21 ^val 0xf7"  syxdump_pos=1:21 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC2 Keytrack    %03d"
+
+EVENT_ENC    id= 22  hw_id= 6  bank=2  fwd_id=LED_MATRIX:6  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  22 ^val 0xf7"  syxdump_pos=1:22 \
+             range=  0:11  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC2 FMSrc:^fm_src"
+
+EVENT_ENC    id= 23  hw_id= 7  bank=2  fwd_id=LED_MATRIX:7  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  23 ^val 0xf7"  syxdump_pos=1:23 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC2 FM Amount   %03d"
+
+EVENT_ENC    id= 24  hw_id= 8  bank=2  fwd_id=LED_MATRIX:8  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  24 ^val 0xf7"  syxdump_pos=1:24 \
+             range=  0:72  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC2 Shape:^shape"
+
+EVENT_ENC    id= 25  hw_id= 9  bank=2  fwd_id=LED_MATRIX:9  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  25 ^val 0xf7"  syxdump_pos=1:25 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC2 Pulsewidth  %03d"
+
+EVENT_ENC    id= 26  hw_id=10  bank=2  fwd_id=LED_MATRIX:10 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  26 ^val 0xf7"  syxdump_pos=1:26 \
+             range=  0:30  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC2 PWSrc:^mod_src"
+
+EVENT_ENC    id= 27  hw_id=11  bank=2  fwd_id=LED_MATRIX:11 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  27 ^val 0xf7"  syxdump_pos=1:27 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC2 PWM Amount  %03d"
+
+EVENT_ENC    id= 28  hw_id=12  bank=2  fwd_id=LED_MATRIX:12 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  30 ^val 0xf7"  syxdump_pos=1:30 \
+             range=  0:1   offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC2 Limit WT      %b"
+
+EVENT_ENC    id= 29  hw_id=13  bank=2  fwd_id=LED_MATRIX:13 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  32 ^val 0xf7"  syxdump_pos=1:32 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC2 Brilliance  %03d"
+
+
+########################################################################################################################
+# OSC3
+#######################################################################################################################
+EVENT_ENC    id= 33  hw_id= 1  bank=3  fwd_id=LED_MATRIX:1  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  33 ^val 0xf7"  syxdump_pos=1:33 \
+             range= 16:112 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC3 Octave ^octave %03d"
+
+EVENT_ENC    id= 34  hw_id= 2  bank=3  fwd_id=LED_MATRIX:2  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  34 ^val 0xf7"  syxdump_pos=1:34 \
+             range= 52:76  offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC3 Semitone    %03d"
+
+EVENT_ENC    id= 35  hw_id= 3  bank=3  fwd_id=LED_MATRIX:3  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  35 ^val 0xf7"  syxdump_pos=1:35 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC3 Detune      %03d"
+
+EVENT_ENC    id= 36  hw_id= 4  bank=3  fwd_id=LED_MATRIX:4  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  36 ^val 0xf7"  syxdump_pos=1:36 \
+             range= 40:88  offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC3 BendRange   %03d"
+
+EVENT_ENC    id= 37  hw_id= 5  bank=3  fwd_id=LED_MATRIX:5  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  37 ^val 0xf7"  syxdump_pos=1:37 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC3 Keytrack    %03d"
+
+EVENT_ENC    id= 38  hw_id= 6  bank=3  fwd_id=LED_MATRIX:6  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  38 ^val 0xf7"  syxdump_pos=1:38 \
+             range=  0:11  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC3 FMSrc:^fm_src"
+
+EVENT_ENC    id= 39  hw_id= 7  bank=3  fwd_id=LED_MATRIX:7  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  39 ^val 0xf7"  syxdump_pos=1:39 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC3 FM Amount   %03d"
+
+EVENT_ENC    id= 40  hw_id= 8  bank=3  fwd_id=LED_MATRIX:8  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  40 ^val 0xf7"  syxdump_pos=1:40 \
+             range=  0:72  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC3 Shape:^shape"
+
+EVENT_ENC    id= 41  hw_id= 9  bank=3  fwd_id=LED_MATRIX:9  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  41 ^val 0xf7"  syxdump_pos=1:41 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC3 Pulsewidth  %03d"
+
+EVENT_ENC    id= 42  hw_id=10  bank=3  fwd_id=LED_MATRIX:10 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  42 ^val 0xf7"  syxdump_pos=1:42 \
+             range=  0:30  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC3 PWSrc:^mod_src"
+
+EVENT_ENC    id= 43  hw_id=11  bank=3  fwd_id=LED_MATRIX:11 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  43 ^val 0xf7"  syxdump_pos=1:43 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC3 PWM Amount  %03d"
+
+EVENT_ENC    id= 44  hw_id=12  bank=3  fwd_id=LED_MATRIX:12 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  46 ^val 0xf7"  syxdump_pos=1:46 \
+             range=  0:1   offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC3 Limit WT      %b"
+
+EVENT_ENC    id= 45  hw_id=13  bank=3  fwd_id=LED_MATRIX:13 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  48 ^val 0xf7"  syxdump_pos=1:48 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="OSC3 Brilliance  %03d"
+
+
+########################################################################################################################
+# FIL1
+#######################################################################################################################
+EVENT_ENC    id= 49  hw_id= 1  bank=4  fwd_id=LED_MATRIX:1  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  77 ^val 0xf7"  syxdump_pos=1:77 \
+             range=  0:11  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL1 Type: ^fil_type"
+
+EVENT_ENC    id= 50  hw_id= 2  bank=4  fwd_id=LED_MATRIX:2  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  78 ^val 0xf7"  syxdump_pos=1:78 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL1 CutOff      %03d"
+
+EVENT_ENC    id= 51  hw_id= 3  bank=4  fwd_id=LED_MATRIX:3  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  80 ^val 0xf7"  syxdump_pos=1:80 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL1 Resonance   %03d"
+
+EVENT_ENC    id= 52  hw_id= 4  bank=4  fwd_id=LED_MATRIX:4  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  81 ^val 0xf7"  syxdump_pos=1:81 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL1 Drive Amnt  %03d"
+
+EVENT_ENC    id= 53  hw_id= 5  bank=4  fwd_id=LED_MATRIX:5  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  82 ^val 0xf7"  syxdump_pos=1:82 \
+             range=  0:12  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL1 Drive:^drv_curv"
+
+EVENT_ENC    id= 54  hw_id= 6  bank=4  fwd_id=LED_MATRIX:6  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  86 ^val 0xf7"  syxdump_pos=1:86 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL1 Keytrack    %03d"
+
+EVENT_ENC    id= 55  hw_id= 7  bank=4  fwd_id=LED_MATRIX:7  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  87 ^val 0xf7"  syxdump_pos=1:87 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL1 EnvAmount   %03d"
+
+EVENT_ENC    id= 56  hw_id= 8  bank=4  fwd_id=LED_MATRIX:8  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  88 ^val 0xf7"  syxdump_pos=1:88 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL1 EnvVelocity %03d"
+
+EVENT_ENC    id= 57  hw_id= 9  bank=4  fwd_id=LED_MATRIX:9  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  89 ^val 0xf7"  syxdump_pos=1:89 \
+             range=  0:30  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL1 MdSrc:^mod_src"
+
+EVENT_ENC    id= 58  hw_id=10  bank=4  fwd_id=LED_MATRIX:10 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  90 ^val 0xf7"  syxdump_pos=1:90 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL1 Mod Amount  %03d"
+
+EVENT_ENC    id= 59  hw_id=11  bank=4  fwd_id=LED_MATRIX:11 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  91 ^val 0xf7"  syxdump_pos=1:91 \
+             range=  0:11  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL1 FMSrc:^fm_src"
+
+EVENT_ENC    id= 60  hw_id=12  bank=4  fwd_id=LED_MATRIX:12 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  92 ^val 0xf7"  syxdump_pos=1:92 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL1 FM Amount   %03d"
+
+EVENT_ENC    id= 61  hw_id=13  bank=4  fwd_id=LED_MATRIX:13 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  93 ^val 0xf7"  syxdump_pos=1:93 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL1 Panorama    %03d"
+
+
+########################################################################################################################
+# FIL2
+#######################################################################################################################
+EVENT_ENC    id= 65  hw_id= 1  bank=5  fwd_id=LED_MATRIX:1  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  97 ^val 0xf7"  syxdump_pos=1:97 \
+             range=  0:11  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL2 Type: ^fil_type"
+
+EVENT_ENC    id= 66  hw_id= 2  bank=5  fwd_id=LED_MATRIX:2  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  98 ^val 0xf7"  syxdump_pos=1:98 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL2 CutOff      %03d"
+
+EVENT_ENC    id= 67  hw_id= 3  bank=5  fwd_id=LED_MATRIX:3  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0 100 ^val 0xf7"  syxdump_pos=1:100 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL2 Resonance   %03d"
+
+EVENT_ENC    id= 68  hw_id= 4  bank=5  fwd_id=LED_MATRIX:4  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0 101 ^val 0xf7"  syxdump_pos=1:101 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL2 Drive Amnt  %03d"
+
+EVENT_ENC    id= 69  hw_id= 5  bank=5  fwd_id=LED_MATRIX:5  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0 102 ^val 0xf7"  syxdump_pos=1:102 \
+             range=  0:12  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL2 Drive:^drv_curv"
+
+EVENT_ENC    id= 70  hw_id= 6  bank=5  fwd_id=LED_MATRIX:6  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0 106 ^val 0xf7"  syxdump_pos=1:106 \
+             range=  0:127 offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL2 Keytrack    %03d"
+
+EVENT_ENC    id= 71  hw_id= 7  bank=5  fwd_id=LED_MATRIX:7  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0 107 ^val 0xf7"  syxdump_pos=1:107 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL2 EnvAmount   %03d"
+
+EVENT_ENC    id= 72  hw_id= 8  bank=5  fwd_id=LED_MATRIX:8  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0 108 ^val 0xf7"  syxdump_pos=1:108 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL2 EnvVelocity %03d"
+
+EVENT_ENC    id= 73  hw_id= 9  bank=5  fwd_id=LED_MATRIX:9  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0 109 ^val 0xf7"  syxdump_pos=1:109 \
+             range=  0:30  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL2 MdSrc:^mod_src"
+
+EVENT_ENC    id= 74  hw_id=10  bank=5  fwd_id=LED_MATRIX:10 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0 110 ^val 0xf7"  syxdump_pos=1:110 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL2 Mod Amount  %03d"
+
+EVENT_ENC    id= 75  hw_id=11  bank=5  fwd_id=LED_MATRIX:11 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0 111 ^val 0xf7"  syxdump_pos=1:111 \
+             range=  0:11  offset=  0  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL2 FMSrc:^fm_src"
+
+EVENT_ENC    id= 76  hw_id=12  bank=5  fwd_id=LED_MATRIX:12 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0 112 ^val 0xf7"  syxdump_pos=1:112 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL2 FM Amount   %03d"
+
+EVENT_ENC    id= 77  hw_id=13  bank=5  fwd_id=LED_MATRIX:13 type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0 113 ^val 0xf7"  syxdump_pos=1:113 \
+             range=  0:127 offset=-64  ports=1000100000001000  led_matrix_pattern=3  lcd_pos=1:1:2 label="FIL2 Panorama    %03d"
+
+
+# encoder hardware configuration
+ENC n=  1   sr= 1  pins=0:1   type=non_detented
+ENC n=  2   sr= 1  pins=2:3   type=non_detented
+ENC n=  3   sr= 1  pins=4:5   type=non_detented
+ENC n=  4   sr= 1  pins=6:7   type=non_detented
+ENC n=  5   sr= 2  pins=0:1   type=non_detented
+ENC n=  6   sr= 2  pins=2:3   type=non_detented
+ENC n=  7   sr= 2  pins=4:5   type=non_detented
+ENC n=  8   sr= 2  pins=6:7   type=non_detented
+ENC n=  9   sr= 3  pins=0:1   type=non_detented
+ENC n= 10   sr= 3  pins=2:3   type=non_detented
+ENC n= 11   sr= 3  pins=4:5   type=non_detented
+ENC n= 12   sr= 3  pins=6:7   type=non_detented
+ENC n= 13   sr= 4  pins=0:1   type=non_detented
+ENC n= 14   sr= 4  pins=2:3   type=non_detented
+ENC n= 15   sr= 4  pins=4:5   type=non_detented
+ENC n= 16   sr= 4  pins=6:7   type=non_detented
+
+
+# LEDring configuration
+# NOTE: with ULN2803 based transistor arrays we've to invert the selection lines!
+# -> inverted=1
+# if you don't use these arrays, please set inverted=0
+DOUT_MATRIX n= 1   rows=16 inverted=1  sr_dout_sel1= 1 sr_dout_sel2= 2  sr_dout_r1= 3 sr_dout_r2= 4  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+
+
+# modified ledring patterns for 16 LEDs
+# LED_MATRIX_PATTERNs
+LED_MATRIX_PATTERN n= 1  pos= 0  pattern=1000000000000000
+LED_MATRIX_PATTERN n= 1  pos= 1  pattern=1100000000000000
+LED_MATRIX_PATTERN n= 1  pos= 2  pattern=1110000000000000
+LED_MATRIX_PATTERN n= 1  pos= 3  pattern=1111000000000000
+LED_MATRIX_PATTERN n= 1  pos= 4  pattern=1111100000000000
+LED_MATRIX_PATTERN n= 1  pos= 5  pattern=1111110000000000
+LED_MATRIX_PATTERN n= 1  pos= 6  pattern=1111111000000000
+LED_MATRIX_PATTERN n= 1  pos= 7  pattern=1111111100000000
+LED_MATRIX_PATTERN n= 1  pos= M  pattern=1111111110000000
+LED_MATRIX_PATTERN n= 1  pos= 8  pattern=1111111110000000
+LED_MATRIX_PATTERN n= 1  pos= 9  pattern=1111111111000000
+LED_MATRIX_PATTERN n= 1  pos=10  pattern=1111111111100000
+LED_MATRIX_PATTERN n= 1  pos=11  pattern=1111111111110000
+LED_MATRIX_PATTERN n= 1  pos=12  pattern=1111111111111000
+LED_MATRIX_PATTERN n= 1  pos=13  pattern=1111111111111100
+LED_MATRIX_PATTERN n= 1  pos=14  pattern=1111111111111110
+LED_MATRIX_PATTERN n= 1  pos=15  pattern=1111111111111111
+
+LED_MATRIX_PATTERN n= 2  pos= 0  pattern=1111111100000000
+LED_MATRIX_PATTERN n= 2  pos= 1  pattern=0111111100000000
+LED_MATRIX_PATTERN n= 2  pos= 2  pattern=0011111100000000
+LED_MATRIX_PATTERN n= 2  pos= 3  pattern=0001111100000000
+LED_MATRIX_PATTERN n= 2  pos= 4  pattern=0000111100000000
+LED_MATRIX_PATTERN n= 2  pos= 5  pattern=0000011100000000
+LED_MATRIX_PATTERN n= 2  pos= 6  pattern=0000001100000000
+LED_MATRIX_PATTERN n= 2  pos= 7  pattern=0000000100000000
+LED_MATRIX_PATTERN n= 2  pos= M  pattern=0000000110000000
+LED_MATRIX_PATTERN n= 2  pos= 8  pattern=0000000010000000
+LED_MATRIX_PATTERN n= 2  pos= 9  pattern=0000000011000000
+LED_MATRIX_PATTERN n= 2  pos=10  pattern=0000000011100000
+LED_MATRIX_PATTERN n= 2  pos=11  pattern=0000000011110000
+LED_MATRIX_PATTERN n= 2  pos=12  pattern=0000000011111000
+LED_MATRIX_PATTERN n= 2  pos=13  pattern=0000000011111100
+LED_MATRIX_PATTERN n= 2  pos=14  pattern=0000000011111110
+LED_MATRIX_PATTERN n= 2  pos=15  pattern=0000000011111111
+
+LED_MATRIX_PATTERN n= 3  pos= 0  pattern=1000000000000000
+LED_MATRIX_PATTERN n= 3  pos= 1  pattern=0100000000000000
+LED_MATRIX_PATTERN n= 3  pos= 2  pattern=0010000000000000
+LED_MATRIX_PATTERN n= 3  pos= 3  pattern=0001000000000000
+LED_MATRIX_PATTERN n= 3  pos= 4  pattern=0000100000000000
+LED_MATRIX_PATTERN n= 3  pos= 5  pattern=0000010000000000
+LED_MATRIX_PATTERN n= 3  pos= 6  pattern=0000001000000000
+LED_MATRIX_PATTERN n= 3  pos= 7  pattern=0000000100000000
+LED_MATRIX_PATTERN n= 3  pos= M  pattern=0000000110000000
+LED_MATRIX_PATTERN n= 3  pos= 8  pattern=0000000010000000
+LED_MATRIX_PATTERN n= 3  pos= 9  pattern=0000000001000000
+LED_MATRIX_PATTERN n= 3  pos=10  pattern=0000000000100000
+LED_MATRIX_PATTERN n= 3  pos=11  pattern=0000000000010000
+LED_MATRIX_PATTERN n= 3  pos=12  pattern=0000000000001000
+LED_MATRIX_PATTERN n= 3  pos=13  pattern=0000000000000100
+LED_MATRIX_PATTERN n= 3  pos=14  pattern=0000000000000010
+LED_MATRIX_PATTERN n= 3  pos=15  pattern=0000000000000001
+
+LED_MATRIX_PATTERN n= 4  pos= 0  pattern=0000000110000000
+LED_MATRIX_PATTERN n= 4  pos= 1  pattern=0000001111000000
+LED_MATRIX_PATTERN n= 4  pos= 2  pattern=0000011111100000
+LED_MATRIX_PATTERN n= 4  pos= 3  pattern=0000111111110000
+LED_MATRIX_PATTERN n= 4  pos= 4  pattern=0001111111111000
+LED_MATRIX_PATTERN n= 4  pos= 5  pattern=0011111111111100
+LED_MATRIX_PATTERN n= 4  pos= 6  pattern=0111111111111110
+LED_MATRIX_PATTERN n= 4  pos= 7  pattern=1111111111111111
+LED_MATRIX_PATTERN n= 4  pos= M  pattern=1111111001111111
+LED_MATRIX_PATTERN n= 4  pos= 8  pattern=1111110000111111
+LED_MATRIX_PATTERN n= 4  pos= 9  pattern=1111100000011111
+LED_MATRIX_PATTERN n= 4  pos=10  pattern=1111000000001111
+LED_MATRIX_PATTERN n= 4  pos=11  pattern=1110000000000111
+LED_MATRIX_PATTERN n= 4  pos=12  pattern=1100000000000011
+LED_MATRIX_PATTERN n= 4  pos=13  pattern=1000000000000001
+LED_MATRIX_PATTERN n= 4  pos=14  pattern=1000000110000001
+LED_MATRIX_PATTERN n= 4  pos=15  pattern=1000001111000001

@@ -1,0 +1,114 @@
+# tests banks on my MBLC hardware
+
+RESET_HW
+LCD "%C@(1:1:1)LC Banks Test"
+
+# select the bank with the jogwheel
+EVENT_ENC id=  9  type=Meta   meta=SetBank range=1:4
+
+# This is a dummy LED without assigned hardware (hw_id=2000 not used anywhere else) and without MIDI event.
+# the purpose of this EVENT item is to print the bank whenever the LCD is refreshed (e.g. after startup or bank change)
+EVENT_LED id=2000 fwd_to_lcd=1 lcd_pos=1:1:2 label="Bank #%q"
+
+# use button 9 as "FAST" button (it's outside the bank)
+EVENT_BUTTON id=9 type=Meta   meta=EncFast  range=0:5 lcd_pos=1:10:2 label="FAST%d"
+
+
+# Bank 1
+EVENT_ENC    id= 21  hw_id=1  bank=1  fwd_id=LED_MATRIX:1    type=CC     chn= 1 cc= 16   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 22  hw_id=2  bank=1  fwd_id=LED_MATRIX:2    type=CC     chn= 1 cc= 17   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 23  hw_id=3  bank=1  fwd_id=LED_MATRIX:3    type=CC     chn= 1 cc= 18   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 24  hw_id=4  bank=1  fwd_id=LED_MATRIX:4    type=CC     chn= 1 cc= 19   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 25  hw_id=5  bank=1  fwd_id=LED_MATRIX:5    type=CC     chn= 1 cc= 20   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 26  hw_id=6  bank=1  fwd_id=LED_MATRIX:6    type=CC     chn= 1 cc= 21   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 27  hw_id=7  bank=1  fwd_id=LED_MATRIX:7    type=CC     chn= 1 cc= 22   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 28  hw_id=8  bank=1  fwd_id=LED_MATRIX:8    type=CC     chn= 1 cc= 23   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+
+EVENT_BUTTON id= 21  hw_id=1  bank=1  fwd_id=LED:1           type=CC     chn= 2 cc= 16   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 22  hw_id=2  bank=1  fwd_id=LED:2           type=CC     chn= 2 cc= 17   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 23  hw_id=3  bank=1  fwd_id=LED:3           type=CC     chn= 2 cc= 18   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 24  hw_id=4  bank=1  fwd_id=LED:4           type=CC     chn= 2 cc= 19   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 25  hw_id=5  bank=1  fwd_id=LED:5           type=CC     chn= 2 cc= 20   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 26  hw_id=6  bank=1  fwd_id=LED:6           type=CC     chn= 2 cc= 21   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 27  hw_id=7  bank=1  fwd_id=LED:7           type=CC     chn= 2 cc= 22   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 28  hw_id=8  bank=1  fwd_id=LED:8           type=CC     chn= 2 cc= 23   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+
+
+# Bank 2
+EVENT_ENC    id= 29  hw_id=1  bank=2  fwd_id=LED_MATRIX:1    type=CC     chn= 1 cc= 24   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 30  hw_id=2  bank=2  fwd_id=LED_MATRIX:2    type=CC     chn= 1 cc= 25   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 31  hw_id=3  bank=2  fwd_id=LED_MATRIX:3    type=CC     chn= 1 cc= 26   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 32  hw_id=4  bank=2  fwd_id=LED_MATRIX:4    type=CC     chn= 1 cc= 27   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 33  hw_id=5  bank=2  fwd_id=LED_MATRIX:5    type=CC     chn= 1 cc= 28   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 34  hw_id=6  bank=2  fwd_id=LED_MATRIX:6    type=CC     chn= 1 cc= 29   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 35  hw_id=7  bank=2  fwd_id=LED_MATRIX:7    type=CC     chn= 1 cc= 30   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 36  hw_id=8  bank=2  fwd_id=LED_MATRIX:8    type=CC     chn= 1 cc= 31   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+
+EVENT_BUTTON id= 29  hw_id=1  bank=2  fwd_id=LED:1           type=CC     chn= 2 cc= 24   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 30  hw_id=2  bank=2  fwd_id=LED:2           type=CC     chn= 2 cc= 25   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 31  hw_id=3  bank=2  fwd_id=LED:3           type=CC     chn= 2 cc= 26   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 32  hw_id=4  bank=2  fwd_id=LED:4           type=CC     chn= 2 cc= 27   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 33  hw_id=5  bank=2  fwd_id=LED:5           type=CC     chn= 2 cc= 28   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 34  hw_id=6  bank=2  fwd_id=LED:6           type=CC     chn= 2 cc= 29   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 35  hw_id=7  bank=2  fwd_id=LED:7           type=CC     chn= 2 cc= 30   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 36  hw_id=8  bank=2  fwd_id=LED:8           type=CC     chn= 2 cc= 31   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+
+
+# Bank 3
+EVENT_ENC    id= 37  hw_id=1  bank=3  fwd_id=LED_MATRIX:1    type=CC     chn= 1 cc= 32   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 38  hw_id=2  bank=3  fwd_id=LED_MATRIX:2    type=CC     chn= 1 cc= 33   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 39  hw_id=3  bank=3  fwd_id=LED_MATRIX:3    type=CC     chn= 1 cc= 34   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 40  hw_id=4  bank=3  fwd_id=LED_MATRIX:4    type=CC     chn= 1 cc= 35   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 41  hw_id=5  bank=3  fwd_id=LED_MATRIX:5    type=CC     chn= 1 cc= 36   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 42  hw_id=6  bank=3  fwd_id=LED_MATRIX:6    type=CC     chn= 1 cc= 37   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 43  hw_id=7  bank=3  fwd_id=LED_MATRIX:7    type=CC     chn= 1 cc= 38   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 44  hw_id=8  bank=3  fwd_id=LED_MATRIX:8    type=CC     chn= 1 cc= 39   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+
+EVENT_BUTTON id= 37  hw_id=1  bank=3  fwd_id=LED:1           type=CC     chn= 2 cc= 32   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 38  hw_id=2  bank=3  fwd_id=LED:2           type=CC     chn= 2 cc= 33   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 39  hw_id=3  bank=3  fwd_id=LED:3           type=CC     chn= 2 cc= 34   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 40  hw_id=4  bank=3  fwd_id=LED:4           type=CC     chn= 2 cc= 35   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 41  hw_id=5  bank=3  fwd_id=LED:5           type=CC     chn= 2 cc= 36   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 42  hw_id=6  bank=3  fwd_id=LED:6           type=CC     chn= 2 cc= 37   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 43  hw_id=7  bank=3  fwd_id=LED:7           type=CC     chn= 2 cc= 38   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 44  hw_id=8  bank=3  fwd_id=LED:8           type=CC     chn= 2 cc= 39   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+
+
+# Bank 4
+EVENT_ENC    id= 45  hw_id=1  bank=4  fwd_id=LED_MATRIX:1    type=CC     chn= 1 cc= 40   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 46  hw_id=2  bank=4  fwd_id=LED_MATRIX:2    type=CC     chn= 1 cc= 41   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 47  hw_id=3  bank=4  fwd_id=LED_MATRIX:3    type=CC     chn= 1 cc= 42   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 48  hw_id=4  bank=4  fwd_id=LED_MATRIX:4    type=CC     chn= 1 cc= 43   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 49  hw_id=5  bank=4  fwd_id=LED_MATRIX:5    type=CC     chn= 1 cc= 44   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 50  hw_id=6  bank=4  fwd_id=LED_MATRIX:6    type=CC     chn= 1 cc= 45   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 51  hw_id=7  bank=4  fwd_id=LED_MATRIX:7    type=CC     chn= 1 cc= 46   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 52  hw_id=8  bank=4  fwd_id=LED_MATRIX:8    type=CC     chn= 1 cc= 47   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+
+EVENT_BUTTON id= 45  hw_id=1  bank=4  fwd_id=LED:1           type=CC     chn= 2 cc= 40   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 46  hw_id=2  bank=4  fwd_id=LED:2           type=CC     chn= 2 cc= 41   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 47  hw_id=3  bank=4  fwd_id=LED:3           type=CC     chn= 2 cc= 42   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 48  hw_id=4  bank=4  fwd_id=LED:4           type=CC     chn= 2 cc= 43   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 49  hw_id=5  bank=4  fwd_id=LED:5           type=CC     chn= 2 cc= 44   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 50  hw_id=6  bank=4  fwd_id=LED:6           type=CC     chn= 2 cc= 45   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 51  hw_id=7  bank=4  fwd_id=LED:7           type=CC     chn= 2 cc= 46   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 52  hw_id=8  bank=4  fwd_id=LED:8           type=CC     chn= 2 cc= 48   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+
+
+# encoder hardware configuration
+
+# VPots
+ENC n=  1   sr=13 pins=0:1   type=non_detented
+ENC n=  2   sr=13 pins=2:3   type=non_detented
+ENC n=  3   sr=13 pins=4:5   type=non_detented
+ENC n=  4   sr=13 pins=6:7   type=non_detented
+ENC n=  5   sr=14 pins=0:1   type=non_detented
+ENC n=  6   sr=14 pins=2:3   type=non_detented
+ENC n=  7   sr=14 pins=4:5   type=non_detented
+ENC n=  8   sr=14 pins=6:7   type=non_detented
+
+# Jogwheel
+ENC n=  9   sr= 15 pins=0:1   type=non_detented
+
+
+# LEDring configuration
+DOUT_MATRIX n= 1   rows=16 inverted=0  sr_dout_sel1= 9  sr_dout_r1=11 sr_dout_r2=12

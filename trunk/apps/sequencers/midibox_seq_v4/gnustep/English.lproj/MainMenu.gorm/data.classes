@@ -1,0 +1,249 @@
+{
+    "## Comment" = "Do NOT change this file, Gorm maintains it";
+    CLCDView = {
+	Actions = (
+	);
+	Outlets = (
+	);
+	Super = NSView;
+    };
+    FirstResponder = {
+	Actions = (
+	    "draw_lcd:",
+	    "encoderMoved:"
+	);
+	Super = NSObject;
+    };
+    FreeRTOS_Wrapper = {
+	Actions = (
+	);
+	Outlets = (
+	);
+	Super = NSObject;
+    };
+    MIOS32_BOARD_Wrapper = {
+	Actions = (
+	);
+	Outlets = (
+	);
+	Super = NSObject;
+    };
+    MIOS32_COM_Wrapper = {
+	Actions = (
+	);
+	Outlets = (
+	);
+	Super = NSObject;
+    };
+    MIOS32_IRQ_Wrapper = {
+	Actions = (
+	);
+	Outlets = (
+	);
+	Super = NSObject;
+    };
+    MIOS32_LCD_Wrapper = {
+	Actions = (
+	);
+	Outlets = (
+	    lcdView2,
+	    lcdView1
+	);
+	Super = NSObject;
+    };
+    MIOS32_MIDI_Wrapper = {
+	Actions = (
+	);
+	Outlets = (
+	);
+	Super = NSObject;
+    };
+    MIOS32_SRIO_Wrapper = {
+	Actions = (
+	);
+	Outlets = (
+	    buttonGP15,
+	    buttonPLayerA,
+	    buttonGP16,
+	    buttonMenu,
+	    buttonPLayerB,
+	    buttonPLayerC,
+	    buttonFwd,
+	    buttonF1,
+	    buttonF2,
+	    buttonF3,
+	    buttonF4,
+	    buttonGP1,
+	    buttonGP2,
+	    buttonPlay,
+	    buttonLeft,
+	    buttonGP3,
+	    buttonScrub,
+	    buttonGP4,
+	    buttonGP5,
+	    buttonSolo,
+	    buttonCopy,
+	    buttonGP6,
+	    buttonGP7,
+	    buttonGP8,
+	    buttonGP9,
+	    buttonExit,
+	    buttonFast,
+	    buttonRew,
+	    buttonPattern,
+	    buttonGroup1,
+	    buttonGroup2,
+	    buttonGroup3,
+	    buttonGroup4,
+	    LEDBeat,
+	    buttonStepView,
+	    buttonTLayerA,
+	    buttonTLayerB,
+	    buttonTLayerC,
+	    buttonStop,
+	    buttonSelect,
+	    LED10,
+	    buttonTrack1,
+	    buttonEdit,
+	    LED11,
+	    buttonTrack2,
+	    LED12,
+	    buttonTrack3,
+	    LED13,
+	    buttonTrack4,
+	    LED14,
+	    LED15,
+	    LED16,
+	    buttonPaste,
+	    buttonClear,
+	    buttonRight,
+	    buttonPause,
+	    LED1,
+	    buttonUtility,
+	    buttonMute,
+	    LED2,
+	    LED3,
+	    LED4,
+	    buttonAll,
+	    LED5,
+	    LED6,
+	    LED7,
+	    LED8,
+	    LED9,
+	    buttonSong,
+	    buttonMetronome,
+	    buttonGP10,
+	    buttonGP11,
+	    buttonGP12,
+	    buttonGP13,
+	    buttonGP14
+	);
+	Super = NSObject;
+    };
+    MIOS32_TIMER_Wrapper = {
+	Actions = (
+	);
+	Outlets = (
+	);
+	Super = NSObject;
+    };
+    SEQButton = {
+	Actions = (
+	);
+	Outlets = (
+	);
+	Super = NSButton;
+    };
+    SEQEncoder = {
+	Actions = (
+	    "encoderMoved:"
+	);
+	Outlets = (
+	);
+	Super = NSSlider;
+    };
+    UI = {
+	Actions = (
+	    "draw_lcd:"
+	);
+	Outlets = (
+	    buttonGP15,
+	    buttonPLayerA,
+	    buttonGP16,
+	    buttonMenu,
+	    buttonPLayerB,
+	    buttonPLayerC,
+	    buttonFwd,
+	    buttonF1,
+	    buttonF2,
+	    buttonF3,
+	    buttonF4,
+	    buttonGP1,
+	    buttonGP2,
+	    buttonPlay,
+	    buttonLeft,
+	    buttonGP3,
+	    buttonScrub,
+	    buttonGP4,
+	    buttonGP5,
+	    buttonSolo,
+	    buttonCopy,
+	    buttonGP6,
+	    buttonGP7,
+	    buttonGP8,
+	    buttonGP9,
+	    buttonExit,
+	    textView,
+	    buttonFast,
+	    buttonRew,
+	    buttonPattern,
+	    buttonGroup1,
+	    buttonGroup2,
+	    buttonGroup3,
+	    buttonGroup4,
+	    LEDBeat,
+	    buttonStepView,
+	    buttonTLayerA,
+	    buttonTLayerB,
+	    buttonTLayerC,
+	    buttonStop,
+	    buttonSelect,
+	    LED10,
+	    buttonTrack1,
+	    buttonEdit,
+	    LED11,
+	    buttonTrack2,
+	    LED12,
+	    buttonTrack3,
+	    LED13,
+	    buttonTrack4,
+	    LED14,
+	    LED15,
+	    LED16,
+	    buttonPaste,
+	    buttonClear,
+	    buttonRight,
+	    buttonPause,
+	    LED1,
+	    buttonUtility,
+	    buttonMute,
+	    LED2,
+	    LED3,
+	    LED4,
+	    buttonAll,
+	    LED5,
+	    LED6,
+	    LED7,
+	    LED8,
+	    LED9,
+	    buttonSong,
+	    buttonMetronome,
+	    buttonGP10,
+	    buttonGP11,
+	    buttonGP12,
+	    buttonGP13,
+	    buttonGP14
+	);
+	Super = NSObject;
+    };
+}

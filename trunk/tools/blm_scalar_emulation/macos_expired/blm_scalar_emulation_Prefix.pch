@@ -1,0 +1,8 @@
+// $Id$
+//
+// Prefix header for all source files of the 'blm_scalar_emulation' target in the 'blm_scalar_emulation' project
+//
+
+#ifdef __OBJC__
+    #import <Cocoa/Cocoa.h>
+#endif

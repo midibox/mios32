@@ -1,0 +1,49 @@
+RESET_HW
+
+LCD "%CRadioGrp"
+
+# radio group with 8 buttons which send individual values
+EVENT_BUTTON id=  1  fwd_id=LED:1  fwd_to_lcd=1  type=CC chn=1 cc=16  button_mode=OnOnly  range= 0:0   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id=  2  fwd_id=LED:2  fwd_to_lcd=1  type=CC chn=1 cc=16  button_mode=OnOnly  range= 1:1   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id=  3  fwd_id=LED:3  fwd_to_lcd=1  type=CC chn=1 cc=16  button_mode=OnOnly  range= 2:2   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id=  4  fwd_id=LED:4  fwd_to_lcd=1  type=CC chn=1 cc=16  button_mode=OnOnly  range= 3:3   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id=  5  fwd_id=LED:5  fwd_to_lcd=1  type=CC chn=1 cc=16  button_mode=OnOnly  range= 4:4   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id=  6  fwd_id=LED:6  fwd_to_lcd=1  type=CC chn=1 cc=16  button_mode=OnOnly  range= 5:5   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id=  7  fwd_id=LED:7  fwd_to_lcd=1  type=CC chn=1 cc=16  button_mode=OnOnly  range= 6:6   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id=  8  fwd_id=LED:8  fwd_to_lcd=1  type=CC chn=1 cc=16  button_mode=OnOnly  range= 7:7   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+
+# radio group with 8 buttons which send individual values, and receive values in the given range
+EVENT_BUTTON id=  9  fwd_id=LED:9  fwd_to_lcd=1  type=CC chn=1 cc=17  button_mode=OnOnly  range= 0:9   radio_group=2  lcd_pos=1:1:1 label="Group2:%2d"
+EVENT_BUTTON id= 10  fwd_id=LED:10 fwd_to_lcd=1  type=CC chn=1 cc=17  button_mode=OnOnly  range=10:19  radio_group=2  lcd_pos=1:1:1 label="Group2:%2d"
+EVENT_BUTTON id= 11  fwd_id=LED:11 fwd_to_lcd=1  type=CC chn=1 cc=17  button_mode=OnOnly  range=20:29  radio_group=2  lcd_pos=1:1:1 label="Group2:%2d"
+EVENT_BUTTON id= 12  fwd_id=LED:12 fwd_to_lcd=1  type=CC chn=1 cc=17  button_mode=OnOnly  range=30:39  radio_group=2  lcd_pos=1:1:1 label="Group2:%2d"
+EVENT_BUTTON id= 13  fwd_id=LED:13 fwd_to_lcd=1  type=CC chn=1 cc=17  button_mode=OnOnly  range=40:49  radio_group=2  lcd_pos=1:1:1 label="Group2:%2d"
+EVENT_BUTTON id= 14  fwd_id=LED:14 fwd_to_lcd=1  type=CC chn=1 cc=17  button_mode=OnOnly  range=50:59  radio_group=2  lcd_pos=1:1:1 label="Group2:%2d"
+EVENT_BUTTON id= 15  fwd_id=LED:15 fwd_to_lcd=1  type=CC chn=1 cc=17  button_mode=OnOnly  range=60:69  radio_group=2  lcd_pos=1:1:1 label="Group2:%2d"
+EVENT_BUTTON id= 16  fwd_id=LED:16 fwd_to_lcd=1  type=CC chn=1 cc=17  button_mode=OnOnly  range=70:79  radio_group=2  lcd_pos=1:1:1 label="Group2:%2d"
+
+# unrelated to radio groups - just to check that other buttons do work normal
+EVENT_BUTTON id= 17  fwd_id=LED:17 fwd_to_lcd=1  type=CC chn=1 cc=18  button_mode=OnOff   range=0:127  lcd_pos=1:1:2 label="^std_btn"
+EVENT_BUTTON id= 18  fwd_id=LED:18 fwd_to_lcd=1  type=CC chn=1 cc=19  button_mode=OnOnly  range=0:127  lcd_pos=1:1:2 label="^std_btn"
+EVENT_BUTTON id= 19  fwd_id=LED:19 fwd_to_lcd=1  type=CC chn=1 cc=20  button_mode=Toggle  range=0:127  lcd_pos=1:1:2 label="^std_btn"
+EVENT_BUTTON id= 20  fwd_id=LED:20 fwd_to_lcd=1  type=CC chn=1 cc=21  button_mode=Toggle  range=0:127  lcd_pos=1:1:2 label="^std_btn"
+EVENT_BUTTON id= 21  fwd_id=LED:21 fwd_to_lcd=1  type=CC chn=1 cc=22  button_mode=Toggle  range=0:127  lcd_pos=1:1:2 label="^std_btn"
+EVENT_BUTTON id= 22  fwd_id=LED:22 fwd_to_lcd=1  type=CC chn=1 cc=23  button_mode=Toggle  range=0:127  lcd_pos=1:1:2 label="^std_btn"
+EVENT_BUTTON id= 23  fwd_id=LED:23 fwd_to_lcd=1  type=CC chn=1 cc=24  button_mode=Toggle  range=0:127  lcd_pos=1:1:2 label="^std_btn"
+EVENT_BUTTON id= 24  fwd_id=LED:24 fwd_to_lcd=1  type=CC chn=1 cc=25  button_mode=Toggle  range=0:127  lcd_pos=1:1:2 label="^std_btn"
+
+# check that radio buttons outside group are not affected by bank switches
+EVENT_BUTTON id= 25  type=Meta   meta=SetBank button_mode=OnOnly range=1:1  lcd_pos=1:1:2 label="Bank #%q"
+EVENT_BUTTON id= 26  type=Meta   meta=SetBank button_mode=OnOnly range=2:2  lcd_pos=1:1:2 label="Bank #%q"
+EVENT_BUTTON id= 27  type=Meta   meta=SetBank button_mode=OnOnly range=3:3  lcd_pos=1:1:2 label="Bank #%q"
+EVENT_BUTTON id= 28  type=Meta   meta=SetBank button_mode=OnOnly range=4:4  lcd_pos=1:1:2 label="Bank #%q"
+
+# check that LED elements can be grouped as well without buttons
+EVENT_LED    id= 25                fwd_to_lcd=1  type=CC chn=1 cc= 1  range= 0:9  radio_group=3  lcd_pos=1:1:1 label="Group3:%2d"
+EVENT_LED    id= 26                fwd_to_lcd=1  type=CC chn=1 cc= 1  range=10:19 radio_group=3  lcd_pos=1:1:1 label="Group3:%2d"
+EVENT_LED    id= 27                fwd_to_lcd=1  type=CC chn=1 cc= 1  range=20:29 radio_group=3  lcd_pos=1:1:1 label="Group3:%2d"
+EVENT_LED    id= 28                fwd_to_lcd=1  type=CC chn=1 cc= 1  range=30:39 radio_group=3  lcd_pos=1:1:1 label="Group3:%2d"
+EVENT_LED    id= 29                fwd_to_lcd=1  type=CC chn=1 cc= 1  range=40:49 radio_group=3  lcd_pos=1:1:1 label="Group3:%2d"
+EVENT_LED    id= 30                fwd_to_lcd=1  type=CC chn=1 cc= 1  range=50:59 radio_group=3  lcd_pos=1:1:1 label="Group3:%2d"
+EVENT_LED    id= 31                fwd_to_lcd=1  type=CC chn=1 cc= 1  range=60:69 radio_group=3  lcd_pos=1:1:1 label="Group3:%2d"
+EVENT_LED    id= 32                fwd_to_lcd=1  type=CC chn=1 cc= 1  range=70:79 radio_group=3  lcd_pos=1:1:1 label="Group3:%2d"

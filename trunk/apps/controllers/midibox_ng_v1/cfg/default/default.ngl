@@ -1,0 +1,21 @@
+# Standard label for buttons:
+LABEL std_btn  "Button #%3i %3d%b"
+
+# Standard label for LEDs:
+LABEL std_led  "LED #%3i       %b"
+
+# Standard label for rotary encoders:
+LABEL std_enc  "ENC #%3i    %3d%B"
+
+# Standard label for pots connected to AIN pins:
+LABEL std_ain  "AIN #%3i    %3d%B"
+
+# Standard label for pots connected to AINSER module:
+LABEL std_aser "AINSER #%3i %3d%B"
+
+# Standard label for motorfaders:
+LABEL std_mf   "MF #%3i     %3d%B"
+
+# Standard label for CV Channels:
+LABEL std_cv   "CV #%3i     %3d%B"
+

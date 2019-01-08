@@ -1,0 +1,25 @@
+
+# emulates SCS encoder and buttons which are normaly connected to J10 of the MBHP_CORE_LPC17 module
+# note that these meta functions could also be triggered from a bank!
+
+RESET_HW
+
+LCD "%C@(1:1:1)SCS Test"
+
+EVENT_BUTTON id=  1  type=Meta   meta=ScsSoft1 range=0:1
+EVENT_BUTTON id=  2  type=Meta   meta=ScsSoft2 range=0:1
+EVENT_BUTTON id=  3  type=Meta   meta=ScsSoft3 range=0:1
+EVENT_BUTTON id=  4  type=Meta   meta=ScsSoft4 range=0:1
+EVENT_BUTTON id=  5  type=Meta   meta=ScsShift range=0:1
+EVENT_BUTTON id=  6  type=Meta   meta=ScsMenu  range=0:1
+
+# if dec/inc buttons should be used:
+# DEC:
+EVENT_BUTTON id=  7  type=Meta   meta=ScsEnc   range=63:63 button_mode=OnOnly
+# INC:
+EVENT_BUTTON id=  8  type=Meta   meta=ScsEnc   range=65:65 button_mode=OnOnly
+
+
+# if a rotary encoder should be used:
+ENC n=  1   sr= 15 pins=0:1   type=non_detented
+EVENT_ENC    id=  1  type=Meta   meta=ScsEnc   range=0:127 enc_mode=40Speed

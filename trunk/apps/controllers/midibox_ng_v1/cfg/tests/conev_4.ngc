@@ -1,0 +1,22 @@
+
+# demonstrates how different events can be processed depending on a condition
+
+RESET_HW
+
+LCD "%C"
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+# send CC#16 if value is <64, otherwise send CC#17
+# we have to forward the value to senders, because the value itself should only be maintained at a single place
+EVENT_ENC    id=2000 hw_id=2000  fwd_id=Sender:2000
+
+# both senders are assigned to the same hw_id, therefore both will receive the forwarded value from the encoder event above:
+EVENT_SENDER id=2000 hw_id=2000  fwd_to_lcd=1  if_less_stop_on_match=64  type=CC cc=16  lcd_pos=1:1:2 label="Enc < 64: %3d"
+EVENT_SENDER id=2001 hw_id=2000  fwd_to_lcd=1                            type=CC cc=17  lcd_pos=1:1:2 label="Enc >=64: %3d"

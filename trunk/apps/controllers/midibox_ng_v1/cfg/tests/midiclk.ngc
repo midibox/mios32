@@ -1,0 +1,26 @@
+
+# demonstrates how to control the MIDI clock generator
+
+RESET_HW
+
+LCD "%C"
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+# MIDI Clock Assignments
+EVENT_BUTTON  id=2000  hw_id=2000  button_mode=OnOnly  type=Meta  meta=MClkPlay                   lcd_pos=1:1:1 label="%4t"
+EVENT_BUTTON  id=2001  hw_id=2001  button_mode=OnOnly  type=Meta  meta=MClkStop                   lcd_pos=1:1:1 label="%4t"
+EVENT_BUTTON  id=2002  hw_id=2002  button_mode=OnOnly  type=Meta  meta=MClkDecTempo  range=1:400  lcd_pos=1:6:1 label="%3T BPM"
+EVENT_BUTTON  id=2003  hw_id=2003  button_mode=OnOnly  type=Meta  meta=MClkIncTempo  range=1:400  lcd_pos=1:6:1 label="%3T BPM"
+
+# redundant; just to check the combined Play/Stop button:
+EVENT_BUTTON  id=2004  hw_id=2004  button_mode=OnOnly  type=Meta  meta=MClkPlayStop                lcd_pos=1:1:1 label="%4t"
+
+# control tempo with encoder
+EVENT_ENC  id=2000  hw_id=2000  type=Meta  meta=MClkSetTempo  value=120  range=1:400               lcd_pos=1:6:1 label="%3T BPM"

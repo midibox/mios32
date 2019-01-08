@@ -1,0 +1,31 @@
+RESET_HW
+
+LCD "%C@(1:1:1)Bank LEDs"
+
+
+# Button 1-4 select the bank
+# LED 1-4 output the selected bank
+EVENT_BUTTON id=  1  hw_id =  1  fwd_id=LED:1  fwd_to_lcd=1  radio_group=1  \
+                                 type=Meta  meta=SetBank button_mode=OnOnly  range=  1:1
+
+EVENT_BUTTON id=  2  hw_id =  2  fwd_id=LED:2  fwd_to_lcd=1  radio_group=1  \
+                                 type=Meta  meta=SetBank button_mode=OnOnly  range=  2:2
+
+EVENT_BUTTON id=  3  hw_id =  3  fwd_id=LED:3  fwd_to_lcd=1  radio_group=1  \
+                                 type=Meta  meta=SetBank button_mode=OnOnly  range=  3:3
+
+EVENT_BUTTON id=  4  hw_id =  4  fwd_id=LED:4  fwd_to_lcd=1  radio_group=1  \
+                                 type=Meta  meta=SetBank button_mode=OnOnly  range=  4:4
+
+
+# This is a dummy LED without assigned hardware (hw_id=2000 not used anywhere else) and without MIDI event.
+# the purpose of this EVENT item is to print the bank whenever the LCD is refreshed (e.g. after startup or bank change)
+EVENT_LED id=2000 fwd_to_lcd=1 lcd_pos=1:17:1 label="Bnk%q"
+
+
+# In order to get this working properly, we've to define a banked event
+# otherwise always the first bank will stay selected (because no other defined), and LEDs won't change
+EVENT_BUTTON id=1000  hw_id=5 bank=1  fwd_id=LED:5  type=CC cc=16
+EVENT_BUTTON id=1001  hw_id=5 bank=2  fwd_id=LED:5  type=CC cc=17
+EVENT_BUTTON id=1002  hw_id=5 bank=3  fwd_id=LED:5  type=CC cc=18
+EVENT_BUTTON id=1003  hw_id=5 bank=4  fwd_id=LED:5  type=CC cc=19

@@ -1,0 +1,2 @@
+Please refer the README.txt before you use this application.
+RUNING THIS APPLICATION WILL DESTROY ALL DATA ON YOUR SD-CARD!!!

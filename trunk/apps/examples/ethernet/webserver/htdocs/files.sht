@@ -1,0 +1,35 @@
+%!: /header.html
+<h1>File statistics</h1>
+<center>
+<table width="300">
+<tr><td><a href="/index.htm">/index.ht</a></td>
+<td>%! file-stats /index.htm
+</td><td><img src="/fade.png" height=10 width=%! file-stats /index.htm
+> </td></tr>
+<tr><td><a href="/files.shtm">/files.shl</a></td>
+<td>%! file-stats /files.sht
+</td><td><img src="/fade.png" height=10 width=%! file-stats /files.sht
+> </td></tr>
+<tr><td><a href="/tcp.sht">/tcp.sht</a></td>
+<td>%! file-stats /tcp.sht
+</td><td><img src="/fade.png" height=10 width=%! file-stats /tcp.sht
+> </td></tr>
+<tr><td><a href="/stats.sht">/stats.sht</a></td>
+<td>%! file-stats /stats.sht
+</td><td><img src="/fade.png" height=10 width=%! file-stats /stats.sht
+> </td></tr>
+<tr><td><a href="/style.css">/style.css</a></td>
+<td>%! file-stats /style.css
+</td><td><img src="/fade.png" height=10 width=%! file-stats /style.css
+> </td></tr>
+<tr><td><a href="/404.htm">/404.html</a></td>
+<td>%! file-stats /404.htm
+</td><td><img src="/fade.png" height=10 width=%! file-stats /404.htm
+> </td></tr>
+<tr><td><a href="/fade.png">/fade.png</a></td>
+<td>%! file-stats /fade.png
+</td><td><img src="/fade.png" height=10 width=%! file-stats /fade.png
+> </td></tr>
+</table>
+</center>
+%!: /footer.html
