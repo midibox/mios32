@@ -39,21 +39,12 @@
 // All filters banks for CAN1
 #define MIOS32_CAN2_STARTBANK 27 // no bank for CAN2
 #endif
-# if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 #define MIOS32_CAN1             CAN1
 #define MIOS32_CAN1_RX_PORT     GPIOD
 #define MIOS32_CAN1_RX_PIN      GPIO_Pin_0
 #define MIOS32_CAN1_TX_PORT     GPIOD
 #define MIOS32_CAN1_TX_PIN      GPIO_Pin_1
 #define MIOS32_CAN1_REMAP_FUNC  { GPIO_PinAFConfig(GPIOD, GPIO_PinSource0, GPIO_AF_CAN1); GPIO_PinAFConfig(GPIOD, GPIO_PinSource1, GPIO_AF_CAN1); }
-#elif defined(MIOS32_BOARD_MBHP_DIPCOREF4)
-#define MIOS32_CAN1             CAN1
-#define MIOS32_CAN1_RX_PORT     GPIOB
-#define MIOS32_CAN1_RX_PIN      GPIO_Pin_8
-#define MIOS32_CAN1_TX_PORT     GPIOB
-#define MIOS32_CAN1_TX_PIN      GPIO_Pin_9
-#define MIOS32_CAN1_REMAP_FUNC  { GPIO_PinAFConfig(GPIOB, GPIO_PinSource8, GPIO_AF_CAN1); GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_CAN1); }
-#endif
 #define MIOS32_CAN1_RX0_IRQn    CAN1_RX0_IRQn
 #define MIOS32_CAN1_RX1_IRQn    CAN1_RX1_IRQn
 #define MIOS32_CAN1_TX_IRQn     CAN1_TX_IRQn
