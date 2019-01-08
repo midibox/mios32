@@ -47,7 +47,6 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_usb.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_usb_midi.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_usb_com.c \
-	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_usb_hid.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_uart.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_iic.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_can.c \
