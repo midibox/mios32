@@ -81,7 +81,7 @@ typedef union {
     u16 :11;
   };
   
-} can_std_id_t;
+} mios32_can_std_id_t;
 
 // CAN Extended 29bits Id(32Bits reg), CAN_RIxR/CAN_TIxR
 typedef union {
@@ -114,7 +114,7 @@ typedef union {
     u32 lpc_ctrl:2; // special field for lpc,
     u32 ext_id:29;
   };
-} can_ext_id_t;
+} mios32_can_ext_id_t;
 
 // CAN control registers CAN_TDTxR/CAN_RDTxR
 typedef union {
@@ -131,7 +131,7 @@ typedef union {
     u32 tgt:1;
     u32 :23;
   };
-} can_ctrl_t;
+} mios32_can_ctrl_t;
 
 // CAN data registers CAN_TDLxR/CAN_TDHxR/CAN_RDLxR/CAN_RDHxR
 typedef union {
@@ -148,26 +148,26 @@ typedef union {
   struct {
     u8 bytes[8];
   };
-} can_data_t;
+} mios32_can_data_t;
 
 // CAN mailboxes packet
-typedef struct can_packet_t {
-  can_ext_id_t id;
-  can_ctrl_t ctrl;
-  can_data_t data;
-} can_packet_t;
+typedef struct mios32_can_packet_t {
+  mios32_can_ext_id_t id;
+  mios32_can_ctrl_t ctrl;
+  mios32_can_data_t data;
+} mios32_can_packet_t;
 
 // CAN 16bits filter
-typedef struct can_std_filter_t {
-  can_std_id_t   filt;
-  can_std_id_t   mask;
-} can_std_filter_t;
+typedef struct mios32_can_std_filter_t {
+  mios32_can_std_id_t   filt;
+  mios32_can_std_id_t   mask;
+} mios32_can_std_filter_t;
 
 // CAN 32bits filter
-typedef struct can_ext_filter_t {
-  can_ext_id_t   filt;
-  can_ext_id_t   mask;
-} can_ext_filter_t;
+typedef struct mios32_can_ext_filter_t {
+  mios32_can_ext_id_t   filt;
+  mios32_can_ext_id_t   mask;
+} mios32_can_ext_filter_t;
 
 // CAN bus state
 typedef enum {
@@ -175,7 +175,7 @@ typedef enum {
   WARNING = 1,
   PASSIVE = 0,
   BUS_OFF = -1
-} can_bus_stat_t;
+} mios32_can_bus_stat_t;
 
 // CAN error staus
 typedef union {
@@ -202,19 +202,19 @@ typedef union {
 	u32 tec:8;
     u32 rec:8;
   };
-} can_stat_err_t;
+} mios32_can_stat_err_t;
 
 // CAN status report
-typedef struct can_stat_report_t {
+typedef struct mios32_can_stat_report_t {
   u32            rx_packets_err;
   u32            tx_packets_ctr;
   u32            rx_packets_ctr;
   u32            rx_buff_err_ctr;
   u8             rx_last_buff_err;
-  can_bus_stat_t bus_state;
-  can_stat_err_t bus_curr_err;
-  can_stat_err_t bus_last_err;
-} can_stat_report_t;
+  mios32_can_bus_stat_t bus_state;
+  mios32_can_stat_err_t bus_curr_err;
+  mios32_can_stat_err_t bus_last_err;
+} mios32_can_stat_report_t;
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -229,35 +229,34 @@ extern s32 MIOS32_CAN_IsAssignedToMIDI(u8 can);
 extern s32 MIOS32_CAN_InitPort(u8 can, u8 is_midi);
 extern s32 MIOS32_CAN_InitPortDefault(u8 can);
 extern s32 MIOS32_CAN_InitPeriph(u8 can);
-extern s32 MIOS32_CAN_Init32bitFilter(u8 bank, u8 fifo, can_ext_filter_t filter, u8 enabled);
-extern s32 MIOS32_CAN_Init16bitFilter(u8 bank, u8 fifo, can_std_filter_t filter1, can_std_filter_t filter2, u8 enabled);
-extern s32 MIOS32_CAN_InitPacket(can_packet_t *packet);
+extern s32 MIOS32_CAN_Init32bitFilter(u8 bank, u8 fifo, mios32_can_ext_filter_t filter, u8 enabled);
+extern s32 MIOS32_CAN_Init16bitFilter(u8 bank, u8 fifo, mios32_can_std_filter_t filter1, mios32_can_std_filter_t filter2, u8 enabled);
+extern s32 MIOS32_CAN_InitPacket(mios32_can_packet_t *packet);
 
 extern s32 MIOS32_CAN_RxBufferFree(u8 can);
 extern s32 MIOS32_CAN_RxBufferUsed(u8 can);
-extern s32 MIOS32_CAN_RxBufferGet(u8 can, can_packet_t *p);
-extern s32 MIOS32_CAN_RxBufferPeek(u8 can, can_packet_t *p);
+extern s32 MIOS32_CAN_RxBufferGet(u8 can, mios32_can_packet_t *p);
+extern s32 MIOS32_CAN_RxBufferPeek(u8 can, mios32_can_packet_t *p);
 extern s32 MIOS32_CAN_RxBufferRemove(u8 can);
-extern s32 MIOS32_CAN_RxBufferPut(u8 can, can_packet_t p);
+extern s32 MIOS32_CAN_RxBufferPut(u8 can, mios32_can_packet_t p);
 
 extern s32 MIOS32_CAN_TxBufferFree(u8 can);
 extern s32 MIOS32_CAN_TxBufferUsed(u8 can);
-extern s32 MIOS32_CAN_TxBufferGet(u8 can, can_packet_t *p);
-extern s32 MIOS32_CAN_TxBufferPutMore_NonBlocking(u8 can, can_packet_t* p,u16 len);
-extern s32 MIOS32_CAN_TxBufferPutMore(u8 can, can_packet_t *packets, u16 len);
-extern s32 MIOS32_CAN_TxBufferPut_NonBlocking(u8 can, can_packet_t p);
-extern s32 MIOS32_CAN_TxBufferPut(u8 can, can_packet_t p);
+extern s32 MIOS32_CAN_TxBufferGet(u8 can, mios32_can_packet_t *p);
+extern s32 MIOS32_CAN_TxBufferPutMore_NonBlocking(u8 can, mios32_can_packet_t* p,u16 len);
+extern s32 MIOS32_CAN_TxBufferPutMore(u8 can, mios32_can_packet_t *packets, u16 len);
+extern s32 MIOS32_CAN_TxBufferPut_NonBlocking(u8 can, mios32_can_packet_t p);
+extern s32 MIOS32_CAN_TxBufferPut(u8 can, mios32_can_packet_t p);
 
 extern s32 MIOS32_CAN_BusErrorCheck(u8 can);
 
-extern s32 MIOS32_CAN_Transmit(u8 can, can_packet_t p, s16 block_time);
+extern s32 MIOS32_CAN_Transmit(u8 can, mios32_can_packet_t p, s16 block_time);
 
-extern s32 MIOS32_CAN_ReportLastErr(u8 can, can_stat_err_t* err);
-extern s32 MIOS32_CAN_ReportGetCurr(u8 can, can_stat_report_t* report);
+extern s32 MIOS32_CAN_ReportLastErr(u8 can, mios32_can_stat_err_t* err);
+extern s32 MIOS32_CAN_ReportGetCurr(u8 can, mios32_can_stat_report_t* report);
 extern s32 MIOS32_CAN_ReportReset(u8 can);
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
-extern u32 can_temp;
 
 #endif /* _MIOS32_CAN_H */

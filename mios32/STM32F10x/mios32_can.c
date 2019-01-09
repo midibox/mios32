@@ -157,7 +157,7 @@ s32 MIOS32_CAN_InitPeriph(u8 can)
 //! \param[in] extended id for mask
 //! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_Init32bitFilter(u8 bank, u8 fifo, can_ext_filter_t filter, u8 enabled)
+s32 MIOS32_CAN_Init32bitFilter(u8 bank, u8 fifo, mios32_can_ext_filter_t filter, u8 enabled)
 {
 #if MIOS32_CAN_NUM == 0
   return -1; // no CAN enabled
@@ -173,7 +173,7 @@ s32 MIOS32_CAN_Init32bitFilter(u8 bank, u8 fifo, can_ext_filter_t filter, u8 ena
 //! \param[in] standard id for mask
 //! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_Init16bitFilter(u8 bank, u8 fifo, can_std_filter_t filter1, can_std_filter_t filter2, u8 enabled)
+s32 MIOS32_CAN_Init16bitFilter(u8 bank, u8 fifo, mios32_can_std_filter_t filter1, mios32_can_std_filter_t filter2, u8 enabled)
 {
 #if MIOS32_CAN_NUM == 0
   return -1; // no CAN enabled
@@ -189,7 +189,7 @@ s32 MIOS32_CAN_Init16bitFilter(u8 bank, u8 fifo, can_std_filter_t filter1, can_s
 //! \return -2: function not prepared for this CAN
 //! \return -3: CAN Initialisation failed
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_InitPacket(can_packet_t *packet)
+s32 MIOS32_CAN_InitPacket(mios32_can_packet_t *packet)
 {
 #if NUM_SUPPORTED_CANS == 0
   return -1; // no CAN available
@@ -240,7 +240,7 @@ s32 MIOS32_CAN_RxBufferUsed(u8 can)
 //! \return >= 0: number of received bytes
 //! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_RxBufferGet(u8 can, can_packet_t *p)
+s32 MIOS32_CAN_RxBufferGet(u8 can, mios32_can_packet_t *p)
 {
 #if NUM_SUPPORTED_CANS == 0
   return -1; // no CAN available
@@ -258,7 +258,7 @@ s32 MIOS32_CAN_RxBufferGet(u8 can, can_packet_t *p)
 //! \return >= 0: number of received bytes
 //! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_RxBufferPeek(u8 can, can_packet_t *p)
+s32 MIOS32_CAN_RxBufferPeek(u8 can, mios32_can_packet_t *p)
 {
 #if NUM_SUPPORTED_CANS == 0
   return -1; // no CAN available
@@ -293,7 +293,7 @@ s32 MIOS32_CAN_RxBufferRemove(u8 can)
 //! \return -2 if buffer full (retry)
 //! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_RxBufferPut(u8 can, can_packet_t p)
+s32 MIOS32_CAN_RxBufferPut(u8 can, mios32_can_packet_t p)
 {
 #if NUM_SUPPORTED_CANS == 0
   return -1; // no CAN available
@@ -350,7 +350,7 @@ s32 MIOS32_CAN_TxBufferUsed(u8 can)
 //! \return >= 0: transmitted byte
 //! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_TxBufferGet(u8 can, can_packet_t *p)
+s32 MIOS32_CAN_TxBufferGet(u8 can, mios32_can_packet_t *p)
 {
 #if NUM_SUPPORTED_CANS == 0
   return -1; // no CAN available
@@ -371,7 +371,7 @@ s32 MIOS32_CAN_TxBufferGet(u8 can, can_packet_t *p)
 //! \return -3 if CAN not supported by MIOS32_CAN_TxBufferPut Routine
 //! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_TxBufferPutMore_NonBlocking(u8 can, can_packet_t* p,u16 len)
+s32 MIOS32_CAN_TxBufferPutMore_NonBlocking(u8 can, mios32_can_packet_t* p,u16 len)
 {
 #if NUM_SUPPORTED_CANS == 0
   return -1; // no CAN available
@@ -391,7 +391,7 @@ s32 MIOS32_CAN_TxBufferPutMore_NonBlocking(u8 can, can_packet_t* p,u16 len)
 //! \return -3 if CAN not supported by MIOS32_CAN_TxBufferPut Routine
 //! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_TxBufferPutMore(u8 can, can_packet_t *packets, u16 len)
+s32 MIOS32_CAN_TxBufferPutMore(u8 can, mios32_can_packet_t *packets, u16 len)
 {
   s32 error;
   
@@ -411,7 +411,7 @@ s32 MIOS32_CAN_TxBufferPutMore(u8 can, can_packet_t *packets, u16 len)
 //! \return -3 if CAN not supported by MIOS32_CAN_TxBufferPut Routine
 //! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_TxBufferPut_NonBlocking(u8 can, can_packet_t p)
+s32 MIOS32_CAN_TxBufferPut_NonBlocking(u8 can, mios32_can_packet_t p)
 {
   // for more comfortable usage...
   // -> just forward to MIOS32_CAN_TxBufferPutMore
@@ -429,7 +429,7 @@ s32 MIOS32_CAN_TxBufferPut_NonBlocking(u8 can, can_packet_t p)
 //! \return -3 if CAN not supported by MIOS32_CAN_TxBufferPut Routine
 //! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_TxBufferPut(u8 can, can_packet_t p)
+s32 MIOS32_CAN_TxBufferPut(u8 can, mios32_can_packet_t p)
 {
   s32 error;
   
@@ -469,7 +469,7 @@ s32 MIOS32_CAN_BusErrorCheck(u8 can)
 //! \return -3 if CAN not supported by MIOS32_CAN_TxBufferPut Routine
 //! \note Applications shouldn't call these functions directly, instead please use \ref MIOS32_COM or \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_Transmit(u8 can, can_packet_t p, s16 block_time)
+s32 MIOS32_CAN_Transmit(u8 can, mios32_can_packet_t p, s16 block_time)
 {
 #if NUM_SUPPORTED_CANS == 0
   return -1; // no CAN available
@@ -481,7 +481,7 @@ s32 MIOS32_CAN_Transmit(u8 can, can_packet_t p, s16 block_time)
 /////////////////////////////////////////////////////////////////////////////
 //
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_ReportLastErr(u8 can, can_stat_err_t* err)
+s32 MIOS32_CAN_ReportLastErr(u8 can, mios32_can_stat_err_t* err)
 {
 #if NUM_SUPPORTED_CANS == 0
   return -1; // no CAN available
@@ -493,7 +493,7 @@ s32 MIOS32_CAN_ReportLastErr(u8 can, can_stat_err_t* err)
 /////////////////////////////////////////////////////////////////////////////
 //
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_ReportGetCurr(u8 can, can_stat_report_t* report)
+s32 MIOS32_CAN_ReportGetCurr(u8 can, mios32_can_stat_report_t* report)
 {
 #if NUM_SUPPORTED_CANS == 0
   return -1; // no CAN available

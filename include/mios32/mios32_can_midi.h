@@ -87,17 +87,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
-    can_packet_t  packet;
+    mios32_can_packet_t  packet;
   struct {
-    can_ext_id_t id;
-    can_ctrl_t ctrl;
-    can_data_t data;
+    mios32_can_ext_id_t id;
+    mios32_can_ctrl_t ctrl;
+    mios32_can_data_t data;
   };
-} mcan_packet_t;
+} mios32_mcan_packet_t;
+
 
 typedef union {
   struct {
-    can_ext_id_t id;
+    mios32_can_ext_id_t id;
     u16 data_l;
   };
   struct {
@@ -120,7 +121,7 @@ typedef union {
     u8  src_port;
     u8  dst_port;
   };
-} mcan_header_t;
+} mios32_mcan_header_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -142,26 +143,26 @@ extern s32 MIOS32_CAN_MIDI_CheckAvailable(u8 cable);
 
 extern s32 MIOS32_CAN_MIDI_Periodic_mS(void);
 
-extern s32 MIOS32_CAN_MIDI_PacketTransmit_NonBlocking(mcan_packet_t p);
-extern s32 MIOS32_CAN_MIDI_PacketTransmit(mcan_packet_t p);
+extern s32 MIOS32_CAN_MIDI_PacketTransmit_NonBlocking(mios32_mcan_packet_t p);
+extern s32 MIOS32_CAN_MIDI_PacketTransmit(mios32_mcan_packet_t p);
 
-extern s32 MIOS32_CAN_MIDI_PacketSend_NonBlocking(mcan_header_t header, mios32_midi_package_t package);
-extern s32 MIOS32_CAN_MIDI_PacketSend(mcan_header_t header, mios32_midi_package_t package);
+extern s32 MIOS32_CAN_MIDI_PacketSend_NonBlocking(mios32_mcan_header_t header, mios32_midi_package_t package);
+extern s32 MIOS32_CAN_MIDI_PacketSend(mios32_mcan_header_t header, mios32_midi_package_t package);
 
 extern s32 MIOS32_CAN_MIDI_PackageSend_NonBlocking(mios32_midi_package_t package);
 extern s32 MIOS32_CAN_MIDI_PackageSend(mios32_midi_package_t package);
-extern s32 MIOS32_CAN_MIDI_SysexRepackSend(mcan_header_t header, mios32_midi_package_t package);
+extern s32 MIOS32_CAN_MIDI_SysexRepackSend(mios32_mcan_header_t header, mios32_midi_package_t package);
 
-extern s32 MIOS32_CAN_MIDI_SysexSend_NonBlocking(mcan_header_t header, u8 *stream, u16 size);
-extern s32 MIOS32_CAN_MIDI_SysexSend(mcan_header_t header, u8 *stream, u16 size);
+extern s32 MIOS32_CAN_MIDI_SysexSend_NonBlocking(mios32_mcan_header_t header, u8 *stream, u16 size);
+extern s32 MIOS32_CAN_MIDI_SysexSend(mios32_mcan_header_t header, u8 *stream, u16 size);
 
-extern s32 MIOS32_CAN_MIDI_SysExStreamCallback_Init(s32 (*callback_sysex_stream)(mcan_header_t header, u8* stream, u16 size));
+extern s32 MIOS32_CAN_MIDI_SysExStreamCallback_Init(s32 (*callback_sysex_stream)(mios32_mcan_header_t header, u8* stream, u16 size));
 
-extern s32 MIOS32_CAN_MIDI_PackageCallback_Init(s32 (*direct_package_callback)(mcan_header_t header, mios32_midi_package_t package));
+extern s32 MIOS32_CAN_MIDI_PackageCallback_Init(s32 (*direct_package_callback)(mios32_mcan_header_t header, mios32_midi_package_t package));
 
 extern s32 MIOS32_CAN_MIDI_PackageReceive(mios32_midi_package_t *package);
 
-extern u32 MIOS32_CAN_MIDI_DefaultHeaderInit(mcan_header_t* header);
+extern u32 MIOS32_CAN_MIDI_DefaultHeaderInit(mios32_mcan_header_t* header);
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////

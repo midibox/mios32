@@ -105,8 +105,8 @@ static u32 frame_rate;
 static u32 can_last_baudrate;
 
 // callback for direct sysex stream
-static s32 (*sysex_stream_callback_func)(mcan_header_t header, u8* stream, u16 size);
-static s32 (*direct_package_callback_func)(mcan_header_t header, mios32_midi_package_t package);
+static s32 (*sysex_stream_callback_func)(mios32_mcan_header_t header, u8* stream, u16 size);
+static s32 (*direct_package_callback_func)(mios32_mcan_header_t header, mios32_midi_package_t package);
 
 // verbose
 static u8 can_midi_verbose = 2;
@@ -145,7 +145,7 @@ static s32 MIOS32_CAN_MIDI_SysexRepackReset(sysex_repack_rec_t* sysex_repack)
 /////////////////////////////////////////////////////////////////////////////
 
 // internal function to parse configuration commands
-static s32 MIOS32_CAN_MIDI_LocalCmdParser(mcan_header_t header, mios32_midi_package_t* package)
+static s32 MIOS32_CAN_MIDI_LocalCmdParser(mios32_mcan_header_t header, mios32_midi_package_t* package)
 {
 #if MIOS32_CAN_NUM > 0
   
@@ -348,8 +348,8 @@ s32 MIOS32_CAN_MIDI_FilterInit(u8 bypass)
 #else
   
   //u8 i;
-  //can_ext_filter_t filt32;
-  can_std_filter_t filt16[2];
+  //mios32_can_ext_filter_t filt32;
+  mios32_can_std_filter_t filt16[2];
   
 //  /* Node System messages and bypass -> Fifo0 */
 //  // filter Bank#0, checks for incoming Node SysEx and SysCom messages
@@ -479,7 +479,7 @@ s32 MIOS32_CAN_MIDI_Periodic_mS(void)
     u32 new_frame_rate;
     if( MIOS32_CAN_MIDI_CheckAvailable(0) ){
 
-      can_stat_report_t report;
+      mios32_can_stat_report_t report;
       MIOS32_CAN_ReportGetCurr(0, &report);
 
       new_frame_rate = report.rx_packets_ctr - can_last_baudrate;
@@ -516,7 +516,7 @@ s32 MIOS32_CAN_MIDI_Periodic_mS(void)
 //!             caller should retry until buffer is free again
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_MIDI_PacketTransmit_NonBlocking(mcan_packet_t p)
+s32 MIOS32_CAN_MIDI_PacketTransmit_NonBlocking(mios32_mcan_packet_t p)
 {
 #if MIOS32_CAN_NUM == 0
   return -1; // all CANs explicitely disabled
@@ -546,7 +546,7 @@ s32 MIOS32_CAN_MIDI_PacketTransmit_NonBlocking(mcan_packet_t p)
 //! \return -1: CAN_MIDI device not available
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_MIDI_PacketTransmit(mcan_packet_t p)
+s32 MIOS32_CAN_MIDI_PacketTransmit(mios32_mcan_packet_t p)
 {
   s32 error;
   
@@ -562,7 +562,7 @@ s32 MIOS32_CAN_MIDI_PacketTransmit(mcan_packet_t p)
 //! \return 0: no error
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_MIDI_PacketSend_NonBlocking(mcan_header_t header, mios32_midi_package_t package)
+s32 MIOS32_CAN_MIDI_PacketSend_NonBlocking(mios32_mcan_header_t header, mios32_midi_package_t package)
 {
 #if MIOS32_CAN_NUM == 0
   return -1; // all CANs explicitely disabled
@@ -592,7 +592,7 @@ s32 MIOS32_CAN_MIDI_PacketSend_NonBlocking(mcan_header_t header, mios32_midi_pac
     error = MIOS32_CAN_MIDI_SysexRepackSend(header, package);
     return error;
   }else{ // This is not Sysex
-    mcan_packet_t p;
+    mios32_mcan_packet_t p;
     //p.frame_id = header.frame_id;
     u8* byte = &p.data.bytes[0];
     p.ctrl.dlc = 0;
@@ -646,7 +646,7 @@ s32 MIOS32_CAN_MIDI_PacketSend_NonBlocking(mcan_header_t header, mios32_midi_pac
 //! \return -1: CAN_MIDI device not available
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_MIDI_PacketSend(mcan_header_t header, mios32_midi_package_t package)
+s32 MIOS32_CAN_MIDI_PacketSend(mios32_mcan_header_t header, mios32_midi_package_t package)
 {
   s32 error;
   //DEBUG_MSG("[MIOS32_CAN_MIDI_PackageSend] 0x%08x\n", package.ALL);
@@ -666,7 +666,7 @@ s32 MIOS32_CAN_MIDI_PackageSend_NonBlocking(mios32_midi_package_t package)
 {
   s32 error;
   
-  mcan_header_t header;
+  mios32_mcan_header_t header;
   MIOS32_CAN_MIDI_DefaultHeaderInit(&header);
   header.cable = package.cable;
   header.type = package.type;
@@ -703,7 +703,7 @@ s32 MIOS32_CAN_MIDI_PackageSend(mios32_midi_package_t package)
 //! \return -1: CAN_MIDI device not available
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_MIDI_SysexRepackSend(mcan_header_t header, mios32_midi_package_t package)
+s32 MIOS32_CAN_MIDI_SysexRepackSend(mios32_mcan_header_t header, mios32_midi_package_t package)
 {
 #if MIOS32_CAN_NUM == 0
   return -1; // all CANs explicitely disabled
@@ -778,7 +778,7 @@ s32 MIOS32_CAN_MIDI_SysexRepackSend(mcan_header_t header, mios32_midi_package_t 
   if(rpk->ctr >= 8){ // a full packet is ready
     if (rpk->packet == 0)header.type = 0x4;  // =>Start
     else header.type = 0x6;  // =>Cont
-    mcan_packet_t p;
+    mios32_mcan_packet_t p;
     // copy id
     p.id = header.id;
     // dlc
@@ -796,7 +796,7 @@ s32 MIOS32_CAN_MIDI_SysexRepackSend(mcan_header_t header, mios32_midi_package_t 
   if(rpk->stat.ending == 1){ // this is last packet
     if (rpk->packet == 0)header.type = 0x4;  // =>Start(special case only one packet stream)
     else header.type = 0x7;  // =>End
-    mcan_packet_t p;
+    mios32_mcan_packet_t p;
     // copy id
     p.id = header.id;
     // dlc
@@ -824,7 +824,7 @@ s32 MIOS32_CAN_MIDI_SysexRepackSend(mcan_header_t header, mios32_midi_package_t 
 //! \return 0: no error
 //! \return -1: CAN_MIDI device not available
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_MIDI_SysexSend_NonBlocking(mcan_header_t header, u8 *stream, u16 size)
+s32 MIOS32_CAN_MIDI_SysexSend_NonBlocking(mios32_mcan_header_t header, u8 *stream, u16 size)
 {
 #if MIOS32_CAN_NUM == 0
   return -1; // all CANs explicitely disabled
@@ -838,7 +838,7 @@ s32 MIOS32_CAN_MIDI_SysexSend_NonBlocking(mcan_header_t header, u8 *stream, u16 
   
   // Prepare the Packet
   s32 error;
-  mcan_packet_t p;
+  mios32_mcan_packet_t p;
   p.ctrl.ALL = 0;
   p.data.data_l = 0;
   p.data.data_h = 0;
@@ -909,7 +909,7 @@ s32 MIOS32_CAN_MIDI_SysexSend_NonBlocking(mcan_header_t header, u8 *stream, u16 
 //! \return 0: no error
 //! \return -1: CAN_MIDI device not available
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_MIDI_SysexSend(mcan_header_t header, u8 *stream, u16 size)
+s32 MIOS32_CAN_MIDI_SysexSend(mios32_mcan_header_t header, u8 *stream, u16 size)
 {
 #if MIOS32_CAN_NUM == 0
   return -1; // all CANs explicitely disabled - accordingly no package in buffer
@@ -959,7 +959,7 @@ s32 MIOS32_CAN_MIDI_SysexSend(mcan_header_t header, u8 *stream, u16 size)
 //! With return value != 0, APP_MIDI_NotifyPackage() won't get the already processed package.
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_MIDI_SysExStreamCallback_Init(s32 (*callback_sysex_stream)(mcan_header_t header, u8* stream, u16 size))
+s32 MIOS32_CAN_MIDI_SysExStreamCallback_Init(s32 (*callback_sysex_stream)(mios32_mcan_header_t header, u8* stream, u16 size))
 {
 #if MIOS32_CAN_NUM == 0
   return -1; // all CANs explicitely disabled - accordingly no package in buffer
@@ -976,7 +976,7 @@ s32 MIOS32_CAN_MIDI_SysExStreamCallback_Init(s32 (*callback_sysex_stream)(mcan_h
 //! With return value != 0, APP_MIDI_NotifyPackage() won't get the already processed package.
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_CAN_MIDI_PackageCallback_Init(s32 (*direct_package_callback)(mcan_header_t header, mios32_midi_package_t package))
+s32 MIOS32_CAN_MIDI_PackageCallback_Init(s32 (*direct_package_callback)(mios32_mcan_header_t header, mios32_midi_package_t package))
 {
 #if MIOS32_CAN_NUM == 0
   return -1; // all CANs explicitely disabled - accordingly no package in buffer
@@ -1069,11 +1069,11 @@ s32 MIOS32_CAN_MIDI_PackageReceive(mios32_midi_package_t *package)
     if(status == 1)return status;
   }
   
-  mcan_packet_t p;
+  mios32_mcan_packet_t p;
   // Something in the buffer?
   if(MIOS32_CAN_RxBufferGet(0, &p.packet) >= 0) {
     // usable structure
-    mcan_header_t header;
+    mios32_mcan_header_t header;
     header.id = p.id;
     // exit if CAN port not available
     if( !MIOS32_CAN_MIDI_CheckAvailable(header.cable) )
@@ -1178,7 +1178,7 @@ s32 MIOS32_CAN_MIDI_PackageReceive(mios32_midi_package_t *package)
 
     } else { // Others messages than Sysex
       // prepare header
-      mcan_header_t header;
+      mios32_mcan_header_t header;
       header.id = p.id;
       // data pointer
       u8* byte = &p.data.bytes[0];
@@ -1225,7 +1225,7 @@ s32 MIOS32_CAN_MIDI_PackageReceive(mios32_midi_package_t *package)
 /////////////////////////////////////////////////////////////////////////////
 //
 /////////////////////////////////////////////////////////////////////////////
-u32 MIOS32_CAN_MIDI_DefaultHeaderInit(mcan_header_t* header)
+u32 MIOS32_CAN_MIDI_DefaultHeaderInit(mios32_mcan_header_t* header)
 {
 #if MIOS32_CAN_NUM == 0
   return -1; // all CANs explicitely disabled - accordingly no package in buffer

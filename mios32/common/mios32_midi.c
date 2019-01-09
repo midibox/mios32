@@ -741,7 +741,7 @@ s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count)
 #if defined(MIOS32_USE_CAN) && defined(MIOS32_USE_CAN_MIDI)
 #if defined(MIOS32_CAN_MIDI_SYSEX_DIRECT_STREAM)
   if((port & 0xf0) == MCAN0){
-    mcan_header_t header;
+    mios32_mcan_header_t header;
     MIOS32_CAN_MIDI_DefaultHeaderInit(&header);
     header.cable = port & 0x0f;
     return MIOS32_CAN_MIDI_SysexSend(header, (u8*)stream, count);
