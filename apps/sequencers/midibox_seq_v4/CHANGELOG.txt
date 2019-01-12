@@ -2595,6 +2595,10 @@ The spot erase feature is still a little tricky to use I think. Now, in Live Rec
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=180296
 Auto-fill steps while in DRUM track mode,
 Let's say you press GP3 button (fill start) for two seconds, that would invoke FILL mode ( "FILL" flashing above the steps), without (or not?) releasing GP3 press GP11 (fill end) to set the end of the steps to be auto filled: steps 3 to 11. 
+----------------------------------------------------------
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=183098
+(Minor) issue:
+I may have discovered a small bug in FW 096-pre4 (hope this is the right place to post). Assume I got a normal notes track. When I first enter notes into layer PE (note layer) then these notes are also entered in PA (note layer) which was empty before. When PA is populated with at least one note then this does not occur.
 
 
 
