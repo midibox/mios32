@@ -52,12 +52,14 @@ extern void APP_SendDebugMessage(char *format, ...);
 // use ./../../bin/avstack.pl  | less
 // to doublecheck memory consumption
 
-#define MIOS32_TASK_HOOKS_STACK_SIZE       1000
-#define UIP_TASK_STACK_SIZE                1000
 #ifdef MBSEQV4P
-# define MIOS32_TASK_MIDI_HOOKS_STACK_SIZE 1900
-# define MIDI_TASK_STACK_SIZE              1900
+# define MIOS32_TASK_HOOKS_STACK_SIZE      2048
+# define UIP_TASK_STACK_SIZE               2048
+# define MIOS32_TASK_MIDI_HOOKS_STACK_SIZE 2048
+# define MIDI_TASK_STACK_SIZE              2048
 #else
+# define MIOS32_TASK_HOOKS_STACK_SIZE      1000
+# define UIP_TASK_STACK_SIZE               1000
 # define MIOS32_TASK_MIDI_HOOKS_STACK_SIZE 1400
 # define MIDI_TASK_STACK_SIZE              1400
 #endif
@@ -73,7 +75,7 @@ extern void APP_SendDebugMessage(char *format, ...);
 
 // reserved memory for FreeRTOS pvPortMalloc function
 #ifdef MBSEQV4P
-# define MIOS32_HEAP_SIZE 15*1024
+# define MIOS32_HEAP_SIZE 17*1024
 #else
 # define MIOS32_HEAP_SIZE 13*1024
 #endif

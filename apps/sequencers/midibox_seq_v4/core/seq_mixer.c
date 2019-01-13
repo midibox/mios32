@@ -20,6 +20,8 @@
 
 #include "seq_ui.h"
 #include "seq_mixer.h"
+#include "seq_midi_in.h"
+#include "seq_midi_router.h"
 #include "seq_file.h"
 #include "seq_file_m.h"
 
@@ -124,6 +126,57 @@ s32 SEQ_MIXER_Get(u8 chn, seq_mixer_par_t par)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Sends a CC value, considers Bus target
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_MIXER_SendProgramChange(mios32_midi_port_t midi_port, mios32_midi_chn_t midi_chn, u8 pc)
+{
+  mios32_midi_package_t midi_package;
+
+  midi_package.type  = 0xc;
+  midi_package.evnt0 = 0xc0 | midi_chn;
+  midi_package.evnt1 = pc;
+  midi_package.evnt2 = 0x00;
+
+  if( (midi_port & 0xf0) == 0xf0 ) { // send to bus?
+    // forward to router
+    SEQ_MIDI_ROUTER_Receive(midi_port, midi_package);
+
+    // forward to transposer/arpeggiator/CC parser/etc...
+    SEQ_MIDI_IN_Receive(midi_port, midi_package);
+
+    return 0; // no error
+  }
+
+  return MIOS32_MIDI_SendPackage(midi_port, midi_package);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sends a CC value, considers Bus target
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_MIXER_SendCC(mios32_midi_port_t midi_port, mios32_midi_chn_t midi_chn, u8 cc, u8 value)
+{
+  mios32_midi_package_t midi_package;
+
+  midi_package.type  = 0xb;
+  midi_package.evnt0 = 0xb0 | midi_chn;
+  midi_package.evnt1 = cc;
+  midi_package.evnt2 = value;
+
+  if( (midi_port & 0xf0) == 0xf0 ) { // send to bus?
+    // forward to router
+    SEQ_MIDI_ROUTER_Receive(midi_port, midi_package);
+
+    // forward to transposer/arpeggiator/CC parser/etc...
+    SEQ_MIDI_IN_Receive(midi_port, midi_package);
+
+    return 0; // no error
+  }
+
+  return MIOS32_MIDI_SendPackage(midi_port, midi_package);
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // Sends a single mixer value
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIXER_Send(u8 chn, seq_mixer_par_t par)
@@ -137,26 +190,26 @@ s32 SEQ_MIXER_Send(u8 chn, seq_mixer_par_t par)
 
   switch( par ) {
     case SEQ_MIXER_PAR_PRG:
-      return value == 0 ? 0 : MIOS32_MIDI_SendProgramChange(midi_port, midi_chn, value-1);
+      return value == 0 ? 0 : SEQ_MIXER_SendProgramChange(midi_port, midi_chn, value-1);
     case SEQ_MIXER_PAR_VOLUME:   
-      return value == 0 ? 0 : MIOS32_MIDI_SendCC(midi_port, midi_chn, 7, value-1);
+      return value == 0 ? 0 : SEQ_MIXER_SendCC(midi_port, midi_chn, 7, value-1);
     case SEQ_MIXER_PAR_PANORAMA: 
-      return value == 0 ? 0 : MIOS32_MIDI_SendCC(midi_port, midi_chn, 10, value-1);
+      return value == 0 ? 0 : SEQ_MIXER_SendCC(midi_port, midi_chn, 10, value-1);
     case SEQ_MIXER_PAR_REVERB:   
-      return value == 0 ? 0 : MIOS32_MIDI_SendCC(midi_port, midi_chn, 91, value-1);
+      return value == 0 ? 0 : SEQ_MIXER_SendCC(midi_port, midi_chn, 91, value-1);
     case SEQ_MIXER_PAR_CHORUS:
-      return value == 0 ? 0 : MIOS32_MIDI_SendCC(midi_port, midi_chn, 93, value-1);
+      return value == 0 ? 0 : SEQ_MIXER_SendCC(midi_port, midi_chn, 93, value-1);
     case SEQ_MIXER_PAR_MODWHEEL:
-      return value == 0 ? 0 : MIOS32_MIDI_SendCC(midi_port, midi_chn, 1, value-1);
+      return value == 0 ? 0 : SEQ_MIXER_SendCC(midi_port, midi_chn, 1, value-1);
 
     case SEQ_MIXER_PAR_CC1:
-      return value == 0 ? 0 : MIOS32_MIDI_SendCC(midi_port, midi_chn, SEQ_MIXER_Get(chn, SEQ_MIXER_PAR_CC1_NUM), value-1);
+      return value == 0 ? 0 : SEQ_MIXER_SendCC(midi_port, midi_chn, SEQ_MIXER_Get(chn, SEQ_MIXER_PAR_CC1_NUM), value-1);
     case SEQ_MIXER_PAR_CC2:
-      return value == 0 ? 0 : MIOS32_MIDI_SendCC(midi_port, midi_chn, SEQ_MIXER_Get(chn, SEQ_MIXER_PAR_CC2_NUM), value-1);
+      return value == 0 ? 0 : SEQ_MIXER_SendCC(midi_port, midi_chn, SEQ_MIXER_Get(chn, SEQ_MIXER_PAR_CC2_NUM), value-1);
     case SEQ_MIXER_PAR_CC3:
-      return value == 0 ? 0 : MIOS32_MIDI_SendCC(midi_port, midi_chn, SEQ_MIXER_Get(chn, SEQ_MIXER_PAR_CC3_NUM), value-1);
+      return value == 0 ? 0 : SEQ_MIXER_SendCC(midi_port, midi_chn, SEQ_MIXER_Get(chn, SEQ_MIXER_PAR_CC3_NUM), value-1);
     case SEQ_MIXER_PAR_CC4:
-      return value == 0 ? 0 : MIOS32_MIDI_SendCC(midi_port, midi_chn, SEQ_MIXER_Get(chn, SEQ_MIXER_PAR_CC4_NUM), value-1);
+      return value == 0 ? 0 : SEQ_MIXER_SendCC(midi_port, midi_chn, SEQ_MIXER_Get(chn, SEQ_MIXER_PAR_CC4_NUM), value-1);
   }
 
   // not supported

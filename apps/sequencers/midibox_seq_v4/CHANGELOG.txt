@@ -49,6 +49,10 @@ MIDIboxSEQ V4.096
 
    o New option 14/33 allows to change the steps of the current selected view only
 
+   o the MIDI mixer can now send CC values to a bus.
+     This especially allows to record CC changes (configure MENU->MIDI->Port accordingly
+     so that it listens to the bus in Jam mode)
+
 
 MIDIboxSEQ V4.095
 ~~~~~~~~~~~~~~~~~
