@@ -1,6 +1,9 @@
 Currently prepared for Juce 5.4.3 which can be downloaded from
 https://github.com/WeAreROLI/JUCE/releases
 
+Unpack it and rename it to "juce" in the upper folder (../juce)
+
+
 MacOS Build only
 Linux and Windows build setups will be adapted the next days
 
