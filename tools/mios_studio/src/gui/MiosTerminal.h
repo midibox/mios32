@@ -24,7 +24,7 @@ class MiosStudio; // forward declaration
 
 class MiosTerminal
     : public Component
-    , public TextEditorListener
+    , public TextEditor::Listener
 {
 public:
     //==============================================================================

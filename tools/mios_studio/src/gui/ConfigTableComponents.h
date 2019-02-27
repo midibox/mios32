@@ -40,7 +40,7 @@ public:
 
 class ConfigTableComboBox
     : public Component
-    , public ComboBoxListener
+    , public ComboBox::Listener
 {
 public:
     ConfigTableComboBox(ConfigTableController& _owner);
@@ -66,7 +66,7 @@ private:
 //==============================================================================
 class ConfigTableSlider
     : public Component
-    , public SliderListener
+    , public Slider::Listener
 {
 public:
     ConfigTableSlider(ConfigTableController& _owner);
@@ -92,7 +92,7 @@ private:
 //==============================================================================
 class ConfigTableToggleButton
     : public Component
-    , public ButtonListener
+    , public Button::Listener
 {
 public:
     ConfigTableToggleButton(ConfigTableController& _owner);
@@ -116,7 +116,7 @@ private:
 //==============================================================================
 class ConfigTableLabel
     : public Component
-    , public LabelListener
+    , public Label::Listener
 {
 public:
     ConfigTableLabel(ConfigTableController& _owner);

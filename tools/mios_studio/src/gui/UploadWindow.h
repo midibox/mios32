@@ -26,8 +26,8 @@ class MiosStudio; // forward declaration
 
 class UploadWindow
     : public Component
-    , public ButtonListener
-    , public SliderListener
+    , public Button::Listener
+    , public Slider::Listener
     , public FilenameComponentListener
     , public MultiTimer
 {

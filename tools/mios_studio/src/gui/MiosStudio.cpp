@@ -235,6 +235,9 @@ MiosStudio::MiosStudio()
     uploadHandler = new UploadHandler(this);
     sysexPatchDb = new SysexPatchDb();
 
+    // default look and feel
+    LookAndFeel::setDefaultLookAndFeel(&myLookAndFeel);
+    
     addAndMakeVisible(uploadWindow = new UploadWindow(this));
     addAndMakeVisible(midiInMonitor = new MidiMonitor(this, true));
     addAndMakeVisible(midiOutMonitor = new MidiMonitor(this, false));

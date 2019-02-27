@@ -29,8 +29,8 @@ class MiosFileBrowserFileItem;
 //==============================================================================
 class MiosFileBrowser
     : public Component
-    , public ButtonListener
-    , public TextEditorListener
+    , public Button::Listener
+    , public TextEditor::Listener
     , public Timer
 {
 public:

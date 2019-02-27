@@ -31,6 +31,7 @@ MidiMonitor::MidiMonitor(MiosStudio *_miosStudio, const bool _inPort)
     midiPortSelector->addItem (TRANS("<< device scan running >>"), -1);
     midiPortSelector->setSelectedId(-1, true);
     midiPortSelector->setEnabled(false);
+
 	midiPortLabel = new Label("", inPort ? T("MIDI IN: ") : T("MIDI OUT: "));
 	midiPortLabel->attachToComponent(midiPortSelector, true);
 

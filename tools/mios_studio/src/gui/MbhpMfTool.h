@@ -24,8 +24,8 @@ class MbhpMfTool; // forward declaration
 
 class MbhpMfToolConfigGlobals
     : public Component
-    , public SliderListener
-    , public ComboBoxListener
+    , public Slider::Listener
+    , public ComboBox::Listener
 {
 public:
     //==============================================================================
@@ -140,8 +140,8 @@ protected:
 //==============================================================================
 class MbhpMfToolCalibration
     : public Component
-    , public ButtonListener
-    , public SliderListener
+    , public Button::Listener
+    , public Slider::Listener
     , public Timer
 {
 public:
@@ -230,8 +230,8 @@ protected:
 //==============================================================================
 class MbhpMfToolControl
     : public Component
-    , public ButtonListener
-    , public SliderListener
+    , public Button::Listener
+    , public Slider::Listener
     , public Timer
 {
 public:

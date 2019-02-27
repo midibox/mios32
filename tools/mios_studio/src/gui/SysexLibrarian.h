@@ -30,7 +30,7 @@ class SysexLibrarianBank
     : public Component
     , public TableListBoxModel
     , public ConfigTableController
-    , public ButtonListener
+    , public Button::Listener
 {
 public:
     //==============================================================================
@@ -96,9 +96,9 @@ protected:
 //==============================================================================
 class SysexLibrarianControl
     : public Component
-    , public ButtonListener
-    , public SliderListener
-    , public ComboBoxListener
+    , public Button::Listener
+    , public Slider::Listener
+    , public ComboBox::Listener
     , public Timer
 {
 public:
@@ -188,7 +188,7 @@ protected:
 //==============================================================================
 class SysexLibrarian
     : public Component
-    , public ButtonListener
+    , public Button::Listener
 {
 public:
     //==============================================================================
