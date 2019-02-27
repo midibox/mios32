@@ -1,33 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="MXNnwm" name="MIOS_Studio" projectType="guiapp" version="2.4.5"
-              jucerVersion="3.0.0" bundleIdentifier="org.midibox.MIOSStudio"
+              jucerVersion="5.4.3" bundleIdentifier="org.midibox.MIOSStudio"
               companyName="MIDIbox">
   <EXPORTFORMATS>
-    <VS2010 targetFolder="Builds/VisualStudio2010" libraryType="1" juceFolder="..\juce\modules"
-            extraDefs="_CRT_SECURE_NO_WARNINGS">
+    <XCODE_MAC targetFolder="Builds/MacOSX">
       <CONFIGURATIONS>
-        <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
-                       isDebug="1" optimisation="1" targetName="MIOS_Studio_Debug"/>
-        <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
-                       isDebug="0" optimisation="2" targetName="MIOS_Studio"/>
+        <CONFIGURATION name="Debug" isDebug="1" optimisation="1" targetName="MIOS_Studio_Debug"/>
+        <CONFIGURATION name="Release" isDebug="0" optimisation="2" targetName="MIOS_Studio"/>
       </CONFIGURATIONS>
-    </VS2010>
-    <XCODE_MAC targetFolder="Builds/MacOSX" juceFolder="../juce/modules">
-      <CONFIGURATIONS>
-        <CONFIGURATION name="Debug" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
-                       isDebug="1" optimisation="1" targetName="MIOS_Studio_Debug"/>
-        <CONFIGURATION name="Release" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
-                       isDebug="0" optimisation="2" targetName="MIOS_Studio"/>
-      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_audio_utils" path="../juce/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="../juce/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="../juce/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="../juce/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="../juce/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../juce/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../juce/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../juce/modules"/>
+        <MODULEPATH id="juce_graphics" path="../juce/modules"/>
+        <MODULEPATH id="juce_events" path="../juce/modules"/>
+        <MODULEPATH id="juce_core" path="../juce/modules"/>
+      </MODULEPATHS>
     </XCODE_MAC>
-    <LINUX_MAKE targetFolder="Builds/Linux" juceFolder="../juce/modules">
+    <LINUX_MAKE targetFolder="Builds/Linux">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" libraryPath="/usr/X11R6/lib/" isDebug="1" optimisation="1"
                        targetName="MIOS_Studio_Debug"/>
         <CONFIGURATION name="Release" libraryPath="/usr/X11R6/lib/" isDebug="0" optimisation="2"
                        targetName="MIOS_Studio"/>
       </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_audio_utils" path="../juce/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="../juce/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="../juce/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="../juce/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="../juce/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../juce/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../juce/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../juce/modules"/>
+        <MODULEPATH id="juce_graphics" path="../juce/modules"/>
+        <MODULEPATH id="juce_events" path="../juce/modules"/>
+        <MODULEPATH id="juce_core" path="../juce/modules"/>
+      </MODULEPATHS>
     </LINUX_MAKE>
   </EXPORTFORMATS>
   <MAINGROUP id="v6A9pi" name="MIOS_Studio">
@@ -113,7 +128,6 @@
     <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0"/>
     <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0"/>
     <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0"/>
-    <MODULE id="juce_gui_audio" showAllCode="1" useLocalCopy="1"/>
     <MODULE id="juce_audio_devices" showAllCode="1" useLocalCopy="0"/>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0"/>
     <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="0"/>
@@ -121,4 +135,7 @@
     <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="0"/>
   </MODULES>
   <JUCEOPTIONS/>
+  <LIVE_SETTINGS>
+    <OSX/>
+  </LIVE_SETTINGS>
 </JUCERPROJECT>

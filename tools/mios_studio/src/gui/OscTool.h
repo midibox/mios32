@@ -24,7 +24,7 @@ class MiosStudio; // forward declaration
 
 class OscToolConnect
     : public Component
-    , public ButtonListener
+    , public Button::Listener
     , public Timer
 {
 public:
@@ -69,7 +69,7 @@ protected:
 //==============================================================================
 class OscToolSend
     : public Component
-    , public ButtonListener
+    , public Button::Listener
 {
 public:
     //==============================================================================

@@ -23,8 +23,8 @@ class MiosStudio; // forward declaration
 
 class SysexToolSend
     : public Component
-    , public ButtonListener
-    , public SliderListener
+    , public Button::Listener
+    , public Slider::Listener
     , public FilenameComponentListener
     , public Timer
 {
@@ -78,7 +78,7 @@ protected:
 //==============================================================================
 class SysexToolReceive
     : public Component
-    , public ButtonListener
+    , public Button::Listener
     , public FilenameComponentListener
 {
 public:

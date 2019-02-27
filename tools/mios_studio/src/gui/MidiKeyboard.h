@@ -24,7 +24,7 @@ class MiosStudio; // forward declaration
 class MidiKeyboard
     : public Component
     , public MidiKeyboardStateListener
-    , public SliderListener
+    , public Slider::Listener
 {
 public:
     //==============================================================================
@@ -37,7 +37,7 @@ public:
 
     //==============================================================================
     void handleNoteOn(MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity);
-    void handleNoteOff(MidiKeyboardState *source, int midiChannel, int midiNoteNumber);
+    void handleNoteOff(MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity);
 
     void setMidiChannel(const int& midiChannel);
     int getMidiChannel(void);

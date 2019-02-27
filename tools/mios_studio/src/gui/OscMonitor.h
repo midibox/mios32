@@ -23,7 +23,7 @@ class MiosStudio; // forward declaration
 
 class OscMonitor
     : public Component
-    , public ComboBoxListener
+    , public ComboBox::Listener
     , public OscListener
 {
 public:

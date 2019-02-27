@@ -1010,7 +1010,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
 
             // do we have to fetch some additional subdirectories?
             if( currentDirFetchItems.size() ) {
-                currentDirItem = currentDirFetchItems.remove(0);
+                currentDirItem = currentDirFetchItems.removeAndReturn(0);
                 if( currentDirItem->parentPath.compare(T("/")) == 0 )
                     currentDirPath = currentDirItem->parentPath + currentDirItem->name;
                 else

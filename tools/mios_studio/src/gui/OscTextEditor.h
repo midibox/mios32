@@ -21,7 +21,7 @@
 
 class OscTextEditor
     : public TextEditor
-    , public TextEditorListener
+    , public TextEditor::Listener
 {
 public:
     //==============================================================================
