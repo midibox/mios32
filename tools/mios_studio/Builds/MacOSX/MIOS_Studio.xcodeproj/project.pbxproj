@@ -25,6 +25,7 @@
 		4314285BC170B1AA4B6E3085 /* LogBox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C6B1F007138A958DCCD287A9 /* LogBox.cpp */; };
 		43C12722BD318218B1DD7446 /* include_juce_audio_basics.mm in Sources */ = {isa = PBXBuildFile; fileRef = 4AAA290E06A3B55BC2A74D75 /* include_juce_audio_basics.mm */; };
 		497BC0A476779315EB275690 /* MidiMonitor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 988A84520BADACA5D7EC4DDF /* MidiMonitor.cpp */; };
+		526A72A5222736AF0075D55F /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 526A72A4222736AF0075D55F /* Images.xcassets */; };
 		5503391CE7E8FAD19738D36F /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DBDCF5F939CED19636B633F7 /* CoreAudio.framework */; };
 		57F61628D5C41C5D2E28A61C /* OscTool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DF7341B206D43CA842F4B048 /* OscTool.cpp */; };
 		58CEEFB016D3C731E4A4C9F3 /* SysexTool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5568DBA184B8ABCA7E7DB11F /* SysexTool.cpp */; };
@@ -91,11 +92,11 @@
 		4AAA290E06A3B55BC2A74D75 /* include_juce_audio_basics.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_audio_basics.mm; path = ../../JuceLibraryCode/include_juce_audio_basics.mm; sourceTree = SOURCE_ROOT; };
 		4C1E165812430E53DB1B6EBD /* OscMonitor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = OscMonitor.cpp; path = ../../src/gui/OscMonitor.cpp; sourceTree = SOURCE_ROOT; };
 		4D217EB323097E9D4AA0AA90 /* MbCvTool.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = MbCvTool.cpp; path = ../../src/gui/MbCvTool.cpp; sourceTree = SOURCE_ROOT; };
+		526A72A4222736AF0075D55F /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = "MIOS_Studio - App/Images.xcassets"; sourceTree = "<group>"; };
 		55143E63A74A355C7E3AE1C6 /* include_juce_audio_formats.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_audio_formats.mm; path = ../../JuceLibraryCode/include_juce_audio_formats.mm; sourceTree = SOURCE_ROOT; };
 		5568DBA184B8ABCA7E7DB11F /* SysexTool.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SysexTool.cpp; path = ../../src/gui/SysexTool.cpp; sourceTree = SOURCE_ROOT; };
 		5793C19738218AC0C4CE01CF /* juce_events */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_events; path = ../../../juce/modules/juce_events; sourceTree = SOURCE_ROOT; };
 		5891926F33E9ADE1F329B734 /* juce_audio_basics */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_audio_basics; path = ../../../juce/modules/juce_audio_basics; sourceTree = SOURCE_ROOT; };
-		5B1FBDDB3D8FED601BFCC6C9 /* Info-App.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-App.plist"; sourceTree = SOURCE_ROOT; };
 		601D1A7B834543F72593F8CB /* juce_gui_basics */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_gui_basics; path = ../../../juce/modules/juce_gui_basics; sourceTree = SOURCE_ROOT; };
 		6498C10A5512371FED3318A6 /* RecentFilesMenuTemplate.nib */ = {isa = PBXFileReference; lastKnownFileType = file.nib; path = RecentFilesMenuTemplate.nib; sourceTree = SOURCE_ROOT; };
 		678DFAB604CE0BCD95A2C04B /* OscHelper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = OscHelper.h; path = ../../src/OscHelper.h; sourceTree = SOURCE_ROOT; };
@@ -318,7 +319,7 @@
 		C0739446BAF02CF23EC65543 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				5B1FBDDB3D8FED601BFCC6C9 /* Info-App.plist */,
+				526A72A4222736AF0075D55F /* Images.xcassets */,
 				6498C10A5512371FED3318A6 /* RecentFilesMenuTemplate.nib */,
 			);
 			name = Resources;
@@ -408,6 +409,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D47CF8AAE4D1B9443390AD84 /* RecentFilesMenuTemplate.nib in Resources */,
+				526A72A5222736AF0075D55F /* Images.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -464,7 +466,7 @@
 		124D14F7C5293DCC72E3C628 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD)";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_LINK_OBJC_RUNTIME = NO;
@@ -499,10 +501,9 @@
 				INFOPLIST_PREPROCESS = NO;
 				INSTALL_PATH = "$(HOME)/Applications";
 				LLVM_LTO = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_BUNDLE_IDENTIFIER = org.midibox.MIOSStudio;
 				PRODUCT_NAME = MIOS_Studio;
-				SDKROOT = macosx10.8;
 				USE_HEADERMAP = NO;
 			};
 			name = Release;
@@ -600,7 +601,7 @@
 		D03DE19F3C107B5816805D33 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD)";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_LINK_OBJC_RUNTIME = NO;
@@ -633,10 +634,9 @@
 				INFOPLIST_FILE = "Info-App.plist";
 				INFOPLIST_PREPROCESS = NO;
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_BUNDLE_IDENTIFIER = org.midibox.MIOSStudio;
 				PRODUCT_NAME = MIOS_Studio_Debug;
-				SDKROOT = macosx10.8;
 				USE_HEADERMAP = NO;
 			};
 			name = Debug;
