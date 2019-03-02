@@ -2,7 +2,7 @@ All MIOS tools are for Juce 5.4.3 which can be downloaded from
 https://github.com/WeAreROLI/JUCE/releases
 
 Unpack it and rename it to "juce" in this folder ($MIOS32_PATH/tools/juce)
-
+Windows users: copy Juce to C:\JUCE
 
 Notes:
 - MacOS: we build for 10.8 to ensure that users with older MacOS versions can use the tool.
