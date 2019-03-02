@@ -50,19 +50,19 @@
                        osxCompatibility="10.8 SDK"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_video" path="../../juce/modules"/>
-        <MODULEPATH id="juce_opengl" path="../../juce/modules"/>
-        <MODULEPATH id="juce_audio_processors" path="../../juce/modules"/>
-        <MODULEPATH id="juce_cryptography" path="../../juce/modules"/>
-        <MODULEPATH id="juce_audio_devices" path="../../juce/modules"/>
-        <MODULEPATH id="juce_audio_formats" path="../../juce/modules"/>
-        <MODULEPATH id="juce_events" path="../../juce/modules"/>
-        <MODULEPATH id="juce_audio_basics" path="../../juce/modules"/>
-        <MODULEPATH id="juce_gui_extra" path="../../juce/modules"/>
-        <MODULEPATH id="juce_gui_basics" path="../../juce/modules"/>
-        <MODULEPATH id="juce_data_structures" path="../../juce/modules"/>
-        <MODULEPATH id="juce_graphics" path="../../juce/modules"/>
-        <MODULEPATH id="juce_core" path="../../juce/modules"/>
+        <MODULEPATH id="juce_video"/>
+        <MODULEPATH id="juce_opengl"/>
+        <MODULEPATH id="juce_audio_processors"/>
+        <MODULEPATH id="juce_cryptography"/>
+        <MODULEPATH id="juce_audio_devices"/>
+        <MODULEPATH id="juce_audio_formats"/>
+        <MODULEPATH id="juce_events"/>
+        <MODULEPATH id="juce_audio_basics"/>
+        <MODULEPATH id="juce_gui_extra"/>
+        <MODULEPATH id="juce_gui_basics"/>
+        <MODULEPATH id="juce_data_structures"/>
+        <MODULEPATH id="juce_graphics"/>
+        <MODULEPATH id="juce_core"/>
       </MODULEPATHS>
     </XCODE_MAC>
     <LINUX_MAKE targetFolder="Builds/Linux" smallIcon="FMeBfU" bigIcon="v6ftxY">
@@ -73,19 +73,19 @@
                        targetName="BLM"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_video" path="../../juce/modules"/>
-        <MODULEPATH id="juce_opengl" path="../../juce/modules"/>
-        <MODULEPATH id="juce_audio_processors" path="../../juce/modules"/>
-        <MODULEPATH id="juce_cryptography" path="../../juce/modules"/>
-        <MODULEPATH id="juce_audio_devices" path="../../juce/modules"/>
-        <MODULEPATH id="juce_audio_formats" path="../../juce/modules"/>
-        <MODULEPATH id="juce_events" path="../../juce/modules"/>
-        <MODULEPATH id="juce_audio_basics" path="../../juce/modules"/>
-        <MODULEPATH id="juce_gui_extra" path="../../juce/modules"/>
-        <MODULEPATH id="juce_gui_basics" path="../../juce/modules"/>
-        <MODULEPATH id="juce_data_structures" path="../../juce/modules"/>
-        <MODULEPATH id="juce_graphics" path="../../juce/modules"/>
-        <MODULEPATH id="juce_core" path="../../juce/modules"/>
+        <MODULEPATH id="juce_video"/>
+        <MODULEPATH id="juce_opengl"/>
+        <MODULEPATH id="juce_audio_processors"/>
+        <MODULEPATH id="juce_cryptography"/>
+        <MODULEPATH id="juce_audio_devices"/>
+        <MODULEPATH id="juce_audio_formats"/>
+        <MODULEPATH id="juce_events"/>
+        <MODULEPATH id="juce_audio_basics"/>
+        <MODULEPATH id="juce_gui_extra"/>
+        <MODULEPATH id="juce_gui_basics"/>
+        <MODULEPATH id="juce_data_structures"/>
+        <MODULEPATH id="juce_graphics"/>
+        <MODULEPATH id="juce_core"/>
       </MODULEPATHS>
     </LINUX_MAKE>
     <VS2017 targetFolder="Builds/VisualStudio2017" smallIcon="FMeBfU" bigIcon="v6ftxY">
