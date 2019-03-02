@@ -20,8 +20,8 @@ rm -rf MIOS_Studio.app
 echo "#####################################################"
 echo "# Windows"
 echo "#####################################################"
-ls -la ${PATH_WIN}/MIOS\ Studio.exe
-cp -r ${PATH_WIN}/MIOS\ Studio.exe MIOS_Studio.exe
+ls -la ${PATH_WIN}/MIOS_Studio.exe
+cp -r ${PATH_WIN}/MIOS_Studio.exe MIOS_Studio.exe
 zip -r MIOS_Studio_${VERSION}.zip MIOS_Studio.exe
 rm -rf MIOS_Studio.exe
 
