@@ -24,7 +24,7 @@ class ExtCtrl; // forward declaration
 
 class ExtCtrlDevice
     : public Component
-    , public ComboBoxListener
+    , public ComboBox::Listener
     , public MidiInputCallback
 {
 public:
@@ -84,7 +84,7 @@ protected:
 //==============================================================================
 class ExtCtrl
     : public Component
-    , public ComboBoxListener
+    , public ComboBox::Listener
 {
 public:
 

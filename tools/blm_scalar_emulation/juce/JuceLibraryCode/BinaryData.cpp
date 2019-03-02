@@ -8,7 +8,7 @@ namespace BinaryData
 {
 
 //================== Leds.png ==================
-static const unsigned char temp_5abc9017[] =
+static const unsigned char temp_binary_data_0[] =
 { 137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,160,0,0,0,40,8,6,0,0,0,121,44,241,152,0,0,10,119,105,67,67,80,73,67,67,32,80,114,111,102,105,108,101,0,0,120,1,213,151,103,84,83,73,27,199,231,222,155,94,40,73,8,69,74,232,189,183,0,210,107,64,4,169,
 130,168,132,132,18,74,140,161,8,216,80,89,92,129,181,160,34,130,138,160,139,32,10,174,74,145,181,32,130,88,88,4,164,216,23,100,81,80,215,197,130,168,168,236,5,14,172,231,188,239,126,123,191,188,115,207,204,253,229,63,207,60,119,114,103,230,156,255,5,
 128,210,200,21,137,18,97,41,0,146,132,41,226,0,79,23,214,242,176,112,22,254,1,32,0,38,160,3,21,160,206,229,37,139,156,253,253,151,128,127,45,31,250,1,52,211,121,215,112,38,215,191,134,253,247,14,105,126,116,50,15,0,200,31,237,142,226,39,243,146,80,62,
@@ -56,14 +56,14 @@ static const unsigned char temp_5abc9017[] =
 3,170,251,249,100,163,57,160,238,231,51,143,151,245,234,126,62,89,96,14,92,223,207,103,30,39,235,3,1,167,110,214,148,45,51,5,216,95,26,232,123,228,119,17,240,250,78,225,180,163,254,255,167,217,95,26,211,123,229,183,229,111,26,210,190,88,62,157,70,224,
 4,103,207,79,47,222,94,144,193,0,0,0,0,73,69,78,68,174,66,96,130,0,0 };
 
-const char* Leds_png = (const char*) temp_5abc9017;
+const char* Leds_png = (const char*) temp_binary_data_0;
 
 
-const char* getNamedResource (const char*, int&) throw();
-const char* getNamedResource (const char* resourceNameUTF8, int& numBytes) throw()
+const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
 {
     unsigned int hash = 0;
-    if (resourceNameUTF8 != 0)
+
+    if (resourceNameUTF8 != nullptr)
         while (*resourceNameUTF8 != 0)
             hash = 31 * hash + (unsigned int) *resourceNameUTF8++;
 
@@ -74,7 +74,28 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes) throw
     }
 
     numBytes = 0;
-    return 0;
+    return nullptr;
+}
+
+const char* namedResourceList[] =
+{
+    "Leds_png"
+};
+
+const char* originalFilenames[] =
+{
+    "Leds.png"
+};
+
+const char* getNamedResourceOriginalFilename (const char* resourceNameUTF8)
+{
+    for (unsigned int i = 0; i < (sizeof (namedResourceList) / sizeof (namedResourceList[0])); ++i)
+    {
+        if (namedResourceList[i] == resourceNameUTF8)
+            return originalFilenames[i];
+    }
+
+    return nullptr;
 }
 
 }

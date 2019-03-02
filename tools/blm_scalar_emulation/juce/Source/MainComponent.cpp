@@ -14,6 +14,9 @@ MainComponent::MainComponent ()
     , initialMidiScanCounter(1) // start step-wise MIDI port scan
     , extCtrlWindow(NULL)
 {
+    // default look and feel
+    LookAndFeel::setDefaultLookAndFeel(&myLookAndFeel);
+
     addAndMakeVisible(layoutSelection = new ComboBox ("Layout"));
     layoutSelection->setEditableText(false);
     layoutSelection->setJustificationType(Justification::centredLeft);

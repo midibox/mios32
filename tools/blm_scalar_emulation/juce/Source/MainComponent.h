@@ -85,8 +85,8 @@ private:
 */
 class MainComponent
     : public Component
-    , public ComboBoxListener
-    , public ButtonListener
+    , public ComboBox::Listener
+    , public Button::Listener
     , public OscListener
     , public Timer
 {
@@ -94,6 +94,9 @@ public:
     //==============================================================================
     MainComponent ();
     ~MainComponent();
+
+    //==============================================================================
+    LookAndFeel_V2 myLookAndFeel;
 
     //==============================================================================
     //[UserMethods]     -- You can add your own custom methods in this section.

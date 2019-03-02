@@ -417,11 +417,11 @@ void BlmClass::setBLMLayout(const String& layout)
     const char **rowLabels = (blmRows <= 8) ? row8Labels : row16Labels;
 
     for(int i=0; i<=blmRows; ++i) {
-        rowLabelsRed[i]->setText(rowLabels[i], false);
+        rowLabelsRed[i]->setText(rowLabels[i], dontSendNotification);
         if( i < blmRows ) {
-            rowLabelsGreen[i]->setText(String(i+1), false);
+            rowLabelsGreen[i]->setText(String(i+1), dontSendNotification);
         } else {
-            rowLabelsGreen[i]->setText("", false);
+            rowLabelsGreen[i]->setText("", dontSendNotification);
         }
     }
 
