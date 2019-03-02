@@ -38,7 +38,7 @@ namespace ProjectInfo
 {
     const char* const  projectName    = "MIOS_Studio";
     const char* const  companyName    = "MIDIbox";
-    const char* const  versionString  = "2.4.5";
-    const int          versionNumber  = 0x20405;
+    const char* const  versionString  = "2.4.8";
+    const int          versionNumber  = 0x20408;
 }
 #endif

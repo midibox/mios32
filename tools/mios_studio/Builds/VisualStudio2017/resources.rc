@@ -7,7 +7,7 @@
 #include <windows.h>
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION  2,4,5,0
+FILEVERSION  2,4,8,0
 BEGIN
   BLOCK "StringFileInfo"
   BEGIN
@@ -15,9 +15,9 @@ BEGIN
     BEGIN
       VALUE "CompanyName",  "MIDIbox\0"
       VALUE "FileDescription",  "MIOS_Studio\0"
-      VALUE "FileVersion",  "2.4.5\0"
+      VALUE "FileVersion",  "2.4.8\0"
       VALUE "ProductName",  "MIOS_Studio\0"
-      VALUE "ProductVersion",  "2.4.5\0"
+      VALUE "ProductVersion",  "2.4.8\0"
     END
   END
 

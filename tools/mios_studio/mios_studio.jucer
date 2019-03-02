@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="MXNnwm" name="MIOS_Studio" projectType="guiapp" version="2.4.5"
+<JUCERPROJECT id="MXNnwm" name="MIOS_Studio" projectType="guiapp" version="2.4.8"
               jucerVersion="5.4.3" bundleIdentifier="org.midibox.MIOSStudio"
               companyName="MIDIbox">
   <EXPORTFORMATS>
     <XCODE_MAC targetFolder="Builds/MacOSX">
       <CONFIGURATIONS>
-        <CONFIGURATION name="Debug" isDebug="1" optimisation="1" targetName="MIOS_Studio_Debug"/>
-        <CONFIGURATION name="Release" isDebug="0" optimisation="2" targetName="MIOS_Studio"/>
+        <CONFIGURATION name="Debug" isDebug="1" optimisation="1" targetName="MIOS_Studio_Debug"
+                       osxCompatibility="10.8 SDK"/>
+        <CONFIGURATION name="Release" isDebug="0" optimisation="2" targetName="MIOS_Studio"
+                       osxCompatibility="10.8 SDK"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_utils" path="../juce/modules"/>
