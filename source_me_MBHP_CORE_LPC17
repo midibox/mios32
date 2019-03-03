@@ -4,8 +4,8 @@ basedir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # example usage:
 #    cd mios32
-#    source source_me_lpc17
-#    cd trunk/apps/templates/app_skeleton
+#    source source_me_MBHP_CORE_LPC17
+#    cd apps/templates/app_skeleton
 #    make
 
 export MIOS32_PATH=${basedir}
