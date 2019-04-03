@@ -1,3 +1,5 @@
+// LoopA UI data structures and code
+
 #include "commonIncludes.h"
 
 #include "tasks.h"
@@ -37,16 +39,6 @@ void setActiveTrack(u8 trackNumber)
 {
    activeTrack_ = trackNumber;
    screenSetClipSelected(activeTrack_);
-
-   /* MUTEX_DIGITALOUT_TAKE;
-   MIOS32_DOUT_PinSet(HW_LED_BLUE_GP1, activeTrack_ == 0);
-   MIOS32_DOUT_PinSet(HW_LED_BLUE_GP2, activeTrack_ == 1);
-   MIOS32_DOUT_PinSet(HW_LED_BLUE_GP3, activeTrack_ == 2);
-   MIOS32_DOUT_PinSet(HW_LED_BLUE_GP4, activeTrack_ == 3);
-   MIOS32_DOUT_PinSet(HW_LED_BLUE_GP5, activeTrack_ == 4);
-   MIOS32_DOUT_PinSet(HW_LED_BLUE_GP6, activeTrack_ == 5);
-   MUTEX_DIGITALOUT_GIVE;
-    */
 }
 // -------------------------------------------------------------------------------------------------
 

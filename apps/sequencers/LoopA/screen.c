@@ -1,4 +1,4 @@
-// $Id: screen.c 1223 2011-06-23 21:26:52Z hawkeye $
+// LoopA 256x64px screen routines
 
 #include "commonIncludes.h"
 
@@ -84,7 +84,7 @@ void setFontKeyIcon()
     fontptr_ = (unsigned char*) keyicons_pixdata;
     fontchar_bytewidth_ = 18;
     fontchar_height_ = 32;
-    fontline_bytewidth_ = 600;
+    fontline_bytewidth_ = keyicons_width / 2;
 }
 // ----------------------------------------------------------------------------------------
 
@@ -999,6 +999,98 @@ void displayPageRouter(void)
 
 
 /**
+ * Display the setup/settings page (PAGE_SETUP)
+ *
+ */
+void displayPageSetup(void)
+{
+   setFontSmall();
+
+   if (screenNewPagePanelFrameCtr_ > 0)
+   {
+      setFontInverted();
+      printString(250, 14, "S");
+      printString(250, 26, "E");
+      printString(250, 38, "T");
+      printString(250, 50, "P");
+      setFontNonInverted();
+      screenNewPagePanelFrameCtr_--;
+   }
+
+   // print config settings
+   // TODO...
+   /*
+   u8 i;
+   s8 idx = (s8)(routerActiveRoute_ > 0 ? routerActiveRoute_ - 1 : 0);
+   for (i = 0; i < MIDI_ROUTER_NUM_NODES; i++)
+   {
+      if (i == idx)
+      {
+         u8 y = (u8) ((i - routerActiveRoute_) * 12 + 28);
+         if (y <= 40)
+         {
+            midi_router_node_entry_t *n = &midi_router_node[i];
+            printFormattedString(0, y, "#%d", i + 1);
+
+            if (i == routerActiveRoute_ && command_ == COMMAND_ROUTE_IN_PORT)
+               setFontInverted();
+            char *port = MIDI_PORT_InNameGet(MIDI_PORT_InIxGet((mios32_midi_port_t) n->src_port));
+            printFormattedString(42, y, "%s", port);
+            setFontNonInverted();
+
+            if (i == routerActiveRoute_ && command_ == COMMAND_ROUTE_IN_CHANNEL)
+               setFontInverted();
+            u8 chn = n->src_chn;
+            if (chn > 0 && chn < 17)
+               printFormattedString(84, y, "%d", chn);
+            else
+               printFormattedString(84, y, "%s", chn == 17 ? "All" : "---");
+            setFontNonInverted();
+
+            if (i == routerActiveRoute_ && command_ == COMMAND_ROUTE_OUT_PORT)
+               setFontInverted();
+            port = MIDI_PORT_OutNameGet(MIDI_PORT_InIxGet((mios32_midi_port_t) n->dst_port));
+            printFormattedString(126, y, "%s", port);
+            setFontNonInverted();
+
+            if (i == routerActiveRoute_ && command_ == COMMAND_ROUTE_OUT_CHANNEL)
+               setFontInverted();
+            chn = n->dst_chn;
+            if (chn > 0 && chn < 17)
+               printFormattedString(168, y, "%d", chn);
+            else
+               printFormattedString(168, y, "%s", chn == 17 ? "All" : "---");
+            setFontNonInverted();
+         }
+
+         idx++;
+      }
+   }
+   */
+
+   invertDisplayLines(27, 41);
+
+   printCenterFormattedString(0, "Setup");
+
+   // TODO
+   /*
+   command_ == COMMAND_ROUTE_SELECT ? setFontInverted() : setFontNonInverted();
+   printFormattedString(0, 54, "Select");
+   command_ == COMMAND_ROUTE_IN_PORT ? setFontInverted() : setFontNonInverted();
+   printFormattedString(42, 54, "IN P");
+   command_ == COMMAND_ROUTE_IN_CHANNEL ? setFontInverted() : setFontNonInverted();
+   printFormattedString(84, 54, "IN Ch");
+   command_ == COMMAND_ROUTE_OUT_PORT ? setFontInverted() : setFontNonInverted();
+   printFormattedString(126, 54, "OUT P");
+   command_ == COMMAND_ROUTE_OUT_CHANNEL ? setFontInverted() : setFontNonInverted();
+   printFormattedString(168, 54, "OUT Ch");
+   setFontNonInverted();
+   */
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
  * Display the current screen buffer (once per frame, called in app.c scheduler)
  *
  */
@@ -1011,10 +1103,10 @@ void display(void)
       // Startup/initial session loading: Render the LoopA Logo
 
       setFontBold();  // width per letter: 10px (for center calculation)
-      printFormattedString(78, 2, "LoopA V2.03");
+      printFormattedString(78, 2, "LoopA V2.04");
 
       setFontSmall(); // width per letter: 6px
-      printFormattedString(28, 20, "(C) Hawkeye, latigid on, TK. 2018");
+      printFormattedString(28, 20, "(C) Hawkeye, latigid on, TK. 2019");
       printFormattedString(52, 32, "MIDIbox hardware platform");
 
       setFontBold(); // width per letter: 10px;
@@ -1098,6 +1190,10 @@ void display(void)
 
          case PAGE_ROUTER:
             displayPageRouter();
+            break;
+
+         case PAGE_SETUP:
+            displayPageSetup();
             break;
       }
    }

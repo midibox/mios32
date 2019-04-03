@@ -1,9 +1,13 @@
+// LoopA Setup/Config routines
+
 #include "commonIncludes.h"
 
 #include "setup.h"
 
 // --- Globals ---
 u8 configChangesToBeWritten_ = 0;
+
+// --- Global config settings ---
 
 
 /**
@@ -40,6 +44,10 @@ void writeSetup()
          FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer));
       }
    }
+
+   // WRITE MIDI MCLK PORTS CONFIG
+   sprintf(line_buffer, "MIDI_IN_MClock_Ports 0x%08x\n", (u32) midi_router_mclk_in);
+   FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer));
 
    // close file
    FILE_WriteClose();
@@ -238,6 +246,12 @@ void readSetup()
                         n->dst_chn = (u8) values[4];
                      }
                   }
+               }
+               else if (strcmp(parameter, "MIDI_IN_MClock_Ports") == 0)
+               {
+                  s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  if (value >= 0)
+                     midi_router_mclk_in = value;
                }
             }
          }

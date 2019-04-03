@@ -1,12 +1,7 @@
-// $Id: voxelspace.c 1223 2011-06-23 21:26:52Z hawkeye $
+// LoopA Voxelspace routines (initially used in MIOS32 Voxelspace demo from 2011)
 
 #include "commonIncludes.h"
 
-/*#include <mios32.h>
-
-#include <app_lcd.h>
-
-#include <seq_bpm.h> */
 #include "screen.h"
 #include "voxelspace.h"
 

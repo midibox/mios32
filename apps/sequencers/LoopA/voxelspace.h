@@ -1,7 +1,4 @@
-/////////////////////////////////////////////////////////////////////////////
-// Prototypes
-/////////////////////////////////////////////////////////////////////////////
-
+// LoopA Voxelspace routines (initially used in MIOS32 Voxelspace demo done in 2011)
 
 // Landscape/heightfield generator
 void calcField(void);
@@ -23,6 +20,3 @@ void voxelClearNotes();
 
 // Clear current voxel field
 void voxelClearField();
-
-// Render test screen, one half is "full on" for flicker tests
-void testScreen();

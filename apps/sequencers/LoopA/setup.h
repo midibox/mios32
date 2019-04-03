@@ -1,3 +1,5 @@
+// LoopA Setup/Config routines
+
 #include "commonIncludes.h"
 
 // --- constants ---

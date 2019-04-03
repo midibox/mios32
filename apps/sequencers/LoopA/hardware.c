@@ -1,3 +1,5 @@
+// LoopA Hardware Mapping
+
 #include "commonIncludes.h"
 
 // --- LEDs ---

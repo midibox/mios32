@@ -1,5 +1,5 @@
 // LoopA Core Logic
-// (c) Hawkeye 2015-2018
+// (c) Hawkeye 2015-2019
 
 #define TRACKS 6
 #define SCENES 6
@@ -95,7 +95,7 @@ void loadSession(u16 sessionNumber);
 void loopaStartup();
 
 
-// --- LOOPA Sequencer Section ---
+// --- LoopA Sequencer Section ---
 
 s32  seqPlayOffEvents(void);
 s32  seqReset(u8 play_off_events);
@@ -109,12 +109,11 @@ s32  seqIgnoreMetaEvent(u8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick);
 // Handle a stop request
 void handleStop();
 
-// Initialize Loopa SEQ
+// Initialize LoopA SEQ
 s32 seqInit();
 
 // This main sequencer handler is called periodically to poll the clock/current tick from BPM generator
 s32 seqHandler(void);
-
 
 // SD Card Available, initialize
 void loopaSDCardAvailable();

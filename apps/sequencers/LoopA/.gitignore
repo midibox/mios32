@@ -1,0 +1,7 @@
+*~
+CMake*
+cmake*
+project_build/*
+.idea/
+loopa
+loopa.cbp

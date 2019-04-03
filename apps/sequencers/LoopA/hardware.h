@@ -1,3 +1,5 @@
+// LoopA Hardware Mapping
+
 // --- LEDs ---
 
 #include "loopa_datatypes.h"

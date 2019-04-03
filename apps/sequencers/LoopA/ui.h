@@ -1,4 +1,4 @@
-// --- consts, enumerations and defines ---
+// LoopA UI data structures and code
 
 #define PAGES 6 // TODO: old, drop this
 enum LoopaPage

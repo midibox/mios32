@@ -1,12 +1,7 @@
 // LoopA Core Logic
-// (c) Hawkeye 2015-2018
+// (c) Hawkeye 2015-2019
 //
-// This unit provides the loopA core data structures and the menu navigation and multi-clip support
-//
-// In playback, all clips will start to play back, regardless of their mute state.
-// Also, all clips will loop by default (it is called LoopA, anyways)
-// This emulates the behaviour of the MBSEQ.
-//
+// This file provides the LoopA core data structures and logic
 // =================================================================================================
 
 #include "commonIncludes.h"
@@ -743,6 +738,7 @@ s32 seqIgnoreMetaEvent(u8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick)
 
 /**
  * Realtime output hook: called exactly, when the MIDI scheduler has a package to send
+ * TODO: fix this, use (only) configured ports, allow for USB configuration
  *
  */
 s32 hookMIDISendPackage(mios32_midi_port_t clipNumber, mios32_midi_package_t package)

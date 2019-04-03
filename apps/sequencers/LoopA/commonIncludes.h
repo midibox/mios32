@@ -8,7 +8,6 @@
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 #include "loopa_datatypes.h"
-#include "tasks.h"
 
 #include <string.h>
 #include <stdarg.h>
@@ -21,6 +20,8 @@
 #include <midi_port.h>
 #include <midi_router.h>
 
+#include "app_lcd.h"
 #include "file.h"
+#include "tasks.h"
 
 #endif //LOOPA_COMMONINCLUDES_H
