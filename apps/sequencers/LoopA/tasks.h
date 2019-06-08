@@ -68,7 +68,6 @@ extern "C" {
 # define MUTEX_MIDIOUT_GIVE { if( xMIDIOUTSemaphore ) xSemaphoreGiveRecursive(xMIDIOUTSemaphore); }
 #endif
 
-
 // Digital Out serialization
 #ifdef MIOS32_FAMILY_EMULATION
 extern void TASKS_DigitalOutSemaphoreTake(void);

@@ -109,14 +109,14 @@ const u8 sw_delete = 20;
 const u8 enc_scene_id = 0;
 const u8 enc_scene = 4;
 
-const u8 enc_track_id = 1;
-const u8 enc_track = 10;
+const u8 enc_select_id = 1;
+const u8 enc_select = 10;
 
-const u8 enc_page_id = 2;
-const u8 enc_page = 24;
+const u8 enc_live_id = 2;
+const u8 enc_live = 24;
 
-const u8 enc_data_id = 3;
-const u8 enc_data = 18;
+const u8 enc_value_id = 3;
+const u8 enc_value = 18;
 
 
 /* LED mapping

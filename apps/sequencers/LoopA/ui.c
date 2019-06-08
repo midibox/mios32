@@ -81,7 +81,7 @@ void setActivePage(enum LoopaPage page)
    {
       case PAGE_MUTE: command_ = COMMAND_NONE; break;
       case PAGE_ROUTER: command_ = COMMAND_ROUTE_SELECT; break;
-      case PAGE_DISK: command_ = COMMAND_NONE; break;
+      case PAGE_DISK: command_ = COMMAND_DISK_SELECT_SESSION; break;
       case PAGE_TEMPO: command_= COMMAND_BPM; break;
       case PAGE_CLIP: command_ = COMMAND_CLIPLEN; break;
       case PAGE_NOTES: command_ = COMMAND_POSITION; break;
@@ -330,9 +330,10 @@ void updateLEDs()
             break;
 
          case PAGE_DISK:
-            led_gp1 |= command_ == COMMAND_SAVE ? LED_RED : LED_OFF;
-            led_gp2 |= command_ == COMMAND_LOAD ? LED_RED : LED_OFF;
-            led_gp3 |= command_ == COMMAND_NEW ? LED_RED : LED_OFF;
+            led_gp1 |= command_ == COMMAND_DISK_SELECT_SESSION ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_DISK_SAVE ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_DISK_LOAD ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_DISK_NEW ? LED_RED : LED_OFF;
             break;
 
          case PAGE_TEMPO:
@@ -550,7 +551,19 @@ void diskScanSessionFileAvailable()
 
 
 /**
- * Main Menu: Save session command
+ * Disk Menu: select current session
+ *
+ */
+void diskSelectSession()
+{
+   command_ = command_ == COMMAND_DISK_SELECT_SESSION ? COMMAND_NONE : COMMAND_ROUTE_SELECT;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+
+/**
+ * Disk Menu: Save session command
  *
  */
 void diskSave()
@@ -567,7 +580,7 @@ void diskSave()
 
 
 /**
- * Main Menu: Save session command
+ * Disk Menu: Save session command
  *
  */
 void diskLoad()
@@ -583,7 +596,7 @@ void diskLoad()
 
 
 /**
- * Main Menu: Save session command
+ * Disk Menu: Save session command
  *
  */
 void diskNew()
@@ -680,7 +693,7 @@ void routerChannelOut()
 // -------------------------------------------------------------------------------------------------
 
 /**
- * A buttonpress has occured
+ * Handle switch/button press event
  *
  */
 void loopaButtonPressed(s32 pin)
@@ -730,7 +743,6 @@ void loopaButtonPressed(s32 pin)
       else */
       {
          // normal mode "menu"
-         DEBUG_MSG("enter menu");
          calcField();
          screenShowMenu(1);
       }
@@ -813,7 +825,7 @@ void loopaButtonPressed(s32 pin)
                trackPortOut();
                break;
             case PAGE_DISK:
-               diskSave();
+               diskSelectSession();
                break;
             case PAGE_TEMPO:
                tempoBpm();
@@ -846,7 +858,7 @@ void loopaButtonPressed(s32 pin)
                trackChannelOut();
                break;
             case PAGE_DISK:
-               diskLoad();
+               diskSave();
                break;
             case PAGE_TEMPO:
                bpmBpmflash();
@@ -878,7 +890,7 @@ void loopaButtonPressed(s32 pin)
                notesVelocity();
                break;
             case PAGE_DISK:
-               diskNew();
+               diskLoad();
                break;
             case PAGE_ROUTER:
                routerChannelIn();
@@ -904,6 +916,8 @@ void loopaButtonPressed(s32 pin)
             case PAGE_NOTES:
                notesLength();
                break;
+            case PAGE_DISK:
+               diskNew();
             case PAGE_ROUTER:
                routerPortOut();
          }
@@ -963,7 +977,7 @@ void loopaButtonPressed(s32 pin)
 
 
 /**
- * A button release has occured
+ * * Handle switch/button release event
  *
  */
 void loopaButtonReleased(s32 pin)
@@ -992,6 +1006,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
    incrementer = -incrementer;
    DEBUG_MSG("[Encoder] %d turned, direction %d\n", encoder, incrementer);
 
+   // Upper-left Scene encoder
    if (encoder == enc_scene_id)
    {
       if (incrementer < 0)
@@ -1000,10 +1015,10 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
          if (newScene < 0)
             newScene = 0;
 
-         sceneChangeRequested_ = newScene;
+         sceneChangeRequested_ = (u8)newScene;
 
          if (sceneChangeRequested_ == activeScene_ || !SEQ_BPM_IsRunning()) // if (after changing) now no change requested or not playing, switch at once
-            setActiveScene(newScene);
+            setActiveScene((u8)newScene);
       }
       else
       {
@@ -1011,20 +1026,21 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
          if (newScene >= SCENES)
             newScene = SCENES - 1;
 
-         sceneChangeRequested_ = newScene;
+         sceneChangeRequested_ = (u8)newScene;
 
          if (sceneChangeRequested_ == activeScene_ || !SEQ_BPM_IsRunning()) // if (after changing) now no change requested or not playing, switch at once
-            setActiveScene(newScene);
+            setActiveScene((u8)newScene);
       }
    }
 
-   if (encoder == enc_track_id)
+   // Lower-left Select/Track encoder
+   else if (encoder == enc_select_id)
    {
       if (page_ == PAGE_DISK) // Disk page - left encoder changes selected session number
       {
          s16 newSessionNumber = sessionNumber_ + incrementer;
          newSessionNumber = newSessionNumber < 0 ? 0 : newSessionNumber;
-         sessionNumber_ = newSessionNumber;
+         sessionNumber_ = (u16)newSessionNumber;
 
          diskScanSessionFileAvailable();
       }
@@ -1035,7 +1051,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
             newNote = clipNotesSize_[activeTrack_][activeScene_] - 1;
          if (newNote >= clipNotesSize_[activeTrack_][activeScene_])
             newNote = 0;
-         clipActiveNote_[activeTrack_][activeScene_] = newNote;
+         clipActiveNote_[activeTrack_][activeScene_] = (u16)newNote;
       }
       else if (page_ == PAGE_ROUTER) // MIDI Router page - left encoder changes active/selected route
       {
@@ -1050,7 +1066,9 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
          setActiveTrack((u8)(newTrack >= TRACKS ? TRACKS-1 : newTrack));
       }
    }
-   else if (encoder == enc_page_id)
+
+   // Upper-right "Live" encoder
+   else if (encoder == enc_live_id)
    {
       // switch through pages
 
@@ -1070,9 +1088,19 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
 
       screenNotifyPageChanged();
    }
-   else if (encoder == enc_data_id)
+
+   // Lower-right "Value" encoder
+   else if (encoder == enc_value_id)
    {
-      if (command_ == COMMAND_BPM)
+      if (command_ == COMMAND_DISK_SELECT_SESSION) // Disk page - left encoder changes selected session number
+      {
+         s16 newSessionNumber = sessionNumber_ + incrementer;
+         newSessionNumber = newSessionNumber < 0 ? 0 : newSessionNumber;
+         sessionNumber_ = (u16)newSessionNumber;
+
+         diskScanSessionFileAvailable();
+      }
+      else if (command_ == COMMAND_BPM)
       {
          bpm_ += incrementer;
          if (bpm_ < 30)
@@ -1168,7 +1196,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
             if (newTick >= clipLength)
                newTick -= clipLength;
 
-            clipNotes_[activeTrack_][activeScene_][activeNote].tick = newTick;
+            clipNotes_[activeTrack_][activeScene_][activeNote].tick = (u16)newTick;
          }
       }
       else if (command_ == COMMAND_NOTE_KEY)
@@ -1208,7 +1236,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
             if (newLength >= 1536)
                newLength = 1536;
 
-            clipNotes_[activeTrack_][activeScene_][activeNote].length = newLength;
+            clipNotes_[activeTrack_][activeScene_][activeNote].length = (u16)newLength;
          }
       }
       else if (command_ == COMMAND_NOTE_VELOCITY)
@@ -1256,7 +1284,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
          newChannel = newChannel > 15 ? 0 : newChannel;
          newChannel = newChannel < 0 ? 15 : newChannel;
 
-         trackMidiChannel_[activeTrack_] = newChannel;
+         trackMidiChannel_[activeTrack_] = (u8)newChannel;
       }
       else if (command_ == COMMAND_ROUTE_SELECT)
       {

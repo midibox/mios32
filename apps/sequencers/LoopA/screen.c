@@ -126,12 +126,12 @@ void invertDisplayLines(u8 startY, u8 endY)
    {
       for (x = 0; x < 128; x++)
       {
-         u8 first = *sdata >> 4;
+         u8 first = *sdata >> 4U;
          u8 second = *sdata % 16;
 
          first = 15-first;
          second = 15-second;
-         *sdata = (first << 4) + second;
+         *sdata = (first << 4U) + second;
 
          sdata++;
       }
@@ -856,14 +856,17 @@ void displayPageDisk(void)
 
    printCenterFormattedString(0, "Disk Operations");
 
-   command_ == COMMAND_SAVE ? setFontInverted() : setFontNonInverted();
-   printFormattedString(0, 54, "Save");
+   command_ == COMMAND_DISK_SELECT_SESSION ? setFontInverted() : setFontNonInverted();
+   printFormattedString(0, 54, "Select");
 
-   command_ == COMMAND_LOAD ? setFontInverted() : setFontNonInverted();
-   printFormattedString(42, 54, "Load");
+   command_ == COMMAND_DISK_SAVE ? setFontInverted() : setFontNonInverted();
+   printFormattedString(42, 54, "Save");
 
-   command_ == COMMAND_NEW ? setFontInverted() : setFontNonInverted();
-   printFormattedString(84, 54, "New");
+   command_ == COMMAND_DISK_LOAD ? setFontInverted() : setFontNonInverted();
+   printFormattedString(84, 54, "Load");
+
+   command_ == COMMAND_DISK_NEW ? setFontInverted() : setFontNonInverted();
+   printFormattedString(126, 54, "New");
 
 
    setFontNonInverted();

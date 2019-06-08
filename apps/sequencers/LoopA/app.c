@@ -155,29 +155,29 @@ void APP_Init(void)
    enc_config.cfg.speed_par = 0;
    MIOS32_ENC_ConfigSet(enc_scene_id, enc_config);
 
-   enc_config = MIOS32_ENC_ConfigGet(enc_track_id);
+   enc_config = MIOS32_ENC_ConfigGet(enc_select_id);
    enc_config.cfg.type = DETENTED3;
-   enc_config.cfg.sr = enc_track / 8 + 1;
-   enc_config.cfg.pos = enc_track % 8;
+   enc_config.cfg.sr = enc_select / 8 + 1;
+   enc_config.cfg.pos = enc_select % 8;
    enc_config.cfg.speed = NORMAL;
    enc_config.cfg.speed_par = 0;
-   MIOS32_ENC_ConfigSet(enc_track_id, enc_config);
+   MIOS32_ENC_ConfigSet(enc_select_id, enc_config);
 
-   enc_config = MIOS32_ENC_ConfigGet(enc_page_id);
+   enc_config = MIOS32_ENC_ConfigGet(enc_live_id);
    enc_config.cfg.type = DETENTED3;
-   enc_config.cfg.sr = enc_page / 8 + 1;
-   enc_config.cfg.pos = enc_page % 8;
+   enc_config.cfg.sr = enc_live / 8 + 1;
+   enc_config.cfg.pos = enc_live % 8;
    enc_config.cfg.speed = NORMAL;
    enc_config.cfg.speed_par = 0;
-   MIOS32_ENC_ConfigSet(enc_page_id, enc_config);
+   MIOS32_ENC_ConfigSet(enc_live_id, enc_config);
 
-   enc_config = MIOS32_ENC_ConfigGet(enc_data_id);
+   enc_config = MIOS32_ENC_ConfigGet(enc_value_id);
    enc_config.cfg.type = DETENTED3;
-   enc_config.cfg.sr = enc_data / 8 + 1;
-   enc_config.cfg.pos = enc_data % 8;
+   enc_config.cfg.sr = enc_value / 8 + 1;
+   enc_config.cfg.pos = enc_value % 8;
    enc_config.cfg.speed = NORMAL;
    enc_config.cfg.speed_par = 0;
-   MIOS32_ENC_ConfigSet(enc_data_id, enc_config);
+   MIOS32_ENC_ConfigSet(enc_value_id, enc_config);
 
    // start tasks
    xTaskCreate(TASK_Period_1mS, (const char * const)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);

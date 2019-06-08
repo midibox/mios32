@@ -117,12 +117,12 @@ extern const u8 sw_delete;
 extern const u8 enc_scene_id;
 extern const u8 enc_scene;
 
-extern const u8 enc_track_id;
-extern const u8 enc_track;
+extern const u8 enc_select_id;
+extern const u8 enc_select;
 
-extern const u8 enc_page_id;
-extern const u8 enc_page;
+extern const u8 enc_live_id;
+extern const u8 enc_live;
 
-extern const u8 enc_data_id;
-extern const u8 enc_data;
+extern const u8 enc_value_id;
+extern const u8 enc_value;
 
