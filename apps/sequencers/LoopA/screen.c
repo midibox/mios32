@@ -6,6 +6,7 @@
 #include "gfx_resources.h"
 #include "loopa.h"
 #include "ui.h"
+#include "setup.h"
 #include "voxelspace.h"
 
 // -------------------------------------------------------------------------------------------
@@ -225,6 +226,93 @@ void printFormattedString(int xPixCoord /* even! */, int yPixCoord, const char* 
 }
 // ----------------------------------------------------------------------------------------
 
+
+/**
+ * Display the current page icon (in the upper right of the screen)
+ *
+ */
+void printPageIcon()
+{
+   int c = 0;
+   switch(page_)
+   {
+      case PAGE_MUTE:
+         c = KEYICON_MUTE_INVERTED;
+         break;
+
+      case PAGE_CLIP:
+         c = KEYICON_CLIP_INVERTED;
+         break;
+
+      case PAGE_NOTES:
+         c = KEYICON_NOTES_INVERTED;
+         break;
+
+      case PAGE_TRACK:
+         c = KEYICON_TRACK_INVERTED;
+         break;
+
+      case PAGE_DISK:
+         c = KEYICON_DISK_INVERTED;
+         break;
+
+      case PAGE_TEMPO:
+         c = KEYICON_TEMPO_INVERTED;
+         break;
+
+      case PAGE_FX:
+         c = KEYICON_FX_INVERTED;
+         break;
+
+      case PAGE_ROUTER:
+         c = KEYICON_ROUTER_INVERTED;
+         break;
+
+      case PAGE_MIDIMONITOR:
+         c = KEYICON_MIDIMONITOR_INVERTED;
+         break;
+
+      case PAGE_SETUP:
+         c = KEYICON_SETUP_INVERTED;
+         break;
+   }
+
+   unsigned x;
+
+   // in-font coordinates
+   unsigned f_y = 5;
+   unsigned f_x = c * 18 /* fontchar_bytewidth */;
+
+   // screenbuf target coordinates
+   unsigned s_y = 0;
+   unsigned s_x = 116;
+
+   while (f_y < 17)
+   {
+      if (s_y >= 0 && s_y < 64) // clip y offscreen
+      {
+         unsigned char* sdata = (unsigned char*) screen + s_y * 128 + s_x;
+         unsigned char* fdata = (unsigned char*) keyicons_pixdata + f_y * (keyicons_width / 2) + f_x + 3;
+         unsigned c_s_x = s_x;
+
+         for (x = 0; x < 12; x++)
+         {
+            if (c_s_x >= 0 && c_s_x < 128)
+            {
+               if (*fdata)
+                  *sdata = *fdata;  // inner loop: copy 2 pixels, if onscreen
+            }
+
+            c_s_x++;
+            fdata++;
+            sdata++;
+         }
+      }
+
+      f_y++;
+      s_y++;
+   }
+}
 
 /**
  * Display the given formatted string at the given y pixel coordinates, center x
@@ -934,13 +1022,13 @@ void displayPageRouter(void)
    }
 
    // print routes
-   u8 i;
-   s8 idx = (s8)(routerActiveRoute_ > 0 ? routerActiveRoute_ - 1 : 0);
-   for (i = 0; i < MIDI_ROUTER_NUM_NODES; i++)
+   s8 i;
+   s8 idx = (s8)(routerActiveRoute_ > 0 ? routerActiveRoute_ -1 : 0);
+   for (i = -1; i < MIDI_ROUTER_NUM_NODES; i++)
    {
       if (i == idx)
       {
-         u8 y = (u8) ((i - routerActiveRoute_) * 12 + 28);
+         u8 y = (u8) ((i - routerActiveRoute_) * 12 + 16);
          if (y <= 40)
          {
             midi_router_node_entry_t *n = &midi_router_node[i];
@@ -981,9 +1069,7 @@ void displayPageRouter(void)
       }
    }
 
-   invertDisplayLines(27, 41);
-
-   printCenterFormattedString(0, "MIDI Router");
+   invertDisplayLines(15, 29);
 
    command_ == COMMAND_ROUTE_SELECT ? setFontInverted() : setFontNonInverted();
    printFormattedString(0, 54, "Select");
@@ -1021,74 +1107,53 @@ void displayPageSetup(void)
    }
 
    // print config settings
-   // TODO...
-   /*
-   u8 i;
-   s8 idx = (s8)(routerActiveRoute_ > 0 ? routerActiveRoute_ - 1 : 0);
-   for (i = 0; i < MIDI_ROUTER_NUM_NODES; i++)
+   s8 i;
+   s8 idx = (s8)(setupActiveItem_ > 0 ? setupActiveItem_ - 1 : 0);
+   for (i = -1; i < SETUP_NUM_ITEMS; i++)
    {
+      /// DEBUG_MSG("[displayPageSetup] i %d idx %d\n", i, idx);
       if (i == idx)
       {
-         u8 y = (u8) ((i - routerActiveRoute_) * 12 + 28);
+         u8 y = (u8) ((i - setupActiveItem_) * 12 + 16);
          if (y <= 40)
          {
-            midi_router_node_entry_t *n = &midi_router_node[i];
-            printFormattedString(0, y, "#%d", i + 1);
+            printFormattedString(0, y, "%s", setupParameters_[i].name);
 
-            if (i == routerActiveRoute_ && command_ == COMMAND_ROUTE_IN_PORT)
+            if (i == setupActiveItem_ && command_ == COMMAND_SETUP_PAR1)
                setFontInverted();
-            char *port = MIDI_PORT_InNameGet(MIDI_PORT_InIxGet((mios32_midi_port_t) n->src_port));
-            printFormattedString(42, y, "%s", port);
+
+            switch(i)
+            {
+               case SETUP_BEAT_LEDS_ENABLED:
+                  printFormattedString(84, y, gcBeatLEDsEnabled_ ? "On" : "Off");
+                  break;
+               case SETUP_BEAT_DISPLAY_ENABLED:
+                  printFormattedString(84, y, gcBeatDisplayEnabled_ ? "On" : "Off");
+                  break;
+            }
+
             setFontNonInverted();
 
-            if (i == routerActiveRoute_ && command_ == COMMAND_ROUTE_IN_CHANNEL)
-               setFontInverted();
-            u8 chn = n->src_chn;
-            if (chn > 0 && chn < 17)
-               printFormattedString(84, y, "%d", chn);
-            else
-               printFormattedString(84, y, "%s", chn == 17 ? "All" : "---");
-            setFontNonInverted();
-
-            if (i == routerActiveRoute_ && command_ == COMMAND_ROUTE_OUT_PORT)
-               setFontInverted();
-            port = MIDI_PORT_OutNameGet(MIDI_PORT_InIxGet((mios32_midi_port_t) n->dst_port));
-            printFormattedString(126, y, "%s", port);
-            setFontNonInverted();
-
-            if (i == routerActiveRoute_ && command_ == COMMAND_ROUTE_OUT_CHANNEL)
-               setFontInverted();
-            chn = n->dst_chn;
-            if (chn > 0 && chn < 17)
-               printFormattedString(168, y, "%d", chn);
-            else
-               printFormattedString(168, y, "%s", chn == 17 ? "All" : "---");
-            setFontNonInverted();
          }
 
          idx++;
       }
    }
-   */
 
-   invertDisplayLines(27, 41);
+   invertDisplayLines(15, 29);
 
-   printCenterFormattedString(0, "Setup");
-
-   // TODO
-   /*
-   command_ == COMMAND_ROUTE_SELECT ? setFontInverted() : setFontNonInverted();
+   command_ == COMMAND_SETUP_SELECT ? setFontInverted() : setFontNonInverted();
    printFormattedString(0, 54, "Select");
-   command_ == COMMAND_ROUTE_IN_PORT ? setFontInverted() : setFontNonInverted();
-   printFormattedString(42, 54, "IN P");
-   command_ == COMMAND_ROUTE_IN_CHANNEL ? setFontInverted() : setFontNonInverted();
-   printFormattedString(84, 54, "IN Ch");
-   command_ == COMMAND_ROUTE_OUT_PORT ? setFontInverted() : setFontNonInverted();
-   printFormattedString(126, 54, "OUT P");
-   command_ == COMMAND_ROUTE_OUT_CHANNEL ? setFontInverted() : setFontNonInverted();
-   printFormattedString(168, 54, "OUT Ch");
+
+   command_ == COMMAND_SETUP_PAR1 ? setFontInverted() : setFontNonInverted();
+   printFormattedString(84, 54, setupParameters_[setupActiveItem_].par1Name);
+   command_ == COMMAND_SETUP_PAR2 ? setFontInverted() : setFontNonInverted();
+   printFormattedString(126, 54, setupParameters_[setupActiveItem_].par2Name);
+   command_ == COMMAND_SETUP_PAR3 ? setFontInverted() : setFontNonInverted();
+   printFormattedString(168, 54, setupParameters_[setupActiveItem_].par3Name);
+   command_ == COMMAND_SETUP_PAR4 ? setFontInverted() : setFontNonInverted();
+   printFormattedString(210, 54, setupParameters_[setupActiveItem_].par4Name);
    setFontNonInverted();
-   */
 }
 // ----------------------------------------------------------------------------------------
 
@@ -1104,6 +1169,7 @@ void display(void)
    if (screenShowLoopaLogo_)
    {
       // Startup/initial session loading: Render the LoopA Logo
+      voxelFrame();
 
       setFontBold();  // width per letter: 10px (for center calculation)
       printFormattedString(78, 2, "LoopA V2.04");
@@ -1201,6 +1267,10 @@ void display(void)
       }
    }
 
+   // Page icon
+   if (!screenShowLoopaLogo_ && !screenIsInMenu() && !screenIsInShift())
+      printPageIcon();
+
    // Display flash notification
    if (screenFlashMessageFrameCtr_)
    {
@@ -1215,9 +1285,8 @@ void display(void)
    }
 
    u8 flash = 0;
-   // no flashing for now :)
-   //if (oledBeatFlashState_ > 0)
-   //   flash = oledBeatFlashState_ == 1 ? 0x44 : 0x66;
+   if (gcBeatDisplayEnabled_ && oledBeatFlashState_ > 0)
+      flash = oledBeatFlashState_ == 1 ? 0x44 : 0x66;
 
    // Push screen buffer to screen
    for (j = 0; j < 64; j++)

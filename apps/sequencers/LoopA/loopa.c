@@ -25,7 +25,7 @@ u32 tick_ = 0;                        // global seq tick
 u16 bpm_ = 120;                       // bpm
 u16 sessionNumber_ = 0;               // currently active session number (directory e.g. /SESSIONS/0001)
 u8 sessionExistsOnDisk_ = 0;          // is the currently selected session number already saved on disk/sd card
-enum LoopaPage page_ = PAGE_MUTE;     // currently active page/view
+enum LoopAPage page_ = PAGE_MUTE;     // currently active page/view
 enum Command command_ = COMMAND_NONE; // currently active command
 
 u8 activeTrack_ = 0;                  // currently active or last active clip number (0..5)
@@ -369,6 +369,7 @@ void loadSession(u16 sessionNumber)
  */
 void loopaStartup()
 {
+   calcField();
    screenShowLoopaLogo(1);
 }
 // -------------------------------------------------------------------------------------------------

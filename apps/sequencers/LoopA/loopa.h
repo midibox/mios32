@@ -27,7 +27,7 @@ extern u32 tick_;                // global seq tick
 extern u16 bpm_;                 // bpm
 extern u16 sessionNumber_;       // currently active session number (directories will be auto-created)
 extern u8 sessionExistsOnDisk_;  // is the currently selected session number already saved on disk/sd card
-extern enum LoopaPage page_;     // currently active page/view
+extern enum LoopAPage page_;     // currently active page/view
 extern enum Command command_;    // currently active command
 
 extern u8 activeTrack_;          // currently active track number (0-5)

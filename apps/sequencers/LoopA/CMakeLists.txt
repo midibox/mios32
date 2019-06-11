@@ -10,9 +10,10 @@ add_executable(dummyForClionHeaders
 	app.c        
 	app_lcd.c    
 	loopa.c
-        ui.c
+   ui.c
 	hardware.c   
 	screen.c     
+	setup.c
 	terminal.c
 	voxelspace.c
 )

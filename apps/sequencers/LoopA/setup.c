@@ -3,59 +3,36 @@
 #include "commonIncludes.h"
 
 #include "setup.h"
+#include "ui.h"
 
 // --- Globals ---
 u8 configChangesToBeWritten_ = 0;
 
+// --- Global config variables ---
+u8 gcBeatLEDsEnabled_ = 0;
+u8 gcBeatDisplayEnabled_ = 0;
+
 // --- Global config settings ---
-
-
-/**
- * (After a configuration change), write the global setup file to disk
- * 
- */
-void writeSetup()
-{
-   configChangesToBeWritten_ = 0;
-   MUTEX_SDCARD_TAKE;
-
-   if ((FILE_WriteOpen(configFilePath, 1)) < 0)
-   {
-      FILE_WriteClose(); // important to free memory given by malloc
-      MUTEX_SDCARD_GIVE;
-      return;
-   }
-
-   char line_buffer[128];
-
-   // WRITE MIDI ROUTER CONFIG
-   {
-      u8 node;
-      midi_router_node_entry_t *n = &midi_router_node[0];
-      for (node = 0; node < MIDI_ROUTER_NUM_NODES; ++node, ++n)
-      {
-         sprintf(line_buffer, "MIDI_RouterNode %d %s %d %s %d\n",
-                 node,
-                 MIDI_PORT_InNameGet(MIDI_PORT_InIxGet((mios32_midi_port_t) n->src_port)),
-                 n->src_chn,
-                 MIDI_PORT_OutNameGet(MIDI_PORT_InIxGet((mios32_midi_port_t) n->dst_port)),
-                 n->dst_chn);
-
-         FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer));
-      }
-   }
-
-   // WRITE MIDI MCLK PORTS CONFIG
-   sprintf(line_buffer, "MIDI_IN_MClock_Ports 0x%08x\n", (u32) midi_router_mclk_in);
-   FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer));
-
-   // close file
-   FILE_WriteClose();
-
-   MUTEX_SDCARD_GIVE;
-
-}
-// ----------------------------------------------------------------------------------------
+SetupParameter setupParameters_[SETUP_NUM_ITEMS] =
+        {
+                {"MCLK DIN IN",  "IN1",  "IN2",  "IN3", ""},
+                {"MCLK DIN OUT", "OUT1", "OUT2", "OUT3", ""},
+                {"MCLK USB IN",  "USB1", "USB2", "USB3", "USB4"},
+                {"MCLK USB OUT", "USB1", "USB2", "USB3", "USB4"},
+                {"Metronome", "Port", "Chn", "", ""},
+                {"Metro Notes", "Measure", "Beat", "", ""},
+                {"Beat LEDs", "Toggle", "", "", ""},
+                {"Beat Display", "Toggle", "", "", ""},
+                {"Tempo Up/Dn", "BPM/Sec", "", "", ""},
+                {"Command Help", "Toggle", "", "", ""},
+                {"Screensaver", "Minutes", "", "", ""},
+                {"Default Tr.1", "Port", "Chn", "", ""},
+                {"Default Tr.2", "Port", "Chn", "", ""},
+                {"Default Tr.3", "Port", "Chn", "", ""},
+                {"Default Tr.4", "Port", "Chn", "", ""},
+                {"Default Tr.5", "Port", "Chn", "", ""},
+                {"Default Tr.6", "Port", "Chn", "", ""},
+        };
 
 
 /**
@@ -166,6 +143,63 @@ s32 MIDI_PORT_OutPortFromNameGet(const char* name)
 
 
 /**
+ * (After a configuration change), write the global setup file to disk
+ *
+ */
+void writeSetup()
+{
+   configChangesToBeWritten_ = 0;
+   MUTEX_SDCARD_TAKE;
+
+   if ((FILE_WriteOpen(configFilePath, 1)) < 0)
+   {
+      FILE_WriteClose(); // important to free memory given by malloc
+      MUTEX_SDCARD_GIVE;
+      return;
+   }
+
+   char line_buffer[128];
+
+   // WRITE MIDI ROUTER CONFIG
+   {
+      u8 node;
+      midi_router_node_entry_t *n = &midi_router_node[0];
+      for (node = 0; node < MIDI_ROUTER_NUM_NODES; ++node, ++n)
+      {
+         sprintf(line_buffer, "MIDI_RouterNode %d %s %d %s %d\n",
+                 node,
+                 MIDI_PORT_InNameGet(MIDI_PORT_InIxGet((mios32_midi_port_t) n->src_port)),
+                 n->src_chn,
+                 MIDI_PORT_OutNameGet(MIDI_PORT_InIxGet((mios32_midi_port_t) n->dst_port)),
+                 n->dst_chn);
+
+         FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer));
+      }
+   }
+
+   // WRITE MIDI MCLK PORTS CONFIG
+   sprintf(line_buffer, "MIDI_IN_MClock_Ports 0x%08x\n", (u32) midi_router_mclk_in);
+   FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer));
+
+
+   // WRITE BEAT LED CONFIG
+   sprintf(line_buffer, "SETUP_Beat_LEDs_Enabled %d\n", (u32) gcBeatLEDsEnabled_);
+   FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer));
+
+   // WRITE BEAT DISPLAY CONFIG
+   sprintf(line_buffer, "SETUP_Beat_Display_Enabled %d\n", (u32) gcBeatDisplayEnabled_);
+   FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer));
+
+   // close file
+   FILE_WriteClose();
+
+   MUTEX_SDCARD_GIVE;
+
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
  * Read global setup from disk (usually only at startup time, called from MUTEX locked environment)
  *
  */
@@ -253,6 +287,18 @@ void readSetup()
                   if (value >= 0)
                      midi_router_mclk_in = value;
                }
+               else if (strcmp(parameter, "SETUP_Beat_LEDs_Enabled") == 0)
+               {
+                  s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  if (value > 0)
+                     gcBeatLEDsEnabled_ = 1;
+               }
+               else if (strcmp(parameter, "SETUP_Beat_Display_Enabled") == 0)
+               {
+                  s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  if (value > 0)
+                     gcBeatDisplayEnabled_ = 1;
+               }
             }
          }
       }
@@ -260,5 +306,36 @@ void readSetup()
 
    // close file
    FILE_ReadClose(&file);
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Setup screen: parameter button depressed
+ *
+ */
+void setupParameterDepressed(u8 parameterNumber)
+{
+}
+// ----------------------------------------------------------------------------------------
+
+/**
+ * Setup screen: parameter encoder turned
+ *
+ */
+void setupParameterEncoderTurned(u8 parameterNumber, s32 incrementer)
+{
+   switch (setupActiveItem_)
+   {
+      case SETUP_BEAT_LEDS_ENABLED:
+         gcBeatLEDsEnabled_ = !gcBeatLEDsEnabled_;
+         break;
+
+      case SETUP_BEAT_DISPLAY_ENABLED:
+         gcBeatDisplayEnabled_ = !gcBeatDisplayEnabled_;
+         break;
+   }
+
+   configChangesToBeWritten_ = 1;
 }
 // ----------------------------------------------------------------------------------------

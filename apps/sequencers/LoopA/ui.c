@@ -27,6 +27,7 @@ NoteData copiedClipNotes_[MAXNOTES];
 u16 copiedClipNotesSize_;
 
 u8 routerActiveRoute_ = 0;
+u8 setupActiveItem_ = 0;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // --- UI STATE CHANGES
@@ -63,7 +64,7 @@ void setActiveScene(u8 sceneNumber)
 /**
  * Set a new active page
  */
-void setActivePage(enum LoopaPage page)
+void setActivePage(enum LoopAPage page)
 {
    page_ = page;
 
@@ -86,6 +87,7 @@ void setActivePage(enum LoopaPage page)
       case PAGE_CLIP: command_ = COMMAND_CLIPLEN; break;
       case PAGE_NOTES: command_ = COMMAND_POSITION; break;
       case PAGE_TRACK: command_ = COMMAND_PORT; break;
+      case PAGE_SETUP: command_ = COMMAND_SETUP_SELECT; break;
       default:
          command_ = COMMAND_NONE; break;
    }
@@ -688,6 +690,66 @@ void routerChannelOut()
 }
 // -------------------------------------------------------------------------------------------------
 
+
+/**
+ * Setup: select active item
+ *
+ */
+void setupSelectItem()
+{
+   command_ = command_ == COMMAND_SETUP_SELECT ? COMMAND_NONE : COMMAND_SETUP_SELECT;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Setup: Parameter 1 button/command depressed
+ *
+ */
+void setupPar1()
+{
+   command_ = command_ == COMMAND_SETUP_PAR1 ? COMMAND_NONE : COMMAND_SETUP_PAR1;
+   setupParameterDepressed(1);
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Setup: Parameter 2 button/command depressed
+ *
+ */
+void setupPar2()
+{
+   command_ = command_ == COMMAND_SETUP_PAR2 ? COMMAND_NONE : COMMAND_SETUP_PAR2;
+   setupParameterDepressed(2);
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Setup: Parameter 3 button/command depressed
+ *
+ */
+void setupPar3()
+{
+   command_ = command_ == COMMAND_SETUP_PAR3 ? COMMAND_NONE : COMMAND_SETUP_PAR3;
+   setupParameterDepressed(3);
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Setup: Parameter 4 button/command depressed
+ *
+ */
+void setupPar4()
+{
+   command_ = command_ == COMMAND_SETUP_PAR4 ? COMMAND_NONE : COMMAND_SETUP_PAR4;
+   setupParameterDepressed(4);
+}
+// -------------------------------------------------------------------------------------------------
+
+
 // -------------------------------------------------------------------------------------------------
 // --- EVENT DISPATCHING ---------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------
@@ -832,6 +894,10 @@ void loopaButtonPressed(s32 pin)
                break;
             case PAGE_ROUTER:
                routerSelectRoute();
+               break;
+            case PAGE_SETUP:
+               setupSelectItem();
+               break;
          }
       }
    }
@@ -865,6 +931,7 @@ void loopaButtonPressed(s32 pin)
                break;
             case PAGE_ROUTER:
                routerPortIn();
+               break;
          }
       }
    }
@@ -894,6 +961,10 @@ void loopaButtonPressed(s32 pin)
                break;
             case PAGE_ROUTER:
                routerChannelIn();
+               break;
+            case PAGE_SETUP:
+               setupPar1();
+               break;
          }
       }
    }
@@ -918,8 +989,13 @@ void loopaButtonPressed(s32 pin)
                break;
             case PAGE_DISK:
                diskNew();
+               break;
             case PAGE_ROUTER:
                routerPortOut();
+               break;
+            case PAGE_SETUP:
+               setupPar2();
+               break;
          }
       }
    }
@@ -941,6 +1017,10 @@ void loopaButtonPressed(s32 pin)
                break;
             case PAGE_ROUTER:
                routerChannelOut();
+               break;
+            case PAGE_SETUP:
+               setupPar3();
+               break;
          }
       }
    }
@@ -962,6 +1042,9 @@ void loopaButtonPressed(s32 pin)
                break;
             case PAGE_NOTES:
                notesDeleteNote();
+               break;
+            case PAGE_SETUP:
+               setupPar4();
                break;
          }
       }
@@ -1059,6 +1142,12 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
          newActiveRoute = (s8)(newActiveRoute < 0 ? 0 : newActiveRoute);
          routerActiveRoute_ = (u8)(newActiveRoute < MIDI_ROUTER_NUM_NODES ? newActiveRoute : (MIDI_ROUTER_NUM_NODES - 1));
       }
+      else if (page_ == PAGE_SETUP) // Setup page - left encoder changes active/selected setup item
+      {
+         s8 newActiveItem = setupActiveItem_ += incrementer;
+         newActiveItem = (s8)(newActiveItem < 0 ? 0 : newActiveItem);
+         setupActiveItem_ = (u8)(newActiveItem < SETUP_NUM_ITEMS ? newActiveItem : (SETUP_NUM_ITEMS - 1));
+      }
       else // all other pages - change active clip number
       {
          s8 newTrack = (s8)(activeTrack_ + incrementer);
@@ -1072,7 +1161,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
    {
       // switch through pages
 
-      enum LoopaPage page = page_;
+      enum LoopAPage page = page_;
 
       if (page == PAGE_MUTE && incrementer < 0)
          page = PAGE_MUTE;
@@ -1339,6 +1428,28 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
 
          n->dst_chn = (u8)newChannel;
          configChangesToBeWritten_ = 1;
+      }
+      else if (command_ == COMMAND_SETUP_SELECT) // Setup page - left encoder changes active/selected setup item
+      {
+         s8 newActiveItem = setupActiveItem_ += incrementer;
+         newActiveItem = (s8)(newActiveItem < 0 ? 0 : newActiveItem);
+         setupActiveItem_ = (u8)(newActiveItem < SETUP_NUM_ITEMS ? newActiveItem : (SETUP_NUM_ITEMS - 1));
+      }
+      else if (command_ == COMMAND_SETUP_PAR1)
+      {
+         setupParameterEncoderTurned(1, incrementer);
+      }
+      else if (command_ == COMMAND_SETUP_PAR2)
+      {
+         setupParameterEncoderTurned(2, incrementer);
+      }
+      else if (command_ == COMMAND_SETUP_PAR3)
+      {
+         setupParameterEncoderTurned(3, incrementer);
+      }
+      else if (command_ == COMMAND_SETUP_PAR4)
+      {
+         setupParameterEncoderTurned(4, incrementer);
       }
    }
 }

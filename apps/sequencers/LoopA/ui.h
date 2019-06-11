@@ -1,7 +1,7 @@
 // LoopA UI data structures and code
 
 #define PAGES 6 // TODO: old, drop this
-enum LoopaPage
+enum LoopAPage
 {
    PAGE_MUTE,
    PAGE_CLIP,
@@ -23,7 +23,8 @@ enum Command
    COMMAND_PORT, COMMAND_CHANNEL,                                                                         // PAGE_TRACK
    COMMAND_DISK_SELECT_SESSION, COMMAND_DISK_SAVE, COMMAND_DISK_LOAD, COMMAND_DISK_NEW,                   // PAGE_DISK
    COMMAND_BPM, COMMAND_BPMFLASH,                                                                         // PAGE_TEMPO
-   COMMAND_ROUTE_SELECT, COMMAND_ROUTE_IN_PORT, COMMAND_ROUTE_IN_CHANNEL, COMMAND_ROUTE_OUT_PORT, COMMAND_ROUTE_OUT_CHANNEL // PAGE_ROUTER
+   COMMAND_ROUTE_SELECT, COMMAND_ROUTE_IN_PORT, COMMAND_ROUTE_IN_CHANNEL, COMMAND_ROUTE_OUT_PORT, COMMAND_ROUTE_OUT_CHANNEL, // PAGE_ROUTER
+   COMMAND_SETUP_SELECT, COMMAND_SETUP_PAR1, COMMAND_SETUP_PAR2, COMMAND_SETUP_PAR3, COMMAND_SETUP_PAR4   // PAGE_SETUP
 };
 
 enum KeyIcon
@@ -64,6 +65,7 @@ enum KeyIcon
 
 // --- Globals ---
 extern u8 routerActiveRoute_;
+extern u8 setupActiveItem_;
 
 // --- UI State Changes ---
 
@@ -74,7 +76,7 @@ void setActiveTrack(u8 trackNumber);
 void setActiveScene(u8 sceneNumber);
 
 // Set a new active page
-void setActivePage(enum LoopaPage page);
+void setActivePage(enum LoopAPage page);
 
 // --- LED Handling ---
 
