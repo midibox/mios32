@@ -237,43 +237,43 @@ void printPageIcon()
    switch(page_)
    {
       case PAGE_MUTE:
-         c = KEYICON_MUTE_INVERTED;
+         c = KEYICON_MUTE;
          break;
 
       case PAGE_CLIP:
-         c = KEYICON_CLIP_INVERTED;
+         c = KEYICON_CLIP;
          break;
 
       case PAGE_NOTES:
-         c = KEYICON_NOTES_INVERTED;
+         c = KEYICON_NOTES;
          break;
 
       case PAGE_TRACK:
-         c = KEYICON_TRACK_INVERTED;
+         c = KEYICON_TRACK;
          break;
 
       case PAGE_DISK:
-         c = KEYICON_DISK_INVERTED;
+         c = KEYICON_DISK;
          break;
 
       case PAGE_TEMPO:
-         c = KEYICON_TEMPO_INVERTED;
+         c = KEYICON_TEMPO;
          break;
 
       case PAGE_FX:
-         c = KEYICON_FX_INVERTED;
+         c = KEYICON_FX;
          break;
 
       case PAGE_ROUTER:
-         c = KEYICON_ROUTER_INVERTED;
+         c = KEYICON_ROUTER;
          break;
 
       case PAGE_MIDIMONITOR:
-         c = KEYICON_MIDIMONITOR_INVERTED;
+         c = KEYICON_MIDIMONITOR;
          break;
 
       case PAGE_SETUP:
-         c = KEYICON_SETUP_INVERTED;
+         c = KEYICON_SETUP;
          break;
    }
 
@@ -905,17 +905,16 @@ void displayPageTrack(void)
 
    printCenterFormattedString(0, "Track Settings [Track %d]", activeTrack_ + 1);
 
-   command_ == COMMAND_PORT ? setFontInverted() : setFontNonInverted();
-   switch (trackMidiPort_[activeTrack_])
-   {
-      case 0x20: printFormattedString(0, 54, " OUT1 "); break;
-      case 0x21: printFormattedString(0, 54, " OUT2 "); break;
-      case 0x22: printFormattedString(0, 54, " OUT3 "); break;
-      case 0x23: printFormattedString(0, 54, " OUT4 "); break;
-   }
+   command_ == COMMAND_TRACK_OUTPORT ? setFontInverted() : setFontNonInverted();
 
-   command_ == COMMAND_CHANNEL ? setFontInverted() : setFontNonInverted();
-   printFormattedString(42, 54, " Chn %d ", trackMidiChannel_[activeTrack_] + 1);
+   printFormattedString(0, 54, " %s ", getPortOrInstrumentNameFromLoopAPortNumber(trackMidiPort_[activeTrack_]));
+
+   if (!isInstrument(trackMidiPort_[activeTrack_]))
+   {
+      // Also print MIDI channel, if we are not showing a user instrument
+      command_ == COMMAND_TRACK_OUTCHANNEL ? setFontInverted() : setFontNonInverted();
+      printFormattedString(42, 54, " Chn %d ", trackMidiChannel_[activeTrack_] + 1);
+   }
 
    setFontNonInverted();
    displayClip(activeTrack_);
@@ -1109,6 +1108,10 @@ void displayPageSetup(void)
    // print config settings
    s8 i;
    s8 idx = (s8)(setupActiveItem_ > 0 ? setupActiveItem_ - 1 : 0);
+   mios32_midi_port_t midiPort;
+   s32 status;
+   char noteStr[8];
+
    for (i = -1; i < SETUP_NUM_ITEMS; i++)
    {
       /// DEBUG_MSG("[displayPageSetup] i %d idx %d\n", i, idx);
@@ -1119,19 +1122,133 @@ void displayPageSetup(void)
          {
             printFormattedString(0, y, "%s", setupParameters_[i].name);
 
+            // Parameter 1 column
             if (i == setupActiveItem_ && command_ == COMMAND_SETUP_PAR1)
                setFontInverted();
-
             switch(i)
             {
+               case SETUP_MCLK_DIN_IN:
+                  midiPort = UART0;
+                  status = MIDI_ROUTER_MIDIClockInGet(midiPort);
+                  printFormattedString(84, y, (status > 0) ? "IN1" : " - ");
+                  break;
+
+               case SETUP_MCLK_DIN_OUT:
+                  midiPort = UART0;
+                  status = MIDI_ROUTER_MIDIClockOutGet(midiPort);
+                  printFormattedString(84, y, (status > 0) ? "OUT1" : " - ");
+                  break;
+
+               case SETUP_MCLK_USB_IN:
+                  midiPort = USB0;
+                  status = MIDI_ROUTER_MIDIClockInGet(midiPort);
+                  printFormattedString(84, y, (status > 0) ? "USB1" : " - ");
+                  break;
+
+               case SETUP_MCLK_USB_OUT:
+                  midiPort = USB0;
+                  status = MIDI_ROUTER_MIDIClockOutGet(midiPort);
+                  printFormattedString(84, y, (status > 0) ? "USB1" : " - ");
+                  break;
+
                case SETUP_BEAT_LEDS_ENABLED:
                   printFormattedString(84, y, gcBeatLEDsEnabled_ ? "On" : "Off");
                   break;
+
                case SETUP_BEAT_DISPLAY_ENABLED:
                   printFormattedString(84, y, gcBeatDisplayEnabled_ ? "On" : "Off");
                   break;
             }
+            setFontNonInverted();
 
+            // Parameter 2 column
+            if (i == setupActiveItem_ && command_ == COMMAND_SETUP_PAR1)
+               setFontInverted();
+            switch(i)
+            {
+               case SETUP_MCLK_DIN_IN:
+                  midiPort = UART1;
+                  status = MIDI_ROUTER_MIDIClockInGet(midiPort);
+                  printFormattedString(126, y, (status > 0) ? "IN2" : " - ");
+                  break;
+
+               case SETUP_MCLK_DIN_OUT:
+                  midiPort = UART1;
+                  status = MIDI_ROUTER_MIDIClockOutGet(midiPort);
+                  printFormattedString(126, y, (status > 0) ? "OUT2" : " - ");
+                  break;
+
+               case SETUP_MCLK_USB_IN:
+                  midiPort = USB1;
+                  status = MIDI_ROUTER_MIDIClockInGet(midiPort);
+                  printFormattedString(126, y, (status > 0) ? "USB2" : " - ");
+                  break;
+
+               case SETUP_MCLK_USB_OUT:
+                  midiPort = USB1;
+                  status = MIDI_ROUTER_MIDIClockOutGet(midiPort);
+                  printFormattedString(126, y, (status > 0) ? "USB2" : " - ");
+                  break;
+            }
+            setFontNonInverted();
+
+            // Parameter 3 column
+            if (i == setupActiveItem_ && command_ == COMMAND_SETUP_PAR3)
+               setFontInverted();
+            switch(i)
+            {
+               case SETUP_MCLK_DIN_IN:
+                  midiPort = UART2;
+                  status = MIDI_ROUTER_MIDIClockInGet(midiPort);
+                  printFormattedString(168, y, (status > 0) ? "IN3" : " - ");
+                  break;
+
+               case SETUP_MCLK_DIN_OUT:
+                  midiPort = UART2;
+                  status = MIDI_ROUTER_MIDIClockOutGet(midiPort);
+                  printFormattedString(168, y, (status > 0) ? "OUT3" : " - ");
+                  break;
+
+               case SETUP_MCLK_USB_IN:
+                  midiPort = USB2;
+                  status = MIDI_ROUTER_MIDIClockInGet(midiPort);
+                  printFormattedString(168, y, (status > 0) ? "USB3" : " - ");
+                  break;
+
+               case SETUP_MCLK_USB_OUT:
+                  midiPort = USB2;
+                  status = MIDI_ROUTER_MIDIClockOutGet(midiPort);
+                  printFormattedString(168, y, (status > 0) ? "USB3" : " - ");
+                  break;
+
+               case SETUP_METRONOME:
+                  stringNote(noteStr, gcMetronomeNoteM_);
+                  printFormattedString(168, y, "%s", noteStr);
+                  break;
+            }
+            setFontNonInverted();
+
+            // Parameter 4 column
+            if (i == setupActiveItem_ && command_ == COMMAND_SETUP_PAR4)
+               setFontInverted();
+            switch(i)
+            {
+               case SETUP_MCLK_USB_IN:
+                  midiPort = USB3;
+                  status = MIDI_ROUTER_MIDIClockInGet(midiPort);
+                  printFormattedString(210, y, (status > 0) ? "USB4" : " - ");
+                  break;
+
+               case SETUP_MCLK_USB_OUT:
+                  midiPort = USB3;
+                  status = MIDI_ROUTER_MIDIClockOutGet(midiPort);
+                  printFormattedString(210, y, (status > 0) ? "USB4" : " - ");
+                  break;
+
+               case SETUP_METRONOME:
+                  stringNote(noteStr, gcMetronomeNoteB_);
+                  printFormattedString(210, y, "%s", noteStr);
+            }
             setFontNonInverted();
 
          }

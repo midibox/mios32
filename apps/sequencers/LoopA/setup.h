@@ -3,7 +3,7 @@
 #include "commonIncludes.h"
 
 // --- constants ---
-#define configFilePath "/setup.txt"
+#define CONFIG_FILE_PATH "/setup.txt"
 
 // --- globals ---
 extern u8 configChangesToBeWritten_;
@@ -11,6 +11,12 @@ extern u8 configChangesToBeWritten_;
 // --- Global config variables ---
 extern u8 gcBeatLEDsEnabled_;
 extern u8 gcBeatDisplayEnabled_;
+extern u8 gcNumberOfActiveUserInstruments_;
+
+extern mios32_midi_port_t gcMetronomePort_;
+extern u8 gcMetronomeChannel_;
+extern u8 gcMetronomeNoteM_;
+extern u8 gcMetronomeNoteB_;
 
 // --- Global config settings ---
 typedef struct
@@ -22,21 +28,22 @@ typedef struct
    char par4Name[8];
 } SetupParameter;
 
-#define SETUP_NUM_ITEMS 17
+#define SETUP_NUM_ITEMS 16
 
 enum SetupParameterEnum
 {
+   SETUP_BEAT_LEDS_ENABLED,
+   SETUP_BEAT_DISPLAY_ENABLED,
+   SETUP_COMMAND_HELP_ENABLED,
+   SETUP_SCREENSAVER_MINUTES,
+   SETUP_METRONOME,
+   SETUP_TEMPO_UP_DOWN_BPM_SEC,
+
    SETUP_MCLK_DIN_IN,
    SETUP_MCLK_DIN_OUT,
    SETUP_MCLK_USB_IN,
    SETUP_MCLK_USB_OUT,
-   SETUP_METRONOME_PORT_CHN,
-   SETUP_METRONOME_NOTES_MEASURE_BEAT,
-   SETUP_BEAT_LEDS_ENABLED,
-   SETUP_BEAT_DISPLAY_ENABLED,
-   SETUP_TEMPO_UP_DOWN_BPM_SEC,
-   SETUP_COMMAND_HELP_ENABLED,
-   SETUP_SCREENSAVER_MINUTES,
+
    SETUP_DEFAULT_TRACK_1_PORT_CHN,
    SETUP_DEFAULT_TRACK_2_PORT_CHN,
    SETUP_DEFAULT_TRACK_3_PORT_CHN,
@@ -46,6 +53,20 @@ enum SetupParameterEnum
 };
 
 extern SetupParameter setupParameters_[SETUP_NUM_ITEMS];
+
+// --- User defined instruments ---
+typedef struct
+{
+   char name[9];
+   mios32_midi_port_t port;
+   u8 channel;
+} UserInstrument;
+
+#define SETUP_NUM_USERINSTRUMENTS 24
+
+extern UserInstrument userInstruments_[SETUP_NUM_USERINSTRUMENTS];
+
+
 
 // --- functions ---
 // (After a configuration change), write the global setup file to disk
@@ -59,3 +80,20 @@ extern void setupParameterDepressed(u8 parameterNumber);
 
 // Setup screen: parameter encoder turned
 extern void setupParameterEncoderTurned(u8 parameterNumber, s32 incrementer);
+
+
+// --- user instruments & MIDI ports handling ---
+// Adjust internal LoopA port number by incrementer change (negative LoopA port numbers are user instruments, positve are mios ports)
+extern s8 adjustLoopAPortNumber(s8 loopaPortNumber, s32 incrementer);
+
+// Return true, if loopaPortNumber is a user defined instrument (don't print channel number then)
+extern u8 isInstrument(s8 loopaPortNumber);
+
+// Get verbal port or instrument name from loopaPortNumber
+extern char* getPortOrInstrumentNameFromLoopAPortNumber(s8 loopaPortNumber);
+
+// Get numeric mios port id from loopaPortNumber
+extern mios32_midi_port_t getMIOSPortNumberFromLoopAPortNumber(s8 loopaPortNumber);
+
+// Get channel number from loopaPortNumber
+extern u8 getInstrumentChannelNumberFromLoopAPortNumber(s8 loopaPortNumber);

@@ -44,7 +44,7 @@ extern char filename_[20];       // global, for filename operations
 
 
 extern u8 trackMute_[TRACKS];    // mute state of each track
-extern u8 trackMidiPort_[TRACKS];
+extern s8 trackMidiPort_[TRACKS]; // if negative: map to user defined instrument, if positive: standard mios port number
 extern u8 trackMidiChannel_[TRACKS];
 
 extern u16 clipSteps_[TRACKS][SCENES];     // number of steps for each clip
@@ -102,9 +102,9 @@ s32  seqReset(u8 play_off_events);
 s32  seqSongPos(u16 new_song_pos);
 void seqUpdateBeatLEDs(u32 bpm_tick);
 s32  seqTick(u32 bpm_tick);
-s32  hookMIDISendPackage(mios32_midi_port_t port, mios32_midi_package_t package);
-s32  seqPlayEvent(u8 clipNumber, mios32_midi_package_t midi_package, u32 tick);
-s32  seqIgnoreMetaEvent(u8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick);
+s32  hookMIDISendPackage(s8 loopaTrack, mios32_midi_package_t package);
+s32  seqPlayEvent(s8 loopaTrack, mios32_midi_package_t midi_package, u32 tick);
+s32  seqIgnoreMetaEvent(s8 loopaTrack, u8 meta, u32 len, u8 *buffer, u32 tick);
 
 // Handle a stop request
 void handleStop();

@@ -33,7 +33,7 @@ const u8 HW_LED_RED_COPY = 35;
 const u8 HW_LED_RED_PASTE = 42;
 const u8 HW_LED_RED_DELETE = 51;
 
-const u8 HW_LED_GREEN_RUNSTOP = 127;
+const u8 HW_LED_GREEN_RUNSTOP = 3;
 const u8 HW_LED_GREEN_ARM = 13;
 const u8 HW_LED_GREEN_SHIFT = 20;
 const u8 HW_LED_GREEN_MENU = 27;

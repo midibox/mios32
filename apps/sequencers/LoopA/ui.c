@@ -86,7 +86,7 @@ void setActivePage(enum LoopAPage page)
       case PAGE_TEMPO: command_= COMMAND_BPM; break;
       case PAGE_CLIP: command_ = COMMAND_CLIPLEN; break;
       case PAGE_NOTES: command_ = COMMAND_POSITION; break;
-      case PAGE_TRACK: command_ = COMMAND_PORT; break;
+      case PAGE_TRACK: command_ = COMMAND_TRACK_OUTPORT; break;
       case PAGE_SETUP: command_ = COMMAND_SETUP_SELECT; break;
       default:
          command_ = COMMAND_NONE; break;
@@ -105,10 +105,9 @@ void setActivePage(enum LoopAPage page)
  * Update a single LED (called from MUTEX_DIGITALOUT protected environment)
  *
  */
+static u8 ledstate[13];
 void updateLED(u8 number, u8 newState)
 {
-   static u8 ledstate[13];
-
    switch (number)
    {
       case LED_GP1:
@@ -241,8 +240,19 @@ void updateLED(u8 number, u8 newState)
 void updateLEDs()
 {
    u8 led_gp1 = LED_OFF, led_gp2 = LED_OFF, led_gp3 = LED_OFF, led_gp4 = LED_OFF, led_gp5 = LED_OFF, led_gp6 = LED_OFF;
-   u8 led_runstop = LED_OFF, led_arm = LED_OFF, led_shift = LED_OFF, led_menu = LED_OFF;
+   u8 led_arm = LED_OFF, led_shift = LED_OFF, led_menu = LED_OFF;
    u8 led_copy = LED_OFF, led_paste = LED_OFF, led_delete = LED_OFF;
+
+   u8 led_runstop = ledstate[LED_RUNSTOP];
+
+   if (!SEQ_BPM_IsRunning())
+   {
+      led_runstop = LED_OFF;
+      led_menu = LED_OFF;
+      led_copy = LED_OFF;
+      led_paste = LED_OFF;
+      led_delete = LED_OFF;
+   }
 
    if (screenIsInMenu())
    {
@@ -294,6 +304,8 @@ void updateLEDs()
       led_gp5 = activeTrack_ == 4 ? LED_BLUE : LED_OFF;
       led_gp6 = activeTrack_ == 5 ? LED_BLUE : LED_OFF;
 
+      led_arm = isRecording_ ? LED_RED : LED_OFF;
+
       // Page-specific additonal lighting
       switch (page_)
       {
@@ -327,8 +339,8 @@ void updateLEDs()
             break;
 
          case PAGE_TRACK:
-            led_gp1 |= command_ == COMMAND_PORT ? LED_RED : LED_OFF;
-            led_gp2 |= command_ == COMMAND_CHANNEL ? LED_RED : LED_OFF;
+            led_gp1 |= command_ == COMMAND_TRACK_OUTPORT ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_TRACK_OUTCHANNEL ? LED_RED : LED_OFF;
             break;
 
          case PAGE_DISK:
@@ -364,10 +376,15 @@ void updateLEDs()
    updateLED(LED_RUNSTOP, led_runstop);
    updateLED(LED_ARM, led_arm);
    updateLED(LED_SHIFT, led_shift);
-   updateLED(LED_MENU, led_menu);
-   updateLED(LED_COPY, led_copy);
-   updateLED(LED_PASTE, led_paste);
-   updateLED(LED_DELETE, led_delete);
+
+
+   if (!gcBeatLEDsEnabled_ || !SEQ_BPM_IsRunning()) // If we are using the lower right matias LED as beat flashlights, don't control them from here
+   {
+      updateLED(LED_MENU, led_menu);
+      updateLED(LED_COPY, led_copy);
+      updateLED(LED_PASTE, led_paste);
+      updateLED(LED_DELETE, led_delete);
+   }
 
    MUTEX_DIGITALOUT_GIVE;
 }
@@ -522,7 +539,7 @@ void notesDeleteNote()
  */
 void trackPortOut()
 {
-   command_ = command_ == COMMAND_PORT ? COMMAND_NONE : COMMAND_PORT;
+   command_ = command_ == COMMAND_TRACK_OUTPORT ? COMMAND_NONE : COMMAND_TRACK_OUTPORT;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -533,7 +550,7 @@ void trackPortOut()
  */
 void trackChannelOut()
 {
-   command_ = command_ == COMMAND_CHANNEL ? COMMAND_NONE : COMMAND_CHANNEL;
+   command_ = command_ == COMMAND_TRACK_OUTCHANNEL ? COMMAND_NONE : COMMAND_TRACK_OUTCHANNEL;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -1358,20 +1375,34 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
             clipNotes_[activeTrack_][activeScene_][activeNote].velocity = 0;
          }
       }
-      else if (command_ == COMMAND_PORT)
+      else if (command_ == COMMAND_TRACK_OUTPORT)
       {
-         u8 newPort = trackMidiPort_[activeTrack_] += incrementer;
+         /*
+         s8 portIndex = getPortIndexFromPortAndChannel(trackMidiPort_[activeTrack_], trackMidiChannel_[activeTrack_] + 1);
+         DEBUG_MSG("------------------");
+         DEBUG_MSG("Current Track port int: %d", trackMidiPort_[activeTrack_]);
+         DEBUG_MSG("PortIndex old: %d", portIndex);
+         portIndex += incrementer;
+         DEBUG_MSG("PortIndex enc: %d", portIndex);
 
-         newPort = newPort < 0x20 ? 0x20: newPort;
-         newPort = newPort > 0x23 ? 0x23 : newPort;
+         portIndex = (s8)(portIndex < 0 ? 0 : portIndex);
+         if (portIndex > getMaxPortIndexValue())
+            portIndex = (s8)getMaxPortIndexValue();
 
-         trackMidiPort_[activeTrack_] = newPort;
+         DEBUG_MSG("PortIndex adj: %d", portIndex);
+
+         trackMidiPort_[activeTrack_] = getMIOSPortNumberFromLoopAPortNumber(portIndex);
+         if (isInstrument(portIndex))
+            trackMidiChannel_[activeTrack_] = getInstrumentChannelNumberFromLoopAPortNumber(portIndex) - 1;
+         */
+
+         trackMidiPort_[activeTrack_] = adjustLoopAPortNumber(trackMidiPort_[activeTrack_], incrementer);
       }
-      else if (command_ == COMMAND_CHANNEL)
+      else if (command_ == COMMAND_TRACK_OUTCHANNEL)
       {
          s8 newChannel = trackMidiChannel_[activeTrack_] += incrementer;
-         newChannel = newChannel > 15 ? 0 : newChannel;
-         newChannel = newChannel < 0 ? 15 : newChannel;
+         newChannel = newChannel > 15 ? 15 : newChannel;
+         newChannel = newChannel < 0 ? 0 : newChannel;
 
          trackMidiChannel_[activeTrack_] = (u8)newChannel;
       }
@@ -1386,10 +1417,10 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
          midi_router_node_entry_t *n = &midi_router_node[routerActiveRoute_];
          s8 newPortIndex = (s8)(MIDI_PORT_InIxGet((mios32_midi_port_t)n->src_port) + incrementer);
 
-         newPortIndex = (s8)(newPortIndex < 0 ? 0 : newPortIndex);
+         newPortIndex = (s8)(newPortIndex < 1 ? 1 : newPortIndex);
 
-         if (newPortIndex >= MIDI_PORT_InNumGet()-1-4)
-            newPortIndex = (s8)(MIDI_PORT_InNumGet()-1-4);
+         if (newPortIndex >= MIDI_PORT_InNumGet()-6)
+            newPortIndex = (s8)(MIDI_PORT_InNumGet()-6);
 
          n->src_port = MIDI_PORT_InPortGet((u8)newPortIndex);
          configChangesToBeWritten_ = 1;
@@ -1410,10 +1441,10 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
          midi_router_node_entry_t *n = &midi_router_node[routerActiveRoute_];
          s8 newPortIndex = (s8)(MIDI_PORT_OutIxGet((mios32_midi_port_t)n->dst_port) + incrementer);
 
-         newPortIndex = (s8)(newPortIndex < 0 ? 0 : newPortIndex);
+         newPortIndex = (s8)(newPortIndex < 1 ? 1 : newPortIndex);
 
-         if (newPortIndex >= MIDI_PORT_OutNumGet()-1-4)
-            newPortIndex = (s8)(MIDI_PORT_OutNumGet()-1-4);
+         if (newPortIndex >= MIDI_PORT_OutNumGet()-6)
+            newPortIndex = (s8)(MIDI_PORT_OutNumGet()-6);
 
          n->dst_port = MIDI_PORT_OutPortGet((u8)newPortIndex);
          configChangesToBeWritten_ = 1;
@@ -1477,7 +1508,7 @@ s32 seqPlayStopButton(void)
       SEQ_BPM_Start();
 
       MUTEX_DIGITALOUT_TAKE;
-      MIOS32_DOUT_PinSet(HW_LED_GREEN_RUNSTOP, 1);
+      updateLED(LED_RUNSTOP, LED_GREEN);
       MUTEX_DIGITALOUT_GIVE;
 
       screenFormattedFlashMessage("Play");

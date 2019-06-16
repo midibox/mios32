@@ -18,8 +18,8 @@
 
 // --- Global vars ---
 
-static s32 (*clipPlayEventCallback)(u8 clipNumber, mios32_midi_package_t midi_package, u32 tick) = 0;     // fetchClipEvents() callback
-static s32 (*clipMetaEventCallback)(u8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick) = 0; // fetchClipEvents() callback
+static s32 (*loopaTrackPlayEventCallback)(s8 loopaTrack, mios32_midi_package_t midi_package, u32 tick) = 0;
+static s32 (*loopaTrackMetaEventCallback)(s8 loopaTrack, u8 meta, u32 len, u8 *buffer, u32 tick) = 0;
 
 u32 tick_ = 0;                        // global seq tick
 u16 bpm_ = 120;                       // bpm
@@ -43,7 +43,7 @@ char filename_[20];                   // global, for filename operations
 
 // --- Track data (saved to session on disk) ---
 u8 trackMute_[TRACKS];                // mute state of each clip
-u8 trackMidiPort_[TRACKS];
+s8 trackMidiPort_[TRACKS];            // if negative: map to user defined instrument, if positive: standard mios port number
 u8 trackMidiChannel_[TRACKS];
 
 // --- Clip data (saved to session on disk) ---
@@ -513,7 +513,7 @@ s32 seqPlayOffEvents(void)
 s32 seqReset(u8 play_off_events)
 {
    // install seqPlayEvent callback for clipFetchEvents()
-   clipPlayEventCallback = seqPlayEvent;
+   loopaTrackPlayEventCallback = seqPlayEvent;
 
    // since timebase has been changed, ensure that Off-Events are played
    // (otherwise they will be played much later...)
@@ -578,32 +578,52 @@ void seqUpdateBeatLEDs(u32 bpm_tick)
       if (!screenIsInMenu() && !screenIsInShift())
       {
          MUTEX_DIGITALOUT_TAKE;
-         switch (beatled) {
+         switch (beatled)
+         {
             case 0:
-               oledBeatFlashState_ = (bpm_tick / (ticksPerStep * 4) % 4 == 0) ? 2
-                                                                              : 1; // flash background (strong/normal)
-               MIOS32_DOUT_PinSet(led_beat0, 1);
-               MIOS32_DOUT_PinSet(led_beat1, 0);
-               MIOS32_DOUT_PinSet(led_beat2, 0);
-               MIOS32_DOUT_PinSet(led_beat3, 0);
+               oledBeatFlashState_ = (bpm_tick / (ticksPerStep * 4) % 4 == 0) ? 2 : 1; // flash background (strong/normal)
+
+               updateLED(LED_RUNSTOP, LED_GREEN);
+               if (gcBeatLEDsEnabled_)
+               {
+                  updateLED(LED_MENU, LED_GREEN);
+                  updateLED(LED_COPY, LED_OFF);
+                  updateLED(LED_PASTE, LED_OFF);
+                  updateLED(LED_DELETE, LED_OFF);
+               }
                break;
             case 1:
-               MIOS32_DOUT_PinSet(led_beat0, 0);
-               MIOS32_DOUT_PinSet(led_beat1, 1);
-               MIOS32_DOUT_PinSet(led_beat2, 0);
-               MIOS32_DOUT_PinSet(led_beat3, 0);
+               if (gcBeatLEDsEnabled_)
+               {
+                  updateLED(LED_MENU, LED_OFF);
+                  updateLED(LED_COPY, LED_BLUE | LED_GREEN);
+                  updateLED(LED_PASTE, LED_OFF);
+                  updateLED(LED_DELETE, LED_OFF);
+               }
+               else
+                  updateLED(LED_RUNSTOP, LED_OFF);
                break;
             case 2:
-               MIOS32_DOUT_PinSet(led_beat0, 0);
-               MIOS32_DOUT_PinSet(led_beat1, 0);
-               MIOS32_DOUT_PinSet(led_beat2, 1);
-               MIOS32_DOUT_PinSet(led_beat3, 0);
+               if (gcBeatLEDsEnabled_)
+               {
+                  updateLED(LED_MENU, 0);
+                  updateLED(LED_COPY, 0);
+                  updateLED(LED_PASTE, LED_BLUE | LED_GREEN);
+                  updateLED(LED_DELETE, 0);
+               }
+               else
+                  updateLED(LED_RUNSTOP, LED_OFF);
                break;
             case 3:
-               MIOS32_DOUT_PinSet(led_beat0, 0);
-               MIOS32_DOUT_PinSet(led_beat1, 0);
-               MIOS32_DOUT_PinSet(led_beat2, 0);
-               MIOS32_DOUT_PinSet(led_beat3, 1);
+               if (gcBeatLEDsEnabled_)
+               {
+                  updateLED(LED_MENU, 0);
+                  updateLED(LED_COPY, 0);
+                  updateLED(LED_PASTE, 0);
+                  updateLED(LED_DELETE, LED_BLUE | LED_GREEN);
+               }
+               else
+                  updateLED(LED_RUNSTOP, LED_OFF);
                break;
          }
          MUTEX_DIGITALOUT_GIVE;
@@ -640,47 +660,44 @@ s32 seqTick(u32 bpm_tick)
       MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
    }
 
-   // perform synced clip mutes/unmutes (only at full steps)
+   // perform synced track mutes/unmutes (only at full steps)
    if ((bpm_tick % (SEQ_BPM_PPQN_Get()/4)) == 0)
    {
       performSyncedMutesAndUnmutes();
       performSyncedSceneChanges();
    }
 
-   u8 clip;
-   for (clip = 0; clip < TRACKS; clip++)
+   u8 track;
+   for (track = 0; track < TRACKS; track++)
    {
-      if (!trackMute_[clip])
+      if (!trackMute_[track])
       {
-         u32 clipNoteTime = boundTickToClipSteps(bpm_tick, clip);
+         u32 clipNoteTime = boundTickToClipSteps(bpm_tick, track);
          u16 i;
 
-         for (i=0; i < clipNotesSize_[clip][activeScene_]; i++)
+         for (i=0; i < clipNotesSize_[track][activeScene_]; i++)
          {
-            if (clipNotes_[clip][activeScene_][i].length > 0) // not still being held/recorded!
+            if (clipNotes_[track][activeScene_][i].length > 0) // not still being held/recorded!
             {
-               if (/*quantize(clipNotes_[clip][activeScene_][i].tick,
-                            clipQuantize_[clip][activeScene_],
-                            getClipLengthInTicks(clip)) == clipNoteTime */
-                     quantizeTransform(clip, i) == clipNoteTime)
+               if (quantizeTransform(track, i) == clipNoteTime)
                {
-                  s16 note = clipNotes_[clip][activeScene_][i].note + clipTranspose_[clip][activeScene_];
+                  s16 note = clipNotes_[track][activeScene_][i].note + clipTranspose_[track][activeScene_];
                   note = note < 0 ? 0 : note;
                   note = note > 127 ? 127 : note;
 
                   mios32_midi_package_t package;
                   package.type = NoteOn;
                   package.event = NoteOn;
-                  package.chn = trackMidiChannel_[clip];
+                  package.chn = isInstrument(trackMidiPort_[track]) ? getInstrumentChannelNumberFromLoopAPortNumber(trackMidiPort_[track]) : trackMidiChannel_[track];
                   package.note = note;
-                  package.velocity = clipNotes_[clip][activeScene_][i].velocity;
-                  hookMIDISendPackage(clip, package); // play NOW
+                  package.velocity = clipNotes_[track][activeScene_][i].velocity;
+                  hookMIDISendPackage(track, package); // play NOW
 
                   package.type = NoteOff;
                   package.event = NoteOff;
                   package.note = note;
                   package.velocity = 0;
-                  seqPlayEvent(clip, package, bpm_tick + clipNotes_[clip][activeScene_][i].length); // always play off event (schedule later)
+                  seqPlayEvent(track, package, bpm_tick + clipNotes_[track][activeScene_][i].length); // always play off event (schedule later)
                }
             }
          }
@@ -696,7 +713,7 @@ s32 seqTick(u32 bpm_tick)
  * Schedule a MIDI event to be played at a given tick
  *
  */
-s32 seqPlayEvent(u8 clipNumber, mios32_midi_package_t midi_package, u32 tick)
+s32 seqPlayEvent(s8 loopaTrack, mios32_midi_package_t midi_package, u32 tick)
 {
    // DEBUG_MSG("[seqPlayEvent] silent:%d type:%d", ffwdSilentMode_, midi_package.type);
 
@@ -709,7 +726,7 @@ s32 seqPlayEvent(u8 clipNumber, mios32_midi_package_t midi_package, u32 tick)
    // In order to support an unlimited SysEx stream length, we pass them as single bytes directly w/o the sequencer!
    if (midi_package.type == 0xf)
    {
-      hookMIDISendPackage(clipNumber, midi_package);
+      hookMIDISendPackage(loopaTrack, midi_package);
       return 0;
    }
 
@@ -717,9 +734,9 @@ s32 seqPlayEvent(u8 clipNumber, mios32_midi_package_t midi_package, u32 tick)
    if (midi_package.event == NoteOff || (midi_package.event == NoteOn && midi_package.velocity == 0))
       event_type = SEQ_MIDI_OUT_OffEvent;
 
-   // output events on "clipNumber" port (which are then redirected just in time by the SEQ back to hookMIDISendPackage)
+   // output events on virtual "loopaTrack" port (which are then redirected just in time by the SEQ back to hookMIDISendPackage)
    u32 status = 0;
-   status |= SEQ_MIDI_OUT_Send(clipNumber, midi_package, event_type, tick, 0);
+   status |= SEQ_MIDI_OUT_Send(loopaTrack, midi_package, event_type, tick, 0);
 
    return status;
 }
@@ -730,7 +747,7 @@ s32 seqPlayEvent(u8 clipNumber, mios32_midi_package_t midi_package, u32 tick)
  * Ignore track meta events
  *
  */
-s32 seqIgnoreMetaEvent(u8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick)
+s32 seqIgnoreMetaEvent(s8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick)
 {
    return 0;
 }
@@ -739,10 +756,9 @@ s32 seqIgnoreMetaEvent(u8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick)
 
 /**
  * Realtime output hook: called exactly, when the MIDI scheduler has a package to send
- * TODO: fix this, use (only) configured ports, allow for USB configuration
  *
  */
-s32 hookMIDISendPackage(mios32_midi_port_t clipNumber, mios32_midi_package_t package)
+s32 hookMIDISendPackage(s8 loopaTrack, mios32_midi_package_t package)
 {
    // realtime events are already scheduled by MIDI_ROUTER_SendMIDIClockEvent()
    if (package.evnt0 >= 0xf8)
@@ -751,14 +767,14 @@ s32 hookMIDISendPackage(mios32_midi_port_t clipNumber, mios32_midi_package_t pac
    }
    else
    {
-      mios32_midi_port_t port = trackMidiPort_[clipNumber];
+      mios32_midi_port_t port = getMIOSPortNumberFromLoopAPortNumber(trackMidiPort_[loopaTrack]);
       MIOS32_MIDI_SendPackage(port, package);
 
-      // screenFormattedFlashMessage("play %d on %x", package.note, port);
+      /// screenFormattedFlashMessage("trk %d note %d on %x#%d", loopaTrack, package.note, port, package.chn);
 
-      // DEBUG: SEND TO USB0, too (can be removed)
-      port = USB0;
-      MIOS32_MIDI_SendPackage(port, package);
+      // DEBUG only, can additionally also send to USB0 for testing
+      // port = USB0;
+      // MIOS32_MIDI_SendPackage(port, package);
    }
 
    return 0; // no error
@@ -775,8 +791,15 @@ void handleStop()
    screenFormattedFlashMessage("Stopped");
 
    MUTEX_DIGITALOUT_TAKE;
-   MIOS32_DOUT_PinSet(HW_LED_GREEN_RUNSTOP, 0);
-   MIOS32_DOUT_PinSet(HW_LED_RED_ARM, 0);
+   updateLED(LED_RUNSTOP, LED_OFF);
+   updateLED(LED_ARM, LED_OFF);
+   if (gcBeatLEDsEnabled_)
+   {
+      updateLED(LED_MENU, LED_OFF);
+      updateLED(LED_COPY, LED_OFF);
+      updateLED(LED_PASTE, LED_OFF);
+      updateLED(LED_DELETE, LED_OFF);
+   }
    MUTEX_DIGITALOUT_GIVE;
 
    SEQ_BPM_Stop(); // stop sequencer
@@ -790,10 +813,8 @@ void handleStop()
 }
 // -------------------------------------------------------------------------------------------------
 
-
-
 /**
- * Initialize Loopa SEQ
+ * Initialize LoopA SEQ
  *
  */
 s32 seqInit()
@@ -817,8 +838,8 @@ s32 seqInit()
    SEQ_MIDI_OUT_Callback_MIDI_SendPackage_Set(hookMIDISendPackage);
 
    // install seqPlayEvent callback for clipFetchEvents()
-   clipPlayEventCallback = seqPlayEvent;
-   clipMetaEventCallback = seqIgnoreMetaEvent;
+   loopaTrackPlayEventCallback = seqPlayEvent;
+   loopaTrackMetaEventCallback = seqIgnoreMetaEvent;
 
    u8 i, j;
    for (i = 0; i < TRACKS; i++)

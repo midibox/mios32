@@ -1,6 +1,5 @@
 // LoopA UI data structures and code
 
-#define PAGES 6 // TODO: old, drop this
 enum LoopAPage
 {
    PAGE_MUTE,
@@ -20,7 +19,7 @@ enum Command
    COMMAND_NONE,
    COMMAND_CLIPLEN, COMMAND_QUANTIZE, COMMAND_TRANSPOSE, COMMAND_SCROLL, COMMAND_STRETCH, COMMAND_FREEZE, // PAGE_CLIP
    COMMAND_POSITION, COMMAND_NOTE_KEY, COMMAND_NOTE_VELOCITY, COMMAND_NOTE_LENGTH, COMMAND_NOTE_DELETE,   // PAGE_NOTES
-   COMMAND_PORT, COMMAND_CHANNEL,                                                                         // PAGE_TRACK
+   COMMAND_TRACK_OUTPORT, COMMAND_TRACK_OUTCHANNEL,                                                       // PAGE_TRACK
    COMMAND_DISK_SELECT_SESSION, COMMAND_DISK_SAVE, COMMAND_DISK_LOAD, COMMAND_DISK_NEW,                   // PAGE_DISK
    COMMAND_BPM, COMMAND_BPMFLASH,                                                                         // PAGE_TEMPO
    COMMAND_ROUTE_SELECT, COMMAND_ROUTE_IN_PORT, COMMAND_ROUTE_IN_CHANNEL, COMMAND_ROUTE_OUT_PORT, COMMAND_ROUTE_OUT_CHANNEL, // PAGE_ROUTER
@@ -79,6 +78,8 @@ void setActiveScene(u8 sceneNumber);
 void setActivePage(enum LoopAPage page);
 
 // --- LED Handling ---
+
+void updateLED(u8 number, u8 newState);
 
 // Update the LED states (called every 20ms from app.c timer)
 void updateLEDs();
