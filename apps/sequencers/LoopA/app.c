@@ -322,7 +322,6 @@ static void TASK_Period_1mS_LP(void *pvParameters)
       if (taskCtr % 20 == 0)
       {
          display();
-         //updateGPLeds();
          updateLEDs();
       }
    }
@@ -448,6 +447,7 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 static void TASK_Period_1mS(void *pvParameters)
 {
   portTickType xLastExecutionTime;
+  u32 taskCtr = 0;
 
   // Initialise the xLastExecutionTime variable on task entry
   xLastExecutionTime = xTaskGetTickCount();
@@ -477,6 +477,13 @@ static void TASK_Period_1mS(void *pvParameters)
 
      // scan AINSER pins
      /// AINSER_Handler(APP_AINSER_NotifyChange);
+
+     taskCtr++;
+     if (taskCtr % 1000 == 0)
+     {
+        secondsSinceStartup_++;
+        inactivitySeconds_++;
+     }
   }
 }
 

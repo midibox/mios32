@@ -21,12 +21,14 @@
 static s32 (*loopaTrackPlayEventCallback)(s8 loopaTrack, mios32_midi_package_t midi_package, u32 tick) = 0;
 static s32 (*loopaTrackMetaEventCallback)(s8 loopaTrack, u8 meta, u32 len, u8 *buffer, u32 tick) = 0;
 
+u16 secondsSinceStartup_ = 0;         // global "uptime" timer
+u16 inactivitySeconds_ = 0;     // screensaver timer
 u32 tick_ = 0;                        // global seq tick
-u16 bpm_ = 120;                       // bpm
 u16 sessionNumber_ = 0;               // currently active session number (directory e.g. /SESSIONS/0001)
 u8 sessionExistsOnDisk_ = 0;          // is the currently selected session number already saved on disk/sd card
 enum LoopAPage page_ = PAGE_MUTE;     // currently active page/view
 enum Command command_ = COMMAND_NONE; // currently active command
+s8 tempoFade_ = 0;                    // 0: no tempo change ongoing | +1: increase tempo button pressed | -1: decrease tempo button pressed (ongoing event)
 
 u8 activeTrack_ = 0;                  // currently active or last active clip number (0..5)
 u8 activeScene_ = 0;                  // currently active scene number (0-15)
@@ -38,7 +40,6 @@ u16 seqRecEnabledPorts_;
 s16 notePtrsOn_[128];                 // during recording - pointers to notes that are currently "on" (and waiting for an "off", therefore length yet undetermined) (-1: note not depressed)
 
 u8 ffwdSilentMode_;                   // for FFWD function
-u8 seqClkLocked;                      // lock BPM, so that it can't be changed from MIDI player
 char filename_[20];                   // global, for filename operations
 
 // --- Track data (saved to session on disk) ---
@@ -55,10 +56,16 @@ u8 clipStretch_[TRACKS][SCENES];      // 1: compress to 1/16th, 2: compress to 1
 NoteData clipNotes_[TRACKS][SCENES][MAXNOTES];  // clip note data storage (chained list, note start time and length/velocity)
 u16 clipNotesSize_[TRACKS][SCENES];   // active number of notes currently in use for that clip
 
+// TODO: save to session
+float bpm_ = 120.0;                   // bpm
+u8 stepsPerMeasure_ = 16;             // 16 measures default for a 4/4 beat (4 quarternotes = 16 16th notes per measure)
+u8 metronomeEnabled_ = 0;             // Set to 1, if metronome is turned on in bpm screen
+
 // --- Secondary data (not on disk) ---
 u8 trackMuteToggleRequested_[TRACKS]; // 1: perform a mute/unmute toggle of the clip at the next beatstep (synced mute/unmute)
 u8 sceneChangeRequested_ = 0;         // If != activeScene_, this will be the scene we are changing to
 u16 clipActiveNote_[TRACKS][SCENES];  // currently active edited note number, when in noteroll editor
+
 
 // =================================================================================================
 
@@ -376,48 +383,6 @@ void loopaStartup()
 
 
 /**
- * Get Clock Mode
- * adds a fourth mode which locks the BPM so that it can't be modified by the MIDI file
- *
- */
-/*u8 seqClockModeGet(void)
-{
-   if (seqClkLocked)
-      return 3;
-
-   return SEQ_BPM_ModeGet();
-}
-// -------------------------------------------------------------------------------------------------
-*/
-
-/**
- * Set Clock Mode
- * adds a fourth mode which locks the BPM so that it can't be modified by the MIDI file
- *
- */
-/*
-s32 seqClockModeSet(u8 mode)
-{
-  if (mode > 3)
-     return -1; // invalid mode
-
-  if (mode == 3)
-  {
-     SEQ_BPM_ModeSet(SEQ_BPM_MODE_Master);
-     seqClkLocked = 1;
-  }
-  else
-  {
-     SEQ_BPM_ModeSet(mode);
-     seqClkLocked = 0;
-  }
-
-  return 0; // no error
-}
-// -------------------------------------------------------------------------------------------------
-*/
-
-/**
  * This main sequencer handler is called periodically to poll the clock/current tick
  * from BPM generator
  *
@@ -458,9 +423,9 @@ s32 seqHandler(void)
    {
       seqUpdateBeatLEDs(bpm_tick);
 
-      // set initial BPM according to MIDI spec
-      if (bpm_tick == 0 && !seqClkLocked)
-         SEQ_BPM_Set(120.0);
+      // set initial BPM
+      if (bpm_tick == 0)
+         SEQ_BPM_Set(bpm_);
 
       if (bpm_tick == 0) // send start (again) to synchronize with new MIDI songs
          MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
@@ -651,6 +616,8 @@ s32 seqTick(u32 bpm_tick)
 {
    tick_ = bpm_tick;
 
+   u16 step = tickToStep(bpm_tick);
+
    // send MIDI clock depending on ppqn
    if ((bpm_tick % (SEQ_BPM_PPQN_Get()/24)) == 0)
    {
@@ -702,6 +669,32 @@ s32 seqTick(u32 bpm_tick)
             }
          }
       }
+   }
+
+   // Send metronome tick on each beat, if enabled
+
+   if (metronomeEnabled_ && (bpm_tick % 96) == 0)
+   {
+      mios32_midi_package_t p;
+
+      p.type     = NoteOn;
+      p.cable    = 15; // use tag of track #16 - unfortunately more than 16 tags are not supported
+      p.event    = NoteOn;
+      p.chn      = isInstrument(gcMetronomePort_) ? getInstrumentChannelNumberFromLoopAPortNumber(gcMetronomePort_) : gcMetronomeChannel_;
+      p.note     = gcMetronomeNoteB_;
+      p.velocity = 96;
+      u16 len =  5;
+
+      if (step % stepsPerMeasure_ == 0)
+      {
+         p.note = gcMetronomeNoteM_;
+         p.velocity = 127;
+      }
+
+      /// screenFormattedFlashMessage("metr note %d on %x#%d", p.note, getMIOSPortNumberFromLoopAPortNumber(gcMetronomePort_), p.chn);
+
+      if (p.note)
+         SEQ_MIDI_OUT_Send(METRONOME_PSEUDO_PORT, p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, len);
    }
 
    return 0; // no error
@@ -756,7 +749,7 @@ s32 seqIgnoreMetaEvent(s8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick)
 
 /**
  * Realtime output hook: called exactly, when the MIDI scheduler has a package to send
- *
+ * @param loopaTrack s8 if zero or positive = loopa track number, else virtual metronome channel
  */
 s32 hookMIDISendPackage(s8 loopaTrack, mios32_midi_package_t package)
 {
@@ -767,7 +760,12 @@ s32 hookMIDISendPackage(s8 loopaTrack, mios32_midi_package_t package)
    }
    else
    {
-      mios32_midi_port_t port = getMIOSPortNumberFromLoopAPortNumber(trackMidiPort_[loopaTrack]);
+      mios32_midi_port_t port =
+              loopaTrack != METRONOME_PSEUDO_PORT ? getMIOSPortNumberFromLoopAPortNumber(trackMidiPort_[loopaTrack]) :
+              getMIOSPortNumberFromLoopAPortNumber(gcMetronomePort_);
+
+      /// screenFormattedFlashMessage("HMSP - intr %d outp %d", loopaTrack, port);
+
       MIOS32_MIDI_SendPackage(port, package);
 
       /// screenFormattedFlashMessage("trk %d note %d on %x#%d", loopaTrack, package.note, port, package.chn);
@@ -819,9 +817,6 @@ void handleStop()
  */
 s32 seqInit()
 {
-   // play mode
-   seqClkLocked = 0;
-
    // record over USB0 and UART0/1
    seqRecEnabledPorts_ = 0x01 | (0x03 << 4);
 

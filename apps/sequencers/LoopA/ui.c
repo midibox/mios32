@@ -1,5 +1,6 @@
 // LoopA UI data structures and code
 
+#include <math.h>
 #include "commonIncludes.h"
 
 #include "tasks.h"
@@ -83,7 +84,7 @@ void setActivePage(enum LoopAPage page)
       case PAGE_MUTE: command_ = COMMAND_NONE; break;
       case PAGE_ROUTER: command_ = COMMAND_ROUTE_SELECT; break;
       case PAGE_DISK: command_ = COMMAND_DISK_SELECT_SESSION; break;
-      case PAGE_TEMPO: command_= COMMAND_BPM; break;
+      case PAGE_TEMPO: command_= COMMAND_TEMPO_BPM; break;
       case PAGE_CLIP: command_ = COMMAND_CLIPLEN; break;
       case PAGE_NOTES: command_ = COMMAND_POSITION; break;
       case PAGE_TRACK: command_ = COMMAND_TRACK_OUTPORT; break;
@@ -351,8 +352,10 @@ void updateLEDs()
             break;
 
          case PAGE_TEMPO:
-            led_gp1 |= command_ == COMMAND_BPM ? LED_RED : LED_OFF;
-            led_gp2 |= command_ == COMMAND_BPMFLASH ? LED_RED : LED_OFF;
+            led_gp1 |= command_ == COMMAND_TEMPO_BPM ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_TEMPO_BPM_UP ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_TEMPO_BPM_DOWN ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_TEMPO_TOGGLE_METRONOME ? LED_RED : LED_OFF;
             break;
 
          case PAGE_ROUTER:
@@ -361,6 +364,14 @@ void updateLEDs()
             led_gp3 |= command_ == COMMAND_ROUTE_IN_CHANNEL ? LED_RED : LED_OFF;
             led_gp4 |= command_ == COMMAND_ROUTE_OUT_PORT ? LED_RED : LED_OFF;
             led_gp5 |= command_ == COMMAND_ROUTE_OUT_CHANNEL ? LED_RED : LED_OFF;
+            break;
+
+         case PAGE_SETUP:
+            led_gp1 |= command_ == COMMAND_SETUP_SELECT ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_SETUP_PAR1 ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_SETUP_PAR2 ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_SETUP_PAR3 ? LED_RED : LED_OFF;
+            led_gp5 |= command_ == COMMAND_SETUP_PAR4 ? LED_RED : LED_OFF;
             break;
       }
    }
@@ -411,7 +422,7 @@ void editLen()
  * Edit Clip Page: change clip quantization
  *
  */
-void editQuantize()
+void clipQuantize()
 {
    command_ = command_ == COMMAND_QUANTIZE ? COMMAND_NONE : COMMAND_QUANTIZE;
 }
@@ -422,7 +433,7 @@ void editQuantize()
  * Edit Clip Page: change clip transpose
  *
  */
-void editTranspose()
+void clipTranspose()
 {
    command_ = command_ == COMMAND_TRANSPOSE ? COMMAND_NONE : COMMAND_TRANSPOSE;
 }
@@ -433,7 +444,7 @@ void editTranspose()
  * Edit Clip Page: change clip scrolling
  *
  */
-void editScroll()
+void clipScroll()
 {
    command_ = command_ == COMMAND_SCROLL ? COMMAND_NONE : COMMAND_SCROLL;
 }
@@ -444,7 +455,7 @@ void editScroll()
  * Edit Clip Page: change clip stretching
  *
  */
-void editStretch()
+void clipZoom()
 {
    command_ = command_ == COMMAND_STRETCH ? COMMAND_NONE : COMMAND_STRETCH;
 }
@@ -455,7 +466,7 @@ void editStretch()
  * Edit Clip Page: Clear clip
  *
  */
-void editClear()
+void clipClear()
 {
    command_ = command_ == COMMAND_FREEZE ? COMMAND_NONE : COMMAND_FREEZE;
 
@@ -637,18 +648,43 @@ void diskNew()
  */
 void tempoBpm()
 {
-   command_ = command_ == COMMAND_BPM ? COMMAND_NONE : COMMAND_BPM;
+   command_ = command_ == COMMAND_TEMPO_BPM ? COMMAND_NONE : COMMAND_TEMPO_BPM;
 }
 // -------------------------------------------------------------------------------------------------
 
 
 /**
- * Main Menu: enable disable display flashing to beat
+ * Tempo: Increase BPM
  *
  */
-void bpmBpmflash()
+void tempoBpmUp()
 {
-   command_ = command_ == COMMAND_BPMFLASH ? COMMAND_NONE : COMMAND_BPMFLASH;
+   command_ = command_ == COMMAND_TEMPO_BPM_UP ? COMMAND_NONE : COMMAND_TEMPO_BPM_UP;
+   tempoFade_ = 1;
+}
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * Tempo: Decrease BPM
+ *
+ */
+void tempoBpmDown()
+{
+   command_ = command_ == COMMAND_TEMPO_BPM_DOWN ? COMMAND_NONE : COMMAND_TEMPO_BPM_DOWN;
+
+   tempoFade_ = -1;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Tempo: Toggle Metronome
+ *
+ */
+void tempoToggleMetronome()
+{
+   command_ = command_ == COMMAND_TEMPO_TOGGLE_METRONOME ? COMMAND_NONE : COMMAND_TEMPO_TOGGLE_METRONOME;
+   metronomeEnabled_ = metronomeEnabled_ > 0 ? 0 : 1;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -779,6 +815,8 @@ void loopaButtonPressed(s32 pin)
 {
    DEBUG_MSG("Button: %d pressed\n", pin);
 
+   inactivitySeconds_ = 0;
+
    if (pin == sw_runstop)
    {
       if (screenIsInMenu())
@@ -877,7 +915,7 @@ void loopaButtonPressed(s32 pin)
       }
       else
       {
-         editClear(); // shortcut: clear track
+         clipClear(); // shortcut: clear track
          command_ = COMMAND_NONE;
       }
    }
@@ -932,7 +970,7 @@ void loopaButtonPressed(s32 pin)
                toggleMute(1);
                break;
             case PAGE_CLIP:
-               editQuantize();
+               clipQuantize();
                break;
             case PAGE_NOTES:
                notesNote();
@@ -944,7 +982,7 @@ void loopaButtonPressed(s32 pin)
                diskSave();
                break;
             case PAGE_TEMPO:
-               bpmBpmflash();
+               tempoBpmUp();
                break;
             case PAGE_ROUTER:
                routerPortIn();
@@ -968,13 +1006,16 @@ void loopaButtonPressed(s32 pin)
                toggleMute(2);
                break;
             case PAGE_CLIP:
-               editTranspose();
+               clipTranspose();
                break;
             case PAGE_NOTES:
                notesVelocity();
                break;
             case PAGE_DISK:
                diskLoad();
+               break;
+            case PAGE_TEMPO:
+               tempoBpmDown();
                break;
             case PAGE_ROUTER:
                routerChannelIn();
@@ -999,13 +1040,16 @@ void loopaButtonPressed(s32 pin)
                toggleMute(3);
                break;
             case PAGE_CLIP:
-               editScroll();
+               clipScroll();
                break;
             case PAGE_NOTES:
                notesLength();
                break;
             case PAGE_DISK:
                diskNew();
+               break;
+            case PAGE_TEMPO:
+               tempoToggleMetronome();
                break;
             case PAGE_ROUTER:
                routerPortOut();
@@ -1030,7 +1074,7 @@ void loopaButtonPressed(s32 pin)
                toggleMute(4);
                break;
             case PAGE_CLIP:
-               editStretch();
+               clipZoom();
                break;
             case PAGE_ROUTER:
                routerChannelOut();
@@ -1055,7 +1099,7 @@ void loopaButtonPressed(s32 pin)
                toggleMute(5);
                break;
             case PAGE_CLIP:
-               editClear();
+               clipClear();
                break;
             case PAGE_NOTES:
                notesDeleteNote();
@@ -1082,6 +1126,9 @@ void loopaButtonPressed(s32 pin)
  */
 void loopaButtonReleased(s32 pin)
 {
+   inactivitySeconds_ = 0;
+   tempoFade_ = 0;
+
    if (screenIsInMenu() && pin == sw_menu)
    {
       DEBUG_MSG("leave menu");
@@ -1103,6 +1150,7 @@ void loopaButtonReleased(s32 pin)
  */
 void loopaEncoderTurned(s32 encoder, s32 incrementer)
 {
+   inactivitySeconds_ = 0;
    incrementer = -incrementer;
    DEBUG_MSG("[Encoder] %d turned, direction %d\n", encoder, incrementer);
 
@@ -1206,9 +1254,10 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
 
          diskScanSessionFileAvailable();
       }
-      else if (command_ == COMMAND_BPM)
+      else if (command_ == COMMAND_TEMPO_BPM)
       {
          bpm_ += incrementer;
+         bpm_ = round(bpm_);
          if (bpm_ < 30)
             bpm_ = 30;
          if (bpm_ > 300)
@@ -1377,25 +1426,6 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
       }
       else if (command_ == COMMAND_TRACK_OUTPORT)
       {
-         /*
-         s8 portIndex = getPortIndexFromPortAndChannel(trackMidiPort_[activeTrack_], trackMidiChannel_[activeTrack_] + 1);
-         DEBUG_MSG("------------------");
-         DEBUG_MSG("Current Track port int: %d", trackMidiPort_[activeTrack_]);
-         DEBUG_MSG("PortIndex old: %d", portIndex);
-         portIndex += incrementer;
-         DEBUG_MSG("PortIndex enc: %d", portIndex);
-
-         portIndex = (s8)(portIndex < 0 ? 0 : portIndex);
-         if (portIndex > getMaxPortIndexValue())
-            portIndex = (s8)getMaxPortIndexValue();
-
-         DEBUG_MSG("PortIndex adj: %d", portIndex);
-
-         trackMidiPort_[activeTrack_] = getMIOSPortNumberFromLoopAPortNumber(portIndex);
-         if (isInstrument(portIndex))
-            trackMidiChannel_[activeTrack_] = getInstrumentChannelNumberFromLoopAPortNumber(portIndex) - 1;
-         */
-
          trackMidiPort_[activeTrack_] = adjustLoopAPortNumber(trackMidiPort_[activeTrack_], incrementer);
       }
       else if (command_ == COMMAND_TRACK_OUTCHANNEL)

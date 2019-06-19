@@ -9,13 +9,9 @@
 // -------------------------------------------------------------------------------------------
 // Voxelspace demo by Hawkeye
 
-
 u8 field[128][128];             // Heightfield [y][x]
-
-u8 screen[64][128];             // Screen buffer [y][x]
 u16 mult1dot5[64];              // multiplication/division precalculated tables
-u8 notedraw[128];               // Current note on/note off note draw line (vertical, in time)
-
+//u8 notedraw[128];               // Current note on/note off note draw line (vertical, in time)
 
 // Limits a value to 0...255
 //
@@ -106,43 +102,44 @@ void calcField(void)
 
    // initially clear notedraw line
    voxelClearNotes();
-
 }
 // -------------------------------------------------------------------------------------------
 
 
 // Render a single voxel frame at the current position in voxel space
 //
-static int tempEncoderAccel = 0;
 static u16 yVoxel = 30000;  // voxel space position
 static u8 tickLine = 0;
 
 void voxelFrame(void)
 {
    u16 i, j, k;
-   u8 seqRunning = SEQ_BPM_IsRunning();
 
-   yVoxel++;
+   yVoxel+= isScreensaverActive() ? -1 : +1;
    u16 yfield;
-   yVoxel += tempEncoderAccel;
 
    // Output random terrain noise, that will be blurred down
-   yfield = (40 + yVoxel) % 128;
-   for (i = 0; i < 128; i++) {
-      field[yfield][i] = rand() % (seqRunning ? 255 : 208);
+   yfield = ((isScreensaverActive() ? 110 : 40) + yVoxel) % 128;
+   for (i = 0; i < 128; i++)
+   {
+      // field[yfield][i] = rand() % (SEQ_BPM_IsRunning() ? 255 : 208);
+      field[yfield][i] = rand() % (isScreensaverActive() ? (128 + (((yVoxel >> 3U) * (i >> 4U)) % 127)) : 208);
    }
 
    // Output current notedraw heightline
-   yfield = (29 + yVoxel) % 128;
+   /* yfield = (29 + yVoxel) % 128;
    for (i = 0; i < 128; i++) {
       if (notedraw[i] > 0)
          field[yfield][i] = notedraw[i];
       else if (tickLine)
          field[yfield][i] = 160;
    }
+   */
 
    tickLine = 0;
-   blur();
+
+   if (!isScreensaverActive() || yVoxel % 4 == 0)
+      blur();
 
    // Calculate screen buffer
    for (j = 0; j < 30; j++)  // Distance from screen plane
@@ -178,6 +175,13 @@ void voxelFrame(void)
       }
    }
 
+   // in screen saver initially clear screen with "horizon"
+   /* if (isScreensaverActive())
+      for (j = 0; j < 10; j++)
+         for (i = 0; i < 128; i++)
+            screen[j][i] = 0; // (((j >> 2) << 8) + (j >> 2));
+            */
+
    // Push screen buffer
    //display();
 }
@@ -192,7 +196,6 @@ void voxelFrameDemo(void)
 
    yVoxel--;
    u16 yfield;
-   yVoxel += tempEncoderAccel;
 
    // Calculate screen buffer
    for (j=0; j<30; j++)  // Distance from screen plane
@@ -250,6 +253,7 @@ void voxelNoteOn(u8 note, u8 velocity)
 
    // MIOS32_MIDI_SendDebugMessage("voxelNoteOn %d %d", note, velocity);
 
+   /*
    u8 vel = limit(128 + velocity * 2);
 
    notedraw[note] = limit(vel);
@@ -265,7 +269,7 @@ void voxelNoteOn(u8 note, u8 velocity)
 
    if (note < 126)
    notedraw[note+2] = limit((vel*60)/100);
-
+    */
 }
 // ----------------------------------------------------------------------------------------
 
@@ -278,6 +282,7 @@ void voxelNoteOff(u8 note)
 {
    // MIOS32_MIDI_SendDebugMessage("voxelNoteOff %d", note);
 
+   /*
    notedraw[note] = 0;
 
    if (note > 0)
@@ -291,7 +296,7 @@ void voxelNoteOff(u8 note)
 
    if (note < 126)
       notedraw[note+2] = 0;
-
+      */
 }
 // ----------------------------------------------------------------------------------------
 
@@ -313,10 +318,13 @@ void voxelTickLine()
  */
 void voxelClearNotes()
 {
+   /*
    u8 i;
 
    for (i = 0; i < 128; i++)
       notedraw[i] = 0;
+      */
+
 }
 // ----------------------------------------------------------------------------------------
 

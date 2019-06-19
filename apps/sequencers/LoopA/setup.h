@@ -17,6 +17,7 @@ extern mios32_midi_port_t gcMetronomePort_;
 extern u8 gcMetronomeChannel_;
 extern u8 gcMetronomeNoteM_;
 extern u8 gcMetronomeNoteB_;
+extern u8 gcScreensaverAfterMinutes_;
 
 // --- Global config settings ---
 typedef struct
@@ -28,28 +29,28 @@ typedef struct
    char par4Name[8];
 } SetupParameter;
 
-#define SETUP_NUM_ITEMS 16
+#define SETUP_NUM_ITEMS 8
 
 enum SetupParameterEnum
 {
    SETUP_BEAT_LEDS_ENABLED,
    SETUP_BEAT_DISPLAY_ENABLED,
-   SETUP_COMMAND_HELP_ENABLED,
+   // SETUP_COMMAND_HELP_ENABLED,
    SETUP_SCREENSAVER_MINUTES,
    SETUP_METRONOME,
-   SETUP_TEMPO_UP_DOWN_BPM_SEC,
+   // SETUP_TEMPO_UP_DOWN_BPM_SEC,
 
    SETUP_MCLK_DIN_IN,
    SETUP_MCLK_DIN_OUT,
    SETUP_MCLK_USB_IN,
    SETUP_MCLK_USB_OUT,
 
-   SETUP_DEFAULT_TRACK_1_PORT_CHN,
-   SETUP_DEFAULT_TRACK_2_PORT_CHN,
-   SETUP_DEFAULT_TRACK_3_PORT_CHN,
-   SETUP_DEFAULT_TRACK_4_PORT_CHN,
-   SETUP_DEFAULT_TRACK_5_PORT_CHN,
-   SETUP_DEFAULT_TRACK_6_PORT_CHN
+   /* SETUP_DEFAULT_TRACK_1_PORT_CHN_LEN_FWD,
+   SETUP_DEFAULT_TRACK_2_PORT_CHN_LEN_FWD,
+   SETUP_DEFAULT_TRACK_3_PORT_CHN_LEN_FWD,
+   SETUP_DEFAULT_TRACK_4_PORT_CHN_LEN_FWD,
+   SETUP_DEFAULT_TRACK_5_PORT_CHN_LEN_FWD,
+   SETUP_DEFAULT_TRACK_6_PORT_CHN_LEN_FWD */
 };
 
 extern SetupParameter setupParameters_[SETUP_NUM_ITEMS];
@@ -62,7 +63,7 @@ typedef struct
    u8 channel;
 } UserInstrument;
 
-#define SETUP_NUM_USERINSTRUMENTS 24
+#define SETUP_NUM_USERINSTRUMENTS 32
 
 extern UserInstrument userInstruments_[SETUP_NUM_USERINSTRUMENTS];
 

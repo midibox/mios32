@@ -17,9 +17,6 @@ void screenShowMenu(u8 showMenu);
 // return true, if we are currently showing the menu
 u8 screenIsInMenu();
 
-// If showVoxel is true, draw the voxel screensaver
-void screenShowVoxel(u8 showVoxel);
-
 // Set the currently selected clip
 void screenSetClipSelected(u8 clipNumber);
 
@@ -43,6 +40,9 @@ void screenSetSceneChangeInTicks(u8 ticks);
 
 // Notify, that a screen page change has occured (flash a page descriptor for a while)
 void screenNotifyPageChanged();
+
+// Return, if screensaver is active
+int isScreensaverActive();
 
 // Display the current screen buffer
 void display();

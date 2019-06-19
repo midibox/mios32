@@ -19,31 +19,32 @@ mios32_midi_port_t gcMetronomePort_ = 0;
 u8 gcMetronomeChannel_ = 0;
 u8 gcMetronomeNoteM_ = 0x25; // C#1
 u8 gcMetronomeNoteB_ = 0x25; // C#1
+u8 gcScreensaverAfterMinutes_ = 1;
 
 // --- Global config settings ---
 SetupParameter setupParameters_[SETUP_NUM_ITEMS] =
         {
                 {"Beat LEDs", "Toggle", "", "", ""},
                 {"Beat Display", "Toggle", "", "", ""},
-                {"Command Help", "Toggle", "", "", ""},
+                // {"Command Help", "Toggle", "", "", ""}, TODO Later
                 {"Screensaver", "Minutes", "", "", ""},
                 {"Metronome", "Port", "Chn", "Meas.", "Beat"},
-                {"Tempo Up/Dn", "BPM/Sec", "", "", ""},
+                // {"Tempo Up/Dn", "BPM/Sec", "", "", ""}, TODO Later
 
                 {"MCLK DIN IN",  "Toggle",  "Toggle",  "Toggle", ""},
                 {"MCLK DIN OUT", "Toggle", "Toggle", "Toggle", ""},
                 {"MCLK USB IN",  "Toggle", "Toggle", "Toggle", "Toggle"},
                 {"MCLK USB OUT", "Toggle", "Toggle", "Toggle", "Toggle"},
 
-                {"Default Tr.1", "Port", "Chn", "Length", ""},
-                {"Default Tr.2", "Port", "Chn", "Length", ""},
-                {"Default Tr.3", "Port", "Chn", "Length", ""},
-                {"Default Tr.4", "Port", "Chn", "Length", ""},
-                {"Default Tr.5", "Port", "Chn", "Length", ""},
-                {"Default Tr.6", "Port", "Chn", "Length", ""}
+                /* {"Default Tr.1", "Port", "Chn", "Length", "Forward"}, TODO later
+                {"Default Tr.2", "Port", "Chn", "Length", "Forward"},
+                {"Default Tr.3", "Port", "Chn", "Length", "Forward"},
+                {"Default Tr.4", "Port", "Chn", "Length", "Forward"},
+                {"Default Tr.5", "Port", "Chn", "Length", "Forward"},
+                {"Default Tr.6", "Port", "Chn", "Length", "Forward"} */
 
-                //{"Instrument 1", "Port", "Chn", "Name", ""},
-                //{"Instrument 2", "Port", "Chn", "Name", ""},
+                //{"Instrument 1", "Name", Port", "Chn", ""}, TODO later, when we have a keyboard/string entry editor
+                //{"Instrument 2", "name", "Port", "Chn", ""},
         };
 
 
@@ -73,7 +74,15 @@ UserInstrument userInstruments_[SETUP_NUM_USERINSTRUMENTS] =
                 { "Synth_U", UART0, 0},
                 { "Synth_V", UART0, 0},
                 { "Synth_W", UART0, 0},
-                { "Synth_X", UART0, 0}
+                { "Synth_X", UART0, 0},
+                { "Synth_Y", UART0, 0},
+                { "Synth_Z", UART0, 0},
+                { "Synth_AA", UART0, 0},
+                { "Synth_AB", UART0, 0},
+                { "Synth_AC", UART0, 0},
+                { "Synth_AD", UART0, 0},
+                { "Synth_AE", UART0, 0},
+                { "Synth_AF", UART0, 0},
         };
 /**
  * Help function which parses a decimal or hex value
@@ -263,6 +272,10 @@ void writeSetup()
    sprintf(line_buffer_, "SETUP_Metronome_NoteB %d\n", (u32) gcMetronomeNoteB_);
    FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
 
+   // write screensaver-after-minutes
+   sprintf(line_buffer_, "SETUP_Screensaver_Minutes %d\n", (u32) gcScreensaverAfterMinutes_);
+   FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
    // close file
    FILE_WriteClose();
 
@@ -416,6 +429,11 @@ void readSetup()
                   s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
                   gcMetronomeNoteB_ = value;
                }
+               else if (strcmp(parameter, "SETUP_Screensaver_Minutes") == 0)
+               {
+                  s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  gcScreensaverAfterMinutes_ = value;
+               }
             }
          }
       }
@@ -503,7 +521,19 @@ void setupParameterEncoderTurned(u8 parameterNumber, s32 incrementer)
          break;
 
       case SETUP_METRONOME:
-         if (command_ == COMMAND_SETUP_PAR3)
+         if (command_ == COMMAND_SETUP_PAR1)
+         {
+            gcMetronomePort_ = adjustLoopAPortNumber(gcMetronomePort_, incrementer);
+         }
+         else if (command_ == COMMAND_SETUP_PAR2)
+         {
+            s8 newChannel = gcMetronomeChannel_ += incrementer;
+            newChannel = newChannel > 15 ? 15 : newChannel;
+            newChannel = newChannel < 0 ? 0 : newChannel;
+
+            gcMetronomeChannel_ = (u8)newChannel;
+         }
+         else if (command_ == COMMAND_SETUP_PAR3)
          {
             newNote = gcMetronomeNoteM_ + incrementer;
 
@@ -528,6 +558,21 @@ void setupParameterEncoderTurned(u8 parameterNumber, s32 incrementer)
             gcMetronomeNoteB_ = newNote;
          }
          break;
+
+      case SETUP_SCREENSAVER_MINUTES:
+         if (command_ == COMMAND_SETUP_PAR1)
+         {
+            s8 newScreensaver = gcScreensaverAfterMinutes_ + incrementer;
+
+            if (newScreensaver < 1)
+               newScreensaver = 1;
+
+            if (newScreensaver >= 120)
+               newScreensaver = 120;
+
+            gcScreensaverAfterMinutes_ = newScreensaver;
+         }
+         break;
    }
 
    configChangesToBeWritten_ = 1;
@@ -543,12 +588,12 @@ extern s8 adjustLoopAPortNumber(s8 loopaPortNumber, s32 incrementer)
 {
    s8 newPortNumber = loopaPortNumber;
 
-   DEBUG_MSG("------------------");
-   DEBUG_MSG("port number before: %d", loopaPortNumber);
+   /// DEBUG_MSG("------------------");
+   /// DEBUG_MSG("port number before: %d", loopaPortNumber);
 
    if (loopaPortNumber > 0) // LoopA port number is a mios port number (positive), handle changes
    {
-      DEBUG_MSG("is a normal mios port number");
+      /// DEBUG_MSG("is a normal mios port number");
       s8 newPortIndex = (s8)(MIDI_PORT_OutIxGet((mios32_midi_port_t)loopaPortNumber) + incrementer);
 
       // Limit "min port"
@@ -561,14 +606,14 @@ extern s8 adjustLoopAPortNumber(s8 loopaPortNumber, s32 incrementer)
          // Transition to user instruments, if we have user instruments, switch to first one (loopa port number -1)
          if (gcNumberOfActiveUserInstruments_)
          {
-            DEBUG_MSG("transition to user instrument port");
+            /// DEBUG_MSG("transition to user instrument port");
             newPortNumber = -1;
          }
       }
    }
    else // LoopA port number is a user instrument (negative), handle changes
    {
-      DEBUG_MSG("is a user instrument port number");
+      /// DEBUG_MSG("is a user instrument port number");
       newPortNumber = loopaPortNumber - incrementer; // negative instrument port numbers, apply negative incrementers to increase abs value
 
       // Limit absolute "min port"
@@ -577,13 +622,13 @@ extern s8 adjustLoopAPortNumber(s8 loopaPortNumber, s32 incrementer)
 
       if (newPortNumber >= 0)
       {
-         DEBUG_MSG("transition to mios port number");
+         /// DEBUG_MSG("transition to mios port number");
          // Transition back to mios port numbers, switch to the first one
          newPortNumber = MIDI_PORT_OutPortGet(MIDI_PORT_OutIxGet(UART2));
       }
    }
 
-   DEBUG_MSG("port number after: %d", newPortNumber);
+   /// DEBUG_MSG("port number after: %d", newPortNumber);
 
    return newPortNumber;
 }

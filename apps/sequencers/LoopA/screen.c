@@ -19,7 +19,6 @@ u8 screen[64][128];             // Screen buffer [y][x]
 u8 screenShowLoopaLogo_;
 u8 screenShowShift_ = 0;
 u8 screenShowMenu_ = 0;
-u8 screenShowVoxel_ = 0;
 u8 screenClipNumberSelected_ = 0;
 u16 screenClipStepPosition_[TRACKS];
 u32 screenSongStep_ = 0;
@@ -495,17 +494,6 @@ void screenShowMenu(u8 showMenu)
 u8 screenIsInMenu()
 {
   return screenShowMenu_;
-}
-// ----------------------------------------------------------------------------------------
-
-
-/**
- * If showVoxel is true, draw the voxel screensaver
- * TODO: should be able to add titles or gfx on top of underlying screensaver, e.g. for startup
- */
-void screenShowVoxel(u8 showVoxel)
-{
-   screenShowVoxel_ = showVoxel;
 }
 // ----------------------------------------------------------------------------------------
 
@@ -992,9 +980,33 @@ void displayPageTempo(void)
 
    printCenterFormattedString(0, "Tempo Settings", activeTrack_ + 1, activeScene_ + 1);
 
-   command_ == COMMAND_BPM ? setFontInverted() : setFontNonInverted();
-   u16 bpm = SEQ_BPM_IsMaster() ? bpm_ : SEQ_BPM_Get();
-   printFormattedString(0, 54, "%d BPM", bpm);
+   command_ == COMMAND_TEMPO_BPM ? setFontInverted() : setFontNonInverted();
+   float bpm = SEQ_BPM_IsMaster() ? bpm_ : SEQ_BPM_Get();
+   printFormattedString(0, 54, "%3d.%d", (int)bpm, (int)(10*bpm)%10);
+
+   tempoFade_ == 1 ? setFontInverted() : setFontNonInverted();
+   printFormattedString(42, 54, "Faster");
+
+   tempoFade_ == -1 ? setFontInverted() : setFontNonInverted();
+   printFormattedString(84, 54, "Slower");
+
+   command_ == COMMAND_TEMPO_TOGGLE_METRONOME ? setFontInverted : setFontNonInverted();
+   printFormattedString(126, 54, metronomeEnabled_ ? "Metron. On" : "Metr. Off");
+
+   if (tempoFade_ != 0)
+   {
+      if (tempoFade_ == 1)
+         bpm_ += 0.1;
+
+      if (tempoFade_ == -1)
+         bpm_ -= 0.1;
+
+      if (bpm_ < 30)
+         bpm_ = 30;
+      if (bpm_ > 300)
+         bpm_ = 300;
+      SEQ_BPM_Set(bpm_);
+   }
 
    setFontNonInverted();
    displayClip(activeTrack_);
@@ -1158,11 +1170,20 @@ void displayPageSetup(void)
                case SETUP_BEAT_DISPLAY_ENABLED:
                   printFormattedString(84, y, gcBeatDisplayEnabled_ ? "On" : "Off");
                   break;
+
+               case SETUP_METRONOME:
+                  printFormattedString(84, y, "%s", getPortOrInstrumentNameFromLoopAPortNumber(gcMetronomePort_));
+                  break;
+
+               case SETUP_SCREENSAVER_MINUTES:
+                  printFormattedString(84, y, "%d Min", gcScreensaverAfterMinutes_);
+                  break;
+
             }
             setFontNonInverted();
 
             // Parameter 2 column
-            if (i == setupActiveItem_ && command_ == COMMAND_SETUP_PAR1)
+            if (i == setupActiveItem_ && command_ == COMMAND_SETUP_PAR2)
                setFontInverted();
             switch(i)
             {
@@ -1188,6 +1209,14 @@ void displayPageSetup(void)
                   midiPort = USB1;
                   status = MIDI_ROUTER_MIDIClockOutGet(midiPort);
                   printFormattedString(126, y, (status > 0) ? "USB2" : " - ");
+                  break;
+
+               case SETUP_METRONOME:
+                  if (!isInstrument(gcMetronomePort_))
+                  {
+                     // Print metronome MIDI channel, if we are not showing a metronome user instrument
+                     printFormattedString(126, y, "Chn %d", gcMetronomeChannel_ + 1);
+                  }
                   break;
             }
             setFontNonInverted();
@@ -1276,14 +1305,30 @@ void displayPageSetup(void)
 
 
 /**
+ * Return, if screensaver is active
+ * @return int 1, if screensaver should be displayed
+ */
+
+int isScreensaverActive()
+{
+   return inactivitySeconds_ > gcScreensaverAfterMinutes_ * 60;
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
  * Display the current screen buffer (once per frame, called in app.c scheduler)
  *
  */
-void display(void)
+void display()
 {
    u8 i, j;
 
-   if (screenShowLoopaLogo_)
+   if (isScreensaverActive())
+   {
+      voxelFrame();
+   }
+   else if (screenShowLoopaLogo_)
    {
       // Startup/initial session loading: Render the LoopA Logo
       voxelFrame();
@@ -1341,10 +1386,6 @@ void display(void)
 
       setFontBold();
    }
-   else if (screenShowVoxel_)
-   {
-      voxelFrame();
-   }
    else
    {
       // Display page content...
@@ -1382,11 +1423,11 @@ void display(void)
             displayPageSetup();
             break;
       }
-   }
 
-   // Page icon
-   if (!screenShowLoopaLogo_ && !screenIsInMenu() && !screenIsInShift())
-      printPageIcon();
+      // Page icon
+      if (!screenShowLoopaLogo_ && !screenIsInMenu() && !screenIsInShift())
+         printPageIcon();
+   }
 
    // Display flash notification
    if (screenFlashMessageFrameCtr_)
