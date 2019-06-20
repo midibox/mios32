@@ -895,14 +895,30 @@ void displayPageTrack(void)
 
    command_ == COMMAND_TRACK_OUTPORT ? setFontInverted() : setFontNonInverted();
 
-   printFormattedString(0, 54, " %s ", getPortOrInstrumentNameFromLoopAPortNumber(trackMidiPort_[activeTrack_]));
+   printFormattedString(0, 54, " %s ", getPortOrInstrumentNameFromLoopAPortNumber(trackMidiOutPort_[activeTrack_]));
 
-   if (!isInstrument(trackMidiPort_[activeTrack_]))
+   if (!isInstrument(trackMidiOutPort_[activeTrack_]))
    {
       // Also print MIDI channel, if we are not showing a user instrument
       command_ == COMMAND_TRACK_OUTCHANNEL ? setFontInverted() : setFontNonInverted();
-      printFormattedString(42, 54, " Chn %d ", trackMidiChannel_[activeTrack_] + 1);
+      printFormattedString(42, 54, "Chn %d", trackMidiOutChannel_[activeTrack_] + 1);
    }
+
+   command_ == COMMAND_TRACK_INPORT ? setFontInverted() : setFontNonInverted();
+   printFormattedString(84, 54, "I:%s", trackMidiInPort_[activeTrack_] == 0 ? "All" : MIDI_PORT_InNameGet(MIDI_PORT_InIxGet(trackMidiInPort_[activeTrack_])));
+
+   command_ == COMMAND_TRACK_INCHANNEL ? setFontInverted() : setFontNonInverted();
+   if (trackMidiInChannel_[activeTrack_] == 16)
+      printFormattedString(126, 54, "IC:All");
+   else
+      printFormattedString(126, 54, "IC: %d", trackMidiInChannel_[activeTrack_] + 1);
+
+   command_ == COMMAND_TRACK_TOGGLE_FORWARD ? setFontInverted() : setFontNonInverted();
+   if (trackMidiForward_[activeTrack_])
+      printFormattedString(168, 54, "Fwd On");
+   else
+      printFormattedString(168, 54, "Fwd Off");
+
 
    setFontNonInverted();
    displayClip(activeTrack_);

@@ -342,6 +342,9 @@ void updateLEDs()
          case PAGE_TRACK:
             led_gp1 |= command_ == COMMAND_TRACK_OUTPORT ? LED_RED : LED_OFF;
             led_gp2 |= command_ == COMMAND_TRACK_OUTCHANNEL ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_TRACK_INPORT ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_TRACK_INCHANNEL ? LED_RED : LED_OFF;
+            led_gp5 |= command_ == COMMAND_TRACK_TOGGLE_FORWARD ? LED_RED : LED_OFF;
             break;
 
          case PAGE_DISK:
@@ -545,7 +548,7 @@ void notesDeleteNote()
 
 
 /**
- * Midi Track Port: change clip output MIDI port
+ * Midi Track Port: change track output MIDI port
  *
  */
 void trackPortOut()
@@ -556,12 +559,50 @@ void trackPortOut()
 
 
 /**
- * Midi Track Channel: change clip output MIDI channel
+ * Midi Track Channel: change track output MIDI channel
  *
  */
 void trackChannelOut()
 {
    command_ = command_ == COMMAND_TRACK_OUTCHANNEL ? COMMAND_NONE : COMMAND_TRACK_OUTCHANNEL;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Midi Track Port: change track input MIDI port
+ *
+ */
+void trackPortIn()
+{
+   command_ = command_ == COMMAND_TRACK_INPORT ? COMMAND_NONE : COMMAND_TRACK_INPORT;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Midi Track Channel: change track input MIDI channel
+ *
+ */
+void trackChannelIn()
+{
+   command_ = command_ == COMMAND_TRACK_INCHANNEL ? COMMAND_NONE : COMMAND_TRACK_INCHANNEL;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Midi Track Toggle Live Forwarding
+ *
+ */
+void trackToggleForward()
+{
+   command_ = command_ == COMMAND_TRACK_TOGGLE_FORWARD ? COMMAND_NONE : COMMAND_TRACK_TOGGLE_FORWARD;
+
+   if (trackMidiForward_[activeTrack_] == 0)
+      trackMidiForward_[activeTrack_] = 1;
+   else
+      trackMidiForward_[activeTrack_] = 0;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -1011,6 +1052,9 @@ void loopaButtonPressed(s32 pin)
             case PAGE_NOTES:
                notesVelocity();
                break;
+            case PAGE_TRACK:
+               trackPortIn();
+               break;
             case PAGE_DISK:
                diskLoad();
                break;
@@ -1045,6 +1089,9 @@ void loopaButtonPressed(s32 pin)
             case PAGE_NOTES:
                notesLength();
                break;
+            case PAGE_TRACK:
+               trackChannelIn();
+               break;
             case PAGE_DISK:
                diskNew();
                break;
@@ -1075,6 +1122,9 @@ void loopaButtonPressed(s32 pin)
                break;
             case PAGE_CLIP:
                clipZoom();
+               break;
+            case PAGE_TRACK:
+               trackToggleForward();
                break;
             case PAGE_ROUTER:
                routerChannelOut();
@@ -1426,15 +1476,34 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
       }
       else if (command_ == COMMAND_TRACK_OUTPORT)
       {
-         trackMidiPort_[activeTrack_] = adjustLoopAPortNumber(trackMidiPort_[activeTrack_], incrementer);
+         trackMidiOutPort_[activeTrack_] = adjustLoopAPortNumber(trackMidiOutPort_[activeTrack_], incrementer);
       }
       else if (command_ == COMMAND_TRACK_OUTCHANNEL)
       {
-         s8 newChannel = trackMidiChannel_[activeTrack_] += incrementer;
+         s8 newChannel = trackMidiOutChannel_[activeTrack_] += incrementer;
          newChannel = newChannel > 15 ? 15 : newChannel;
          newChannel = newChannel < 0 ? 0 : newChannel;
 
-         trackMidiChannel_[activeTrack_] = (u8)newChannel;
+         trackMidiOutChannel_[activeTrack_] = (u8)newChannel;
+      }
+      else if (command_ == COMMAND_TRACK_INPORT)
+      {
+         s8 newPortIndex = (s8)(MIDI_PORT_InIxGet((mios32_midi_port_t)trackMidiInPort_[activeTrack_]) + incrementer);
+
+         newPortIndex = (s8)(newPortIndex <= 0 ? 0 : newPortIndex);
+
+         if (newPortIndex >= MIDI_PORT_InNumGet()-6)
+            newPortIndex = (s8)(MIDI_PORT_InNumGet()-6);
+
+         trackMidiInPort_[activeTrack_] = MIDI_PORT_InPortGet((u8)newPortIndex);
+      }
+      else if (command_ == COMMAND_TRACK_INCHANNEL)
+      {
+         s8 newChannel = trackMidiInChannel_[activeTrack_] += incrementer;
+         newChannel = newChannel > 16 ? 16 : newChannel;
+         newChannel = newChannel < 0 ? 0 : newChannel;
+
+         trackMidiInChannel_[activeTrack_] = (u8)newChannel;
       }
       else if (command_ == COMMAND_ROUTE_SELECT)
       {
