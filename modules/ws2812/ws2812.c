@@ -233,6 +233,7 @@ s32 WS2812_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 //! DMA Channel interrupt is triggered on HT and TC interrupts
 /////////////////////////////////////////////////////////////////////////////
+#if WS2812_SUPPORTED
 void WS2812_DMA_IRQHandler_SetPWM(u16 *buffer)
 {
   if( ws2812_state_ctr < WS2812_RESET_CYCLES ) {
@@ -278,6 +279,7 @@ void WS2812_DMA_IRQHandler(void)
 
   //DMA_ClearFlag(WS2812_DMA_PTR, (DMA_FLAG_TCIF0 | DMA_FLAG_TEIF0 | DMA_FLAG_HTIF0 | DMA_FLAG_FEIF0));
 }
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 //! Sets a single colour of the RGB LED
