@@ -95,15 +95,32 @@
 // DMA channel (DMA1 Stream 0, Channel 2 - fortunately DMA1_Stream0 not used by any other MIOS32 driver yet...!)
 #define WS2812_DMA_PTR          DMA1_Stream0
 #define WS2812_DMA_CHN          DMA_Channel_2
+#define WS2812_DMA_IRQ_CHANNEL  DMA1_Stream0_IRQn
+#define WS2812_DMA_IRQHandler   DMA1_Stream0_IRQHandler
 
 
-#define WS2812_BUFFER_SIZE ((WS2812_NUM_LEDS+10)*24) // +10*24 to insert the RESET frame of 10*24*1.25 = 300 uS
+#define WS2812_RESET_CYCLES 10 // number of cycles required for reset frame
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u16 send_buffer[WS2812_BUFFER_SIZE];
+// organized as a double buffer, switching between lower and upper half
+// one buffer sends 24 words to a LED, which will take 30 uS
+static u16 ws2812_send_double_buffer[2*24];
+
+// state counter:
+// - first 10 (WS2812_RESET_CYCLES) ticks used for reset frame
+// - tick 10..WS2812_NUM_LEDS+10: send RGB values for each led
+//   - each even number will use lower half of the buffer
+//   - each odd number will use upper half of the buffer
+// 
+static u16 ws2812_state_ctr;
+
+// RGB values for all LEDs
+static u8 ws2812_rgb_values[WS2812_NUM_LEDS][3];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
@@ -122,14 +139,17 @@ s32 WS2812_Init(u32 mode)
 #if !WS2812_SUPPORTED
   return -1;
 #else
+  ws2812_state_ctr = 0;
   {
     int i;
-    for(i=0; i<(WS2812_NUM_LEDS*24); ++i) {
-      send_buffer[i] = WS2812_TIM_CC_LOW;
+    for(i=0; i<2*24; ++i) {
+      ws2812_send_double_buffer[i] = WS2812_TIM_CC_RESET;
     }
 
-    for(;i<WS2812_BUFFER_SIZE; ++i) {
-      send_buffer[i] = WS2812_TIM_CC_RESET;
+    for(i=0; i<WS2812_NUM_LEDS; ++i) {
+      ws2812_rgb_values[i][0] = 0;
+      ws2812_rgb_values[i][1] = 0;
+      ws2812_rgb_values[i][2] = 0;
     }
   }
 
@@ -178,14 +198,15 @@ s32 WS2812_Init(u32 mode)
 
     {
       DMA_Cmd(WS2812_DMA_PTR, DISABLE);
+      DMA_ClearFlag(WS2812_DMA_PTR, DMA_FLAG_TCIF0 | DMA_FLAG_TEIF0 | DMA_FLAG_HTIF0 | DMA_FLAG_FEIF0);
 
       DMA_InitTypeDef DMA_InitStructure;
       DMA_StructInit(&DMA_InitStructure);
       DMA_InitStructure.DMA_Channel = WS2812_DMA_CHN;
       DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
       DMA_InitStructure.DMA_DIR = DMA_DIR_MemoryToPeripheral;
-      DMA_InitStructure.DMA_Memory0BaseAddr = (u32)&send_buffer[0];
-      DMA_InitStructure.DMA_BufferSize = WS2812_BUFFER_SIZE;
+      DMA_InitStructure.DMA_Memory0BaseAddr = (u32)&ws2812_send_double_buffer[0];
+      DMA_InitStructure.DMA_BufferSize = 2*24;
       DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)&WS2812_TIM_CCR;
       DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
       DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
@@ -193,6 +214,12 @@ s32 WS2812_Init(u32 mode)
       DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
       DMA_InitStructure.DMA_Priority = DMA_Priority_VeryHigh;
       DMA_Init(WS2812_DMA_PTR, &DMA_InitStructure);
+
+      // trigger interrupt when transfer half complete/complete
+      DMA_ITConfig(WS2812_DMA_PTR, DMA_IT_HT | DMA_IT_TC, ENABLE);
+
+      // Configure and enable DMA interrupt
+      MIOS32_IRQ_Install(WS2812_DMA_IRQ_CHANNEL, MIOS32_IRQ_PRIO_HIGHEST);
 
       DMA_Cmd(WS2812_DMA_PTR, ENABLE);
     }
@@ -202,6 +229,55 @@ s32 WS2812_Init(u32 mode)
 #endif
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! DMA Channel interrupt is triggered on HT and TC interrupts
+/////////////////////////////////////////////////////////////////////////////
+void WS2812_DMA_IRQHandler_SetPWM(u16 *buffer)
+{
+  if( ws2812_state_ctr < WS2812_RESET_CYCLES ) {
+    int i;
+    for(i=0; i<24; ++i)
+      *(buffer++) = WS2812_TIM_CC_RESET;
+  } else {
+    int i, j;
+    u8 *rgb_values = &ws2812_rgb_values[ws2812_state_ctr-WS2812_RESET_CYCLES][0];
+    u8 mask;
+
+    for(i=0; i<3; ++i, ++rgb_values) {
+      u8 value = *(rgb_values++);
+      for(j=0, mask=0x80; j<8; ++j, mask >>= 1) {
+	*(buffer++) = (value & mask) ? WS2812_TIM_CC_HIGH : WS2812_TIM_CC_LOW;
+      }
+    }
+  }
+
+  if( ++ws2812_state_ctr >= (WS2812_RESET_CYCLES + WS2812_NUM_LEDS) ) {
+    ws2812_state_ctr = 0;
+  }
+}
+
+void WS2812_DMA_IRQHandler(void)
+{
+  // execute SetPWM function depending on pending flag(s)
+  if( DMA1->LISR & DMA_FLAG_HTIF0 ) {
+    DMA1->LIFCR = DMA_FLAG_HTIF0;
+
+    // state 0: lower buffer range has been transfered and can be updated
+    WS2812_DMA_IRQHandler_SetPWM(&ws2812_send_double_buffer[0]);
+  }
+
+  if( DMA1->LISR & DMA_FLAG_TCIF0 ) {
+    DMA1->LIFCR = DMA_FLAG_TCIF0;
+
+    // state 1: upper buffer range has been transfered and can be updated
+    WS2812_DMA_IRQHandler_SetPWM(&ws2812_send_double_buffer[24]);
+  }
+
+  DMA1->LIFCR = DMA_FLAG_TEIF0 | DMA_FLAG_FEIF0;
+
+  //DMA_ClearFlag(WS2812_DMA_PTR, (DMA_FLAG_TCIF0 | DMA_FLAG_TEIF0 | DMA_FLAG_HTIF0 | DMA_FLAG_FEIF0));
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //! Sets a single colour of the RGB LED
@@ -218,20 +294,18 @@ s32 WS2812_LED_SetRGB(u16 led, u8 colour, u8 value)
   if( led >= WS2812_NUM_LEDS )
     return -1; // unsupported LED
 
-  u8 offset = 0;
+  u8 colour_ix = 0;
   if( colour == 0 )
-    offset = 1*8;
+    colour_ix = 2;
   else if( colour == 1 )
-    offset = 0*8;
+    colour_ix = 0;
   else if( colour == 2 )
-    offset = 2*8;
+    colour_ix = 1;
   else
     return -2; // unsupported colour
 
-  u8 i, mask;
-  u16 *dst_ptr = (u16 *)&send_buffer[24*led + offset];
-  for(i=0, mask=0x80; i<8; ++i, mask >>= 1)
-    *(dst_ptr++) = (value & mask) ? WS2812_TIM_CC_HIGH : WS2812_TIM_CC_LOW;
+  u8 *rgb_values = &ws2812_rgb_values[led][0];
+  rgb_values[colour_ix] = value;
 
   return value;
 #endif
@@ -252,25 +326,18 @@ s32 WS2812_LED_GetRGB(u16 led, u8 colour)
   if( led >= WS2812_NUM_LEDS )
     return -1; // unsupported LED
 
-  u8 offset = 0;
+  u8 colour_ix = 0;
   if( colour == 0 )
-    offset = 1*8;
+    colour_ix = 2;
   else if( colour == 1 )
-    offset = 0*8;
+    colour_ix = 0;
   else if( colour == 2 )
-    offset = 2*8;
+    colour_ix = 1;
   else
     return -2; // unsupported colour
 
-  u8 i, mask;
-  u16 *src_ptr = (u16 *)&send_buffer[24*led + offset];
-  s32 value = 0;
-  for(i=0, mask=0x80; i<8; ++i, mask >>= 1) {
-    if( *(src_ptr++) == WS2812_TIM_CC_HIGH )
-      value |= mask;
-  }
-
-  return value;
+  u8 *rgb_values = &ws2812_rgb_values[led][0];
+  return rgb_values[colour_ix];
 #endif
 }
 

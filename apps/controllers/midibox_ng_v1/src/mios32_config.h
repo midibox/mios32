@@ -12,8 +12,8 @@
 
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.036"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2018 T.Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.037"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2019 T.Klose"
 
 // define a unique VID/PID for this application
 #define MIOS32_USB_PRODUCT_STR  "MIDIbox NG"
@@ -103,6 +103,8 @@ extern char mbng_patch_aout_spi_rc_pin;
 extern char mbng_patch_max72xx_spi_rc_pin;
 #define MAX72XX_SPI_RC_PIN_CHAIN1 mbng_patch_max72xx_spi_rc_pin
 
+// enable 1024 WS2812 LEDs
+#define WS2812_NUM_LEDS 1024
 
 // reserved memory for FreeRTOS pvPortMalloc function
 #define MIOS32_HEAP_SIZE 10*1024
