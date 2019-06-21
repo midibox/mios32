@@ -41,6 +41,9 @@ void screenSetSceneChangeInTicks(u8 ticks);
 // Notify, that a screen page change has occured (flash a page descriptor for a while)
 void screenNotifyPageChanged();
 
+// Add a new MIDI input/output log line (only if we are viewing the MIDI Monitor page)
+void MIDIMonitorAddLog(u8 inputFlag, mios32_midi_port_t port, mios32_midi_package_t package);
+
 // Return, if screensaver is active
 int isScreensaverActive();
 

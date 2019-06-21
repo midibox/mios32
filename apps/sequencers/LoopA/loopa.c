@@ -21,7 +21,7 @@
 static s32 (*loopaTrackPlayEventCallback)(s8 loopaTrack, mios32_midi_package_t midi_package, u32 tick) = 0;
 static s32 (*loopaTrackMetaEventCallback)(s8 loopaTrack, u8 meta, u32 len, u8 *buffer, u32 tick) = 0;
 
-u16 secondsSinceStartup_ = 0;         // global "uptime" timer
+u32 millisecondsSinceStartup_ = 0;    // global "uptime" timer
 u16 inactivitySeconds_ = 0;           // screensaver timer
 u32 tick_ = 0;                        // global seq tick
 u16 sessionNumber_ = 0;               // currently active session number (directory e.g. /SESSIONS/0001)
@@ -624,8 +624,6 @@ s32 seqTick(u32 bpm_tick)
    // send MIDI clock depending on ppqn
    if ((bpm_tick % (SEQ_BPM_PPQN_Get()/24)) == 0)
    {
-      // TODO: Don't send MIDI clock, when receiving external clock!
-
       // DEBUG_MSG("Tick %d, SEQ BPM PPQN/24 %d", bpm_tick, SEQ_BPM_PPQN_Get()/24);
       MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
    }
@@ -898,14 +896,12 @@ void loopaSDCardAvailable()
  */
 void loopaRecord(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
-
    // Check, if the active track should record this event (matching input port)
    if (trackMidiInPort_[activeTrack_] == 0 || trackMidiInPort_[activeTrack_] == port)
    {
       // Check, if the active track should record this event (matching input channel)
       if (trackMidiInChannel_[activeTrack_] == 16 || trackMidiInChannel_[activeTrack_] == midi_package.chn)
       {
-
          // Record event, if armed, sequencer running and we have enough space left
          if (isRecording_ && SEQ_BPM_IsRunning())
          {
@@ -953,11 +949,14 @@ void loopaRecord(mios32_midi_port_t port, mios32_midi_package_t midi_package)
          // Live Forward
          if (trackMidiForward_[activeTrack_])
          {
-            // Todo later: may process midi_package to incorporate fx like transposition
+            // Todo later: may process midi_package to incorporate live fx like transposition
+            midi_package.chn = isInstrument(trackMidiOutPort_[activeTrack_]) ?
+                               getInstrumentChannelNumberFromLoopAPortNumber(trackMidiOutPort_[activeTrack_]) :
+                               trackMidiOutChannel_[activeTrack_];
+
             hookMIDISendPackage(activeTrack_, midi_package);
          }
       }
    }
-
 }
 // -------------------------------------------------------------------------------------------------

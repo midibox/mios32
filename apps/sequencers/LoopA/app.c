@@ -57,6 +57,7 @@ static void TASK_Period_1mS(void *pvParameters);
 
 // local prototype of the task function
 static void TASK_Period_1mS_LP(void *pvParameters);
+
 static void TASK_Period_1mS_SD(void *pvParameters);
 
 
@@ -69,11 +70,12 @@ u8 hw_enabled;    // After startup/config loaded, enable local hardware
 // Local types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef enum {
-  MSD_DISABLED,
-  MSD_INIT,
-  MSD_READY,
-  MSD_SHUTDOWN
+typedef enum
+{
+   MSD_DISABLED,
+   MSD_INIT,
+   MSD_READY,
+   MSD_SHUTDOWN
 } msd_state_t;
 
 
@@ -100,7 +102,9 @@ static volatile msd_state_t msd_state;
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
+
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
+
 static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 
 
@@ -180,9 +184,12 @@ void APP_Init(void)
    MIOS32_ENC_ConfigSet(enc_value_id, enc_config);
 
    // start tasks
-   xTaskCreate(TASK_Period_1mS, (const char * const)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
-   xTaskCreate(TASK_Period_1mS_LP, (const char * const)"1mS_LP", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
-   xTaskCreate(TASK_Period_1mS_SD, (const char * const)"1mS_SD", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_SD, NULL);
+   xTaskCreate(TASK_Period_1mS, (const char *const) "1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS,
+               NULL);
+   xTaskCreate(TASK_Period_1mS_LP, (const char *const) "1mS_LP", 2 * configMINIMAL_STACK_SIZE, NULL,
+               PRIORITY_TASK_PERIOD_1mS_LP, NULL);
+   xTaskCreate(TASK_Period_1mS_SD, (const char *const) "1mS_SD", 2 * configMINIMAL_STACK_SIZE, NULL,
+               PRIORITY_TASK_PERIOD_1mS_SD, NULL);
 
    loopaStartup();
 }
@@ -211,23 +218,26 @@ void APP_MIDI_Tick(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
-  // -> MIDI Router
-  MIDI_ROUTER_Receive(port, midi_package);
+   // -> MIDI Router
+   MIDI_ROUTER_Receive(port, midi_package);
 
-  // -> MIDI Port Handler (used for MIDI monitor function)
-  MIDI_PORT_NotifyMIDIRx(port, midi_package);
+   // -> MIDI Port Handler (used for MIDI monitor function)
+   MIDI_PORT_NotifyMIDIRx(port, midi_package);
 
-  /// -> MIDI file recorder
-  /// MID_FILE_Receive(port, midi_package);
+   /// -> MIDI file recorder
+   /// MID_FILE_Receive(port, midi_package);
 
-  // Record midi event in loopa
-  loopaRecord(port, midi_package);
+   // Record midi event in loopa
+   loopaRecord(port, midi_package);
 
-  // forward to MIDI Monitor
-  // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
-  // (the SysEx stream would interfere with monitor messages)
-  u8 filter_sysex_message = (port == USB0) || (port == UART0);
-  MIDIMON_Receive(port, midi_package, filter_sysex_message);
+   // If we are in the MIDI monitor screen, output a packet dump
+   MIDIMonitorAddLog(1, port, midi_package);
+
+   // forward to MIDI Monitor
+   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
+   // (the SysEx stream would interfere with monitor messages)
+   u8 filter_sysex_message = (port == USB0) || (port == UART0);
+   MIDIMON_Receive(port, midi_package, filter_sysex_message);
 
    /*
   // Draw notes to voxel space
@@ -308,7 +318,7 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 {
    u16 taskCtr = 0;
 
-   while( 1 )
+   while (1)
    {
       vTaskDelay(1 / portTICK_RATE_MS);
       taskCtr++;
@@ -332,112 +342,107 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period_1mS_SD(void *pvParameters)
 {
+   const u16 sdcard_check_delay = 1000;
+   u16 sdcard_check_ctr = 0;
+   u8 lun_available = 0;
 
-  const u16 sdcard_check_delay = 1000;
-  u16 sdcard_check_ctr = 0;
-  u8 lun_available = 0;
+   while (1)
+   {
+      vTaskDelay(1 / portTICK_RATE_MS);
 
-  while (1)
-  {
-    vTaskDelay(1 / portTICK_RATE_MS);
+      // each second: check if SD Card (still) available
 
-    // each second: check if SD Card (still) available
+      if (msd_state == MSD_DISABLED && ++sdcard_check_ctr >= sdcard_check_delay)
+      {
+         sdcard_check_ctr = 0;
 
-    if (msd_state == MSD_DISABLED && ++sdcard_check_ctr >= sdcard_check_delay)
-    {
-       sdcard_check_ctr = 0;
+         MUTEX_SDCARD_TAKE;
+         s32 status = FILE_CheckSDCard();
 
-       MUTEX_SDCARD_TAKE;
-       s32 status = FILE_CheckSDCard();
+         if (status == 1)
+         {
+            DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
 
-       if (status == 1)
-       {
-          DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
+            // stop sequencer
+            SEQ_BPM_Stop();
 
-          // stop sequencer
-          SEQ_BPM_Stop();
+            // immediately go to next step
+            sdcard_check_ctr = sdcard_check_delay;
+         } else if (status == 2)
+         {
+            DEBUG_MSG("SD Card disconnected\n");
+            // invalidate all file infos
+            /// MIDIO_FILE_UnloadAllFiles();
 
-          // immediately go to next step
-          sdcard_check_ctr = sdcard_check_delay;
-       }
-       else if (status == 2)
-       {
-          DEBUG_MSG("SD Card disconnected\n");
-          // invalidate all file infos
-          /// MIDIO_FILE_UnloadAllFiles();
+            // stop sequencer
+            SEQ_BPM_Stop();
 
-          // stop sequencer
-          SEQ_BPM_Stop();
+            // change status
+            /// MIDIO_FILE_StatusMsgSet("No SD Card");
+         } else if (status == 3)
+         {
+            if (!FILE_SDCardAvailable())
+            {
+               DEBUG_MSG("SD Card not found\n");
+               /// MIDIO_FILE_StatusMsgSet("No SD Card");
+            } else if (!FILE_VolumeAvailable())
+            {
+               DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
+               /// MIDIO_FILE_StatusMsgSet("No FAT");
+            } else
+            {
+               // create the default files if they don't exist on SD Card
+               /// MIDIO_FILE_CreateDefaultFiles();
+               loopaSDCardAvailable();
+            }
 
-          // change status
-          /// MIDIO_FILE_StatusMsgSet("No SD Card");
-       }
-       else if (status == 3)
-       {
-          if (!FILE_SDCardAvailable())
-          {
-             DEBUG_MSG("SD Card not found\n");
-             /// MIDIO_FILE_StatusMsgSet("No SD Card");
-          }
-          else if (!FILE_VolumeAvailable())
-          {
-             DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
-             /// MIDIO_FILE_StatusMsgSet("No FAT");
-          }
-          else
-          {
-             // create the default files if they don't exist on SD Card
-             /// MIDIO_FILE_CreateDefaultFiles();
-             loopaSDCardAvailable();
-          }
+            hw_enabled = 1; // enable hardware after first read...
+         }
 
-          hw_enabled = 1; // enable hardware after first read...
-       }
+         MUTEX_SDCARD_GIVE;
+      }
 
-       MUTEX_SDCARD_GIVE;
-    }
+      // MSD driver
+      if (msd_state != MSD_DISABLED)
+      {
+         MUTEX_SDCARD_TAKE;
 
-    // MSD driver
-    if( msd_state != MSD_DISABLED )
-    {
-       MUTEX_SDCARD_TAKE;
+         switch (msd_state)
+         {
+            case MSD_SHUTDOWN:
+               // switch back to USB MIDI
+               MIOS32_USB_Init(1);
+               msd_state = MSD_DISABLED;
+               break;
 
-       switch( msd_state )
-       {
-       case MSD_SHUTDOWN:
-          // switch back to USB MIDI
-          MIOS32_USB_Init(1);
-          msd_state = MSD_DISABLED;
-          break;
+            case MSD_INIT:
+               // LUN not mounted yet
+               lun_available = 0;
 
-       case MSD_INIT:
-          // LUN not mounted yet
-          lun_available = 0;
+               // enable MSD USB driver
+               //MUTEX_J16_TAKE;
+               if (MSD_Init(0) >= 0)
+                  msd_state = MSD_READY;
+               else
+                  msd_state = MSD_SHUTDOWN;
+               //MUTEX_J16_GIVE;
+               break;
 
-          // enable MSD USB driver
-          //MUTEX_J16_TAKE;
-          if( MSD_Init(0) >= 0 )
-             msd_state = MSD_READY;
-          else
-             msd_state = MSD_SHUTDOWN;
-          //MUTEX_J16_GIVE;
-          break;
+            case MSD_READY:
+               // service MSD USB driver
+               MSD_Periodic_mS();
 
-       case MSD_READY:
-          // service MSD USB driver
-          MSD_Periodic_mS();
+               // this mechanism shuts down the MSD driver if SD card has been unmounted by OS
+               if (lun_available && !MSD_LUN_AvailableGet(0))
+                  msd_state = MSD_SHUTDOWN;
+               else if (!lun_available && MSD_LUN_AvailableGet(0))
+                  lun_available = 1;
+               break;
+         }
 
-          // this mechanism shuts down the MSD driver if SD card has been unmounted by OS
-          if( lun_available && !MSD_LUN_AvailableGet(0) )
-             msd_state = MSD_SHUTDOWN;
-          else if( !lun_available && MSD_LUN_AvailableGet(0) )
-             lun_available = 1;
-          break;
-       }
-
-       MUTEX_SDCARD_GIVE;
-    }
-  }
+         MUTEX_SDCARD_GIVE;
+      }
+   }
 }
 
 
@@ -446,45 +451,45 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period_1mS(void *pvParameters)
 {
-  portTickType xLastExecutionTime;
-  u32 taskCtr = 0;
+   portTickType xLastExecutionTime;
+   u32 taskCtr = 0;
 
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
+   // Initialise the xLastExecutionTime variable on task entry
+   xLastExecutionTime = xTaskGetTickCount();
 
-  while( 1 )
-  {
-     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
+   while (1)
+   {
+      vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
 
-     // skip delay gap if we had to wait for more than 5 ticks to avoid
-     // unnecessary repeats until xLastExecutionTime reached xTaskGetTickCount() again
-     portTickType xCurrentTickCount = xTaskGetTickCount();
-     if (xLastExecutionTime < xCurrentTickCount-5)
-        xLastExecutionTime = xCurrentTickCount;
+      // skip delay gap if we had to wait for more than 5 ticks to avoid
+      // unnecessary repeats until xLastExecutionTime reached xTaskGetTickCount() again
+      portTickType xCurrentTickCount = xTaskGetTickCount();
+      if (xLastExecutionTime < xCurrentTickCount - 5)
+         xLastExecutionTime = xCurrentTickCount;
 
-     // execute sequencer handler
-     MUTEX_SDCARD_TAKE;
-     seqHandler();
-     MUTEX_SDCARD_GIVE;
+      // execute sequencer handler
+      MUTEX_SDCARD_TAKE;
+      seqHandler();
+      MUTEX_SDCARD_GIVE;
 
-     // send timestamped MIDI events
-     MUTEX_MIDIOUT_TAKE;
-     SEQ_MIDI_OUT_Handler();
-     MUTEX_MIDIOUT_GIVE;
+      // send timestamped MIDI events
+      MUTEX_MIDIOUT_TAKE;
+      SEQ_MIDI_OUT_Handler();
+      MUTEX_MIDIOUT_GIVE;
 
-     // Scan Matrix button handler
-     /// MIDIO_MATRIX_ButtonHandler();
+      // Scan Matrix button handler
+      /// MIDIO_MATRIX_ButtonHandler();
 
-     // scan AINSER pins
-     /// AINSER_Handler(APP_AINSER_NotifyChange);
+      // scan AINSER pins
+      /// AINSER_Handler(APP_AINSER_NotifyChange);
 
-     taskCtr++;
-     if (taskCtr % 1000 == 0)
-     {
-        secondsSinceStartup_++;
-        inactivitySeconds_++;
-     }
-  }
+      taskCtr++;
+      millisecondsSinceStartup_++;
+      if (taskCtr % 1000 == 0)
+      {
+         inactivitySeconds_++;
+      }
+   }
 }
 
 
@@ -493,11 +498,11 @@ static void TASK_Period_1mS(void *pvParameters)
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
-  // filter MIDI In port which controls the MIDI clock
-  if (MIDI_ROUTER_MIDIClockInGet(port) == 1)
-    SEQ_BPM_NotifyMIDIRx(midi_byte);
+   // filter MIDI In port which controls the MIDI clock
+   if (MIDI_ROUTER_MIDIClockInGet(port) == 1)
+      SEQ_BPM_NotifyMIDIRx(midi_byte);
 
-  return 0; // no error, no filtering
+   return 0; // no error, no filtering
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -505,6 +510,7 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package)
 {
+   MIDIMonitorAddLog(0, port, package);
    return MIDI_PORT_NotifyMIDITx(port, package);
 }
 
@@ -529,10 +535,10 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
 s32 TASK_MSD_EnableSet(u8 enable)
 {
    MIOS32_IRQ_Disable();
-   if( msd_state == MSD_DISABLED && enable )
+   if (msd_state == MSD_DISABLED && enable)
    {
       msd_state = MSD_INIT;
-   } else if( msd_state == MSD_READY && !enable )
+   } else if (msd_state == MSD_READY && !enable)
       msd_state = MSD_SHUTDOWN;
    MIOS32_IRQ_Enable();
 
@@ -560,8 +566,15 @@ s32 TASK_MSD_FlagStrGet(char str[5])
 // functions to access MIDI IN/Out Mutex
 // see also mios32_config.h
 /////////////////////////////////////////////////////////////////////////////
-void APP_MUTEX_MIDIOUT_Take(void) { MUTEX_MIDIOUT_TAKE; }
-void APP_MUTEX_MIDIOUT_Give(void) { MUTEX_MIDIOUT_GIVE; }
-void APP_MUTEX_MIDIIN_Take(void) { MUTEX_MIDIIN_TAKE; }
-void APP_MUTEX_MIDIIN_Give(void) { MUTEX_MIDIIN_GIVE; }
+void APP_MUTEX_MIDIOUT_Take(void)
+{MUTEX_MIDIOUT_TAKE; }
+
+void APP_MUTEX_MIDIOUT_Give(void)
+{MUTEX_MIDIOUT_GIVE; }
+
+void APP_MUTEX_MIDIIN_Take(void)
+{MUTEX_MIDIIN_TAKE; }
+
+void APP_MUTEX_MIDIIN_Give(void)
+{MUTEX_MIDIIN_GIVE; }
 

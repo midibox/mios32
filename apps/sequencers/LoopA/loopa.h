@@ -24,7 +24,7 @@ typedef struct
 
 // --- Export global variables ---
 
-extern u16 secondsSinceStartup_;             // global "uptime" timer
+extern u32 millisecondsSinceStartup_;        // global "uptime" timer
 extern u16 inactivitySeconds_;               // screensaver timer
 extern u32 tick_;                            // global seq tick
 extern u16 sessionNumber_;                   // currently active session number (directories will be auto-created)

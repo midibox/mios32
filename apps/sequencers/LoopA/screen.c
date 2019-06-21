@@ -1,5 +1,6 @@
 // LoopA 256x64px screen routines
 
+#include <mios32.h>
 #include "commonIncludes.h"
 
 #include "tasks.h"
@@ -1319,6 +1320,195 @@ void displayPageSetup(void)
 }
 // ----------------------------------------------------------------------------------------
 
+/**
+ * Print a MIDI event in a 5-character slot of the MIDI monitor page
+ */
+void MIDIMonitorPrintEvent(u8 x, u8 y, mios32_midi_package_t package, u8 num_chars)
+{
+   // currently only 5 chars supported...
+   if (package.type == 0xf || package.evnt0 >= 0xf8)
+   {
+      switch (package.evnt0)
+      {
+         case 0xf8:
+            printFormattedString(x, y, " CLK ");
+            break;
+         case 0xfa:
+            printFormattedString(x, y, "START");
+            break;
+         case 0xfb:
+            printFormattedString(x, y, "CONT.");
+            break;
+         case 0xfc:
+            printFormattedString(x, y, "STOP ");
+            break;
+         default:
+            printFormattedString(x, y, " %02X  ", package.evnt0);
+      }
+   }
+   else if (package.type < 8)
+   {
+      printFormattedString(x, y, "SysEx");
+   }
+   else
+   {
+      switch (package.event)
+      {
+         case NoteOff:
+         case NoteOn:
+         case PolyPressure:
+         case CC:
+         case ProgramChange:
+         case Aftertouch:
+         case PitchBend:
+            // could be enhanced later
+            printFormattedString(x, y, "%02X%02X ", package.evnt0, package.evnt1);
+            break;
+
+         default:
+            // print first two bytes for unsupported events
+            printFormattedString(x, y, "%02X%02X ", package.evnt0, package.evnt1);
+      }
+   }
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Add a new MIDI input/output log line, but optimize: store data only,
+ * if we are viewing the MIDI Monitor page
+ *
+ */
+static u8 currentMIDIMonitorLogLine_ = 0;
+static u32 MIDIMonitorTimeLine_[3];
+static u8 MIDIMonitorLogInputFlagLine_[3];
+static mios32_midi_port_t MIDIMonitorPortLine_[3];
+static mios32_midi_package_t MIDIMonitorPackageLine_[3];
+void MIDIMonitorAddLog(u8 inputFlag, mios32_midi_port_t port, mios32_midi_package_t package)
+{
+   if (page_ == PAGE_MIDIMONITOR)
+   {
+      if (package.evnt0 != 0xf8) // Filter MIDI clock events
+      {
+         if (currentMIDIMonitorLogLine_ == 2)
+         {
+            // move up log
+            MIDIMonitorLogInputFlagLine_[0] = MIDIMonitorLogInputFlagLine_[1];
+            MIDIMonitorLogInputFlagLine_[1] = MIDIMonitorLogInputFlagLine_[2];
+            MIDIMonitorPortLine_[0] = MIDIMonitorPortLine_[1];
+            MIDIMonitorPortLine_[1] = MIDIMonitorPortLine_[2];
+            MIDIMonitorPackageLine_[0] = MIDIMonitorPackageLine_[1];
+            MIDIMonitorPackageLine_[1] = MIDIMonitorPackageLine_[2];
+            MIDIMonitorTimeLine_[0] = MIDIMonitorTimeLine_[1];
+            MIDIMonitorTimeLine_[1] = MIDIMonitorTimeLine_[2];
+         }
+
+         MIDIMonitorLogInputFlagLine_[currentMIDIMonitorLogLine_] = inputFlag;
+         MIDIMonitorPortLine_[currentMIDIMonitorLogLine_] = port;
+         MIDIMonitorPackageLine_[currentMIDIMonitorLogLine_] = package;
+         MIDIMonitorTimeLine_[currentMIDIMonitorLogLine_] = millisecondsSinceStartup_;
+
+         if (currentMIDIMonitorLogLine_ < 2)
+            currentMIDIMonitorLogLine_++;
+      }
+   }
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Display the MIDI monitor page
+ *
+ */
+void displayPageMIDIMonitor()
+{
+   u8 i; // port index / monitor log line index
+   u8 y = 0;
+
+   setFontSmall();
+   setFontNonInverted();
+
+   // Output realtime port overview
+   for (i = 1; i <= 8; ++i)
+   {
+      u8 port_ix_midi_in = (i >= 9) ? (i - 4) : i;
+
+      u8 x = (i - 1) * 5 * 6;
+      y = 0;
+
+      mios32_midi_port_t port = MIDI_PORT_InPortGet(port_ix_midi_in);
+      mios32_midi_package_t package = MIDI_PORT_InPackageGet(port);
+
+      if (port == 0xff)
+      {
+         printFormattedString(x, y, "     ");
+      }
+      else if (package.type)
+      {
+         setFontInverted();
+         MIDIMonitorPrintEvent(x, y, package, 5);
+         setFontNonInverted();
+      }
+      else
+      {
+         printFormattedString(x, y, MIDI_PORT_InNameGet(port_ix_midi_in));
+      }
+
+      port = MIDI_PORT_OutPortGet(i);
+      package = MIDI_PORT_OutPackageGet(port);
+
+      y = 12;
+
+      if (port == 0xff)
+      {
+         printFormattedString(x, y, "     ");
+      }
+      else if (package.type)
+      {
+         setFontInverted();
+         MIDIMonitorPrintEvent(x, y, package, 5);
+         setFontNonInverted();
+      }
+      else
+      {
+         printFormattedString(x, y, MIDI_PORT_OutNameGet(i));
+      }
+   }
+
+   // Output high-speed last monitor log
+   // like this 31345000: -> USB0 0 2 2 30 20 30
+   for (i = 0; i <= currentMIDIMonitorLogLine_; i++)
+   {
+      y = 2 + (i + 2) * 12;
+      if (MIDIMonitorLogInputFlagLine_[i])
+      {
+         printFormattedString(0, y, "%d -> %s %02x %02x %02x %02x %02x %02x",
+                              MIDIMonitorTimeLine_[i],
+                              MIDI_PORT_InNameGet(MIDI_PORT_InIxGet(MIDIMonitorPortLine_[i])),
+                              MIDIMonitorPackageLine_[i].type,
+                              MIDIMonitorPackageLine_[i].cable,
+                              MIDIMonitorPackageLine_[i].chn,
+                              MIDIMonitorPackageLine_[i].event,
+                              MIDIMonitorPackageLine_[i].value1,
+                              MIDIMonitorPackageLine_[i].value2);
+      }
+      else
+      {
+         printFormattedString(0, y, "%d %s -> %02x %02x %02x %02x %02x %02x",
+                              MIDIMonitorTimeLine_[i],
+                              MIDI_PORT_OutNameGet(MIDI_PORT_OutIxGet(MIDIMonitorPortLine_[i])),
+                              MIDIMonitorPackageLine_[i].type,
+                              MIDIMonitorPackageLine_[i].cable,
+                              MIDIMonitorPackageLine_[i].chn,
+                              MIDIMonitorPackageLine_[i].event,
+                              MIDIMonitorPackageLine_[i].value1,
+                              MIDIMonitorPackageLine_[i].value2);
+      }
+
+   }
+}
+// ----------------------------------------------------------------------------------------
+
 
 /**
  * Return, if screensaver is active
@@ -1437,6 +1627,10 @@ void display()
 
          case PAGE_SETUP:
             displayPageSetup();
+            break;
+
+         case PAGE_MIDIMONITOR:
+            displayPageMIDIMonitor();
             break;
       }
 
