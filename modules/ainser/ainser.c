@@ -67,6 +67,11 @@ s32 AINSER_Init(u32 mode)
   status |= MIOS32_SPI_IO_Init(AINSER_SPI, MIOS32_SPI_PIN_DRIVER_STRONG);
 #endif
 
+  // extra CS pin
+#if AINSER_NUM_MODULES >= 3
+  MIOS32_BOARD_J10_PinInit(0, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+#endif
+
   // SPI Port will be initialized in AINSER_Update()
 
   num_used_modules = AINSER_NUM_MODULES;
@@ -368,9 +373,10 @@ static s32 AINSER_SetCs(u8 module, u8 value)
   switch( module ) {
   case 0: return MIOS32_SPI_RC_PinSet(AINSER_SPI, AINSER_SPI_RC_PIN_MODULE1, value); // spi, rc_pin, pin_value
   case 1: return MIOS32_SPI_RC_PinSet(AINSER_SPI, AINSER_SPI_RC_PIN_MODULE2, value); // spi, rc_pin, pin_value
+  case 2: return MIOS32_BOARD_J10_PinSet(0, value);
 
-#if AINSER_NUM_MODULES > 2
-# error "CS Line for more than 2 modules not prepared yet - please enhance here!"
+#if AINSER_NUM_MODULES > 3
+# error "CS Line for more than 3 modules not prepared yet - please enhance here!"
 #endif
   }
 

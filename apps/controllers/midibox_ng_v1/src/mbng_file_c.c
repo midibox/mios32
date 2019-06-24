@@ -2848,9 +2848,9 @@ s32 parseAinSer(u32 line, char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "cs") == 0 ) {
-      if( (cs=get_dec(value_str)) < 0 || cs > 1 ) {
+      if( (cs=get_dec(value_str)) < 0 || cs > 2 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid CS line for %s n=%d ... %s=%s (0 or 1)\n", line, cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid CS line for %s n=%d ... %s=%s (0 or 2)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }

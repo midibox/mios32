@@ -87,8 +87,8 @@
 
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
-// enable two AINSER modules
-#define AINSER_NUM_MODULES 2
+// enable three AINSER modules
+#define AINSER_NUM_MODULES 3
 
 // enable 32 AOUT channels
 #define AOUT_NUM_CHANNELS 32
