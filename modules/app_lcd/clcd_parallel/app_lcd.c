@@ -49,6 +49,16 @@ static struct hd44780_pins displays[4] = {
         .e_pin_mask         = GPIO_Pin_2,
         .data_port          = GPIOE,
         .data_pins_offset   = 8U,
+    },
+    {
+        .rs_port            = GPIOB,
+        .rs_pin_mask        = GPIO_Pin_0,
+        .rw_port            = GPIOB,
+        .rw_pin_mask        = GPIO_Pin_1,
+        .e_port             = GPIOB,
+        .e_pin_mask         = GPIO_Pin_2,
+        .data_port          = GPIOE,
+        .data_pins_offset   = 8U,
     }
 };
 
@@ -396,7 +406,7 @@ void hd44780_lcd__goto(const struct hd44780_pins * const lcd, const uint8_t x, c
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Init(u32 mode) {
-    return hd44780_lcd__init(&displays[0]);
+    return hd44780_lcd__init(&displays[mios32_lcd_device]);
 }
 
 
@@ -406,7 +416,7 @@ s32 APP_LCD_Init(u32 mode) {
 // OUT: returns < 0 if display not available or timed out
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Data(u8 data) {
-    return hd44780_lcd__send_data(&displays[0], data);
+    return hd44780_lcd__send_data(&displays[mios32_lcd_device], data);
 }
 
 
@@ -416,7 +426,7 @@ s32 APP_LCD_Data(u8 data) {
 // OUT: returns < 0 if display not available or timed out
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Cmd(u8 cmd) {
-    return hd44780_lcd__send_command(&displays[0], cmd);
+    return hd44780_lcd__send_command(&displays[mios32_lcd_device], cmd);
 }
 
 
@@ -436,7 +446,7 @@ s32 APP_LCD_Clear(void) {
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_CursorSet(u16 column, u16 line) {
-    hd44780_lcd__goto(&displays[0], column, line);
+    hd44780_lcd__goto(&displays[mios32_lcd_device], column, line);
     return 0;
 }
 
@@ -792,7 +802,7 @@ s32 APP_LCD_TerminalParseLine(char *input, void *_output_function)
             }
 
             if( pin_number >= 0 && level >= 0 ) {
-                test_mode__set_lcd_pin_and_report(&displays[0], pin_number, level, _output_function);
+                test_mode__set_lcd_pin_and_report(&displays[mios32_lcd_device], pin_number, level, _output_function);
             } else {
                 out("Following commands are supported:\n");
                 out("testlcdpin rs 0  -> sets J15(AB):RS to ca. 0V");
