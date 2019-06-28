@@ -28,13 +28,37 @@
 // Pins
 /////////////////////////////////////////////////////////////////////////////
 
-#define LCD0__RS__PORT          GPIOB
-#define LCD0__RS__PIN           GPIO_Pin_0
-#define LCD0__RW__PORT          GPIOB
-#define LCD0__RW__PIN           GPIO_Pin_1
-#define LCD0__E__PORT           GPIOB
-#define LCD0__E__PIN            GPIO_Pin_2
-#define LCD0__DATA__PORT        GPIOE
+struct hd44780_pins {
+    GPIO_TypeDef *rs_port;
+    GPIO_TypeDef *rw_port;
+    GPIO_TypeDef *e_port;
+    GPIO_TypeDef *data_port;
+    uint16_t rs_pin_mask;
+    uint16_t rw_pin_mask;
+    uint16_t e_pin_mask;
+    uint16_t data_pins_offset;
+};
+
+static struct hd44780_pins displays[4] = {
+    {
+        .rs_port            = GPIOB,
+        .rs_pin_mask        = GPIO_Pin_0,
+        .rw_port            = GPIOB,
+        .rw_pin_mask        = GPIO_Pin_1,
+        .e_port             = GPIOB,
+        .e_pin_mask         = GPIO_Pin_2,
+        .data_port          = GPIOE,
+        .data_pins_offset   = 8U,
+    }
+};
+
+//#define LCD0__RS__PORT          GPIOB
+//#define LCD0__RS__PIN           GPIO_Pin_0
+//#define LCD0__RW__PORT          GPIOB
+//#define LCD0__RW__PIN           GPIO_Pin_1
+//#define LCD0__E__PORT           GPIOB
+//#define LCD0__E__PIN            GPIO_Pin_2
+//#define LCD0__DATA__PORT        GPIOE
 #define LCD0__DATA__PIN_OFFSET  8U
 #define LCD0__DATA__PINS_MASK   (\
   (1U << LCD0__DATA__PIN_OFFSET)\
@@ -84,118 +108,118 @@
 
 static unsigned long long display_available = 0;
 
-void hd44780_lcd__register_select__init(void) {
+void hd44780_lcd__register_select__init(const struct hd44780_pins * const lcd) {
     GPIO_InitTypeDef lcd0__GPIO_InitStructure;
     GPIO_StructInit(&lcd0__GPIO_InitStructure);
     lcd0__GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
     lcd0__GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     lcd0__GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz; // weak driver to reduce transients
-    lcd0__GPIO_InitStructure.GPIO_Pin = LCD0__RS__PIN;
-    GPIO_Init(LCD0__RS__PORT, &lcd0__GPIO_InitStructure);
+    lcd0__GPIO_InitStructure.GPIO_Pin = lcd->rs_pin_mask;
+    GPIO_Init(lcd->rs_port, &lcd0__GPIO_InitStructure);
 }
 
-void hd44780_lcd__register_select__command(void) {
-    MIOS32_SYS_STM_PINSET_0(LCD0__RS__PORT, LCD0__RS__PIN);
+void hd44780_lcd__register_select__command(const struct hd44780_pins * const lcd) {
+    MIOS32_SYS_STM_PINSET_0(lcd->rs_port, lcd->rs_pin_mask);
 }
 
-void hd44780_lcd__register_select__data(void) {
-    MIOS32_SYS_STM_PINSET_1(LCD0__RS__PORT, LCD0__RS__PIN);
+void hd44780_lcd__register_select__data(const struct hd44780_pins * const lcd) {
+    MIOS32_SYS_STM_PINSET_1(lcd->rs_port, lcd->rs_pin_mask);
 }
 
 
-void hd44780_lcd__mode_init(void) {
+void hd44780_lcd__mode_init(const struct hd44780_pins * const lcd) {
     GPIO_InitTypeDef lcd0__GPIO_InitStructure;
     GPIO_StructInit(&lcd0__GPIO_InitStructure);
     lcd0__GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
     lcd0__GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     lcd0__GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz; // weak driver to reduce transients
-    lcd0__GPIO_InitStructure.GPIO_Pin = LCD0__RW__PIN;
-    GPIO_Init(LCD0__RW__PORT, &lcd0__GPIO_InitStructure);
+    lcd0__GPIO_InitStructure.GPIO_Pin = lcd->rw_pin_mask;
+    GPIO_Init(lcd->rw_port, &lcd0__GPIO_InitStructure);
 }
 
-void hd44780_lcd__mode_read(void) {
-    MIOS32_SYS_STM_PINSET_1(LCD0__RW__PORT, LCD0__RW__PIN);
+void hd44780_lcd__mode_read(const struct hd44780_pins * const lcd) {
+    MIOS32_SYS_STM_PINSET_1(lcd->rw_port, lcd->rw_pin_mask);
 }
 
-void hd44780_lcd__mode_write(void) {
-    MIOS32_SYS_STM_PINSET_0(LCD0__RW__PORT, LCD0__RW__PIN);
+void hd44780_lcd__mode_write(const struct hd44780_pins * const lcd) {
+    MIOS32_SYS_STM_PINSET_0(lcd->rw_port, lcd->rw_pin_mask);
 }
 
 
-void hd44780_lcd__e__init(void) {
+void hd44780_lcd__e__init(const struct hd44780_pins * const lcd) {
     GPIO_InitTypeDef lcd0__GPIO_InitStructure;
     GPIO_StructInit(&lcd0__GPIO_InitStructure);
     lcd0__GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
     lcd0__GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     lcd0__GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz; // weak driver to reduce transients
-    lcd0__GPIO_InitStructure.GPIO_Pin = LCD0__E__PIN;
-    GPIO_Init(LCD0__E__PORT, &lcd0__GPIO_InitStructure);
+    lcd0__GPIO_InitStructure.GPIO_Pin = lcd->e_pin_mask;
+    GPIO_Init(lcd->e_port, &lcd0__GPIO_InitStructure);
 }
 
-void hd44780_lcd__e_high(void) {
-    MIOS32_SYS_STM_PINSET_1(LCD0__E__PORT, LCD0__E__PIN);
+void hd44780_lcd__e_high(const struct hd44780_pins * const lcd) {
+    MIOS32_SYS_STM_PINSET_1(lcd->e_port, lcd->e_pin_mask);
 }
 
-void hd44780_lcd__e_low(void) {
-    MIOS32_SYS_STM_PINSET_0(LCD0__E__PORT, LCD0__E__PIN);
+void hd44780_lcd__e_low(const struct hd44780_pins * const lcd) {
+    MIOS32_SYS_STM_PINSET_0(lcd->e_port, lcd->e_pin_mask);
 }
 
-void hd44780_lcd__latch_data(void) {
-    hd44780_lcd__e_high();
+void hd44780_lcd__latch_data(const struct hd44780_pins * const lcd) {
+    hd44780_lcd__e_high(lcd);
     MIOS32_DELAY_Wait_uS(10);
-    hd44780_lcd__e_low();
+    hd44780_lcd__e_low(lcd);
 }
 
 
-void hd44780_lcd__data_port__mode_write(void) {
+void hd44780_lcd__data_port__mode_write(const struct hd44780_pins * const lcd) {
     GPIO_InitTypeDef lcd0__GPIO_InitStructure;
     GPIO_StructInit(&lcd0__GPIO_InitStructure);
     lcd0__GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
     lcd0__GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     lcd0__GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz; // weak driver to reduce transients
     lcd0__GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    lcd0__GPIO_InitStructure.GPIO_Pin = LCD0__DATA__PINS_MASK;
-    GPIO_Init(LCD0__DATA__PORT, &lcd0__GPIO_InitStructure);
+    lcd0__GPIO_InitStructure.GPIO_Pin = 0xFFU << lcd->data_pins_offset;
+    GPIO_Init(lcd->data_port, &lcd0__GPIO_InitStructure);
 }
 
-void hd44780_lcd__data_port__mode_read(void) {
+void hd44780_lcd__data_port__mode_read(const struct hd44780_pins * const lcd) {
     GPIO_InitTypeDef lcd0__GPIO_InitStructure;
     GPIO_StructInit(&lcd0__GPIO_InitStructure);
     lcd0__GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     lcd0__GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz; // weak driver to reduce transients
     lcd0__GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
     lcd0__GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-    lcd0__GPIO_InitStructure.GPIO_Pin = LCD0__DATA__PINS_MASK;
-    GPIO_Init(LCD0__DATA__PORT, &lcd0__GPIO_InitStructure);
+    lcd0__GPIO_InitStructure.GPIO_Pin = 0xFFU << lcd->data_pins_offset;
+    GPIO_Init(lcd->data_port, &lcd0__GPIO_InitStructure);
 }
 
-void hd44780_lcd__data_port__mode_hi(void) {
+void hd44780_lcd__data_port__mode_hi(const struct hd44780_pins * const lcd) {
     GPIO_InitTypeDef lcd0__GPIO_InitStructure;
     GPIO_StructInit(&lcd0__GPIO_InitStructure);
     lcd0__GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     lcd0__GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz; // weak driver to reduce transients
     lcd0__GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
     lcd0__GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    lcd0__GPIO_InitStructure.GPIO_Pin = LCD0__DATA__PINS_MASK;
-    GPIO_Init(LCD0__DATA__PORT, &lcd0__GPIO_InitStructure);
+    lcd0__GPIO_InitStructure.GPIO_Pin = 0xFFU << lcd->data_pins_offset;
+    GPIO_Init(lcd->data_port, &lcd0__GPIO_InitStructure);
 }
 
 
-void hd44780_lcd__data_port__write(const uint8_t value) {
-    LCD0__DATA__PORT->ODR = (uint16_t) (value << LCD0__DATA__PIN_OFFSET)
-        | (LCD0__DATA__PORT->ODR & ~LCD0__DATA__PINS_MASK);
+void hd44780_lcd__data_port__write(const struct hd44780_pins *const lcd, const uint8_t value) {
+    lcd->data_port->ODR = (uint16_t) (value << lcd->data_pins_offset)
+        | (lcd->data_port->ODR & ~0xFFU << lcd->data_pins_offset);
 }
 
-uint8_t hd44780_lcd__is_busy(void) {
-    return MIOS32_SYS_STM_PINGET(LCD0__DATA__PORT, 1U << (LCD0__DATA__PIN_OFFSET + 7U));
+uint8_t hd44780_lcd__is_busy(const struct hd44780_pins * const lcd) {
+    return MIOS32_SYS_STM_PINGET(lcd->data_port, 1U << (lcd->data_pins_offset + 7U));
 }
 
-s32 hd44780_lcd__wait_until_not_busy(s32 time_out) {
+s32 hd44780_lcd__wait_until_not_busy(const struct hd44780_pins *const lcd, s32 time_out) {
     s32 result = -1;
-    hd44780_lcd__data_port__mode_read();
-    hd44780_lcd__mode_read();
+    hd44780_lcd__data_port__mode_read(lcd);
+    hd44780_lcd__mode_read(lcd);
     while (time_out > 0) {
-        hd44780_lcd__e_high();
+        hd44780_lcd__e_high(lcd);
         __asm__ __volatile__("nop");
         __asm__ __volatile__("nop");
         __asm__ __volatile__("nop");
@@ -218,12 +242,12 @@ s32 hd44780_lcd__wait_until_not_busy(s32 time_out) {
         __asm__ __volatile__("nop");
         __asm__ __volatile__("nop");
 
-        if (!hd44780_lcd__is_busy()) {
+        if (!hd44780_lcd__is_busy(lcd)) {
             time_out = 0;
             result = 0;
         }
 
-        hd44780_lcd__e_low();
+        hd44780_lcd__e_low(lcd);
         __asm__ __volatile__("nop");
         __asm__ __volatile__("nop");
         __asm__ __volatile__("nop");
@@ -245,124 +269,101 @@ s32 hd44780_lcd__wait_until_not_busy(s32 time_out) {
 
         --time_out;
     }
-    hd44780_lcd__mode_write();
+    hd44780_lcd__mode_write(lcd);
     // data pins remain in read mode
     return result;
 }
 
 
-s32 hd44780_lcd__wait_until_not_busy2(s32 time_out) {
-    s32 result = -1;
-    hd44780_lcd__data_port__mode_read();
-    hd44780_lcd__mode_read();
-    do {
-        hd44780_lcd__e_high();
-
-        MIOS32_DELAY_Wait_uS(10);
-        if (LCD0__DATA__PORT->IDR & (1U << (LCD0__DATA__PIN_OFFSET + 7U))) {
-        } else {
-            result = 0;
-            time_out = 0;
-        }
-
-        hd44780_lcd__e_low();
-    } while (--time_out > 0);
-    hd44780_lcd__mode_write();
-    // data pins remain in read mode
-    return result;
+void hd44780_lcd__send_byte(const struct hd44780_pins * const lcd, const uint8_t i) {
+    hd44780_lcd__data_port__mode_write(lcd);
+    hd44780_lcd__data_port__write(lcd, i);
+    hd44780_lcd__latch_data(lcd);
+    hd44780_lcd__data_port__mode_hi(lcd);
 }
 
-
-
-void hd44780_lcd__send_byte(const uint8_t i) {
-    hd44780_lcd__data_port__mode_write();
-    hd44780_lcd__data_port__write(i);
-    hd44780_lcd__latch_data();
-    hd44780_lcd__data_port__mode_hi();
-}
-
-s32 hd44780_lcd__send_command(const uint8_t i) {
-    if (hd44780_lcd__wait_until_not_busy(HD44780_LCD__TIMEOUT) < 0) return -1;
-    hd44780_lcd__send_byte(i);
+s32 hd44780_lcd__send_command(const struct hd44780_pins * const lcd, const uint8_t i) {
+    if (hd44780_lcd__wait_until_not_busy(lcd, HD44780_LCD__TIMEOUT) < 0) return -1;
+    hd44780_lcd__send_byte(lcd, i);
     return 0;
 }
 
-s32 hd44780_lcd__send_data(const uint8_t i) {
-    if (hd44780_lcd__wait_until_not_busy(HD44780_LCD__TIMEOUT) < 0) return -1;
-    hd44780_lcd__register_select__data();
-    hd44780_lcd__send_byte(i);
-    hd44780_lcd__register_select__command();
+s32 hd44780_lcd__send_data(const struct hd44780_pins * const lcd, const uint8_t i) {
+    if (hd44780_lcd__wait_until_not_busy(lcd, HD44780_LCD__TIMEOUT) < 0) return -1;
+    hd44780_lcd__register_select__data(lcd);
+    hd44780_lcd__send_byte(lcd, i);
+    hd44780_lcd__register_select__command(lcd);
     return 0;
 }
 
 
-void hd44780_lcd__init0(void) {
-    hd44780_lcd__e__init();
-    hd44780_lcd__e_low();
+void hd44780_lcd__init0(const struct hd44780_pins *const lcd) {
+    hd44780_lcd__e__init(lcd);
+    hd44780_lcd__e_low(lcd);
 
-    hd44780_lcd__mode_init();
-    hd44780_lcd__mode_write();
+    hd44780_lcd__mode_init(lcd);
+    hd44780_lcd__mode_write(lcd);
 
-    hd44780_lcd__register_select__init();
-    hd44780_lcd__register_select__command();
+    hd44780_lcd__register_select__init(lcd);
+    hd44780_lcd__register_select__command(lcd);
 
-    hd44780_lcd__data_port__mode_write();
+    hd44780_lcd__data_port__mode_write(lcd);
 }
 
-void hd44780_lcd__init1(void) {
+void hd44780_lcd__init1(const struct hd44780_pins *const lcd) {
     uint8_t i = 0;
     while (i < 30) {
-        hd44780_lcd__data_port__write(HD44780_LCD__COMMAND__CONFIGURE | HD44780_LCD__COMMAND__CONFIGURE_BUS_8_BIT);
+        hd44780_lcd__data_port__write(lcd, HD44780_LCD__COMMAND__CONFIGURE | HD44780_LCD__COMMAND__CONFIGURE_BUS_8_BIT);
         MIOS32_DELAY_Wait_uS(100);
-        hd44780_lcd__latch_data();
+        hd44780_lcd__latch_data(lcd);
         MIOS32_DELAY_Wait_uS(5000);
         i++;
     }
 }
 
-s32 hd44780_lcd__init2(void) {
-    return hd44780_lcd__send_command(HD44780_LCD__COMMAND__CONFIGURE | HD44780_LCD__COMMAND__CONFIGURE_BUS_8_BIT | HD44780_LCD__COMMAND__CONFIGURE_LINES_2 | HD44780_LCD__COMMAND__CONFIGURE_CHAR_5X8);
+s32 hd44780_lcd__init2(const struct hd44780_pins * const lcd) {
+    return hd44780_lcd__send_command(lcd, HD44780_LCD__COMMAND__CONFIGURE | HD44780_LCD__COMMAND__CONFIGURE_BUS_8_BIT | HD44780_LCD__COMMAND__CONFIGURE_LINES_2 | HD44780_LCD__COMMAND__CONFIGURE_CHAR_5X8);
 }
-s32 hd44780_lcd__init3(void) {
-    return hd44780_lcd__send_command(HD44780_LCD__COMMAND__DISPLAY | HD44780_LCD__COMMAND__DISPLAY_ON | HD44780_LCD__COMMAND__DISPLAY_CURSOR_OFF);
+s32 hd44780_lcd__init3(const struct hd44780_pins * const lcd) {
+    return hd44780_lcd__send_command(lcd, HD44780_LCD__COMMAND__DISPLAY | HD44780_LCD__COMMAND__DISPLAY_ON | HD44780_LCD__COMMAND__DISPLAY_CURSOR_OFF);
 }
-s32 hd44780_lcd__init4(void) {
-    return hd44780_lcd__send_command(HD44780_LCD__COMMAND__SCREEN | HD44780_LCD__COMMAND__SCREEN_ADDRESS_INC);
+s32 hd44780_lcd__init4(const struct hd44780_pins * const lcd) {
+    return hd44780_lcd__send_command(lcd, HD44780_LCD__COMMAND__SCREEN | HD44780_LCD__COMMAND__SCREEN_ADDRESS_INC);
 }
-s32 hd44780_lcd__init5(void) {
-    return hd44780_lcd__send_command(HD44780_LCD__COMMAND__USE_DDRAM);
+s32 hd44780_lcd__init5(const struct hd44780_pins * const lcd) {
+    return hd44780_lcd__send_command(lcd, HD44780_LCD__COMMAND__USE_DDRAM);
 }
-s32 hd44780_lcd__init6(void) {
-    return hd44780_lcd__send_command(HD44780_LCD__COMMAND__CLEAR);
+s32 hd44780_lcd__init6(const struct hd44780_pins * const lcd) {
+    return hd44780_lcd__send_command(lcd, HD44780_LCD__COMMAND__CLEAR);
 }
 
 
-s32 hd44780_lcd__init(void) {
-    hd44780_lcd__init0();
+s32 hd44780_lcd__init(const struct hd44780_pins * const lcd) {
+    hd44780_lcd__init0(lcd);
     
     MIOS32_DELAY_Wait_uS(4000);
 
-    hd44780_lcd__init1();
+    hd44780_lcd__init1(lcd);
 
     MIOS32_DELAY_Wait_uS(4000);
 
-    if (hd44780_lcd__init2() < 0) {
+    if (hd44780_lcd__init2(lcd) < 0) {
         return -1;
     }
     MIOS32_DELAY_Wait_uS(4000);
-    if (hd44780_lcd__init3() < 0) {
+    if (hd44780_lcd__init3(lcd) < 0) {
         return -1;
     }
     MIOS32_DELAY_Wait_uS(4000);
-    if (hd44780_lcd__init4() < 0) {
+    if (hd44780_lcd__init4(lcd) < 0) {
         return -1;
     }
     MIOS32_DELAY_Wait_uS(4000);
-    if (hd44780_lcd__init5() < 0) {
+    if (hd44780_lcd__init5(lcd) < 0) {
         return -1;
     }
     MIOS32_DELAY_Wait_uS(4000);
-    if (hd44780_lcd__init6() < 0) {
+    if (hd44780_lcd__init6(lcd) < 0) {
         return -1;
     }
     MIOS32_DELAY_Wait_uS(4000);
@@ -371,7 +372,7 @@ s32 hd44780_lcd__init(void) {
 }
 
 
-void hd44780_lcd__goto(const uint8_t x, const uint8_t y) {
+void hd44780_lcd__goto(const struct hd44780_pins * const lcd, const uint8_t x, const uint8_t y) {
     uint8_t command;
     switch (y) {
     case 0: command = (HD44780_LCD__COMMAND__SET_DDRAM_ADDRESS | HD44780_LCD__LINE0_ADDRESS) + x;
@@ -385,7 +386,7 @@ void hd44780_lcd__goto(const uint8_t x, const uint8_t y) {
     default: command = (HD44780_LCD__COMMAND__SET_DDRAM_ADDRESS | HD44780_LCD__LINE0_ADDRESS) + x;
     }
 
-    hd44780_lcd__send_command(command);
+    hd44780_lcd__send_command(lcd, command);
 }
 
 
@@ -395,7 +396,7 @@ void hd44780_lcd__goto(const uint8_t x, const uint8_t y) {
 // OUT: returns < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Init(u32 mode) {
-    return hd44780_lcd__init();
+    return hd44780_lcd__init(&displays[0]);
 }
 
 
@@ -405,7 +406,7 @@ s32 APP_LCD_Init(u32 mode) {
 // OUT: returns < 0 if display not available or timed out
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Data(u8 data) {
-    return hd44780_lcd__send_data(data);
+    return hd44780_lcd__send_data(&displays[0], data);
 }
 
 
@@ -415,7 +416,7 @@ s32 APP_LCD_Data(u8 data) {
 // OUT: returns < 0 if display not available or timed out
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Cmd(u8 cmd) {
-    return hd44780_lcd__send_command(cmd);
+    return hd44780_lcd__send_command(&displays[0], cmd);
 }
 
 
@@ -435,7 +436,7 @@ s32 APP_LCD_Clear(void) {
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_CursorSet(u16 column, u16 line) {
-    hd44780_lcd__goto(column, line);
+    hd44780_lcd__goto(&displays[0], column, line);
     return 0;
 }
 
@@ -603,42 +604,43 @@ static s32 get_dec(char *word)
 }
 
 
-static void test_mode__set_lcd_pin_and_report(int pin_number, int level, void *_output_function) {
+static void
+test_mode__set_lcd_pin_and_report(struct hd44780_pins *lcd, int pin_number, int level, void *_output_function) {
     void (*out)(char *format, ...) = _output_function;
 
-    switch (pin_number) {
+    switch (pin_number) {     
     case 1: {
         if (level) {
-            hd44780_lcd__register_select__data();
+            hd44780_lcd__register_select__data(lcd);
         } else {
-            hd44780_lcd__register_select__command();
+            hd44780_lcd__register_select__command(lcd);
         }
         out("RS set to %s", level ? "3.3V" : "0V");
         return;
     }
     case 2: {
         if (level) {
-            hd44780_lcd__e_high();
+            hd44780_lcd__e_high(lcd);
         } else {
-            hd44780_lcd__e_low();
+            hd44780_lcd__e_low(lcd);
         }
         out("E set to %s", level ? "3.3V" : "0V");
         return;
     }
     case 3: {
         if (level) {
-            hd44780_lcd__data_port__mode_write();
+            hd44780_lcd__data_port__mode_write(lcd);
         } else {
-            hd44780_lcd__data_port__mode_read();
+            hd44780_lcd__data_port__mode_read(lcd);
         }
         out("DATA DIR is set to %s", level ? "output" : "input");
         return;
     }
     case 4: {
         if (level) {
-            hd44780_lcd__mode_read();
+            hd44780_lcd__mode_read(lcd);
         } else {
-            hd44780_lcd__mode_write();
+            hd44780_lcd__mode_write(lcd);
         }
         out("RW set %s", level ? "3.3V" : "0V");
         return;
@@ -652,13 +654,13 @@ static void test_mode__set_lcd_pin_and_report(int pin_number, int level, void *_
     case 11:
     case 12: {
         u8 d_pin = pin_number - 5;
-        hd44780_lcd__data_port__write(1U << d_pin);
+        hd44780_lcd__data_port__write(lcd, 1U << d_pin);
         out("D%d set to %s", d_pin, level ? "5V (resp. 3.3V)" : "0V");
         return;
     }
     case 14: {
         // d
-        hd44780_lcd__data_port__write(level);
+        hd44780_lcd__data_port__write(lcd, level);
         out("Written %d to data port", level);
         return;
     }
@@ -667,13 +669,13 @@ static void test_mode__set_lcd_pin_and_report(int pin_number, int level, void *_
         out("Going to init %d", level);
         s32 init_result;
         switch (level) {
-        case 0: hd44780_lcd__init0(); init_result = 0; break;
-        case 1: hd44780_lcd__init1(); init_result = 0; break;
-        case 2: init_result = hd44780_lcd__init2(); break;
-        case 3: init_result = hd44780_lcd__init3(); break;
-        case 4: init_result = hd44780_lcd__init4(); break;
-        case 5: init_result = hd44780_lcd__init5(); break;
-        case 6: init_result = hd44780_lcd__init6(); break;
+        case 0: hd44780_lcd__init0(lcd); init_result = 0; break;
+        case 1: hd44780_lcd__init1(lcd); init_result = 0; break;
+        case 2: init_result = hd44780_lcd__init2(lcd); break;
+        case 3: init_result = hd44780_lcd__init3(lcd); break;
+        case 4: init_result = hd44780_lcd__init4(lcd); break;
+        case 5: init_result = hd44780_lcd__init5(lcd); break;
+        case 6: init_result = hd44780_lcd__init6(lcd); break;
         }
         out("Invoked init %d, returned %d", level, init_result);
         return;
@@ -688,15 +690,15 @@ static void test_mode__set_lcd_pin_and_report(int pin_number, int level, void *_
     case 17: {
         // in
         out("Reading port");
-        hd44780_lcd__data_port__mode_read();
-        hd44780_lcd__mode_read();
+        hd44780_lcd__data_port__mode_read(lcd);
+        hd44780_lcd__mode_read(lcd);
 
-        hd44780_lcd__e_high();
+        hd44780_lcd__e_high(lcd);
         MIOS32_DELAY_Wait_uS(10);
-        uint32_t value = LCD0__DATA__PORT->IDR;
-        hd44780_lcd__e_low();
+        uint32_t value = lcd->data_port->IDR;
+        hd44780_lcd__e_low(lcd);
 
-        hd44780_lcd__mode_write();
+        hd44780_lcd__mode_write(lcd);
 //        hd44780_lcd__data_port__mode_write();
         out("Read port, got %02x", value);
         return;
@@ -704,7 +706,7 @@ static void test_mode__set_lcd_pin_and_report(int pin_number, int level, void *_
     case 18: {
         // in
         out("Sending byte %02x", level);
-        hd44780_lcd__send_byte(level);
+        hd44780_lcd__send_byte(lcd, level);
         out("Sent byte %02x", level);
         return;
     }
@@ -790,7 +792,7 @@ s32 APP_LCD_TerminalParseLine(char *input, void *_output_function)
             }
 
             if( pin_number >= 0 && level >= 0 ) {
-                test_mode__set_lcd_pin_and_report(pin_number, level, _output_function);
+                test_mode__set_lcd_pin_and_report(&displays[0], pin_number, level, _output_function);
             } else {
                 out("Following commands are supported:\n");
                 out("testlcdpin rs 0  -> sets J15(AB):RS to ca. 0V");
