@@ -39,6 +39,53 @@ struct hd44780_pins {
     uint16_t data_pins_offset;
 };
 
+// 4-LCD Layout, compatible with DIY-MORE board
+static struct hd44780_pins displays[4] = {
+    {
+        .rs_port            = GPIOD,
+        .rs_pin_mask        = GPIO_Pin_4,
+        .rw_port            = GPIOD,
+        .rw_pin_mask        = GPIO_Pin_7,
+        .e_port             = GPIOD,
+        .e_pin_mask         = GPIO_Pin_3,
+        .data_port          = GPIOD,
+        .data_pins_offset   = 8U,
+    },
+    {
+        .rs_port            = GPIOA,
+        .rs_pin_mask        = GPIO_Pin_13,
+        .rw_port            = GPIOA,
+        .rw_pin_mask        = GPIO_Pin_14,
+        .e_port             = GPIOA,
+        .e_pin_mask         = GPIO_Pin_15,
+        .data_port          = GPIOB,
+        .data_pins_offset   = 0U,
+    },
+    {
+        .rs_port            = GPIOC,
+        .rs_pin_mask        = GPIO_Pin_0,
+        .rw_port            = GPIOC,
+        .rw_pin_mask        = GPIO_Pin_2,
+        .e_port             = GPIOC,
+        .e_pin_mask         = GPIO_Pin_3,
+        .data_port          = GPIOE,
+        .data_pins_offset   = 0U,
+    },
+    {
+        .rs_port            = GPIOC,
+        .rs_pin_mask        = GPIO_Pin_13,
+        .rw_port            = GPIOA,
+        .rw_pin_mask        = GPIO_Pin_3,
+        .e_port             = GPIOA,
+        .e_pin_mask         = GPIO_Pin_6,
+        .data_port          = GPIOE,
+        .data_pins_offset   = 8U,
+    },
+};
+
+/*
+// 2-LCD Layout, compatible with Discovery board
+
 static struct hd44780_pins displays[4] = {
     {
         .rs_port            = GPIOB,
@@ -61,25 +108,8 @@ static struct hd44780_pins displays[4] = {
         .data_pins_offset   = 8U,
     }
 };
+*/
 
-//#define LCD0__RS__PORT          GPIOB
-//#define LCD0__RS__PIN           GPIO_Pin_0
-//#define LCD0__RW__PORT          GPIOB
-//#define LCD0__RW__PIN           GPIO_Pin_1
-//#define LCD0__E__PORT           GPIOB
-//#define LCD0__E__PIN            GPIO_Pin_2
-//#define LCD0__DATA__PORT        GPIOE
-#define LCD0__DATA__PIN_OFFSET  8U
-#define LCD0__DATA__PINS_MASK   (\
-  (1U << LCD0__DATA__PIN_OFFSET)\
-| (1U << (LCD0__DATA__PIN_OFFSET + 1))\
-| (1U << (LCD0__DATA__PIN_OFFSET + 2))\
-| (1U << (LCD0__DATA__PIN_OFFSET + 3))\
-| (1U << (LCD0__DATA__PIN_OFFSET + 4))\
-| (1U << (LCD0__DATA__PIN_OFFSET + 5))\
-| (1U << (LCD0__DATA__PIN_OFFSET + 6))\
-| (1U << (LCD0__DATA__PIN_OFFSET + 7))\
-)
 
 /////////////////////////////////////////////////////////////////////////////
 // HD44780 stuff
@@ -105,6 +135,7 @@ static struct hd44780_pins displays[4] = {
 #define HD44780_LCD__COMMAND__CONFIGURE_LINES_2     0x08U
 #define HD44780_LCD__COMMAND__CONFIGURE_CHAR_5X8    0x00U
 #define HD44780_LCD__COMMAND__CONFIGURE_CHAR_5X10   0x04U
+#define HD44780_LCD__COMMAND__SET_CGRAM_ADDRESS     0x40U
 #define HD44780_LCD__COMMAND__SET_DDRAM_ADDRESS     0x80U
 
 #define HD44780_LCD__LINE0_ADDRESS 0x00U
@@ -113,10 +144,8 @@ static struct hd44780_pins displays[4] = {
 #define HD44780_LCD__LINE3_ADDRESS 0x54U
 
 /////////////////////////////////////////////////////////////////////////////
-// Local variables
+// Generic hd44780 support
 /////////////////////////////////////////////////////////////////////////////
-
-static unsigned long long display_available = 0;
 
 void hd44780_lcd__register_select__init(const struct hd44780_pins * const lcd) {
     GPIO_InitTypeDef lcd0__GPIO_InitStructure;
@@ -401,6 +430,11 @@ void hd44780_lcd__goto(const struct hd44780_pins * const lcd, const uint8_t x, c
 
 
 /////////////////////////////////////////////////////////////////////////////
+// APP_LCD API implementation
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Initializes application specific LCD driver
 // IN: <mode>: optional configuration
 // OUT: returns < 0 if initialisation failed
@@ -436,7 +470,7 @@ s32 APP_LCD_Cmd(u8 cmd) {
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Clear(void) {
-    return 0;
+    return hd44780_lcd__send_command(&displays[mios32_lcd_device], HD44780_LCD__COMMAND__CLEAR);
 }
 
 
@@ -467,7 +501,18 @@ s32 APP_LCD_GCursorSet(u16 x, u16 y) {
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8]) {
-    return -3; // not supported
+    s32 i;
+
+    // send command with CGRAM base address for given character
+    APP_LCD_Cmd(((num & 7U) << 3U) | HD44780_LCD__COMMAND__SET_CGRAM_ADDRESS);
+
+    // send 8 data bytes
+    for (i = 0; i < 8; ++i)
+        if (APP_LCD_Data(table[i]) < 0)
+            return -1; // error during sending character
+
+    // set cursor to original position
+    return APP_LCD_CursorSet(mios32_lcd_column, mios32_lcd_line);
 }
 
 
@@ -720,6 +765,12 @@ test_mode__set_lcd_pin_and_report(struct hd44780_pins *lcd, int pin_number, int 
         out("Sent byte %02x", level);
         return;
     }
+    case 19: {
+        // in
+        out("Selecting device %d", level);
+        mios32_lcd_device = level;
+        return;
+    }
 
     }
 }
@@ -781,6 +832,8 @@ s32 APP_LCD_TerminalParseLine(char *input, void *_output_function)
                     pin_number = 17;
                 else if( strcasecmp(arg, "byte") == 0 )
                     pin_number = 18;
+                else if( strcasecmp(arg, "dev") == 0 )
+                    pin_number = 19;
 
 
 
