@@ -11,6 +11,7 @@ u8 configChangesToBeWritten_ = 0;
 char line_buffer_[128];  // single global line buffer for reading/writing from/to files
 
 // --- Global config variables ---
+s8 gcFontType_ = 'a';
 u8 gcBeatLEDsEnabled_ = 0;
 u8 gcBeatDisplayEnabled_ = 0;
 u8 gcNumberOfActiveUserInstruments_ = 0;
@@ -24,6 +25,7 @@ u8 gcScreensaverAfterMinutes_ = 1;
 // --- Global config settings ---
 SetupParameter setupParameters_[SETUP_NUM_ITEMS] =
         {
+                {"System Font", "Type", "", "", ""},
                 {"Beat LEDs", "Toggle", "", "", ""},
                 {"Beat Display", "Toggle", "", "", ""},
                 // {"Command Help", "Toggle", "", "", ""}, TODO Later
@@ -84,6 +86,8 @@ UserInstrument userInstruments_[SETUP_NUM_USERINSTRUMENTS] =
                 { "Synth_AE", UART0, 0},
                 { "Synth_AF", UART0, 0},
         };
+
+
 /**
  * Help function which parses a decimal or hex value
  *
@@ -276,6 +280,10 @@ void writeSetup()
    sprintf(line_buffer_, "SETUP_Screensaver_Minutes %d\n", (u32) gcScreensaverAfterMinutes_);
    FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
 
+   // write font type
+   sprintf(line_buffer_, "SETUP_Font_Type %c\n", (s8) gcFontType_);
+   FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
    // close file
    FILE_WriteClose();
 
@@ -293,6 +301,7 @@ void readSetup()
 {
    file_t file;
    s32 status;
+   s32 value;
    gcNumberOfActiveUserInstruments_ = 0;
 
    if (FILE_ReadOpen(&file, CONFIG_FILE_PATH) < 0)
@@ -347,7 +356,7 @@ void readSetup()
                {
                   int values[5];
 
-                  s32 value = get_dec_range(word, parameter, 0, 255);
+                  value = get_dec_range(word, parameter, 0, 255);
                   if (value < 0)
                      continue;
 
@@ -389,50 +398,54 @@ void readSetup()
                }
                else if (strcmp(parameter, "MIDI_IN_MClock_Ports") == 0)
                {
-                  s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
                   if (value >= 0)
                      midi_router_mclk_in = value;
                }
                else if (strcmp(parameter, "MIDI_OUT_MClock_Ports") == 0)
                {
-                  s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
                   if (value >= 0)
                      midi_router_mclk_out = value;
                }
                else if (strcmp(parameter, "SETUP_Beat_LEDs_Enabled") == 0)
                {
-                  s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
                   gcBeatLEDsEnabled_ = value;
                }
                else if (strcmp(parameter, "SETUP_Beat_Display_Enabled") == 0)
                {
-                  s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
                   gcBeatDisplayEnabled_ = value;
                }
                else if (strcmp(parameter, "SETUP_Metronome_Port") == 0)
                {
-                  s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
                   gcMetronomePort_ = (mios32_midi_port_t)value;
                }
                else if (strcmp(parameter, "SETUP_Metronome_Channel") == 0)
                {
-                  s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
                   gcMetronomeChannel_ = value;
                }
                else if (strcmp(parameter, "SETUP_Metronome_NoteM") == 0)
                {
-                  s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
                   gcMetronomeNoteM_ = value;
                }
                else if (strcmp(parameter, "SETUP_Metronome_NoteB") == 0)
                {
-                  s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
                   gcMetronomeNoteB_ = value;
                }
                else if (strcmp(parameter, "SETUP_Screensaver_Minutes") == 0)
                {
-                  s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
                   gcScreensaverAfterMinutes_ = value;
+               }
+               else if (strcmp(parameter, "SETUP_Font_Type") == 0)
+               {
+                  gcFontType_ = word[0];
                }
             }
          }
@@ -512,6 +525,10 @@ void setupParameterEncoderTurned(u8 parameterNumber, s32 incrementer)
 
    switch (setupActiveItem_)
    {
+      case SETUP_FONT_TYPE:
+         gcFontType_ = gcFontType_ == 'a' ? gcFontType_ = 'b' : 'a';
+         break;
+
       case SETUP_BEAT_LEDS_ENABLED:
          gcBeatLEDsEnabled_ = !gcBeatLEDsEnabled_;
          break;

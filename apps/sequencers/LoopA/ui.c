@@ -285,7 +285,7 @@ void updateLEDs()
          case PAGE_CLIP:
             led_copy = LED_RED;
             break;
-         case PAGE_FX:
+         case PAGE_ARPECHO:
             led_paste = LED_RED;
             break;
          case PAGE_TRACK:
@@ -328,7 +328,7 @@ void updateLEDs()
             led_gp6 |= command_ == COMMAND_FREEZE ? LED_RED : LED_OFF;
             break;
 
-         case PAGE_FX:
+         case PAGE_ARPECHO:
             break;
 
          case PAGE_NOTES:
@@ -928,7 +928,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         setActivePage(PAGE_FX);
+         setActivePage(PAGE_ARPECHO);
       }
       else
       {

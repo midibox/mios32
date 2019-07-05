@@ -9,6 +9,7 @@
 extern u8 configChangesToBeWritten_;
 
 // --- Global config variables ---
+extern s8 gcFontType_;
 extern u8 gcBeatLEDsEnabled_;
 extern u8 gcBeatDisplayEnabled_;
 extern u8 gcNumberOfActiveUserInstruments_;
@@ -29,10 +30,11 @@ typedef struct
    char par4Name[8];
 } SetupParameter;
 
-#define SETUP_NUM_ITEMS 8
+#define SETUP_NUM_ITEMS 9
 
 enum SetupParameterEnum
 {
+   SETUP_FONT_TYPE,
    SETUP_BEAT_LEDS_ENABLED,
    SETUP_BEAT_DISPLAY_ENABLED,
    // SETUP_COMMAND_HELP_ENABLED,

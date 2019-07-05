@@ -28,11 +28,25 @@ u8 screenFlashMessageFrameCtr_;
 char sceneChangeNotification_[20] = "";
 u8 screenNewPagePanelFrameCtr_ = 0;
 
-unsigned char* fontptr_ = (unsigned char*) fontsmall_pixdata;
+unsigned char* fontptr_ = (unsigned char*) fontsmall_b_pixdata;
 u16 fontchar_bytewidth_ = 3;    // bytes to copy for a line of character pixel data
 u16 fontchar_height_ = 12;      // lines to copy for a full-height character
 u16 fontline_bytewidth_ = 95*3; // bytes per font pixdata line (character layout all in one line)
 u8 fontInverted_ = 0;
+
+
+/**
+ * Set the LoopA logo font
+ *
+ */
+void setFontLoopALogo()
+{
+   fontptr_ = (unsigned char*) logo_pixdata;
+   fontchar_bytewidth_ = logo_width / 2;
+   fontchar_height_ = logo_height;
+   fontline_bytewidth_ = logo_width / 2;
+}
+// ----------------------------------------------------------------------------------------
 
 
 /**
@@ -41,7 +55,12 @@ u8 fontInverted_ = 0;
  */
 void setFontBold()
 {
-   fontptr_ = (unsigned char*) fontbold_pixdata;
+   switch (gcFontType_)
+   {
+      case 'a': fontptr_ = (unsigned char*) fontbold_a_pixdata; break;
+      default: fontptr_ = (unsigned char*) fontbold_b_pixdata; break;
+   }
+
    fontchar_bytewidth_ = 5;
    fontchar_height_ = 18;
    fontline_bytewidth_ = 95 * 5;
@@ -55,7 +74,12 @@ void setFontBold()
  */
 void setFontNormal()
 {
-   fontptr_ = (unsigned char*) fontnormal_pixdata;
+   switch (gcFontType_)
+   {
+      case 'a': fontptr_ = (unsigned char*) fontnormal_a_pixdata; break;
+      default: fontptr_ = (unsigned char*) fontnormal_b_pixdata; break;
+   }
+
    fontchar_bytewidth_ = 5;
    fontchar_height_ = 18;
    fontline_bytewidth_ = 95 * 5;
@@ -69,7 +93,12 @@ void setFontNormal()
  */
 void setFontSmall()
 {
-   fontptr_ = (unsigned char*) fontsmall_pixdata;
+   switch (gcFontType_)
+   {
+      case 'a': fontptr_ = (unsigned char*) fontsmall_a_pixdata; break;
+      default: fontptr_ = (unsigned char*) fontsmall_b_pixdata; break;
+   }
+
    fontchar_bytewidth_ = 3;
    fontchar_height_ = 12;
    fontline_bytewidth_ = 95 * 3;
@@ -260,7 +289,7 @@ void printPageIcon()
          c = KEYICON_TEMPO;
          break;
 
-      case PAGE_FX:
+      case PAGE_ARPECHO:
          c = KEYICON_FX;
          break;
 
@@ -380,6 +409,14 @@ void displayClipPosition(u8 clipNumber)
    u8 fontByteWidth = 3;
    u8 fontLineByteWidth = 16*3;
 
+   unsigned char *fontptrDigitsTiny;
+   switch (gcFontType_)
+   {
+      case 'a': fontptrDigitsTiny = (unsigned char*) digitstiny_a_pixdata; break;
+      default: fontptrDigitsTiny = (unsigned char*) digitstiny_b_pixdata; break;
+   }
+
+
    char *str = buffer;
    u8 stringpos = 0;
    while (*str != '\0')
@@ -404,7 +441,7 @@ void displayClipPosition(u8 clipNumber)
          if (s_y >= 0 && s_y < 64) // clip y offscreen
          {
             unsigned char* sdata = (unsigned char*) screen + s_y * 128 + s_x;
-            unsigned char* fdata = (unsigned char*) digitstiny_pixdata + f_y * fontLineByteWidth + f_x;
+            unsigned char* fdata = (unsigned char*) fontptrDigitsTiny + f_y * fontLineByteWidth + f_x;
             unsigned c_s_x = s_x;
 
             for (x = 0; x <fontByteWidth; x++)
@@ -737,45 +774,45 @@ void displayPageClip(void)
 
    command_ == COMMAND_CLIPLEN ? setFontInverted() : setFontNonInverted();
    if (clipSteps_[activeTrack_][activeScene_] < 100)
-      printFormattedString(0, 54, "Len %d", clipSteps_[activeTrack_][activeScene_]);
+      printFormattedString(0, 53, "Len %d", clipSteps_[activeTrack_][activeScene_]);
    else
-      printFormattedString(0, 54, "Le %d", clipSteps_[activeTrack_][activeScene_]);
+      printFormattedString(0, 53, "Le %d", clipSteps_[activeTrack_][activeScene_]);
 
    command_ == COMMAND_QUANTIZE ? setFontInverted() : setFontNonInverted();
    switch (clipQuantize_[activeTrack_][activeScene_])
    {
-      case 3: printFormattedString(42, 54, "Q1/128"); break;
-      case 6: printFormattedString(42, 54, "Qu1/64"); break;
-      case 12: printFormattedString(42, 54, "Qu1/32"); break;
-      case 24: printFormattedString(42, 54, "Qu1/16"); break;
-      case 48: printFormattedString(42, 54, "Qu 1/8"); break;
-      case 96: printFormattedString(42, 54, "Qu 1/4"); break;
-      case 192: printFormattedString(42, 54, "Qu 1/2"); break;
-      case 384: printFormattedString(42, 54, "Qu 1/1"); break;
-      default: printFormattedString(42, 54, "Qu OFF"); break;
+      case 3: printFormattedString(42, 53, "Q1/128"); break;
+      case 6: printFormattedString(42, 53, "Qu1/64"); break;
+      case 12: printFormattedString(42, 53, "Qu1/32"); break;
+      case 24: printFormattedString(42, 53, "Qu1/16"); break;
+      case 48: printFormattedString(42, 53, "Qu 1/8"); break;
+      case 96: printFormattedString(42, 53, "Qu 1/4"); break;
+      case 192: printFormattedString(42, 53, "Qu 1/2"); break;
+      case 384: printFormattedString(42, 53, "Qu 1/1"); break;
+      default: printFormattedString(42, 53, "Qu OFF"); break;
    }
 
    command_ == COMMAND_TRANSPOSE ? setFontInverted() : setFontNonInverted();
-   printFormattedString(84, 54, "Trn %d", clipTranspose_[activeTrack_][activeScene_]);
+   printFormattedString(84, 53, "Trn %d", clipTranspose_[activeTrack_][activeScene_]);
 
    command_ == COMMAND_SCROLL ? setFontInverted() : setFontNonInverted();
-   printFormattedString(126, 54, "Scr %d", clipScroll_[activeTrack_][activeScene_]);
+   printFormattedString(126, 53, "Scr %d", clipScroll_[activeTrack_][activeScene_]);
 
    command_ == COMMAND_STRETCH ? setFontInverted() : setFontNonInverted();
    switch (clipStretch_[activeTrack_][activeScene_])
    {
-      case 1: printFormattedString(168, 54, "Zo 1/16"); break;
-      case 2: printFormattedString(168, 54, "Zo 1/8"); break;
-      case 4: printFormattedString(168, 54, "Zo 1/4"); break;
-      case 8: printFormattedString(168, 54, "Zo 1/2"); break;
-      case 16: printFormattedString(168, 54, "Zoom 1"); break;
-      case 32: printFormattedString(168, 54, "Zoom 2"); break;
-      case 64: printFormattedString(168, 54, "Zoom 4"); break;
-      case 128: printFormattedString(168, 54, "Zoom 8"); break;
+      case 1: printFormattedString(168, 53, "Zo 1/16"); break;
+      case 2: printFormattedString(168, 53, "Zo 1/8"); break;
+      case 4: printFormattedString(168, 53, "Zo 1/4"); break;
+      case 8: printFormattedString(168, 53, "Zo 1/2"); break;
+      case 16: printFormattedString(168, 53, "Zoom 1"); break;
+      case 32: printFormattedString(168, 53, "Zoom 2"); break;
+      case 64: printFormattedString(168, 53, "Zoom 4"); break;
+      case 128: printFormattedString(168, 53, "Zoom 8"); break;
    }
 
    command_ == COMMAND_FREEZE ? setFontInverted() : setFontNonInverted();
-   printFormattedString(210, 54, "Clear");
+   printFormattedString(210, 53, "Clear");
 
    setFontNonInverted();
    displayClip(activeTrack_);
@@ -844,24 +881,24 @@ void displayPageNotes(void)
 
       command_ == COMMAND_POSITION ? setFontInverted() : setFontNonInverted();
       if (pos < 100)
-         printFormattedString(0, 54, "Pos %d", pos);
+         printFormattedString(0, 53, "Pos %d", pos);
       else
-         printFormattedString(0, 54, "Po %d", pos);
+         printFormattedString(0, 53, "Po %d", pos);
 
       command_ == COMMAND_NOTE_KEY ? setFontInverted() : setFontNonInverted();
 
       char noteStr[8];
       stringNote(noteStr, note);
-      printFormattedString(42, 54, "%s", noteStr);
+      printFormattedString(42, 53, "%s", noteStr);
 
       command_ == COMMAND_NOTE_VELOCITY ? setFontInverted() : setFontNonInverted();
-      printFormattedString(84, 54, "Vel %d", velocity);
+      printFormattedString(84, 53, "Vel %d", velocity);
 
       command_ == COMMAND_NOTE_LENGTH ? setFontInverted() : setFontNonInverted();
-      printFormattedString(126, 54, "Len %d", length);
+      printFormattedString(126, 53, "Len %d", length);
 
       command_ == COMMAND_FREEZE ? setFontInverted() : setFontNonInverted();
-      printFormattedString(210, 54, "Delete");
+      printFormattedString(210, 53, "Delete");
 
       setFontNonInverted();
    }
@@ -896,29 +933,29 @@ void displayPageTrack(void)
 
    command_ == COMMAND_TRACK_OUTPORT ? setFontInverted() : setFontNonInverted();
 
-   printFormattedString(0, 54, " %s ", getPortOrInstrumentNameFromLoopAPortNumber(trackMidiOutPort_[activeTrack_]));
+   printFormattedString(0, 53, " %s ", getPortOrInstrumentNameFromLoopAPortNumber(trackMidiOutPort_[activeTrack_]));
 
    if (!isInstrument(trackMidiOutPort_[activeTrack_]))
    {
       // Also print MIDI channel, if we are not showing a user instrument
       command_ == COMMAND_TRACK_OUTCHANNEL ? setFontInverted() : setFontNonInverted();
-      printFormattedString(42, 54, "Chn %d", trackMidiOutChannel_[activeTrack_] + 1);
+      printFormattedString(42, 53, "Chn %d", trackMidiOutChannel_[activeTrack_] + 1);
    }
 
    command_ == COMMAND_TRACK_INPORT ? setFontInverted() : setFontNonInverted();
-   printFormattedString(84, 54, "I:%s", trackMidiInPort_[activeTrack_] == 0 ? "All" : MIDI_PORT_InNameGet(MIDI_PORT_InIxGet(trackMidiInPort_[activeTrack_])));
+   printFormattedString(84, 53, "I:%s", trackMidiInPort_[activeTrack_] == 0 ? "All" : MIDI_PORT_InNameGet(MIDI_PORT_InIxGet(trackMidiInPort_[activeTrack_])));
 
    command_ == COMMAND_TRACK_INCHANNEL ? setFontInverted() : setFontNonInverted();
    if (trackMidiInChannel_[activeTrack_] == 16)
-      printFormattedString(126, 54, "IC:All");
+      printFormattedString(126, 53, "IC:All");
    else
-      printFormattedString(126, 54, "IC: %d", trackMidiInChannel_[activeTrack_] + 1);
+      printFormattedString(126, 53, "IC: %d", trackMidiInChannel_[activeTrack_] + 1);
 
    command_ == COMMAND_TRACK_TOGGLE_FORWARD ? setFontInverted() : setFontNonInverted();
    if (trackMidiForward_[activeTrack_])
-      printFormattedString(168, 54, "Fwd On");
+      printFormattedString(168, 53, "Fwd On");
    else
-      printFormattedString(168, 54, "Fwd Off");
+      printFormattedString(168, 53, "Fwd Off");
 
 
    setFontNonInverted();
@@ -949,16 +986,16 @@ void displayPageDisk(void)
    printCenterFormattedString(0, "Disk Operations");
 
    command_ == COMMAND_DISK_SELECT_SESSION ? setFontInverted() : setFontNonInverted();
-   printFormattedString(0, 54, "Select");
+   printFormattedString(0, 53, "Select");
 
    command_ == COMMAND_DISK_SAVE ? setFontInverted() : setFontNonInverted();
-   printFormattedString(42, 54, "Save");
+   printFormattedString(42, 53, "Save");
 
    command_ == COMMAND_DISK_LOAD ? setFontInverted() : setFontNonInverted();
-   printFormattedString(84, 54, "Load");
+   printFormattedString(84, 53, "Load");
 
    command_ == COMMAND_DISK_NEW ? setFontInverted() : setFontNonInverted();
-   printFormattedString(126, 54, "New");
+   printFormattedString(126, 53, "New");
 
 
    setFontNonInverted();
@@ -999,16 +1036,16 @@ void displayPageTempo(void)
 
    command_ == COMMAND_TEMPO_BPM ? setFontInverted() : setFontNonInverted();
    float bpm = SEQ_BPM_IsMaster() ? bpm_ : SEQ_BPM_Get();
-   printFormattedString(0, 54, "%3d.%d", (int)bpm, (int)(10*bpm)%10);
+   printFormattedString(0, 53, "%3d.%d", (int)bpm, (int)(10*bpm)%10);
 
    tempoFade_ == 1 ? setFontInverted() : setFontNonInverted();
-   printFormattedString(42, 54, "Faster");
+   printFormattedString(42, 53, "Faster");
 
    tempoFade_ == -1 ? setFontInverted() : setFontNonInverted();
-   printFormattedString(84, 54, "Slower");
+   printFormattedString(84, 53, "Slower");
 
    command_ == COMMAND_TEMPO_TOGGLE_METRONOME ? setFontInverted : setFontNonInverted();
-   printFormattedString(126, 54, metronomeEnabled_ ? "Metron. On" : "Metr. Off");
+   printFormattedString(126, 53, metronomeEnabled_ ? "Metron. On" : "Metr. Off");
 
    if (tempoFade_ != 0)
    {
@@ -1100,15 +1137,15 @@ void displayPageRouter(void)
    invertDisplayLines(15, 29);
 
    command_ == COMMAND_ROUTE_SELECT ? setFontInverted() : setFontNonInverted();
-   printFormattedString(0, 54, "Select");
+   printFormattedString(0, 53, "Select");
    command_ == COMMAND_ROUTE_IN_PORT ? setFontInverted() : setFontNonInverted();
-   printFormattedString(42, 54, "IN P");
+   printFormattedString(42, 53, "IN P");
    command_ == COMMAND_ROUTE_IN_CHANNEL ? setFontInverted() : setFontNonInverted();
-   printFormattedString(84, 54, "IN Ch");
+   printFormattedString(84, 53, "IN Ch");
    command_ == COMMAND_ROUTE_OUT_PORT ? setFontInverted() : setFontNonInverted();
-   printFormattedString(126, 54, "OUT P");
+   printFormattedString(126, 53, "OUT P");
    command_ == COMMAND_ROUTE_OUT_CHANNEL ? setFontInverted() : setFontNonInverted();
-   printFormattedString(168, 54, "OUT Ch");
+   printFormattedString(168, 53, "OUT Ch");
    setFontNonInverted();
 
 }
@@ -1178,6 +1215,10 @@ void displayPageSetup(void)
                   midiPort = USB0;
                   status = MIDI_ROUTER_MIDIClockOutGet(midiPort);
                   printFormattedString(84, y, (status > 0) ? "USB1" : " - ");
+                  break;
+
+               case SETUP_FONT_TYPE:
+                  printFormattedString(84, y, "%c", gcFontType_);
                   break;
 
                case SETUP_BEAT_LEDS_ENABLED:
@@ -1306,16 +1347,16 @@ void displayPageSetup(void)
    invertDisplayLines(15, 29);
 
    command_ == COMMAND_SETUP_SELECT ? setFontInverted() : setFontNonInverted();
-   printFormattedString(0, 54, "Select");
+   printFormattedString(0, 53, "Select");
 
    command_ == COMMAND_SETUP_PAR1 ? setFontInverted() : setFontNonInverted();
-   printFormattedString(84, 54, setupParameters_[setupActiveItem_].par1Name);
+   printFormattedString(84, 53, setupParameters_[setupActiveItem_].par1Name);
    command_ == COMMAND_SETUP_PAR2 ? setFontInverted() : setFontNonInverted();
-   printFormattedString(126, 54, setupParameters_[setupActiveItem_].par2Name);
+   printFormattedString(126, 53, setupParameters_[setupActiveItem_].par2Name);
    command_ == COMMAND_SETUP_PAR3 ? setFontInverted() : setFontNonInverted();
-   printFormattedString(168, 54, setupParameters_[setupActiveItem_].par3Name);
+   printFormattedString(168, 53, setupParameters_[setupActiveItem_].par3Name);
    command_ == COMMAND_SETUP_PAR4 ? setFontInverted() : setFontNonInverted();
-   printFormattedString(210, 54, setupParameters_[setupActiveItem_].par4Name);
+   printFormattedString(210, 53, setupParameters_[setupActiveItem_].par4Name);
    setFontNonInverted();
 }
 // ----------------------------------------------------------------------------------------
@@ -1539,8 +1580,11 @@ void display()
       // Startup/initial session loading: Render the LoopA Logo
       voxelFrame();
 
+      setFontLoopALogo();
+      printFormattedString(52, 2, " ");
+
       setFontBold();  // width per letter: 10px (for center calculation)
-      printFormattedString(78, 2, "LoopA V2.04");
+      printFormattedString(146, 2, "V2.05");
 
       setFontSmall(); // width per letter: 6px
       printFormattedString(28, 20, "(C) Hawkeye, latigid on, TK. 2019");
@@ -1584,7 +1628,7 @@ void display()
       iconId = (page_ == PAGE_CLIP) ? 32 + KEYICON_CLIP_INVERTED : 32 + KEYICON_CLIP;
       printFormattedString(4 * 36, 32, "%c", iconId);
 
-      iconId = (page_ == PAGE_FX) ? 32 + KEYICON_FX_INVERTED : 32 + KEYICON_FX;
+      iconId = (page_ == PAGE_ARPECHO) ? 32 + KEYICON_FX_INVERTED : 32 + KEYICON_FX;
       printFormattedString(5 * 36, 32, "%c", iconId);
 
       iconId = (page_ == PAGE_TRACK) ? 32 + KEYICON_TRACK_INVERTED : 32 + KEYICON_TRACK;

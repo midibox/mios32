@@ -1,6 +1,10 @@
-// C++ font converter by Hawkeye
+// C++ font/icon/gfx converter by Hawkeye
 // Convert a PNM of 8-bit greyscale image data (0x00-0xff min->max brightness)
 // into a 2 pixel-per-byte data structure, that can be directly included in the project
+
+// Note: to convert provided .pngs to .pnm input files required for this tool, run:
+// pngtopnm -mix -background=black LoopAIconFont.png > LoopAIconFont.pnm
+
 
 #include <iostream>
 #include <fstream>
