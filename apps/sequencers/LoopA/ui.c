@@ -29,6 +29,7 @@ u16 copiedClipNotesSize_;
 
 u8 routerActiveRoute_ = 0;
 u8 setupActiveItem_ = 0;
+u8 scrubModeActive_= 0;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // --- UI STATE CHANGES
@@ -1160,11 +1161,9 @@ void loopaButtonPressed(s32 pin)
          }
       }
    }
-   else if (pin == sw_encoder2)
+   else if (pin == sw_enc_select)
    {
-      setActivePage(PAGE_MUTE); // shortcut back to track display
-      command_ = COMMAND_NONE;
-      screenNotifyPageChanged();
+      scrubModeActive_ = 1;
    }
 }
 // -------------------------------------------------------------------------------------------------
@@ -1179,15 +1178,32 @@ void loopaButtonReleased(s32 pin)
    inactivitySeconds_ = 0;
    tempoFade_ = 0;
 
-   if (screenIsInMenu() && pin == sw_menu)
+   if (pin == sw_menu)
    {
-      DEBUG_MSG("leave menu");
-      screenShowMenu(0); // Left the menu by releasing the menu button
-   }
 
-   if (screenIsInShift() && pin == sw_shift)
+      if (screenIsInMenu())
+      {
+         DEBUG_MSG("leave menu");
+         screenShowMenu(0); // Left the menu by releasing the menu button
+      }
+   }
+   else if (pin == sw_shift)
    {
-      screenShowShift(0); // Left the shift overlay by releasing the shift button
+      if (screenIsInShift())
+         screenShowShift(0); // Left the shift overlay by releasing the shift button
+   }
+   else if (pin == sw_enc_select)
+   {
+      scrubModeActive_ = 0;
+   }
+   else if (pin == sw_enc_value)
+   {
+      if (scrubModeActive_)
+      {
+         // Screenshot feature - depressed lower two encoder buttons
+         screenshotRequested_ = 1;
+         scrubModeActive_ = 0;
+      }
    }
 }
 
@@ -1234,40 +1250,52 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
    // Lower-left Select/Track encoder
    else if (encoder == enc_select_id)
    {
-      if (page_ == PAGE_DISK) // Disk page - left encoder changes selected session number
+      if (!scrubModeActive_)
       {
-         s16 newSessionNumber = sessionNumber_ + incrementer;
-         newSessionNumber = newSessionNumber < 0 ? 0 : newSessionNumber;
-         sessionNumber_ = (u16)newSessionNumber;
+         // Not depressed encoder, not scrubbing, normal behaviour
 
-         diskScanSessionFileAvailable();
+         if (page_ == PAGE_DISK) // Disk page - left encoder changes selected session number
+         {
+            s16 newSessionNumber = sessionNumber_ + incrementer;
+            newSessionNumber = newSessionNumber < 0 ? 0 : newSessionNumber;
+            sessionNumber_ = (u16) newSessionNumber;
+
+            diskScanSessionFileAvailable();
+         }
+         else if (page_ == PAGE_NOTES) // Notes page - left encoder changes selected note
+         {
+            s16 newNote = clipActiveNote_[activeTrack_][activeScene_] += incrementer;
+            if (newNote < 0)
+               newNote = clipNotesSize_[activeTrack_][activeScene_] - 1;
+            if (newNote >= clipNotesSize_[activeTrack_][activeScene_])
+               newNote = 0;
+            clipActiveNote_[activeTrack_][activeScene_] = (u16) newNote;
+         }
+         else if (page_ == PAGE_ROUTER) // MIDI Router page - left encoder changes active/selected route
+         {
+            s8 newActiveRoute = routerActiveRoute_ += incrementer;
+            newActiveRoute = (s8) (newActiveRoute < 0 ? 0 : newActiveRoute);
+            routerActiveRoute_ = (u8) (newActiveRoute < MIDI_ROUTER_NUM_NODES ? newActiveRoute : (MIDI_ROUTER_NUM_NODES - 1));
+         }
+         else if (page_ == PAGE_SETUP) // Setup page - left encoder changes active/selected setup item
+         {
+            s8 newActiveItem = setupActiveItem_ += incrementer;
+            newActiveItem = (s8) (newActiveItem < 0 ? 0 : newActiveItem);
+            setupActiveItem_ = (u8) (newActiveItem < SETUP_NUM_ITEMS ? newActiveItem : (SETUP_NUM_ITEMS - 1));
+         }
+         else // all other pages - change active clip number
+         {
+            s8 newTrack = (s8) (activeTrack_ + incrementer);
+            newTrack = (s8) (newTrack < 0 ? 0 : newTrack);
+            setActiveTrack((u8) (newTrack >= TRACKS ? TRACKS - 1 : newTrack));
+         }
       }
-      else if (page_ == PAGE_NOTES) // Notes page -left encoder changes selected note
+      else
       {
-         s16 newNote = clipActiveNote_[activeTrack_][activeScene_] += incrementer;
-         if (newNote < 0)
-            newNote = clipNotesSize_[activeTrack_][activeScene_] - 1;
-         if (newNote >= clipNotesSize_[activeTrack_][activeScene_])
-            newNote = 0;
-         clipActiveNote_[activeTrack_][activeScene_] = (u16)newNote;
-      }
-      else if (page_ == PAGE_ROUTER) // MIDI Router page - left encoder changes active/selected route
-      {
-         s8 newActiveRoute = routerActiveRoute_ += incrementer;
-         newActiveRoute = (s8)(newActiveRoute < 0 ? 0 : newActiveRoute);
-         routerActiveRoute_ = (u8)(newActiveRoute < MIDI_ROUTER_NUM_NODES ? newActiveRoute : (MIDI_ROUTER_NUM_NODES - 1));
-      }
-      else if (page_ == PAGE_SETUP) // Setup page - left encoder changes active/selected setup item
-      {
-         s8 newActiveItem = setupActiveItem_ += incrementer;
-         newActiveItem = (s8)(newActiveItem < 0 ? 0 : newActiveItem);
-         setupActiveItem_ = (u8)(newActiveItem < SETUP_NUM_ITEMS ? newActiveItem : (SETUP_NUM_ITEMS - 1));
-      }
-      else // all other pages - change active clip number
-      {
-         s8 newTrack = (s8)(activeTrack_ + incrementer);
-         newTrack = (s8)(newTrack < 0 ? 0 : newTrack);
-         setActiveTrack((u8)(newTrack >= TRACKS ? TRACKS-1 : newTrack));
+         // Scrubbing
+         // Todo: send "note offs" for currently active notes to avoid "delayed/hanging" notes, that
+         // would be turned off too late, in case of rewind-scrubbing
+         SEQ_BPM_TickSet(SEQ_BPM_TickGet() + SEQ_BPM_PPQN_Get() * incrementer);
       }
    }
 
@@ -1518,8 +1546,8 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
 
          newPortIndex = (s8)(newPortIndex < 1 ? 1 : newPortIndex);
 
-         if (newPortIndex >= MIDI_PORT_InNumGet()-6)
-            newPortIndex = (s8)(MIDI_PORT_InNumGet()-6);
+         if (newPortIndex >= MIDI_PORT_InNumGet()-5)
+            newPortIndex = (s8)(MIDI_PORT_InNumGet()-5);
 
          n->src_port = MIDI_PORT_InPortGet((u8)newPortIndex);
          configChangesToBeWritten_ = 1;
@@ -1542,8 +1570,8 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
 
          newPortIndex = (s8)(newPortIndex < 1 ? 1 : newPortIndex);
 
-         if (newPortIndex >= MIDI_PORT_OutNumGet()-6)
-            newPortIndex = (s8)(MIDI_PORT_OutNumGet()-6);
+         if (newPortIndex >= MIDI_PORT_OutNumGet()-5)
+            newPortIndex = (s8)(MIDI_PORT_OutNumGet()-5);
 
          n->dst_port = MIDI_PORT_OutPortGet((u8)newPortIndex);
          configChangesToBeWritten_ = 1;

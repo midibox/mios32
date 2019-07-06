@@ -33,8 +33,8 @@ SetupParameter setupParameters_[SETUP_NUM_ITEMS] =
                 {"Metronome", "Port", "Chn", "Meas.", "Beat"},
                 // {"Tempo Up/Dn", "BPM/Sec", "", "", ""}, TODO Later
 
-                {"MCLK DIN IN",  "Toggle",  "Toggle",  "Toggle", ""},
-                {"MCLK DIN OUT", "Toggle", "Toggle", "Toggle", ""},
+                {"MCLK DIN IN",  "Toggle",  "Toggle",  "Toggle", "Toggle"},
+                {"MCLK DIN OUT", "Toggle", "Toggle", "Toggle", "Toggle"},
                 {"MCLK USB IN",  "Toggle", "Toggle", "Toggle", "Toggle"},
                 {"MCLK USB OUT", "Toggle", "Toggle", "Toggle", "Toggle"},
 
@@ -469,7 +469,7 @@ void setupParameterDepressed(u8 parameterNumber)
    switch (setupActiveItem_)
    {
       case SETUP_MCLK_DIN_IN:
-         port = parameterNumber == 1 ? UART0 : (parameterNumber == 2 ? UART1 : UART2);
+         port = parameterNumber == 1 ? UART0 : (parameterNumber == 2 ? UART1 : (parameterNumber == 3 ? UART2 : UART3));
          enable = MIDI_ROUTER_MIDIClockInGet(port);
          enable = !enable;
          MIDI_ROUTER_MIDIClockInSet(port, enable);
@@ -477,7 +477,7 @@ void setupParameterDepressed(u8 parameterNumber)
          break;
 
       case SETUP_MCLK_DIN_OUT:
-         port = parameterNumber == 1 ? UART0 : (parameterNumber == 2 ? UART1 : UART2);
+         port = parameterNumber == 1 ? UART0 : (parameterNumber == 2 ? UART1 : (parameterNumber == 3 ? UART2 : UART3));
          enable = MIDI_ROUTER_MIDIClockOutGet(port);
          enable = !enable;
          MIDI_ROUTER_MIDIClockOutSet(port, enable);
@@ -702,6 +702,7 @@ mios32_midi_port_t getMIOSPortNumberFromLoopAPortNumber(s8 loopaPortNumber)
    if (lookupIndex < SETUP_NUM_USERINSTRUMENTS && lookupIndex < gcNumberOfActiveUserInstruments_)
       return userInstruments_[lookupIndex].port;
 
+   // Could not resolve, return original MIOS port number
    return UART0;
 }
 // ----------------------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 // LoopA 256x64px screen routines
 
 extern u8 screen[64][128];             // Screen buffer [y][x]
+extern u8 screenshotRequested_;        // if set to 1, will write screenshot to sd card when the next frame is rendered
 
 // If showLogo is true, draw the LoopA Logo (usually during unit startup)
 void screenShowLoopaLogo(u8 showLogo);
@@ -49,6 +50,9 @@ int isScreensaverActive();
 
 // Display the current screen buffer
 void display();
+
+//Save the screen as a screenshot file on the SD card
+void saveScreenshot();
 
 // Render test screen, one half is "full on" for flicker tests
 void testScreen();

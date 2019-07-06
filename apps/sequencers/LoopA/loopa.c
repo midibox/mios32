@@ -754,27 +754,20 @@ s32 seqIgnoreMetaEvent(s8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick)
  */
 s32 hookMIDISendPackage(s8 loopaTrack, mios32_midi_package_t package)
 {
-   // realtime events are already scheduled by MIDI_ROUTER_SendMIDIClockEvent()
-   if (package.evnt0 >= 0xf8)
-   {
-      MIOS32_MIDI_SendPackage(UART0, package);
-   }
+   mios32_midi_port_t port;
+
+   if (loopaTrack >= 0 && loopaTrack < TRACKS)
+      port = getMIOSPortNumberFromLoopAPortNumber(trackMidiOutPort_[loopaTrack]);
+   else if (loopaTrack == METRONOME_PSEUDO_PORT)
+      port = getMIOSPortNumberFromLoopAPortNumber(gcMetronomePort_);
    else
-   {
-      mios32_midi_port_t port =
-              loopaTrack != METRONOME_PSEUDO_PORT ? getMIOSPortNumberFromLoopAPortNumber(trackMidiOutPort_[loopaTrack]) :
-              getMIOSPortNumberFromLoopAPortNumber(gcMetronomePort_);
+      port = loopaTrack; // original MIOS port sent, e.g. a MIDI CLK sent by SEQ scheduler
 
-      /// screenFormattedFlashMessage("HMSP - intr %d outp %d", loopaTrack, port);
+   /// screenFormattedFlashMessage("HMSP - intr %d outp %d", loopaTrack, port);
 
-      MIOS32_MIDI_SendPackage(port, package);
+   MIOS32_MIDI_SendPackage(port, package);
 
-      /// screenFormattedFlashMessage("trk %d note %d on %x#%d", loopaTrack, package.note, port, package.chn);
-
-      // DEBUG only, can additionally also send to USB0 for testing
-      // port = USB0;
-      // MIOS32_MIDI_SendPackage(port, package);
-   }
+   /// screenFormattedFlashMessage("trk %d note %d on %x#%d", loopaTrack, package.note, port, package.chn);
 
    return 0; // no error
 }
@@ -818,9 +811,6 @@ void handleStop()
  */
 s32 seqInit()
 {
-   // record over USB0 and UART0/1
-   seqRecEnabledPorts_ = 0x01 | (0x03 << 4);
-
    // reset sequencer
    seqReset(0);
 

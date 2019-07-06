@@ -4,6 +4,7 @@
 #include "commonIncludes.h"
 
 #include "tasks.h"
+#include "screen.h"
 #include "gfx_resources.h"
 #include "loopa.h"
 #include "ui.h"
@@ -27,6 +28,7 @@ char screenFlashMessage_[40];
 u8 screenFlashMessageFrameCtr_;
 char sceneChangeNotification_[20] = "";
 u8 screenNewPagePanelFrameCtr_ = 0;
+u8 screenshotRequested_ = 0;    // if set to 1, will save screenshot to sd card when the next frame is rendered
 
 unsigned char* fontptr_ = (unsigned char*) fontsmall_b_pixdata;
 u16 fontchar_bytewidth_ = 3;    // bytes to copy for a line of character pixel data
@@ -290,7 +292,7 @@ void printPageIcon()
          break;
 
       case PAGE_ARPECHO:
-         c = KEYICON_FX;
+         c = KEYICON_ARPECHO;
          break;
 
       case PAGE_ROUTER:
@@ -1320,6 +1322,18 @@ void displayPageSetup(void)
                setFontInverted();
             switch(i)
             {
+               case SETUP_MCLK_DIN_IN:
+                  midiPort = UART3;
+                  status = MIDI_ROUTER_MIDIClockInGet(midiPort);
+                  printFormattedString(210, y, (status > 0) ? "IN4" : " - ");
+                  break;
+
+               case SETUP_MCLK_DIN_OUT:
+                  midiPort = UART3;
+                  status = MIDI_ROUTER_MIDIClockOutGet(midiPort);
+                  printFormattedString(210, y, (status > 0) ? "OUT4" : " - ");
+                  break;
+
                case SETUP_MCLK_USB_IN:
                   midiPort = USB3;
                   status = MIDI_ROUTER_MIDIClockInGet(midiPort);
@@ -1628,7 +1642,7 @@ void display()
       iconId = (page_ == PAGE_CLIP) ? 32 + KEYICON_CLIP_INVERTED : 32 + KEYICON_CLIP;
       printFormattedString(4 * 36, 32, "%c", iconId);
 
-      iconId = (page_ == PAGE_ARPECHO) ? 32 + KEYICON_FX_INVERTED : 32 + KEYICON_FX;
+      iconId = (page_ == PAGE_ARPECHO) ? 32 + KEYICON_ARPECHO_INVERTED : 32 + KEYICON_ARPECHO;
       printFormattedString(5 * 36, 32, "%c", iconId);
 
       iconId = (page_ == PAGE_TRACK) ? 32 + KEYICON_TRACK_INVERTED : 32 + KEYICON_TRACK;
@@ -1700,6 +1714,13 @@ void display()
    if (gcBeatDisplayEnabled_ && oledBeatFlashState_ > 0)
       flash = oledBeatFlashState_ == 1 ? 0x44 : 0x66;
 
+   // Save screenshot, if requested
+   if (screenshotRequested_)
+   {
+      saveScreenshot();
+      screenshotRequested_ = 0;
+   }
+
    // Push screen buffer to screen
    for (j = 0; j < 64; j++)
    {
@@ -1740,6 +1761,60 @@ void display()
       oledBeatFlashState_ = 0;
 }
 // ----------------------------------------------------------------------------------------
+
+/**
+ * Save the screen as a screenshot file on the SD card
+ *
+ */
+void saveScreenshot()
+{
+   MUTEX_SDCARD_TAKE;
+
+   u8 i;
+   for (i = 0; i < 100; i++)
+   {
+      sprintf(filename_, "screen%02d.pnm", i);
+      if (FILE_FileExists(filename_) == 0)
+         break;
+   }
+
+   s32 status;
+   if ((status = FILE_WriteOpen(filename_, 1)) < 0)
+   {
+      DEBUG_MSG("saveScreenshot() error creating %s, status: %d\n", filename_, status);
+   }
+   else
+   {
+      sprintf(line_buffer_, "P5\n");
+      status |= FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
+      sprintf(line_buffer_, "256 64\n");
+      status |= FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
+      sprintf(line_buffer_, "255\n");
+      status |= FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
+      u8 x, y;
+      for (y = 0; y < 64; y++)
+      {
+         for (x = 0; x < 128; x++)
+         {
+            u8 byte = screen[y][x];
+            status |= FILE_WriteByte(byte & 0xf0U);
+            status |= FILE_WriteByte((byte & 0x0fU) << 4U);
+         }
+      }
+      status |= FILE_WriteClose();
+   }
+
+   if (status == 0)
+      screenFormattedFlashMessage("screenshot saved");
+   else
+      screenFormattedFlashMessage("screen save failed");
+
+   MUTEX_SDCARD_GIVE;
+}
+// -------------------------------------------------------------------------------------------
 
 
 /**

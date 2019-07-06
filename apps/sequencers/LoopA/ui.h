@@ -34,8 +34,8 @@ enum KeyIcon
    KEYICON_MUTE,
    KEYICON_CLIP_INVERTED,
    KEYICON_CLIP,
-   KEYICON_FX_INVERTED,
-   KEYICON_FX,
+   KEYICON_ARPECHO_INVERTED,
+   KEYICON_ARPECHO,
    KEYICON_TRACK_INVERTED,
    KEYICON_TRACK,
    KEYICON_NOTES_INVERTED,
@@ -65,6 +65,7 @@ enum KeyIcon
 // --- Globals ---
 extern u8 routerActiveRoute_;
 extern u8 setupActiveItem_;
+extern u8 scrubModeActive_;
 
 // --- UI State Changes ---
 

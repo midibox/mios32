@@ -86,10 +86,6 @@ const u8 led_beat3 = 127;
 
 // --- Switches ---
 
-const u8 sw_runstop = 15;
-const u8 sw_armrecord = 14;
-const u8 sw_encoder2 = 4;
-
 const u8 sw_gp1 = 12;
 const u8 sw_gp2 = 7;
 const u8 sw_gp3 = 6;
@@ -97,12 +93,18 @@ const u8 sw_gp4 = 30;
 const u8 sw_gp5 = 29;
 const u8 sw_gp6 = 28;
 
+const u8 sw_runstop = 15;
+const u8 sw_armrecord = 14;
 const u8 sw_menu = 23;
 const u8 sw_shift = 13;
 const u8 sw_copy = 22;
 const u8 sw_paste = 21;
 const u8 sw_delete = 20;
 
+const u8 sw_enc_scene = 3;
+const u8 sw_enc_select = 2;
+const u8 sw_enc_live = 26;
+const u8 sw_enc_value = 16;
 
 // -- Encoders ---
 

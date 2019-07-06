@@ -7,6 +7,7 @@
 
 // --- globals ---
 extern u8 configChangesToBeWritten_;
+extern char line_buffer_[128];  // single global line buffer for reading/writing from/to files
 
 // --- Global config variables ---
 extern s8 gcFontType_;

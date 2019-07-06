@@ -39,8 +39,6 @@ extern u16 activeNote_;                      // currently active edited note num
 extern u16 beatLoopSteps_;                   // number of steps for one beatloop (adjustable)
 extern u8 isRecording_;                      // set, if currently recording to the selected clip
 extern u8 oledBeatFlashState_;               // 0: don't flash, 1: flash slightly (normal 1/4th note), 2: flash intensively (after four 1/4th notes or 16 steps)
-extern u16 seqPlayEnabledPorts_;
-extern u16 seqRecEnabledPorts_;
 extern s16 notePtrsOn_[128];                 // during recording - pointers to notes that are currently "on" (and waiting for an "off", therefore length yet undetermined) (-1: note not depressed)
 
 extern char filename_[20];                   // global, for filename operations
