@@ -1293,8 +1293,12 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
       else
       {
          // Scrubbing
-         // Todo: send "note offs" for currently active notes to avoid "delayed/hanging" notes, that
+
+         // Send "note offs" for currently active notes to avoid "delayed/hanging" notes, that
          // would be turned off too late, in case of rewind-scrubbing
+         if (incrementer < 0)
+            SEQ_MIDI_OUT_FlushQueue();
+
          SEQ_BPM_TickSet(SEQ_BPM_TickGet() + SEQ_BPM_PPQN_Get() * incrementer);
       }
    }

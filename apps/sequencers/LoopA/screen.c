@@ -716,6 +716,37 @@ void displayClip(u8 clip)
 }
 // ----------------------------------------------------------------------------------------
 
+/**
+ * Display centered Track user instrument info, if a user instrument has been chosen (e.g. "DRM1")
+ *
+ */
+void displayTrackInstrumentInfo()
+{
+   setFontSmall();
+   if (isInstrument(trackMidiOutPort_[activeTrack_]))
+      printCenterFormattedString(0, "%s", getPortOrInstrumentNameFromLoopAPortNumber(trackMidiOutPort_[activeTrack_]));
+   else
+      printCenterFormattedString(0, "%s #%d", getPortOrInstrumentNameFromLoopAPortNumber(trackMidiOutPort_[activeTrack_]), trackMidiOutChannel_[activeTrack_] + 1);
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Display upper-left scene-track info (e.g. A1 [mute])
+ *
+ */
+void displaySceneTrackInfo(void)
+{
+   setFontSmall();
+   printFormattedString(0, 0, "%c%d", 'A' + activeScene_, activeTrack_ + 1);
+
+   if (trackMute_[activeTrack_])
+      printFormattedString(18, 0, "[mute]%s",  sceneChangeNotification_);
+   else
+      printFormattedString(18, 0, "%s", sceneChangeNotification_);
+}
+// ----------------------------------------------------------------------------------------
+
 
 /**
  * Display the normal loopa view (PAGE_TRACK)
@@ -725,21 +756,8 @@ void displayPageMute(void)
 {
    setFontSmall();
 
-   if (screenNewPagePanelFrameCtr_ > 0)
-   {
-      setFontInverted();
-      printString(250, 8, "M");
-      printString(250, 20, "U");
-      printString(250, 32, "T");
-      printString(250, 44, "E");
-      setFontNonInverted();
-      screenNewPagePanelFrameCtr_--;
-   }
-
-   if (trackMute_[activeTrack_])
-      printCenterFormattedString(0, "[Clip %d Scene %c [muted]%s]", activeTrack_ + 1, 'A' + activeScene_, sceneChangeNotification_);
-   else
-      printCenterFormattedString(0, "[Clip %d Scene %c%s]", activeTrack_ + 1, 'A' + activeScene_, sceneChangeNotification_);
+   displaySceneTrackInfo();
+   displayTrackInstrumentInfo();
 
    u8 clip;
    for (clip = 0; clip < TRACKS; clip++)
@@ -761,18 +779,8 @@ void displayPageClip(void)
 {
    setFontSmall();
 
-   if (screenNewPagePanelFrameCtr_ > 0)
-   {
-      setFontInverted();
-      printString(250, 8, "E");
-      printString(250, 20, "D");
-      printString(250, 32, "I");
-      printString(250, 44, "T");
-      setFontNonInverted();
-      screenNewPagePanelFrameCtr_--;
-   }
-
-   printCenterFormattedString(0, "Clip Settings [Clip %d Scene %c%s]", activeTrack_ + 1, 'A' + activeScene_, sceneChangeNotification_);
+   displaySceneTrackInfo();
+   displayTrackInstrumentInfo();
 
    command_ == COMMAND_CLIPLEN ? setFontInverted() : setFontNonInverted();
    if (clipSteps_[activeTrack_][activeScene_] < 100)
@@ -855,18 +863,8 @@ void displayPageNotes(void)
 {
    setFontSmall();
 
-   if (screenNewPagePanelFrameCtr_ > 0)
-   {
-      setFontInverted();
-      printString(250, 8, "N");
-      printString(250, 20, "O");
-      printString(250, 32, "T");
-      printString(250, 44, "E");
-      setFontNonInverted();
-      screenNewPagePanelFrameCtr_--;
-   }
-
-   printCenterFormattedString(0, "Note Editor [Clip %d Scene %c%s]", activeTrack_ + 1, 'A' + activeScene_, sceneChangeNotification_);
+   displaySceneTrackInfo();
+   displayTrackInstrumentInfo();
 
    if (clipNotesSize_[activeTrack_][activeScene_] > 0)
    {
@@ -920,18 +918,8 @@ void displayPageNotes(void)
 void displayPageTrack(void)
 {
    setFontSmall();
-
-   if (screenNewPagePanelFrameCtr_ > 0)
-   {
-      setFontInverted();
-      printString(250, 8, "T");
-      printString(250, 20, "R");
-      printString(250, 32, "K");
-      setFontNonInverted();
-      screenNewPagePanelFrameCtr_--;
-   }
-
-   printCenterFormattedString(0, "Track Settings [Track %d]", activeTrack_ + 1);
+   printFormattedString(0, 0, "Track %d", activeTrack_ + 1);
+   displayTrackInstrumentInfo();
 
    command_ == COMMAND_TRACK_OUTPORT ? setFontInverted() : setFontNonInverted();
 
@@ -974,17 +962,6 @@ void displayPageDisk(void)
 {
    setFontSmall();
 
-   if (screenNewPagePanelFrameCtr_ > 0)
-   {
-      setFontInverted();
-      printString(250, 8, "D");
-      printString(250, 20, "I");
-      printString(250, 32, "S");
-      printString(250, 44, "K");
-      setFontNonInverted();
-      screenNewPagePanelFrameCtr_--;
-   }
-
    printCenterFormattedString(0, "Disk Operations");
 
    command_ == COMMAND_DISK_SELECT_SESSION ? setFontInverted() : setFontNonInverted();
@@ -1022,17 +999,6 @@ void displayPageDisk(void)
 void displayPageTempo(void)
 {
    setFontSmall();
-
-   if (screenNewPagePanelFrameCtr_ > 0)
-   {
-      setFontInverted();
-      printString(250, 14, "T");
-      printString(250, 26, "M");
-      printString(250, 38, "P");
-      printString(250, 50, "O");
-      setFontNonInverted();
-      screenNewPagePanelFrameCtr_--;
-   }
 
    printCenterFormattedString(0, "Tempo Settings", activeTrack_ + 1, activeScene_ + 1);
 
@@ -1076,17 +1042,6 @@ void displayPageTempo(void)
 void displayPageRouter(void)
 {
    setFontSmall();
-
-   if (screenNewPagePanelFrameCtr_ > 0)
-   {
-      setFontInverted();
-      printString(250, 14, "R");
-      printString(250, 26, "O");
-      printString(250, 38, "U");
-      printString(250, 50, "T");
-      setFontNonInverted();
-      screenNewPagePanelFrameCtr_--;
-   }
 
    // print routes
    s8 i;
@@ -1161,17 +1116,6 @@ void displayPageRouter(void)
 void displayPageSetup(void)
 {
    setFontSmall();
-
-   if (screenNewPagePanelFrameCtr_ > 0)
-   {
-      setFontInverted();
-      printString(250, 14, "S");
-      printString(250, 26, "E");
-      printString(250, 38, "T");
-      printString(250, 50, "P");
-      setFontNonInverted();
-      screenNewPagePanelFrameCtr_--;
-   }
 
    // print config settings
    s8 i;
