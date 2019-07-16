@@ -11,9 +11,10 @@ extern char line_buffer_[128];  // single global line buffer for reading/writing
 
 // --- Global config variables ---
 extern s8 gcFontType_;
-extern u8 gcBeatLEDsEnabled_;
-extern u8 gcBeatDisplayEnabled_;
-extern u8 gcNumberOfActiveUserInstruments_;
+extern s8 gcInvertOLED_;
+extern s8 gcBeatLEDsEnabled_;
+extern s8 gcBeatDisplayEnabled_;
+extern s8 gcNumberOfActiveUserInstruments_;
 
 extern mios32_midi_port_t gcMetronomePort_;
 extern u8 gcMetronomeChannel_;
@@ -31,7 +32,7 @@ typedef struct
    char par4Name[8];
 } SetupParameter;
 
-#define SETUP_NUM_ITEMS 9
+#define SETUP_NUM_ITEMS 10
 
 enum SetupParameterEnum
 {
@@ -40,6 +41,7 @@ enum SetupParameterEnum
    SETUP_BEAT_DISPLAY_ENABLED,
    // SETUP_COMMAND_HELP_ENABLED,
    SETUP_SCREENSAVER_MINUTES,
+   SETUP_INVERT_OLED,
    SETUP_METRONOME,
    // SETUP_TEMPO_UP_DOWN_BPM_SEC,
 

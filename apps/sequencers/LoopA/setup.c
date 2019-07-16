@@ -12,9 +12,10 @@ char line_buffer_[128];  // single global line buffer for reading/writing from/t
 
 // --- Global config variables ---
 s8 gcFontType_ = 'a';
-u8 gcBeatLEDsEnabled_ = 0;
-u8 gcBeatDisplayEnabled_ = 0;
-u8 gcNumberOfActiveUserInstruments_ = 0;
+s8 gcInvertOLED_ = 0;
+s8 gcBeatLEDsEnabled_ = 0;
+s8 gcBeatDisplayEnabled_ = 0;
+s8 gcNumberOfActiveUserInstruments_ = 0;
 
 mios32_midi_port_t gcMetronomePort_ = 0;
 u8 gcMetronomeChannel_ = 0;
@@ -30,6 +31,7 @@ SetupParameter setupParameters_[SETUP_NUM_ITEMS] =
                 {"Beat Display", "Toggle", "", "", ""},
                 // {"Command Help", "Toggle", "", "", ""}, TODO Later
                 {"Screensaver", "Minutes", "", "", ""},
+                {"Invert OLED", "Toggle", "", "", ""},
                 {"Metronome", "Port", "Chn", "Meas.", "Beat"},
                 // {"Tempo Up/Dn", "BPM/Sec", "", "", ""}, TODO Later
 
@@ -253,11 +255,11 @@ void writeSetup()
    FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
 
    // write BEAT LED config
-   sprintf(line_buffer_, "SETUP_Beat_LEDs_Enabled %d\n", (u32) gcBeatLEDsEnabled_);
+   sprintf(line_buffer_, "SETUP_Beat_LEDs_Enabled %d\n", (s8) gcBeatLEDsEnabled_);
    FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
 
    // write BEAT display config
-   sprintf(line_buffer_, "SETUP_Beat_Display_Enabled %d\n", (u32) gcBeatDisplayEnabled_);
+   sprintf(line_buffer_, "SETUP_Beat_Display_Enabled %d\n", (s8) gcBeatDisplayEnabled_);
    FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
 
    // write metronome port
@@ -282,6 +284,10 @@ void writeSetup()
 
    // write font type
    sprintf(line_buffer_, "SETUP_Font_Type %c\n", (s8) gcFontType_);
+   FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
+   // write oled inversion config
+   sprintf(line_buffer_, "SETUP_Invert_OLED_Enabled %d\n", (s8) gcInvertOLED_);
    FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
 
    // close file
@@ -447,6 +453,11 @@ void readSetup()
                {
                   gcFontType_ = word[0];
                }
+               else if (strcmp(parameter, "SETUP_Invert_OLED_Enabled") == 0)
+               {
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  gcInvertOLED_ = value;
+               }
             }
          }
       }
@@ -507,6 +518,11 @@ void setupParameterDepressed(u8 parameterNumber)
 
       case SETUP_BEAT_DISPLAY_ENABLED:
          gcBeatDisplayEnabled_ = !gcBeatDisplayEnabled_;
+         command_ = COMMAND_SETUP_SELECT;
+         break;
+
+      case SETUP_INVERT_OLED:
+         gcInvertOLED_ = !gcInvertOLED_;
          command_ = COMMAND_SETUP_SELECT;
          break;
    }
@@ -589,6 +605,10 @@ void setupParameterEncoderTurned(u8 parameterNumber, s32 incrementer)
 
             gcScreensaverAfterMinutes_ = newScreensaver;
          }
+         break;
+
+      case SETUP_INVERT_OLED:
+         gcInvertOLED_ = !gcInvertOLED_;
          break;
    }
 

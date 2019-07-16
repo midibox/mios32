@@ -1164,7 +1164,14 @@ void displayPageSetup(void)
                   break;
 
                case SETUP_FONT_TYPE:
-                  printFormattedString(84, y, "%c", gcFontType_);
+                  switch (gcFontType_)
+                  {
+                     case 'a': printFormattedString(84, y, "a - sharp");
+                        break;
+                     case 'b': printFormattedString(84, y, "b - smooth");
+                        break;
+                  }
+
                   break;
 
                case SETUP_BEAT_LEDS_ENABLED:
@@ -1181,6 +1188,10 @@ void displayPageSetup(void)
 
                case SETUP_SCREENSAVER_MINUTES:
                   printFormattedString(84, y, "%d Min", gcScreensaverAfterMinutes_);
+                  break;
+
+               case SETUP_INVERT_OLED:
+                  printFormattedString(84, y, gcInvertOLED_ ? "On" : "Off");
                   break;
 
             }
@@ -1679,18 +1690,19 @@ void display()
       u8 bgcol = 0;
       for (i = 0; i < 128; i++)
       {
-         // first two pixels...
+         // two pixels at once...
          u8 out = screen[j][i];
-         if (flash && out == 0)
-            APP_LCD_Data(flash); // normally raise dark level slightly, but more intensively after 16 16th notes during flash
-         else
-            APP_LCD_Data(out);
 
-         screen[j][i] = bgcol; // clear written pixels
+         if (gcInvertOLED_)
+         {
+            // Screen inversion routine for white frontpanels :)
+            u8 first = out >> 4U;
+            u8 second = out % 16;
 
-         // next two pixels
-         i++;
-         out = screen[j][i];
+            first = 15 - first;
+            second = 15 - second;
+            out = (first << 4U) + second;
+         }
 
          if (flash && out == 0)
             APP_LCD_Data(flash); // normally raise dark level slightly, but more intensively after 16 16th notes during flash
