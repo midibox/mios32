@@ -1340,10 +1340,6 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
       else
       {
          // Scrubbing
-
-         // Send "note offs" for currently active notes to avoid "delayed/hanging" notes
-         SEQ_MIDI_OUT_FlushQueue();
-
          SEQ_BPM_TickSet(SEQ_BPM_TickGet() + SEQ_BPM_PPQN_Get() * incrementer);
       }
    }

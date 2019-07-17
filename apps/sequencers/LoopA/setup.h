@@ -10,6 +10,7 @@ extern u8 configChangesToBeWritten_;
 extern char line_buffer_[128];  // single global line buffer for reading/writing from/to files
 
 // --- Global config variables ---
+extern s16 gcLastUsedSessionNumber_;
 extern s8 gcFontType_;
 extern s8 gcInvertOLED_;
 extern s8 gcBeatLEDsEnabled_;

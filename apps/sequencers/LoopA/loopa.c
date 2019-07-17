@@ -29,9 +29,6 @@ static s8 liveBeatLoopJumpStep2_[15] =  {  16,   8,   4,   0,   0,   0,   0,   0
 
 // --- Global vars ---
 
-static s32 (*loopaTrackPlayEventCallback)(s8 loopaTrack, mios32_midi_package_t midi_package, u32 tick) = 0;
-static s32 (*loopaTrackMetaEventCallback)(s8 loopaTrack, u8 meta, u32 len, u8 *buffer, u32 tick) = 0;
-
 u32 millisecondsSinceStartup_ = 0;    // global "uptime" timer
 u16 inactivitySeconds_ = 0;           // screensaver timer
 u32 tick_ = 0;                        // global seq tick
@@ -313,17 +310,11 @@ void performBeatLoop()
       if (at1 && tickToStep(tick_) % at1 == 0)
       {
          // Perform "Jump 1"
-         // Send "note offs" for currently active notes to avoid "delayed/hanging" notes
-         SEQ_MIDI_OUT_FlushQueue();
-
          SEQ_BPM_TickSet(SEQ_BPM_TickGet() + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep1_[idx]);
       }
       else if (at2 && tickToStep(tick_) % at2 == 0)
       {
-         // Perform "Jump 1"
-         // Send "note offs" for currently active notes to avoid "delayed/hanging" notes
-         SEQ_MIDI_OUT_FlushQueue();
-
+         // Perform "Jump 2"
          SEQ_BPM_TickSet(SEQ_BPM_TickGet() + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep2_[idx]);
       }
    }
@@ -463,6 +454,8 @@ void sessionNumberToFilename(u16 sessionNumber)
 void saveSession(u16 sessionNumber)
 {
    sessionNumberToFilename(sessionNumber);
+   gcLastUsedSessionNumber_ = sessionNumber;
+   configChangesToBeWritten_ = 1;
 
    MUTEX_SDCARD_TAKE;
 
@@ -509,7 +502,10 @@ void saveSession(u16 sessionNumber)
  */
 void loadSession(u16 sessionNumber)
 {
+   sessionNumber_ = sessionNumber;
    sessionNumberToFilename(sessionNumber);
+   gcLastUsedSessionNumber_ = sessionNumber;
+   configChangesToBeWritten_ = 1;
 
    MUTEX_SDCARD_TAKE;
 
@@ -542,7 +538,7 @@ void loadSession(u16 sessionNumber)
    }
 
    if (status == 0)
-      screenFormattedFlashMessage("Loaded");
+      screenFormattedFlashMessage("Loaded Session %d", sessionNumber);
    else
       screenFormattedFlashMessage("Load failed");
 
@@ -568,7 +564,7 @@ void loopaStartup()
  * from BPM generator
  *
  */
-s32 seqHandler(void)
+s32 loopaSeqHandler(void)
 {
    // handle BPM requests
 
@@ -611,7 +607,7 @@ s32 seqHandler(void)
       if (bpm_tick == 0) // send start (again) to synchronize with new MIDI songs
          MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
 
-      seqTick(bpm_tick);
+      loopaSeqTick(bpm_tick);
    }
 
    return 0; // no error
@@ -626,28 +622,26 @@ s32 seqHandler(void)
  */
 s32 seqPlayOffEvents(void)
 {
-  // play "off events"
-  SEQ_MIDI_OUT_FlushQueue();
+   // play remaining "off events"
+   LoopA_MIDI_OUT_FlushQueue();
 
-  // send Note Off to all channels
-  // TODO: howto handle different ports?
-  // TODO: should we also send Note Off events? Or should we trace Note On events and send Off if required?
-  int chn;
-  mios32_midi_package_t midi_package;
-  midi_package.type = CC;
-  midi_package.event = CC;
-  midi_package.evnt2 = 0;
+   // Additionally send Note Off to all channels (may be unnecessary after FlushQueue)
+   int chn;
+   mios32_midi_package_t midi_package;
+   midi_package.type = CC;
+   midi_package.event = CC;
+   midi_package.evnt2 = 0;
 
-  for (chn=0; chn<16; ++chn)
-  {
-     midi_package.chn = chn;
-     midi_package.evnt1 = 123; // All Notes Off
-     hookMIDISendPackage(UART0, midi_package);
-     midi_package.evnt1 = 121; // Controller Reset
-     hookMIDISendPackage(UART0, midi_package);
-  }
+   for (chn=0; chn<16; ++chn)
+   {
+      midi_package.chn = chn;
+      midi_package.evnt1 = 123; // All Notes Off
+      hookMIDISendPackage(UART0, midi_package);
+      midi_package.evnt1 = 121; // Controller Reset
+      hookMIDISendPackage(UART0, midi_package);
+   }
 
-  return 0; // no error
+   return 0; // no error
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -658,9 +652,6 @@ s32 seqPlayOffEvents(void)
  */
 s32 seqReset(u8 play_off_events)
 {
-   // install seqPlayEvent callback for clipFetchEvents()
-   loopaTrackPlayEventCallback = seqPlayEvent;
-
    // since timebase has been changed, ensure that Off-Events are played
    // (otherwise they will be played much later...)
    if (play_off_events)
@@ -670,7 +661,7 @@ s32 seqReset(u8 play_off_events)
    ffwdSilentMode_ = 0;
 
    // set pulses per quarter note (internal resolution, 96 is standard)
-   SEQ_BPM_PPQN_Set(96); // 384
+   SEQ_BPM_PPQN_Set(96);
 
    // reset BPM tick
    SEQ_BPM_TickSet(0);
@@ -793,142 +784,113 @@ void seqUpdateBeatLEDs(u32 bpm_tick)
  * Perform a single bpm tick
  *
  */
-s32 seqTick(u32 bpm_tick)
+s32 loopaSeqTick(u32 bpm_tick)
 {
-   tick_ = bpm_tick;
-
-   u16 step = tickToStep(bpm_tick);
-
-   // send MIDI clock depending on ppqn
-   if ((bpm_tick % (SEQ_BPM_PPQN_Get()/24)) == 0)
+   if (bpm_tick == tick_)
    {
-      // DEBUG_MSG("Tick %d, SEQ BPM PPQN/24 %d", bpm_tick, SEQ_BPM_PPQN_Get()/24);
-      MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
+      DEBUG_MSG("Tick %d already encountered", bpm_tick);
    }
-
-   // perform synced track mutes/unmutes
-   if ((bpm_tick % (SEQ_BPM_PPQN_Get()/4)) == 0)
+   else
    {
-      performBeatLoop();
-      performSyncedMutesAndUnmutes();
-      performSyncedSceneChanges();
-      performLiveTranspositionChanges();
-   }
+      tick_ = bpm_tick;
 
-   u8 track;
+      u16 step = tickToStep(bpm_tick);
 
-   for (track = 0; track < TRACKS; track++)
-   {
-      s8 liveTransposeSemi = trackLiveTranspose_[track] ? liveTransposeSemitones_[liveTranspose_ + 7] : 0;
-
-      if (!trackMute_[track])
+      // send MIDI clock depending on ppqn
+      if ((bpm_tick % (SEQ_BPM_PPQN_Get() / 24)) == 0)
       {
-         u32 clipNoteTime = boundTickToClipSteps(bpm_tick, track);
-         u16 i;
+         // DEBUG_MSG("Tick %d, SEQ BPM PPQN/24 %d", bpm_tick, SEQ_BPM_PPQN_Get()/24);
+         MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
+      }
 
-         for (i=0; i < clipNotesSize_[track][activeScene_]; i++)
+      u8 track;
+
+      for (track = 0; track < TRACKS; track++)
+      {
+         s8 liveTransposeSemi = trackLiveTranspose_[track] ? liveTransposeSemitones_[liveTranspose_ + 7] : 0;
+
+         if (!trackMute_[track])
          {
-            if (clipNotes_[track][activeScene_][i].length > 0) // not still being held/recorded!
+            u32 clipNoteTime = boundTickToClipSteps(bpm_tick, track);
+            u16 i;
+
+            for (i = 0; i < clipNotesSize_[track][activeScene_]; i++)
             {
-               if (quantizeTransform(track, i) == clipNoteTime)
+               if (clipNotes_[track][activeScene_][i].length > 0) // not still being held/recorded!
                {
-                  s16 note = clipNotes_[track][activeScene_][i].note + clipTranspose_[track][activeScene_] + liveTransposeSemi;
-                  note = note < 0 ? 0 : note;
-                  note = note > 127 ? 127 : note;
+                  if (quantizeTransform(track, i) == clipNoteTime)
+                  {
+                     s16 note = clipNotes_[track][activeScene_][i].note + clipTranspose_[track][activeScene_] +
+                                liveTransposeSemi;
+                     note = note < 0 ? 0 : note;
+                     note = note > 127 ? 127 : note;
 
-                  mios32_midi_package_t package;
-                  package.type = NoteOn;
-                  package.event = NoteOn;
-                  package.chn = isInstrument(trackMidiOutPort_[track]) ? getInstrumentChannelNumberFromLoopAPortNumber(trackMidiOutPort_[track]) : trackMidiOutChannel_[track];
-                  package.note = note;
-                  package.velocity = clipNotes_[track][activeScene_][i].velocity;
-                  hookMIDISendPackage(track, package); // play NOW
+                     mios32_midi_package_t package;
+                     package.type = NoteOn;
+                     package.event = NoteOn;
+                     package.chn = isInstrument(trackMidiOutPort_[track])
+                                   ? getInstrumentChannelNumberFromLoopAPortNumber(trackMidiOutPort_[track])
+                                   : trackMidiOutChannel_[track];
+                     package.note = note;
+                     package.velocity = clipNotes_[track][activeScene_][i].velocity;
 
-                  package.type = NoteOff;
-                  package.event = NoteOff;
-                  package.note = note;
-                  package.velocity = 0;
-                  seqPlayEvent(track, package, bpm_tick + clipNotes_[track][activeScene_][i].length); // always play off event (schedule later)
+                     hookMIDISendPackage(getMIOSPortNumberFromLoopAPortNumber(trackMidiOutPort_[track]), package); // play NOW
+                     // LoopA_MIDI_OUT_Send(track, package, LOOPA_MIDI_OUT_OnOffEvent, 0, clipNotes_[track][activeScene_][i].length + 1, 1);
+
+                     package.type = NoteOff;
+                     package.event = NoteOff;
+                     package.note = note;
+                     package.velocity = 0;
+                     // seqPlayEvent(track, package, bpm_tick + clipNotes_[track][activeScene_][i].length); // always play off event (schedule later)
+                     LoopA_MIDI_OUT_Send(getMIOSPortNumberFromLoopAPortNumber(trackMidiOutPort_[track]), package, LOOPA_MIDI_OUT_OffEvent, clipNotes_[track][activeScene_][i].length + 1, 1);
+                  }
                }
             }
          }
       }
-   }
 
-   // Send metronome tick on each beat, if enabled
+      // Send metronome tick on each beat, if enabled
 
-   if (metronomeEnabled_ && (bpm_tick % 96) == 0)
-   {
-      mios32_midi_package_t p;
-
-      p.type     = NoteOn;
-      p.cable    = 15; // use tag of track #16 - unfortunately more than 16 tags are not supported
-      p.event    = NoteOn;
-      p.chn      = isInstrument(gcMetronomePort_) ? getInstrumentChannelNumberFromLoopAPortNumber(gcMetronomePort_) : gcMetronomeChannel_;
-      p.note     = gcMetronomeNoteB_;
-      p.velocity = 96;
-      u16 len =  5;
-
-      if (step % stepsPerMeasure_ == 0)
+      if (metronomeEnabled_ && (bpm_tick % 96) == 0)
       {
-         p.note = gcMetronomeNoteM_;
-         p.velocity = 127;
+         mios32_midi_package_t p;
+
+         p.type = NoteOn;
+         p.cable = 15; // use tag of track #16 - unfortunately more than 16 tags are not supported
+         p.event = NoteOn;
+         p.chn = isInstrument(gcMetronomePort_) ? getInstrumentChannelNumberFromLoopAPortNumber(gcMetronomePort_)
+                                                : gcMetronomeChannel_;
+         p.note = gcMetronomeNoteB_;
+         p.velocity = 96;
+         u16 len = 5;
+
+         if (step % stepsPerMeasure_ == 0)
+         {
+            p.note = gcMetronomeNoteM_;
+            p.velocity = 127;
+         }
+
+         /// screenFormattedFlashMessage("metr note %d on %x#%d", p.note, getMIOSPortNumberFromLoopAPortNumber(gcMetronomePort_), p.chn);
+
+         if (p.note)
+            LoopA_MIDI_OUT_Send(METRONOME_PSEUDO_PORT, p, LOOPA_MIDI_OUT_OnOffEvent, bpm_tick, len);
       }
 
-      /// screenFormattedFlashMessage("metr note %d on %x#%d", p.note, getMIOSPortNumberFromLoopAPortNumber(gcMetronomePort_), p.chn);
+      // perform synced track mutes/unmutes
+      if ((bpm_tick % (SEQ_BPM_PPQN_Get() / 4)) == 0)
+      {
+         performBeatLoop();
+         performSyncedMutesAndUnmutes();
+         performSyncedSceneChanges();
+         performLiveTranspositionChanges();
+      }
 
-      if (p.note)
-         SEQ_MIDI_OUT_Send(METRONOME_PSEUDO_PORT, p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, len);
+      performLiveLEDUpdates();
+
+      LoopA_MIDI_OUT_Tick();
    }
-
-   performLiveLEDUpdates();
 
    return 0; // no error
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
- * Schedule a MIDI event to be played at a given tick
- *
- */
-s32 seqPlayEvent(s8 loopaTrack, mios32_midi_package_t midi_package, u32 tick)
-{
-   // DEBUG_MSG("[seqPlayEvent] silent:%d type:%d", ffwdSilentMode_, midi_package.type);
-
-   // ignore all events in silent mode (for SEQ_SongPos function)
-   // we could implement a more intelligent parser, which stores the sent CC/program change, etc...
-   // and sends the last received values before restarting the song...
-   if (ffwdSilentMode_)
-      return 0;
-
-   // In order to support an unlimited SysEx stream length, we pass them as single bytes directly w/o the sequencer!
-   if (midi_package.type == 0xf)
-   {
-      hookMIDISendPackage(loopaTrack, midi_package);
-      return 0;
-   }
-
-   seq_midi_out_event_type_t event_type = SEQ_MIDI_OUT_OnEvent;
-   if (midi_package.event == NoteOff || (midi_package.event == NoteOn && midi_package.velocity == 0))
-      event_type = SEQ_MIDI_OUT_OffEvent;
-
-   // output events on virtual "loopaTrack" port (which are then redirected just in time by the SEQ back to hookMIDISendPackage)
-   u32 status = 0;
-   status |= SEQ_MIDI_OUT_Send(loopaTrack, midi_package, event_type, tick, 0);
-
-   return status;
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
- * Ignore track meta events
- *
- */
-s32 seqIgnoreMetaEvent(s8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick)
-{
-   return 0;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -1006,11 +968,7 @@ s32 seqInit()
    bpm_ = 120;
 
    // scheduler should send packages to private hook
-   SEQ_MIDI_OUT_Callback_MIDI_SendPackage_Set(hookMIDISendPackage);
-
-   // install seqPlayEvent callback for clipFetchEvents()
-   loopaTrackPlayEventCallback = seqPlayEvent;
-   loopaTrackMetaEventCallback = seqIgnoreMetaEvent;
+   LoopA_MIDI_OUT_Callback_MIDI_SendPackage_Set(hookMIDISendPackage);
 
    u8 i, j;
    for (i = 0; i < TRACKS; i++)
@@ -1057,11 +1015,13 @@ void loopaSDCardAvailable()
 {
    readSetup();
 
-   loadSession(1); // Todo: load last session (stored in setup)
    seqInit();
    trackMute_[0] = 0;
    seqArmButton();
    screenShowLoopaLogo(0); // Disable logo, normal operations started
+
+   if (sessionNumber_ > 0) // last-used session may have been set by readSetup(), if so, load it!
+      loadSession(sessionNumber_);
 }
 // -------------------------------------------------------------------------------------------------
 

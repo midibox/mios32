@@ -120,6 +120,8 @@ void loadSession(u16 sessionNumber);
 // First callback from app - render Loopa Startup logo on screen
 void loopaStartup();
 
+// Called periodically (1 mS) to check for timestamped MIDI events which have to be sent.
+s32 LoopA_MIDI_OUT_Handler(void);
 
 // --- LoopA Sequencer Section ---
 
@@ -127,7 +129,7 @@ s32  seqPlayOffEvents(void);
 s32  seqReset(u8 play_off_events);
 s32  seqSongPos(u16 new_song_pos);
 void seqUpdateBeatLEDs(u32 bpm_tick);
-s32  seqTick(u32 bpm_tick);
+s32  loopaSeqTick(u32 bpm_tick);
 s32  hookMIDISendPackage(s8 loopaTrack, mios32_midi_package_t package);
 s32  seqPlayEvent(s8 loopaTrack, mios32_midi_package_t midi_package, u32 tick);
 s32  seqIgnoreMetaEvent(s8 loopaTrack, u8 meta, u32 len, u8 *buffer, u32 tick);
@@ -139,7 +141,7 @@ void handleStop();
 s32 seqInit();
 
 // This main sequencer handler is called periodically to poll the clock/current tick from BPM generator
-s32 seqHandler(void);
+s32 loopaSeqHandler(void);
 
 // SD Card Available, initialize
 void loopaSDCardAvailable();

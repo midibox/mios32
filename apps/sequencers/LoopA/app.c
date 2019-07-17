@@ -30,12 +30,12 @@
 #include "file.h"
 
 #include <seq_bpm.h>
-#include <seq_midi_out.h>
 
 #include "loopa.h"
 #include "terminal.h"
 #include "ui.h"
 #include "screen.h"
+#include "midi_out.h"
 
 
 // #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
@@ -147,7 +147,7 @@ void APP_Init(void)
    TERMINAL_Init(0);
    MIDIMON_Init(0);
    FILE_Init(0);
-   SEQ_MIDI_OUT_Init(0);
+   LoopA_MIDI_OUT_Init(0);
    seqInit(0);
 
    // install four encoders...
@@ -469,13 +469,13 @@ static void TASK_Period_1mS(void *pvParameters)
 
       // execute sequencer handler
       MUTEX_SDCARD_TAKE;
-      seqHandler();
+      loopaSeqHandler();
       MUTEX_SDCARD_GIVE;
 
-      // send timestamped MIDI events
-      MUTEX_MIDIOUT_TAKE;
-      SEQ_MIDI_OUT_Handler();
-      MUTEX_MIDIOUT_GIVE;
+      /// send timestamped MIDI events
+      /// MUTEX_MIDIOUT_TAKE;
+      /// LoopA_MIDI_OUT_Handler();
+      /// MUTEX_MIDIOUT_GIVE;
 
       // Scan Matrix button handler
       /// MIDIO_MATRIX_ButtonHandler();

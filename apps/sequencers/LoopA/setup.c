@@ -11,6 +11,7 @@ u8 configChangesToBeWritten_ = 0;
 char line_buffer_[128];  // single global line buffer for reading/writing from/to files
 
 // --- Global config variables ---
+s16 gcLastUsedSessionNumber_ = -1;
 s8 gcFontType_ = 'a';
 s8 gcInvertOLED_ = 0;
 s8 gcBeatLEDsEnabled_ = 0;
@@ -254,6 +255,10 @@ void writeSetup()
    sprintf(line_buffer_, "MIDI_OUT_MClock_Ports 0x%08x\n", (u32) midi_router_mclk_out);
    FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
 
+   // write last used session number
+   sprintf(line_buffer_, "SETUP_Last_Used_Session_Number %d\n", (s8) gcLastUsedSessionNumber_);
+   FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
    // write BEAT LED config
    sprintf(line_buffer_, "SETUP_Beat_LEDs_Enabled %d\n", (s8) gcBeatLEDsEnabled_);
    FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
@@ -413,6 +418,12 @@ void readSetup()
                   value = get_dec_range(word, parameter, 0, 0x7fffffff);
                   if (value >= 0)
                      midi_router_mclk_out = value;
+               }
+               else if (strcmp(parameter, "SETUP_Last_Used_Session_Number") == 0)
+               {
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  if (value > 0)
+                     sessionNumber_ = value;
                }
                else if (strcmp(parameter, "SETUP_Beat_LEDs_Enabled") == 0)
                {
