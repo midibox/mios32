@@ -4,6 +4,7 @@
 
 // --- LEDs ---
 
+// physical hardware LEDs (three colors per LED)
 const u8 HW_LED_RED_GP1 = 11;
 const u8 HW_LED_RED_GP2 = 18;
 const u8 HW_LED_RED_GP3 = 25;
@@ -49,40 +50,23 @@ const u8 HW_LED_BLUE_COPY = 33;
 const u8 HW_LED_BLUE_PASTE = 40;
 const u8 HW_LED_BLUE_DELETE = 46;
 
-// LOGICAL LED STATES
-const u8 LED_OFF = 0;
-const u8 LED_RED = 1;
-const u8 LED_GREEN = 2;
-const u8 LED_BLUE = 4;
+const u8 HW_LED_SCENE_SWITCH_ALL = 23;
+const u8 HW_LED_SCENE_1 = 15;
+const u8 HW_LED_SCENE_2 = 7;
+const u8 HW_LED_SCENE_3 = 6;
+const u8 HW_LED_SCENE_4 = 5;
+const u8 HW_LED_SCENE_5 = 2;
+const u8 HW_LED_SCENE_6 = 1;
+const u8 HW_LED_SCENE_SWITCH_CLIP = 0;
 
-const u8 led_scene1 = 15;
-const u8 led_scene2 = 7;
-const u8 led_scene3 = 6;
-const u8 led_scene4 = 5;
-const u8 led_scene5 = 2;
-const u8 led_scene6 = 1;
-
-const u8 led_page_main = 39;
-const u8 led_page_1 = 47;
-const u8 led_page_2 = 48;
-const u8 led_page_3 = 49;
-const u8 led_page_4 = 50;
-const u8 led_page_5 = 53;
-const u8 led_page_6 = 54;
-
-
-
-const u8 led_scene_up = 3;
-const u8 led_scene_down = 0;
-
-const u8 led_copy = 34;
-const u8 led_paste = 41;
-
-const u8 led_beat0 = 3;
-const u8 led_beat1 = 127;
-const u8 led_beat2 = 127;
-const u8 led_beat3 = 127;
-
+const u8 HW_LED_LIVEMODE_TRANSPOSE = 39;
+const u8 HW_LED_LIVEMODE_1 = 47;
+const u8 HW_LED_LIVEMODE_2 = 48;
+const u8 HW_LED_LIVEMODE_3 = 49;
+const u8 HW_LED_LIVEMODE_4 = 50;
+const u8 HW_LED_LIVEMODE_5 = 53;
+const u8 HW_LED_LIVEMODE_6 = 54;
+const u8 HW_LED_LIVEMODE_BEATLOOP = 55;
 
 // --- Switches ---
 
@@ -106,7 +90,7 @@ const u8 sw_enc_select = 2;
 const u8 sw_enc_live = 26;
 const u8 sw_enc_value = 16;
 
-// -- Encoders ---
+// --- Encoders ----
 
 const u8 enc_scene_id = 0;
 const u8 enc_scene = 4;
@@ -163,7 +147,7 @@ const u8 enc_value = 18;
  * dout 36 = gp5 blue
  * dout 37 = gp5 green
  * dout 38 = gp5 red
- * dout 39 = menu mode: edit
+ * dout 39 = live mode: transpose
  * dout 40 = paste blue
  * dout 41 = paste green
  * dout 42 = paste red
@@ -171,15 +155,15 @@ const u8 enc_value = 18;
  * dout 44 = gp6 green
  * dout 45 = gp6 red
  * dout 46 = delete blue
- * dout 47 = page 1
- * dout 48 = page 2
- * dout 49 = page 3
- * dout 50 = page 4
+ * dout 47 = live mode 1
+ * dout 48 = live mode 2
+ * dout 49 = live mode 3
+ * dout 50 = live mode 4
  * dout 51 = delete red
  * dout 52 = delete green
- * dout 53 = page 5
- * dout 54 = page 6
- * dout 55 = menu mode: session
+ * dout 53 = live mode 5
+ * dout 54 = live mode 6
+ * dout 55 = live mode: beatloop
  *
  * BUTTON/ENCODER MAPPING
  * ----------------------

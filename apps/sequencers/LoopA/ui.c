@@ -53,12 +53,12 @@ void setActiveScene(u8 sceneNumber)
    activeScene_ = sceneNumber;
 
    MUTEX_DIGITALOUT_TAKE;
-   MIOS32_DOUT_PinSet(led_scene1, activeScene_ == 0);
-   MIOS32_DOUT_PinSet(led_scene2, activeScene_ == 1);
-   MIOS32_DOUT_PinSet(led_scene3, activeScene_ == 2);
-   MIOS32_DOUT_PinSet(led_scene4, activeScene_ == 3);
-   MIOS32_DOUT_PinSet(led_scene5, activeScene_ == 4);
-   MIOS32_DOUT_PinSet(led_scene6, activeScene_ == 5);
+   MIOS32_DOUT_PinSet(HW_LED_SCENE_1, activeScene_ == 0);
+   MIOS32_DOUT_PinSet(HW_LED_SCENE_2, activeScene_ == 1);
+   MIOS32_DOUT_PinSet(HW_LED_SCENE_3, activeScene_ == 2);
+   MIOS32_DOUT_PinSet(HW_LED_SCENE_4, activeScene_ == 3);
+   MIOS32_DOUT_PinSet(HW_LED_SCENE_5, activeScene_ == 4);
+   MIOS32_DOUT_PinSet(HW_LED_SCENE_6, activeScene_ == 5);
    MUTEX_DIGITALOUT_GIVE;
 }
 // -------------------------------------------------------------------------------------------------
@@ -69,15 +69,6 @@ void setActiveScene(u8 sceneNumber)
 void setActivePage(enum LoopAPage page)
 {
    page_ = page;
-
-   MUTEX_DIGITALOUT_TAKE;
-   MIOS32_DOUT_PinSet(led_page_1, page == PAGE_MUTE);
-   MIOS32_DOUT_PinSet(led_page_2, page == PAGE_CLIP);
-   MIOS32_DOUT_PinSet(led_page_3, page == PAGE_NOTES);
-   MIOS32_DOUT_PinSet(led_page_4, page == PAGE_TRACK);
-   MIOS32_DOUT_PinSet(led_page_5, page == PAGE_DISK);
-   MIOS32_DOUT_PinSet(led_page_6, page == PAGE_TEMPO);
-   MUTEX_DIGITALOUT_GIVE;
 
    // Map to a proper command, that is on this page (or no command at all)
    switch(page)
@@ -104,7 +95,7 @@ void setActivePage(enum LoopAPage page)
 // ---------------------------------------------------------------------------------------------------------------------
 
 /**
- * Update a single LED (called from MUTEX_DIGITALOUT protected environment)
+ * Update a single superflux LED (called from MUTEX_DIGITALOUT protected environment)
  *
  */
 static u8 ledstate[13];
@@ -256,6 +247,7 @@ void updateLEDs()
       led_delete = LED_OFF;
    }
 
+   // --- Menu LEDs ---
    if (screenIsInMenu())
    {
       led_menu = LED_RED;
@@ -296,7 +288,7 @@ void updateLEDs()
    }
    else
    {
-      // Normal pages, outside menu/shift
+      // --- Normal pages, outside menu/shift ---
 
       // Always indicate active track with a blue upper LED
       led_gp1 = activeTrack_ == 0 ? LED_BLUE : LED_OFF;
@@ -391,7 +383,6 @@ void updateLEDs()
    updateLED(LED_RUNSTOP, led_runstop);
    updateLED(LED_ARM, led_arm);
    updateLED(LED_SHIFT, led_shift);
-
 
    if (!gcBeatLEDsEnabled_ || !SEQ_BPM_IsRunning()) // If we are using the lower right matias LED as beat flashlights, don't control them from here
    {
@@ -604,6 +595,22 @@ void trackToggleForward()
       trackMidiForward_[activeTrack_] = 1;
    else
       trackMidiForward_[activeTrack_] = 0;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Midi Track Toggle Live Transposition
+ *
+ */
+void trackToggleLiveTranspose()
+{
+   command_ = command_ == COMMAND_TRACK_LIVE_TRANSPOSE ? COMMAND_NONE : COMMAND_TRACK_LIVE_TRANSPOSE;
+
+   if (trackLiveTranspose_[activeTrack_] == 0)
+      trackLiveTranspose_[activeTrack_] = 1;
+   else
+      trackLiveTranspose_[activeTrack_] = 0;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -885,6 +892,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
+         diskScanSessionFileAvailable();
          setActivePage(PAGE_DISK);
       }
       else
@@ -1152,6 +1160,9 @@ void loopaButtonPressed(s32 pin)
             case PAGE_CLIP:
                clipClear();
                break;
+            case PAGE_TRACK:
+               trackToggleLiveTranspose();
+               break;
             case PAGE_NOTES:
                notesDeleteNote();
                break;
@@ -1164,6 +1175,42 @@ void loopaButtonPressed(s32 pin)
    else if (pin == sw_enc_select)
    {
       scrubModeActive_ = 1;
+   }
+   else if (pin == sw_enc_live)
+   {
+      if (!screenIsInShift())
+      {
+         // Outside SHIFT menu: perform live mode switch
+
+         switch (liveMode_)
+         {
+            case LIVEMODE_TRANSPOSE:
+               liveMode_ = LIVEMODE_BEATLOOP;
+               break;
+
+            default:
+               liveMode_ = LIVEMODE_TRANSPOSE;
+         }
+      }
+      else
+      {
+         // Inside SHIFT menu: reset current live mode parameter
+         switch (liveMode_)
+         {
+            case LIVEMODE_TRANSPOSE:
+               liveTransposeRequested_ = 0;
+               if (!SEQ_BPM_IsRunning())
+                  liveTranspose_ = 0;
+               break;
+
+            default: // LIVEMODE_BEATLOOP
+               liveBeatLoop_ = 0;
+               break;
+         }
+      }
+
+      if (!SEQ_BPM_IsRunning())
+         performLiveLEDUpdates();
    }
 }
 // -------------------------------------------------------------------------------------------------
@@ -1294,10 +1341,8 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
       {
          // Scrubbing
 
-         // Send "note offs" for currently active notes to avoid "delayed/hanging" notes, that
-         // would be turned off too late, in case of rewind-scrubbing
-         if (incrementer < 0)
-            SEQ_MIDI_OUT_FlushQueue();
+         // Send "note offs" for currently active notes to avoid "delayed/hanging" notes
+         SEQ_MIDI_OUT_FlushQueue();
 
          SEQ_BPM_TickSet(SEQ_BPM_TickGet() + SEQ_BPM_PPQN_Get() * incrementer);
       }
@@ -1306,23 +1351,26 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
    // Upper-right "Live" encoder
    else if (encoder == enc_live_id)
    {
-      // switch through pages
+      if (liveMode_ == LIVEMODE_TRANSPOSE)
+      {
+         s8 newLiveTranspose = (s8) (liveTransposeRequested_ + incrementer);
+         newLiveTranspose = (s8) (newLiveTranspose < -7 ? -7 : newLiveTranspose);
+         liveTransposeRequested_ = (s8) (newLiveTranspose > 7 ? 7 : newLiveTranspose);
 
-      enum LoopAPage page = page_;
-
-      if (page == PAGE_MUTE && incrementer < 0)
-         page = PAGE_MUTE;
-      else if (page >= PAGE_TEMPO && incrementer > 0)
-         page = PAGE_TEMPO;
+         if (!SEQ_BPM_IsRunning())
+            liveTranspose_ = liveTransposeRequested_;
+      }
       else
-         page += incrementer;
+      {
+         // LIVEMODE_BEATLOOP
 
-      if (page == PAGE_DISK)
-         diskScanSessionFileAvailable();
+         s8 newLiveBeatloop = (s8) (liveBeatLoop_ + incrementer);
+         newLiveBeatloop = (s8) (newLiveBeatloop < -7 ? -7 : newLiveBeatloop);
+         liveBeatLoop_ = (s8) (newLiveBeatloop > 7 ? 7 : newLiveBeatloop);
+      }
 
-      setActivePage(page);
-
-      screenNotifyPageChanged();
+      if (!SEQ_BPM_IsRunning())
+         performLiveLEDUpdates();
    }
 
    // Lower-right "Value" encoder

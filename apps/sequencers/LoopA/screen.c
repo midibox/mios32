@@ -382,7 +382,7 @@ void displayClipPosition(u8 clipNumber)
    u16 stepPos = screenClipStepPosition_[clipNumber];
    u8 isSelected = (clipNumber == screenClipNumberSelected_);
 
-   u8 syncedMuteUnmuteInProgress = trackMuteToggleRequested_[clipNumber] && (tickToStep(tick_) % beatLoopSteps_) != 0;
+   u8 syncedMuteUnmuteInProgress = trackMuteToggleRequested_[clipNumber] && (tickToStep(tick_) % stepsPerMeasure_) != 0;
 
    if (!syncedMuteUnmuteInProgress)
    {
@@ -397,7 +397,7 @@ void displayClipPosition(u8 clipNumber)
    }
    else
    {
-      u8 remainSteps = 16 - (tickToStep(tick_) % beatLoopSteps_);
+      u8 remainSteps = 16 - (tickToStep(tick_) % stepsPerMeasure_);
 
       if (remainSteps > 9)
          sprintf((char *)buffer, "  %d   ", remainSteps);
@@ -628,17 +628,17 @@ u16 noteLengthPixels(u32 ticksLength)
  * Display the note data of a clip
  *
  */
-void displayClip(u8 clip)
+void displayClip(u8 track)
 {
    u16 x;
    u8 y;
    u16 i;
-   u16 mult = 128/clipSteps_[clip][activeScene_];  // horizontal multiplier to make clips as wide as the screen
+   u16 mult = 128/clipSteps_[track][activeScene_];  // horizontal multiplier to make clips as wide as the screen
 
-   u16 curStep = ((u32)boundTickToClipSteps(tick_, clip) * mult) / 24;
+   u16 curStep = ((u32)boundTickToClipSteps(tick_, track) * mult) / 24;
 
    // Render vertical 1/4th note indicators
-   for (i=0; i<clipSteps_[clip][activeScene_] / 4; i++)
+   for (i=0; i<clipSteps_[track][activeScene_] / 4; i++)
    {
       x = i * 4 * mult;
       if (x < 128)
@@ -651,26 +651,27 @@ void displayClip(u8 clip)
       for (y=0; y<64; y++)
          screen[y][curStep] = 0x88;
 
+   s8 liveTransposeSemi = trackLiveTranspose_[track] ? liveTransposeSemitones_[liveTranspose_ + 7] : 0;
 
    // Render note data
-   for (i=0; i < clipNotesSize_[clip][activeScene_]; i++)
+   for (i=0; i < clipNotesSize_[track][activeScene_]; i++)
    {
-      s32 transformedStep = (s32)quantizeTransform(clip, i) * mult;
+      s32 transformedStep = (s32)quantizeTransform(track, i) * mult;
 
-      if (transformedStep >= 0) // if note starts within (potentially reconfigured) clip length
+      if (transformedStep >= 0) // if note starts within (potentially reconfigured) track length
       {
          u16 step = transformedStep / 24;
 
-         s16 note = clipNotes_[clip][activeScene_][i].note + clipTranspose_[clip][activeScene_];
+         s16 note = clipNotes_[track][activeScene_][i].note + clipTranspose_[track][activeScene_] + liveTransposeSemi;
          note = note < 0 ? 0 : note;
          note = note > 127 ? 127 : note;
          u8 y = (127 - note) / 2;
 
          if (y < 64)
          {
-            u16 len = noteLengthPixels(clipNotes_[clip][activeScene_][i].length * mult);
+            u16 len = noteLengthPixels(clipNotes_[track][activeScene_][i].length * mult);
 
-            if (clipNotes_[clip][activeScene_][i].length == 0 && curStep > step)
+            if (clipNotes_[track][activeScene_][i].length == 0 && curStep > step)
             {
                // still recording (also check for boundary wrapping, disabled right now)
                len = curStep - step;
@@ -678,19 +679,19 @@ void displayClip(u8 clip)
 
             for (x = step; x <= step + len; x++)
             {
-               if (clipNotes_[clip][activeScene_][i].velocity > 0)
+               if (clipNotes_[track][activeScene_][i].velocity > 0)
                {
                   u8 color;
-                  if (!trackMute_[clip])
+                  if (!trackMute_[track])
                      color = x == step ? 0xFF
-                                       : 0x99;  // The modulo only works if we are not scrolling and screen width = clip length
+                                       : 0x99;  // The modulo only works if we are not scrolling and screen width = track length
                   else
                      color = x == step ? 0x88
-                                       : 0x66;  // The modulo only works if we are not scrolling and screen width = clip length
+                                       : 0x66;  // The modulo only works if we are not scrolling and screen width = track length
 
                   screen[y][x % 128] = color;
 
-                  if (page_ == PAGE_NOTES && i == clipActiveNote_[clip][activeScene_])
+                  if (page_ == PAGE_NOTES && i == clipActiveNote_[track][activeScene_])
                   {
                      // render cursor for selected note
                      u8 cursorX = x % 128;
@@ -945,7 +946,13 @@ void displayPageTrack(void)
    if (trackMidiForward_[activeTrack_])
       printFormattedString(168, 53, "Fwd On");
    else
-      printFormattedString(168, 53, "Fwd Off");
+      printFormattedString(168, 53, "Fw Off");
+
+   command_ == COMMAND_TRACK_LIVE_TRANSPOSE ? setFontInverted() : setFontNonInverted();
+   if (trackLiveTranspose_[activeTrack_])
+      printFormattedString(210, 53, "LTr On");
+   else
+      printFormattedString(210, 53, "LTr Off");
 
 
    setFontNonInverted();
@@ -1647,7 +1654,7 @@ void display()
             break;
       }
 
-      // Page icon
+      // Render page icon in upper right corner
       if (!screenShowLoopaLogo_ && !screenIsInMenu() && !screenIsInShift())
          printPageIcon();
    }

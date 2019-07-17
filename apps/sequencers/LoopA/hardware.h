@@ -1,10 +1,19 @@
 // LoopA Hardware Mapping
 
-// --- LEDs ---
-
 #include "loopa_datatypes.h"
 
-// PHYSICAL HARDWARE LEDs (three colors per LED)
+// --- LEDs ---
+
+// logical LED states
+typedef enum
+{
+   LED_OFF = 0,
+   LED_RED = 1,
+   LED_GREEN = 2,
+   LED_BLUE = 4
+} LEDStates;
+
+// physical hardware LEDs (three colors per LED)
 extern const u8 HW_LED_RED_GP1;
 extern const u8 HW_LED_RED_GP2;
 extern const u8 HW_LED_RED_GP3;
@@ -50,46 +59,30 @@ extern const u8 HW_LED_BLUE_COPY;
 extern const u8 HW_LED_BLUE_PASTE;
 extern const u8 HW_LED_BLUE_DELETE;
 
-// LOGICAL LED STATES
-extern const u8 LED_OFF;
-extern const u8 LED_RED;
-extern const u8 LED_GREEN;
-extern const u8 LED_BLUE;
+const u8 HW_LED_SCENE_SWITCH_ALL;
+extern const u8 HW_LED_SCENE_1;
+extern const u8 HW_LED_SCENE_2;
+extern const u8 HW_LED_SCENE_3;
+extern const u8 HW_LED_SCENE_4;
+extern const u8 HW_LED_SCENE_5;
+extern const u8 HW_LED_SCENE_6;
+const u8 HW_LED_SCENE_SWITCH_CLIP;
 
-// LOGICAL LEDs (can be set to multiple colors)
+extern const u8 HW_LED_LIVEMODE_TRANSPOSE;
+extern const u8 HW_LED_LIVEMODE_1;
+extern const u8 HW_LED_LIVEMODE_2;
+extern const u8 HW_LED_LIVEMODE_3;
+extern const u8 HW_LED_LIVEMODE_4;
+extern const u8 HW_LED_LIVEMODE_5;
+extern const u8 HW_LED_LIVEMODE_6;
+extern const u8 HW_LED_LIVEMODE_BEATLOOP;
+
+// logical matias superflux LEDs (can be set to multiple colors)
 enum MatiasLEDs
 {
    LED_GP1, LED_GP2, LED_GP3, LED_GP4, LED_GP5, LED_GP6,
    LED_RUNSTOP, LED_ARM, LED_SHIFT, LED_MENU, LED_COPY, LED_PASTE, LED_DELETE
 };
-
-extern const u8 led_scene1;
-extern const u8 led_scene2;
-extern const u8 led_scene3;
-extern const u8 led_scene4;
-extern const u8 led_scene5;
-extern const u8 led_scene6;
-
-extern const u8 led_page_main;
-extern const u8 led_page_1;
-extern const u8 led_page_2;
-extern const u8 led_page_3;
-extern const u8 led_page_4;
-extern const u8 led_page_5;
-extern const u8 led_page_6;
-
-
-extern const u8 led_scene_up;
-extern const u8 led_scene_down;
-
-extern const u8 led_copy;
-extern const u8 led_paste;
-
-extern const u8 led_beat0;
-extern const u8 led_beat1;
-extern const u8 led_beat2;
-extern const u8 led_beat3;
-
 
 // --- Switches ---
 
@@ -113,7 +106,7 @@ extern const u8 sw_enc_select;
 extern const u8 sw_enc_live;
 extern const u8 sw_enc_value;
 
-// -- Encoders ---
+// --- Encoders ---
 
 extern const u8 enc_scene_id;
 extern const u8 enc_scene;

@@ -13,6 +13,12 @@
 
 // --- Data structures ---
 
+enum LiveMode
+{
+   LIVEMODE_TRANSPOSE,
+   LIVEMODE_BEATLOOP
+};
+
 typedef struct
 {
    u16 tick;
@@ -21,6 +27,8 @@ typedef struct
    u8 velocity;
 } NoteData;
 
+// --- Export global tables ---
+extern s8 liveTransposeSemitones_[15]; // Live transpose table
 
 // --- Export global variables ---
 
@@ -36,7 +44,6 @@ extern s8 tempoFade_;                        // 0: no tempo change ongoing | +1:
 extern u8 activeTrack_;                      // currently active track number (0-5)
 extern u8 activeScene_;                      // currently active scene number (0-15)
 extern u16 activeNote_;                      // currently active edited note number, when in noteroll editor
-extern u16 beatLoopSteps_;                   // number of steps for one beatloop (adjustable)
 extern u8 isRecording_;                      // set, if currently recording to the selected clip
 extern u8 oledBeatFlashState_;               // 0: don't flash, 1: flash slightly (normal 1/4th note), 2: flash intensively (after four 1/4th notes or 16 steps)
 extern s16 notePtrsOn_[128];                 // during recording - pointers to notes that are currently "on" (and waiting for an "off", therefore length yet undetermined) (-1: note not depressed)
@@ -58,17 +65,24 @@ extern u16 clipNotesSize_[TRACKS][SCENES];   // Active number of notes in use fo
 
 // TODO: Save to disk
 extern float bpm_;                           // bpm
-extern u8 stepsPerMeasure_;                  // 16 measures default for a 4/4 beat (4 quarternotes = 16 16th notes per measure)
+extern u8 liveMode_;                         // currently active upper-right encoder live mode
+extern s8 liveTranspose_;                    // Live transpose value (+/- 7)
+extern s8 liveBeatLoop_;                     // Live beatloop value (+/- 7)
+extern u16 stepsPerMeasure_;                 // number of steps for one measure (adjustable) - 16 steps default for a 4/4 beat
+extern u8 stepsPerBeat_;                     // number of steps for one beat (adjustable) - 4 steps default for a 4/4 beat
 extern u8 metronomeEnabled_;                 // Set to 1, if metronome is turned on in bpm screen
 extern s8 trackMidiInPort_[TRACKS];          // If set to 0: enable recording from all midi ports (default)
 extern u8 trackMidiInChannel_[TRACKS];       // If set to 16: enable recording from all midi channels (default)
 extern u8 trackMidiForward_[TRACKS];         // If set to 1: forward midi notes to out port/channel (live play)
+extern u8 trackLiveTranspose_[TRACKS];       // If set to >0: selection of live transposer table (live transposing enabled for this track)
 
 
 // --- Secondary data (not on disk) ---
-extern u8 trackMuteToggleRequested_[TRACKS]; // 1: perform a mute/unmute toggle of the clip at the next beatstep (synced mute/unmute)
-extern u8 sceneChangeRequested_;             // If != activeScene_, this will be the scene we are changing to
+extern u8 trackMuteToggleRequested_[TRACKS]; // 1: perform a mute/unmute toggle of the clip at the next measure (synced mute/unmute)
+extern u8 sceneChangeRequested_;             // If != activeScene_, this will be the scene we are changing to at the next measure
+extern s8 liveTransposeRequested_;           // 1: perform a live transpose change at the next measure
 extern u16 clipActiveNote_[TRACKS][SCENES];  // currently active edited note number, when in noteroll editor
+
 
 // Help function: convert tick number to step number
 u16 tickToStep(u32 tick);
@@ -90,6 +104,9 @@ u32 getClipLengthInTicks(u8 clip);
 
 // Request (or cancel) a synced mute/unmute toggle
 void toggleMute(u8 clipNumber);
+
+// Perform live LED updates (upper right encoder section)
+void performLiveLEDUpdates();
 
 // convert sessionNumber to global filename_
 void sessionNumberToFilename(u16 sessionNumber);

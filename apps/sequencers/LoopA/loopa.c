@@ -16,6 +16,17 @@
 
 // --  Local types ---
 
+// --- Tables ---
+
+s8 liveTransposeSemitones_[15] = { -36, -24, -19, -17, -12,  -7,  -5,   0,   5,   7,  12,  17,  19,  24,  36};
+
+// Todo: need to store interpret beatloop at/jump step tables relative to (configurable!) measure length, so
+// that it sounds better e.g. for a measure length of 12 steps (3/4 beat instead of 4/4 beat)
+static s8 liveBeatLoopAtStep1_[15] =    {  16,   8,   4,   2,   4,   8,  16,   0,  16,   8,   4,   2,   4,   8,  16};
+static s8 liveBeatLoopJumpStep1_[15] =  { -16,  -8,  -4,  -2,  -4,  -8, -16,   0,  16,   8,   4,   2,   4,   8,  16};
+static s8 liveBeatLoopAtStep2_[15] =    {   8,   4,   2,   0,   0,   0,   0,   0,   0,   0,   0,   0,   2,   4,   8};
+static s8 liveBeatLoopJumpStep2_[15] =  {  16,   8,   4,   0,   0,   0,   0,   0,   0,   0,   0,   0,  -4,  -8, -16};
+
 // --- Global vars ---
 
 static s32 (*loopaTrackPlayEventCallback)(s8 loopaTrack, mios32_midi_package_t midi_package, u32 tick) = 0;
@@ -32,11 +43,9 @@ s8 tempoFade_ = 0;                    // 0: no tempo change ongoing | +1: increa
 
 u8 activeTrack_ = 0;                  // currently active or last active clip number (0..5)
 u8 activeScene_ = 0;                  // currently active scene number (0-15)
-u16 beatLoopSteps_ = 16;              // number of steps for one beatloop (adjustable)
 u8 isRecording_ = 0;                  // set, if currently recording to the selected clip
 u8 oledBeatFlashState_ = 0;           // 0: don't flash, 1: flash slightly (normal 1/4th note), 2: flash intensively (after four 1/4th notes or 16 steps)
 
-u16 seqRecEnabledPorts_;
 s16 notePtrsOn_[128];                 // during recording - pointers to notes that are currently "on" (and waiting for an "off", therefore length yet undetermined) (-1: note not depressed)
 
 u8 ffwdSilentMode_;                   // for FFWD function
@@ -58,17 +67,22 @@ u16 clipNotesSize_[TRACKS][SCENES];   // active number of notes currently in use
 
 // TODO: save to session
 float bpm_ = 120.0;                   // bpm
-u8 stepsPerMeasure_ = 16;             // 16 measures default for a 4/4 beat (4 quarternotes = 16 16th notes per measure)
+u8 liveMode_ = LIVEMODE_TRANSPOSE;    // currently active upper-right encoder live mode
+s8 liveTranspose_ = 0;                // Live transpose value (+/- 7)
+s8 liveBeatLoop_ = 0;                 // Live beatloop value (+/- 7)
+u16 stepsPerMeasure_ = 16;            // number of steps for one beatloop (session-adjustable in bpm menu)
+u8 stepsPerBeat_ = 4;                 // number of steps for one beat (adjustable) - 4 steps default for a 4/4 beat
 u8 metronomeEnabled_ = 0;             // Set to 1, if metronome is turned on in bpm screen
 s8 trackMidiInPort_[TRACKS];          // If set to 0: enable recording from all midi ports (default)
 u8 trackMidiInChannel_[TRACKS];       // If set to 16: enable recording from all midi channels (default)
 u8 trackMidiForward_[TRACKS];         // If set to 1: forward midi notes to out port/channel (live play)
+u8 trackLiveTranspose_[TRACKS];       // If set to >0: selection of live transposer table (live transposing enabled for this track)
 
 // --- Secondary data (not on disk) ---
-u8 trackMuteToggleRequested_[TRACKS]; // 1: perform a mute/unmute toggle of the clip at the next beatstep (synced mute/unmute)
-u8 sceneChangeRequested_ = 0;         // If != activeScene_, this will be the scene we are changing to
+u8 trackMuteToggleRequested_[TRACKS]; // 1: perform a mute/unmute toggle of the clip at the next measure (synced mute/unmute)
+u8 sceneChangeRequested_ = 0;         // If != activeScene_, this will be the scene we are changing to at the next measure
+s8 liveTransposeRequested_ = 0;       // If != active liveTranspose_, perform a live transpose change at the next measure
 u16 clipActiveNote_[TRACKS][SCENES];  // currently active edited note number, when in noteroll editor
-
 
 // =================================================================================================
 
@@ -196,7 +210,7 @@ void toggleMute(u8 clipNumber)
 
 
 /**
- * Synchronized (to beatstep) mutes and unmutes
+ * Synchronized (to measure) mutes and unmutes
  *
  */
 void performSyncedMutesAndUnmutes()
@@ -207,7 +221,7 @@ void performSyncedMutesAndUnmutes()
    {
       if (trackMuteToggleRequested_[clip])
       {
-         if (tickToStep(tick_) % beatLoopSteps_ == 0)
+         if (tickToStep(tick_) % stepsPerMeasure_ == 0)
          {
             u8 state = trackMute_[clip];
             trackMute_[clip] = !state;
@@ -221,40 +235,40 @@ void performSyncedMutesAndUnmutes()
 
 
 /**
- * Synchronized (to beatstep) scene changes
+ * Synchronized (to measure) scene changes
  *
  */
 void performSyncedSceneChanges()
 {
    if (sceneChangeRequested_ != activeScene_)
    {
-      u8 sceneChangeInTicks = beatLoopSteps_ - (tickToStep(tick_) % beatLoopSteps_);
+      u8 sceneChangeInTicks = stepsPerMeasure_ - (tickToStep(tick_) % stepsPerMeasure_);
 
       // flash indicate target scene (after synced scene switch)
       if (tick_ % 16 < 8)
       {
          MUTEX_DIGITALOUT_TAKE;
-         MIOS32_DOUT_PinSet(led_scene1, sceneChangeRequested_ == 0);
-         MIOS32_DOUT_PinSet(led_scene2, sceneChangeRequested_ == 1);
-         MIOS32_DOUT_PinSet(led_scene3, sceneChangeRequested_ == 2);
-         MIOS32_DOUT_PinSet(led_scene4, sceneChangeRequested_ == 3);
-         MIOS32_DOUT_PinSet(led_scene5, sceneChangeRequested_ == 4);
-         MIOS32_DOUT_PinSet(led_scene6, sceneChangeRequested_ == 5);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_1, sceneChangeRequested_ == 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_2, sceneChangeRequested_ == 1);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_3, sceneChangeRequested_ == 2);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_4, sceneChangeRequested_ == 3);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_5, sceneChangeRequested_ == 4);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_6, sceneChangeRequested_ == 5);
          MUTEX_DIGITALOUT_GIVE;
       }
       else
       {
          MUTEX_DIGITALOUT_TAKE;
-         MIOS32_DOUT_PinSet(led_scene1, 0);
-         MIOS32_DOUT_PinSet(led_scene2, 0);
-         MIOS32_DOUT_PinSet(led_scene3, 0);
-         MIOS32_DOUT_PinSet(led_scene4, 0);
-         MIOS32_DOUT_PinSet(led_scene5, 0);
-         MIOS32_DOUT_PinSet(led_scene6, 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_1, 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_2, 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_3, 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_4, 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_5, 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_6, 0);
          MUTEX_DIGITALOUT_GIVE;
       }
 
-      if (tickToStep(tick_) % beatLoopSteps_ == 0)
+      if (tickToStep(tick_) % stepsPerMeasure_ == 0)
       {
          setActiveScene(sceneChangeRequested_);
          sceneChangeRequested_ = activeScene_;
@@ -263,6 +277,170 @@ void performSyncedSceneChanges()
 
       screenSetSceneChangeInTicks(sceneChangeInTicks);
    }
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Synchronized (to measure) live transposition changes
+ *
+ */
+void performLiveTranspositionChanges()
+{
+   if (liveTransposeRequested_ != liveTranspose_)
+   {
+      if (tickToStep(tick_) % stepsPerMeasure_ == 0)
+      {
+         liveTranspose_ = liveTransposeRequested_;
+      }
+   }
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Synchronized beat loop song position "jumps"
+ *
+ */
+void performBeatLoop()
+{
+   if (liveBeatLoop_ != 0)
+   {
+      u8 idx = liveBeatLoop_ + 7;
+      s8 at1 = liveBeatLoopAtStep1_[idx];
+      s8 at2 = liveBeatLoopAtStep2_[idx];
+
+      if (at1 && tickToStep(tick_) % at1 == 0)
+      {
+         // Perform "Jump 1"
+         // Send "note offs" for currently active notes to avoid "delayed/hanging" notes
+         SEQ_MIDI_OUT_FlushQueue();
+
+         SEQ_BPM_TickSet(SEQ_BPM_TickGet() + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep1_[idx]);
+      }
+      else if (at2 && tickToStep(tick_) % at2 == 0)
+      {
+         // Perform "Jump 1"
+         // Send "note offs" for currently active notes to avoid "delayed/hanging" notes
+         SEQ_MIDI_OUT_FlushQueue();
+
+         SEQ_BPM_TickSet(SEQ_BPM_TickGet() + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep2_[idx]);
+      }
+   }
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Perform live LED updates (upper right encoder section)
+ *
+ */
+ void performLiveLEDUpdates()
+{
+   u8 led_livemode_transpose = LED_OFF, led_livemode_beatloop = LED_OFF;
+   u8 led_livemode_1 = LED_OFF, led_livemode_2 = LED_OFF, led_livemode_3 = LED_OFF;
+   u8 led_livemode_4 = LED_OFF, led_livemode_5 = LED_OFF, led_livemode_6 = LED_OFF;
+
+   // --- Live section (upper right) ---
+   s8 liveValue;
+   // Live mode LEDs
+   if (liveMode_ == LIVEMODE_TRANSPOSE)
+   {
+      led_livemode_transpose = 1;
+
+      liveValue = liveTransposeRequested_;
+
+      // flash-indicate live transpose target LEDs (only during synced/delayed transposition switch)
+      if (liveMode_ == LIVEMODE_TRANSPOSE && liveTransposeRequested_ != liveTranspose_)
+      {
+         if (tick_ % 16 >= 8)
+            liveValue = liveTranspose_;
+      }
+   }
+   else
+   {
+      // LIVEMODE_BEATLOOP
+      led_livemode_beatloop = 1;
+      liveValue = liveBeatLoop_;
+   }
+
+   switch(liveValue)
+   {
+      case 7:
+         led_livemode_1 = 1; led_livemode_2 = 1; led_livemode_3 = 1;
+         break;
+
+      case 6:
+         led_livemode_1 = 1; led_livemode_2 = 1; led_livemode_3 = 0;
+         break;
+
+      case 5:
+         led_livemode_1 = 1; led_livemode_2 = 0; led_livemode_3 = 1;
+         break;
+
+      case 4:
+         led_livemode_1 = 1; led_livemode_2 = 0; led_livemode_3 = 0;
+         break;
+
+      case 3:
+         led_livemode_1 = 0; led_livemode_2 = 1; led_livemode_3 = 1;
+         break;
+
+      case 2:
+         led_livemode_1 = 0; led_livemode_2 = 1; led_livemode_3 = 0;
+         break;
+
+      case 1:
+         led_livemode_1 = 0; led_livemode_2 = 0; led_livemode_3 = 1;
+         break;
+
+      case -1:
+         led_livemode_4 = 1; led_livemode_5 = 0; led_livemode_6 = 0;
+         break;
+
+      case -2:
+         led_livemode_4 = 0; led_livemode_5 = 1; led_livemode_6 = 0;
+         break;
+
+      case -3:
+         led_livemode_4 = 1; led_livemode_5 = 1; led_livemode_6 = 0;
+         break;
+
+      case -4:
+         led_livemode_4 = 0; led_livemode_5 = 0; led_livemode_6 = 1;
+         break;
+
+      case -5:
+         led_livemode_4 = 1; led_livemode_5 = 0; led_livemode_6 = 1;
+         break;
+
+      case -6:
+         led_livemode_4 = 0; led_livemode_5 = 1; led_livemode_6 = 1;
+         break;
+
+      case -7:
+         led_livemode_4 = 1; led_livemode_5 = 1; led_livemode_6 = 1;
+         break;
+
+      default: /* case 0, all off (by initializer) */
+         break;
+   }
+
+   MUTEX_DIGITALOUT_TAKE;
+
+   MIOS32_DOUT_PinSet(HW_LED_SCENE_SWITCH_ALL, 1);
+
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_BEATLOOP, led_livemode_beatloop);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_1, led_livemode_1);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_2, led_livemode_2);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_3, led_livemode_3);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_4, led_livemode_4);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_5, led_livemode_5);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_6, led_livemode_6);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_TRANSPOSE, led_livemode_transpose);
+
+   MUTEX_DIGITALOUT_GIVE;
+
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -628,16 +806,21 @@ s32 seqTick(u32 bpm_tick)
       MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
    }
 
-   // perform synced track mutes/unmutes (only at full steps)
+   // perform synced track mutes/unmutes
    if ((bpm_tick % (SEQ_BPM_PPQN_Get()/4)) == 0)
    {
+      performBeatLoop();
       performSyncedMutesAndUnmutes();
       performSyncedSceneChanges();
+      performLiveTranspositionChanges();
    }
 
    u8 track;
+
    for (track = 0; track < TRACKS; track++)
    {
+      s8 liveTransposeSemi = trackLiveTranspose_[track] ? liveTransposeSemitones_[liveTranspose_ + 7] : 0;
+
       if (!trackMute_[track])
       {
          u32 clipNoteTime = boundTickToClipSteps(bpm_tick, track);
@@ -649,7 +832,7 @@ s32 seqTick(u32 bpm_tick)
             {
                if (quantizeTransform(track, i) == clipNoteTime)
                {
-                  s16 note = clipNotes_[track][activeScene_][i].note + clipTranspose_[track][activeScene_];
+                  s16 note = clipNotes_[track][activeScene_][i].note + clipTranspose_[track][activeScene_] + liveTransposeSemi;
                   note = note < 0 ? 0 : note;
                   note = note > 127 ? 127 : note;
 
@@ -697,6 +880,8 @@ s32 seqTick(u32 bpm_tick)
       if (p.note)
          SEQ_MIDI_OUT_Send(METRONOME_PSEUDO_PORT, p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, len);
    }
+
+   performLiveLEDUpdates();
 
    return 0; // no error
 }
@@ -836,6 +1021,7 @@ s32 seqInit()
       trackMidiInPort_[i] = 0;     // Enable recording from all ports
       trackMidiInChannel_[i] = 16; // Enable recording from all channels
       trackMidiForward_[i] = 0;    // Disable note forwarding/live play on this track by default
+      trackLiveTranspose_[i] = 1;  // Enable live transposition of notes on this track by default
       trackMuteToggleRequested_[i] = 0;
 
       for (j = 0; j < SCENES; j++)
