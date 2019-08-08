@@ -113,12 +113,48 @@ static struct hd44780_pins displays[4] = {
 
 /////////////////////////////////////////////////////////////////////////////
 // HD44780 stuff
+//
+// Write operation
+//
+// RS:
+// --\/--------------------------\/-----
+// --/\--------------------------/\-----
+//
+// RW:
+// --\                            /-----
+// ---\--------------------------/------
+//   |  tAS  |
+//
+//               PWEH
+//           +-------------+                +----------
+// E:        |             |                |
+// ----------+             +----------------+
+//
+// DATA:         |  tDSW   | tH  |
+// -------------\/--------------\/-----
+// -------------/\--------------/\-----
+//
+// tAS      address set-up time min 40nS
+// tcycE    enable cycle time   min 500nS
+// PWEH     enable pulse width  min 230nS
+// tDSW     data set-up time    min 80nS
+// tH       data hold time      min 10nS
 /////////////////////////////////////////////////////////////////////////////
 
-#define HD44780_LCD__TIMEOUT                        100
+#define HD44780_LCD__DONT_USE_BUSY_FLAG             1
+
+#define HD44780_LCD__BUSY_TIMEOUT_CYCLES            100
+#define HD44780_LCD__ENABLE_PULSE_WIDTH_US          10
+#define HD44780_LCD__ADDRESS_SETUP_TIME_US          1
+#define HD44780_LCD__EXECUTION_DELAY_US             40
 
 #define HD44780_LCD__COMMAND__CLEAR                 0x01U
-#define HD44780_LCD__COMMAND__USE_DDRAM             0x02U
+/**
+ * Return home sets DDRAM address 0 into the address counter,
+ * and returns the display to its original status, if it was shifted. The DDRAM contents do not change.
+ * Max execution time 1.52ms
+ */
+#define HD44780_LCD__COMMAND__RETURN_HOME           0x02U
 #define HD44780_LCD__COMMAND__SCREEN                0x04U
 #define HD44780_LCD__COMMAND__SCREEN_ADDRESS_INC    0x02U
 #define HD44780_LCD__COMMAND__SCREEN_ADDRESS_DEC    0x00U
@@ -147,6 +183,9 @@ static struct hd44780_pins displays[4] = {
 // Generic hd44780 support
 /////////////////////////////////////////////////////////////////////////////
 
+/**
+ * Initializes Register Select (RS) pin as output.
+ */
 void hd44780_lcd__register_select__init(const struct hd44780_pins * const lcd) {
     GPIO_InitTypeDef lcd0__GPIO_InitStructure;
     GPIO_StructInit(&lcd0__GPIO_InitStructure);
@@ -166,6 +205,9 @@ void hd44780_lcd__register_select__data(const struct hd44780_pins * const lcd) {
 }
 
 
+/**
+ * Initializes Read/Write (RW) pin as output.
+ */
 void hd44780_lcd__mode_init(const struct hd44780_pins * const lcd) {
     GPIO_InitTypeDef lcd0__GPIO_InitStructure;
     GPIO_StructInit(&lcd0__GPIO_InitStructure);
@@ -185,6 +227,9 @@ void hd44780_lcd__mode_write(const struct hd44780_pins * const lcd) {
 }
 
 
+/**
+ * Initializes Enable (E) pin as output.
+ */
 void hd44780_lcd__e__init(const struct hd44780_pins * const lcd) {
     GPIO_InitTypeDef lcd0__GPIO_InitStructure;
     GPIO_StructInit(&lcd0__GPIO_InitStructure);
@@ -205,11 +250,14 @@ void hd44780_lcd__e_low(const struct hd44780_pins * const lcd) {
 
 void hd44780_lcd__latch_data(const struct hd44780_pins * const lcd) {
     hd44780_lcd__e_high(lcd);
-    MIOS32_DELAY_Wait_uS(10);
+    MIOS32_DELAY_Wait_uS(HD44780_LCD__ENABLE_PULSE_WIDTH_US);
     hd44780_lcd__e_low(lcd);
 }
 
 
+/**
+ * Switches data pins to outputs.
+ */
 void hd44780_lcd__data_port__mode_write(const struct hd44780_pins * const lcd) {
     GPIO_InitTypeDef lcd0__GPIO_InitStructure;
     GPIO_StructInit(&lcd0__GPIO_InitStructure);
@@ -221,6 +269,9 @@ void hd44780_lcd__data_port__mode_write(const struct hd44780_pins * const lcd) {
     GPIO_Init(lcd->data_port, &lcd0__GPIO_InitStructure);
 }
 
+/**
+ * Switches data pins to inputs, with pull-ups.
+ */
 void hd44780_lcd__data_port__mode_read(const struct hd44780_pins * const lcd) {
     GPIO_InitTypeDef lcd0__GPIO_InitStructure;
     GPIO_StructInit(&lcd0__GPIO_InitStructure);
@@ -232,6 +283,9 @@ void hd44780_lcd__data_port__mode_read(const struct hd44780_pins * const lcd) {
     GPIO_Init(lcd->data_port, &lcd0__GPIO_InitStructure);
 }
 
+/**
+ * Switches data pins to inputs, without pull-ups.
+ */
 void hd44780_lcd__data_port__mode_hi(const struct hd44780_pins * const lcd) {
     GPIO_InitTypeDef lcd0__GPIO_InitStructure;
     GPIO_StructInit(&lcd0__GPIO_InitStructure);
@@ -244,6 +298,9 @@ void hd44780_lcd__data_port__mode_hi(const struct hd44780_pins * const lcd) {
 }
 
 
+/**
+ * Writes a byte of data to the data pins.
+ */
 void hd44780_lcd__data_port__write(const struct hd44780_pins *const lcd, const uint8_t value) {
     lcd->data_port->ODR = (uint16_t) (value << lcd->data_pins_offset)
         | (lcd->data_port->ODR & ~0xFFU << lcd->data_pins_offset);
@@ -313,23 +370,40 @@ s32 hd44780_lcd__wait_until_not_busy(const struct hd44780_pins *const lcd, s32 t
     return result;
 }
 
-
+/**
+ * Sends a byte to LCD.
+ * If Busy flag is used, data pins are normally kept in high-Z mode, so need to switch to Output mode for the write.
+ */
 void hd44780_lcd__send_byte(const struct hd44780_pins * const lcd, const uint8_t i) {
+#ifndef HD44780_LCD__DONT_USE_BUSY_FLAG
     hd44780_lcd__data_port__mode_write(lcd);
+#endif
     hd44780_lcd__data_port__write(lcd, i);
     hd44780_lcd__latch_data(lcd);
+#ifndef HD44780_LCD__DONT_USE_BUSY_FLAG
     hd44780_lcd__data_port__mode_hi(lcd);
+#endif
 }
 
 s32 hd44780_lcd__send_command(const struct hd44780_pins * const lcd, const uint8_t i) {
-    if (hd44780_lcd__wait_until_not_busy(lcd, HD44780_LCD__TIMEOUT) < 0) return -1;
+#ifdef HD44780_LCD__DONT_USE_BUSY_FLAG
+    MIOS32_DELAY_Wait_uS(HD44780_LCD__EXECUTION_DELAY_US);
+#else
+    if (hd44780_lcd__wait_until_not_busy(lcd, HD44780_LCD__BUSY_TIMEOUT_CYCLES) < 0) return -1;
+#endif
     hd44780_lcd__send_byte(lcd, i);
     return 0;
 }
 
 s32 hd44780_lcd__send_data(const struct hd44780_pins * const lcd, const uint8_t i) {
-    if (hd44780_lcd__wait_until_not_busy(lcd, HD44780_LCD__TIMEOUT) < 0) return -1;
+#ifdef HD44780_LCD__DONT_USE_BUSY_FLAG
+    MIOS32_DELAY_Wait_uS(HD44780_LCD__EXECUTION_DELAY_US);  // to complete previous operation, if any
+#else
+    if (hd44780_lcd__wait_until_not_busy(lcd, HD44780_LCD__BUSY_TIMEOUT_CYCLES) < 0) return -1;
+#endif
+
     hd44780_lcd__register_select__data(lcd);
+    MIOS32_DELAY_Wait_uS(HD44780_LCD__ADDRESS_SETUP_TIME_US);
     hd44780_lcd__send_byte(lcd, i);
     hd44780_lcd__register_select__command(lcd);
     return 0;
@@ -370,7 +444,7 @@ s32 hd44780_lcd__init4(const struct hd44780_pins * const lcd) {
     return hd44780_lcd__send_command(lcd, HD44780_LCD__COMMAND__SCREEN | HD44780_LCD__COMMAND__SCREEN_ADDRESS_INC);
 }
 s32 hd44780_lcd__init5(const struct hd44780_pins * const lcd) {
-    return hd44780_lcd__send_command(lcd, HD44780_LCD__COMMAND__USE_DDRAM);
+    return hd44780_lcd__send_command(lcd, HD44780_LCD__COMMAND__RETURN_HOME);
 }
 s32 hd44780_lcd__init6(const struct hd44780_pins * const lcd) {
     return hd44780_lcd__send_command(lcd, HD44780_LCD__COMMAND__CLEAR);
@@ -401,6 +475,9 @@ s32 hd44780_lcd__init(const struct hd44780_pins * const lcd) {
     if (hd44780_lcd__init5(lcd) < 0) {
         return -1;
     }
+
+    // according to data sheet, max execution time of RETURN_HOME is 1.52ms
+
     MIOS32_DELAY_Wait_uS(4000);
     if (hd44780_lcd__init6(lcd) < 0) {
         return -1;
