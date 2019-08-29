@@ -42,16 +42,6 @@ struct hd44780_pins {
 // 4-LCD Layout, compatible with DIY-MORE board
 static struct hd44780_pins displays[4] = {
     {
-        .rs_port            = GPIOD,
-        .rs_pin_mask        = GPIO_Pin_4,
-        .rw_port            = GPIOD,
-        .rw_pin_mask        = GPIO_Pin_7,
-        .e_port             = GPIOD,
-        .e_pin_mask         = GPIO_Pin_3,
-        .data_port          = GPIOD,
-        .data_pins_offset   = 8U,
-    },
-    {
         .rs_port            = GPIOA,
         .rs_pin_mask        = GPIO_Pin_13,
         .rw_port            = GPIOA,
@@ -79,6 +69,16 @@ static struct hd44780_pins displays[4] = {
         .e_port             = GPIOA,
         .e_pin_mask         = GPIO_Pin_6,
         .data_port          = GPIOE,
+        .data_pins_offset   = 8U,
+    },
+    {
+        .rs_port            = GPIOD,
+        .rs_pin_mask        = GPIO_Pin_4,
+        .rw_port            = GPIOD,
+        .rw_pin_mask        = GPIO_Pin_7,
+        .e_port             = GPIOD,
+        .e_pin_mask         = GPIO_Pin_3,
+        .data_port          = GPIOD,
         .data_pins_offset   = 8U,
     },
 };
