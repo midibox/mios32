@@ -456,7 +456,7 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_GATE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(6);
+    SEQ_LCD_PrintSpaces(4);
   } else {
     SEQ_LCD_PrintString(SEQ_CV_GateInversionGet(selected_cv) ? "Neg." : "Pos.");
   }

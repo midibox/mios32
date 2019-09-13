@@ -53,6 +53,8 @@ MIDIboxSEQ V4.096
      This especially allows to record CC changes (configure MENU->MIDI->Port accordingly
      so that it listens to the bus in Jam mode)
 
+   o Utility Page, GP Button #11 now changes to the CV Configuration Page
+
 
 MIDIboxSEQ V4.095
 ~~~~~~~~~~~~~~~~~
