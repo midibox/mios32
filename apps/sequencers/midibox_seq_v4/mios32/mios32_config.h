@@ -191,13 +191,6 @@ extern void APP_SendDebugMessage(char *format, ...);
 #define BLM_X_DEBOUNCE_MODE       1
 
 
-// WS2816 LEDs (only supported by STM32F4)
-#if defined(MIOS32_FAMILY_STM32F4xx)
-# define WS2812_NUM_LEDS 64
-#else
-# define WS2812_NUM_LEDS 0
-#endif
-
 #ifdef MBSEQV4P
 // AOUT interface: enable calibration for up to 12 octaves
 #define AOUT_NUM_CALI_POINTS_X 12
