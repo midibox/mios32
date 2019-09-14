@@ -482,6 +482,8 @@ s32 SEQ_FILE_GC_Read(void)
 	    SEQ_CV_ClkPulseWidthSet(0, value); // Legacy Value - replaced by CV_ExtClk
 	  } else if( strcmp(parameter, "CV_ClkDivider") == 0 ) {
 	    SEQ_CV_ClkDividerSet(0, value); // Legacy Value - replaced by CV_ExtClk
+	  } else if( strcmp(parameter, "CV_DOUT_TriggerWidth") == 0 ) {
+	    SEQ_CV_DOUT_TriggerWidthSet(value);
 	  } else if( strcmp(parameter, "CV_ExtClk") == 0 ) {
 	    u32 clkout = value;
 	    if( clkout >= SEQ_CV_NUM_CLKOUT ) {
@@ -813,6 +815,9 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
       FLUSH_BUFFER;
     }
   }
+
+  sprintf(line_buffer, "CV_DOUT_TriggerWidth %d\n", (u8)SEQ_CV_DOUT_TriggerWidthGet());
+  FLUSH_BUFFER;
 
   sprintf(line_buffer, "TpdMode %d\n", SEQ_TPD_ModeGet());
   FLUSH_BUFFER;

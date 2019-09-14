@@ -323,7 +323,6 @@ extern seq_hwcfg_step_digits_t seq_hwcfg_step_digits;
 extern seq_hwcfg_tpd_t seq_hwcfg_tpd;
 
 extern u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
-extern u8 seq_hwcfg_dout_gate_1ms;
 extern u8 seq_hwcfg_cv_gate_sr[SEQ_HWCFG_NUM_SR_CV_GATES];
 extern u8 seq_hwcfg_clk_sr;
 extern u8 seq_hwcfg_j5_enabled;

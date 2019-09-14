@@ -1434,17 +1434,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	} else if( strcasecmp(parameter, "DOUT_1MS_TRIGGER") == 0 ) {
 
-	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 trg_enabled = get_dec(word);
-	  if( trg_enabled < 0 || trg_enabled > 1 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: expecting 0 or 1!", parameter);
-#endif
-	    continue;
-	  }
-
-	  seq_hwcfg_dout_gate_1ms = trg_enabled;
-
+	  // obsolete - now configured in CV menu - ignore!
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// unknown

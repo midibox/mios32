@@ -18,6 +18,9 @@ MIDIboxSEQ V4.096
 
    o Utility Page, GP Button #11 now changes to the CV Configuration Page
 
+   o DOUT_1MS_TRIGGER in the MBSEQ_HW.V4 file has been replaced by a configurable trigger width which
+     can be adjusted in the CV Configuration Page with GP13 now
+
    o Improved selection handling for midiphy frontpanel:
        - if you press&hold the Bookm/Step/Track/Param/Trigger/Instr/Mute or Phrase button, and then
          make a selection with SEL or GP buttons, the selection button will jump back to the previous

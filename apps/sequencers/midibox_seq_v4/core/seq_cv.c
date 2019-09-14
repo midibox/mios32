@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 #include <aout.h>
 #include <notestack.h>
 
@@ -50,7 +51,11 @@ static u32 gates;
 static u32 gate_inversion_mask;
 static u32 sus_key_mask;
 
+static u8 dout_trigger_width_ms;
+static u8 dout_trigger_pipeline[SEQ_CV_DOUT_TRIGGER_WIDTH_MS_MAX][SEQ_HWCFG_NUM_SR_DOUT_GATES];
+
 static u8 seq_cv_clkout_pulse_ctr[SEQ_CV_NUM_CLKOUT];
+
 
 // each channel has an own notestack
 static notestack_t cv_notestack[SEQ_CV_NUM];
@@ -67,6 +72,8 @@ s32 SEQ_CV_Init(u32 mode)
   gates = 0;
   gate_inversion_mask = 0x00000000;
   sus_key_mask = 0xffffffff;
+
+  dout_trigger_width_ms = 0;
 
   // initialize J5 pins
   // they will be enabled after MBSEQ_HW.V4 has been read
@@ -393,6 +400,27 @@ u32 SEQ_CV_SusKeyAllGet(void)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+// DOUT Trigger Width
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CV_DOUT_TriggerWidthSet(u8 width_ms)
+{
+  if( width_ms > SEQ_CV_DOUT_TRIGGER_WIDTH_MS_MAX )
+    width_ms = SEQ_CV_DOUT_TRIGGER_WIDTH_MS_MAX; // no error, just saturate
+
+  dout_trigger_width_ms = width_ms;
+
+  // clear trigger pipeline to avoid artifacts
+  memset(dout_trigger_pipeline, 0, SEQ_CV_DOUT_TRIGGER_WIDTH_MS_MAX * SEQ_HWCFG_NUM_SR_DOUT_GATES);
+
+  return 0; // no error
+}
+
+u8 SEQ_CV_DOUT_TriggerWidthGet(void)
+{
+  return dout_trigger_width_ms;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Get/Set CV Pitch Range
@@ -465,6 +493,39 @@ s32 SEQ_CV_Clk_Trigger(u8 clkout)
     return -1; // invalid clkout
 
   seq_cv_clkout_pulse_ctr[clkout] = seq_cv_clkout_pulsewidth[clkout] + 1;
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Trigger (or immediately clear) a DOUT
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CV_DOUT_GateSet(u8 dout, u8 value)
+{
+  if( dout >= 8*SEQ_HWCFG_NUM_SR_DOUT_GATES )
+    return -1; // invalid dout
+
+  u8 dout_sr = dout / 8;
+  u8 dout_pin = dout % 8;
+
+  if( dout_sr < SEQ_HWCFG_NUM_SR_DOUT_GATES ) {
+    MIOS32_IRQ_Disable(); // should be atomic
+    if( value ) {
+      int i;
+
+      // this has to be done for all pipeline stages to support triggers
+      for(i=0; i<SEQ_CV_DOUT_TRIGGER_WIDTH_MS_MAX; ++i) {
+	dout_trigger_pipeline[i][dout_sr] |= (1 << dout_pin);
+      }
+    } else {
+      // only relevant if pin used as gate instead of trigger
+      if( dout_trigger_width_ms == 0 ) {
+	dout_trigger_pipeline[0][dout_sr] &= ~(1 << dout_pin);
+      }
+    }
+    MIOS32_IRQ_Enable();
+  }
+
   return 0; // no error
 }
 
@@ -602,6 +663,47 @@ s32 SEQ_CV_Update(void)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Called from APP_SRIO_ServicePrepare() to update the DOUT triggers
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CV_SRIO_Prepare(void)
+{
+#ifndef MBSEQV4L
+  int i;
+  u8 sr;
+
+  for(i=0; i<SEQ_HWCFG_NUM_SR_DOUT_GATES; ++i) {
+    if( (sr=seq_hwcfg_dout_gate_sr[i]) > 0 ) {
+      MIOS32_DOUT_SRSet(sr-1, dout_trigger_pipeline[0][i]);
+    }
+  }
+#endif
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Called from APP_SRIO_ServiceFinish() to shift the pipeline
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CV_SRIO_Finish(void)
+{
+  // shift pipeline
+
+  if( dout_trigger_width_ms > 0 ) {
+    int i;
+
+    u8 width = (dout_trigger_width_ms < SEQ_CV_DOUT_TRIGGER_WIDTH_MS_MAX) ? dout_trigger_width_ms : SEQ_CV_DOUT_TRIGGER_WIDTH_MS_MAX;
+
+    for(i=0; i<width-1; ++i) {
+      memcpy(&dout_trigger_pipeline[i][0], &dout_trigger_pipeline[i+1][0], SEQ_HWCFG_NUM_SR_DOUT_GATES);
+    }
+    memset(&dout_trigger_pipeline[width-1][0], 0, SEQ_HWCFG_NUM_SR_DOUT_GATES);
+  }
+
+  return 0; // no error
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Processes a MIDI event for the given CV port
@@ -626,15 +728,9 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
     // if channel 16: trigger the extension pins (DOUT)
 
     if( package.chn == Chn16 ) {
-      int gate_pin = package.note - 0x24; // C-1 is the base note
-      if( gate_pin >= 0 ) {
-#ifndef MBSEQV4L
-	u8 dout_sr = gate_pin / 8;
-	u8 dout_pin = gate_pin % 8;
-
-	if( dout_sr < SEQ_HWCFG_NUM_SR_DOUT_GATES && seq_hwcfg_dout_gate_sr[dout_sr] )
-	  MIOS32_DOUT_PinSet((seq_hwcfg_dout_gate_sr[dout_sr]-1)*8 + dout_pin, package.velocity ? 1 : 0);
-#endif
+      int dout_pin = package.note - 0x24; // C-1 is the base note
+      if( dout_pin >= 0 ) {
+	SEQ_CV_DOUT_GateSet(dout_pin, (package.velocity > 0) ? 1 : 0);
       }
     } else {
       int aout_chn_note, aout_chn_vel, gate_pin_normal, gate_pin_velocity_gt100;
@@ -766,11 +862,7 @@ s32 SEQ_CV_ResetAllChannels(void)
 
   gates = 0x00;
 
-#ifndef MBSEQV4L
-  int sr;
-  for(sr=0; sr<SEQ_HWCFG_NUM_SR_DOUT_GATES; ++sr)
-    MIOS32_DOUT_SRSet(sr, seq_hwcfg_dout_gate_sr[sr]);
-#endif
+  memset(dout_trigger_pipeline, 0, SEQ_CV_DOUT_TRIGGER_WIDTH_MS_MAX * SEQ_HWCFG_NUM_SR_DOUT_GATES);
 
   return 0; // no error
 }

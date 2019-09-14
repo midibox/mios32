@@ -260,6 +260,8 @@ void APP_SRIO_ServicePrepare(void)
     SEQ_BLM8X8_PrepareRow();
   }
 
+  SEQ_CV_SRIO_Prepare();
+
   // TK: using MIOS32_DOUT_SRSet/PinSet instead of SEQ_LED_SRSet/PinSet to ensure compatibility with MBSEQV4L
   if( seq_hwcfg_bpm_digits.enabled ) {
     // invert for common anodes
@@ -353,6 +355,8 @@ void APP_SRIO_ServiceFinish(void)
 #else
   BLM_CHEAPO_GetRow();
 #endif
+
+  SEQ_CV_SRIO_Finish();
 
   if( seq_hwcfg_blm8x8.enabled ) {
     // call the BL_X_GetRow function after scan is finished to capture the read DIN values

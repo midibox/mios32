@@ -43,6 +43,10 @@
 // number of clock outputs
 #define SEQ_CV_NUM_CLKOUT 8
 
+// maximum DOUT trigger width (each mS will create a pipeline stage)
+#define SEQ_CV_DOUT_TRIGGER_WIDTH_MS_MAX 10
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
@@ -84,6 +88,8 @@ extern u16 SEQ_CV_ClkDividerGet(u8 clkout);
 
 extern s32 SEQ_CV_Clk_Trigger(u8 clkout);
 
+extern s32 SEQ_CV_DOUT_GateSet(u8 dout, u8 value);
+
 extern s32 SEQ_CV_GateInversionSet(u8 gate, u8 inverted);
 extern u8 SEQ_CV_GateInversionGet(u8 gate);
 extern s32 SEQ_CV_GateInversionAllSet(u32 mask);
@@ -94,7 +100,15 @@ extern u8 SEQ_CV_SusKeyGet(u8 gate);
 extern s32 SEQ_CV_SusKeyAllSet(u32 mask);
 extern u32 SEQ_CV_SusKeyAllGet(void);
 
+extern s32 SEQ_CV_DOUT_TriggerWidthSet(u8 width_ms);
+extern u8 SEQ_CV_DOUT_TriggerWidthGet(void);
+
 extern s32 SEQ_CV_Update(void);
+
+extern s32 SEQ_CV_SRIO_Prepare(void);
+extern s32 SEQ_CV_SRIO_Finish(void);
+
+extern s32 SEQ_CV_DOUT_TriggerUpdate(void);
 
 extern s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package);
 
