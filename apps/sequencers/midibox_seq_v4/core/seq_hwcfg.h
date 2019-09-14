@@ -33,7 +33,7 @@
 // following constants can be safely changed (therefore documented)
 
 // max. number of SRs which can be used for CV gates (each SR provides 8 gates)
-#define SEQ_HWCFG_NUM_SR_CV_GATES 1
+#define SEQ_HWCFG_NUM_SR_CV_GATES 4
 
 // max. number of SRs which can be used for triggering gates (each SR provides 8 gates)
 #define SEQ_HWCFG_NUM_SR_DOUT_GATES 8

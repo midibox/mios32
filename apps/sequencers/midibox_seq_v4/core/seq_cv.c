@@ -46,9 +46,9 @@ u8  seq_cv_clkout_pulsewidth[SEQ_CV_NUM_CLKOUT];
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 gates;
-static u8 gate_inversion_mask;
-static u8 sus_key_mask;
+static u32 gates;
+static u32 gate_inversion_mask;
+static u32 sus_key_mask;
 
 static u8 seq_cv_clkout_pulse_ctr[SEQ_CV_NUM_CLKOUT];
 
@@ -65,8 +65,8 @@ s32 SEQ_CV_Init(u32 mode)
   int i;
 
   gates = 0;
-  gate_inversion_mask = 0x00;
-  sus_key_mask = 0xff;
+  gate_inversion_mask = 0x00000000;
+  sus_key_mask = 0xffffffff;
 
   // initialize J5 pins
   // they will be enabled after MBSEQ_HW.V4 has been read
@@ -106,6 +106,14 @@ s32 SEQ_CV_Init(u32 mode)
   // initialize AOUT driver
   AOUT_Init(0);
 
+  // legacy: start with 8 channels
+  {
+    aout_config_t config;
+    config = AOUT_ConfigGet();
+    config.num_channels = 8;
+    AOUT_ConfigSet(config);
+  }
+
   // initial pulsewidth and divider for clock outputs
   {
       int clkout;
@@ -136,7 +144,7 @@ s32 SEQ_CV_IfSet(aout_if_t if_type)
   config = AOUT_ConfigGet();
   config.if_type = if_type;
   config.if_option = (config.if_type == AOUT_IF_74HC595) ? 0xffffffff : 0x00000000; // AOUT_LC: select 8/8 bit configuration
-  config.num_channels = 8;
+  config.num_channels = AOUT_IF_MaxChannelsGet(if_type);
   //config.chn_inverted = 0; // configurable
   AOUT_ConfigSet(config);
   return AOUT_IF_Init(0);
@@ -154,6 +162,17 @@ aout_if_t SEQ_CV_IfGet(void)
 const char* SEQ_CV_IfNameGet(aout_if_t if_type)
 {
   return AOUT_IfNameGet(if_type);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Get number of AOUT channels (depends on device)
+/////////////////////////////////////////////////////////////////////////////
+u8 SEQ_CV_NumChnGet(void)
+{
+  aout_config_t config;
+  config = AOUT_ConfigGet();
+  return config.num_channels;
 }
 
 
@@ -324,13 +343,13 @@ u8 SEQ_CV_GateInversionGet(u8 gate)
 }
 
 
-s32 SEQ_CV_GateInversionAllSet(u8 mask)
+s32 SEQ_CV_GateInversionAllSet(u32 mask)
 {
   gate_inversion_mask = mask;
   return 0; // no error
 }
 
-u8 SEQ_CV_GateInversionAllGet(void)
+u32 SEQ_CV_GateInversionAllGet(void)
 {
   return gate_inversion_mask;
 }
@@ -362,13 +381,13 @@ u8 SEQ_CV_SusKeyGet(u8 gate)
 }
 
 
-s32 SEQ_CV_SusKeyAllSet(u8 mask)
+s32 SEQ_CV_SusKeyAllSet(u32 mask)
 {
   sus_key_mask = mask;
   return 0; // no error
 }
 
-u8 SEQ_CV_SusKeyAllGet(void)
+u32 SEQ_CV_SusKeyAllGet(void)
 {
   return sus_key_mask;
 }
@@ -515,14 +534,19 @@ s32 SEQ_CV_Update(void)
 
   // update J5 Outputs (forwarding AOUT digital pins for modules which don't support gates)
   // The MIOS32_BOARD_* function won't forward pin states if J5_ENABLED was set to 0
-  u8 new_gates = gates ^ gate_inversion_mask;
+  u32 new_gates = gates ^ gate_inversion_mask;
   if( new_gates != last_gates ) {
     last_gates = new_gates;
 
     AOUT_DigitalPinsSet(new_gates);
 
-    if( seq_hwcfg_cv_gate_sr[0] )
-      MIOS32_DOUT_SRSet(seq_hwcfg_cv_gate_sr[0]-1, new_gates);
+    {
+      int sr;
+      for(sr=0; sr<SEQ_HWCFG_NUM_SR_CV_GATES; ++sr) {
+	if( seq_hwcfg_cv_gate_sr[sr] )
+	  MIOS32_DOUT_SRSet(seq_hwcfg_cv_gate_sr[sr]-1, (new_gates >> sr*8) & 0xff);
+      }
+    }
 
     if( seq_hwcfg_j5_enabled ) {
 #ifndef MBSEQV4L
@@ -586,7 +610,7 @@ s32 SEQ_CV_Update(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
 {
-  if( cv_port > 0 )
+  if( cv_port > (SEQ_CV_NUM/8) )
     return 0; // event not taken
 
   // Note Off -> Note On with velocity 0
@@ -616,19 +640,19 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
       int aout_chn_note, aout_chn_vel, gate_pin_normal, gate_pin_velocity_gt100;
 
       if( package.chn <= Chn8 ) {
-	aout_chn_note = package.chn;
+	aout_chn_note = package.chn + 8*cv_port;
 	aout_chn_vel = -1;
-	gate_pin_normal = package.chn;
+	gate_pin_normal = package.chn + 8*cv_port;
 	gate_pin_velocity_gt100 = -1; // not relevant
       } else if( package.chn <= Chn12 ) {
-	aout_chn_note = ((package.chn & 3) << 1);
+	aout_chn_note = ((package.chn & 3) << 1) + 8*cv_port;
 	aout_chn_vel = aout_chn_note + 1;
-	gate_pin_normal = (package.chn & 3) << 1;
+	gate_pin_normal = ((package.chn & 3) << 1) + 8*cv_port;
 	gate_pin_velocity_gt100 = gate_pin_normal + 1;
       } else { // Chn <= 15
-	aout_chn_vel = ((package.chn & 3) << 1);
+	aout_chn_vel = ((package.chn & 3) << 1) + 8*cv_port;
 	aout_chn_note = aout_chn_vel + 1;
-	gate_pin_normal = (package.chn & 3) << 1;
+	gate_pin_normal = ((package.chn & 3) << 1) + 8*cv_port;
 	gate_pin_velocity_gt100 = gate_pin_normal + 1;
       }
 
@@ -680,10 +704,10 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
 
     int aout_chn, gate_pin;
     if( package.chn <= Chn8 ) {
-      aout_chn = package.cc_number - 16;
+      aout_chn = (package.cc_number - 16) + 8*cv_port;
       gate_pin = aout_chn;
     } else {
-      aout_chn = package.chn & 0x7;
+      aout_chn = (package.chn & 0x7) + 8*cv_port;
       gate_pin = aout_chn;
     }
 
@@ -705,11 +729,11 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
     int aout_chn_note;
 
     if( package.chn <= Chn8 ) {
-      aout_chn_note = package.chn;
+      aout_chn_note = package.chn + 8*cv_port;
     } else if( package.chn <= Chn12 ) {
-      aout_chn_note = ((package.chn & 3) << 1);
+      aout_chn_note = ((package.chn & 3) << 1) + 8*cv_port;
     } else { // Chn <= 15
-      aout_chn_note = ((package.chn & 3) << 1) + 1;
+      aout_chn_note = ((package.chn & 3) << 1) + 1 + 8*cv_port;
     }
 
     int pitch = ((package.evnt1 & 0x7f) | (int)((package.evnt2 & 0x7f) << 7)) - 8192;

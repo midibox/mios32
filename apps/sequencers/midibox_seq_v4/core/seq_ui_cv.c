@@ -187,7 +187,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_CV:
-      if( SEQ_UI_Var8_Inc(&selected_cv, 0, SEQ_CV_NUM-1, incrementer) >= 0 ) {
+      if( SEQ_UI_Var8_Inc(&selected_cv, 0, SEQ_CV_NumChnGet()-1, incrementer) >= 0 ) {
 	SEQ_CV_CaliModeSet(selected_cv, SEQ_CV_CaliModeGet()); // change calibration mode to new pin
 	return 1;
       }
@@ -403,6 +403,11 @@ static s32 LCD_Handler(u8 high_prio)
 {
   if( high_prio )
     return 0; // there are no high-priority updates
+
+  // ensure that selected CV is within supported range for the selected module
+  if( selected_cv >= SEQ_CV_NumChnGet() )
+    selected_cv = 0;
+
 
   // layout:
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333

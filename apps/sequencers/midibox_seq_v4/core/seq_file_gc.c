@@ -274,6 +274,30 @@ s32 SEQ_FILE_GC_Read(void)
 	    UIP_TASK_GatewaySet(value);
 	  }
 #endif /* !defined(MIOS32_FAMILY_EMULATION) */
+	} else if( strcmp(parameter, "CV_GateInv") == 0 ) {
+	  // special treatmend required for this 32bit unsigned (TODO: improve code here - allow get_dec with 64bit?)
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  char *next;
+	  unsigned long long value = strtoll(word, &next, 0);
+	  if( word == next ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid value for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    SEQ_CV_GateInversionAllSet((u32)value);
+	  }
+	} else if( strcmp(parameter, "CV_SusKey") == 0 ) {
+	  // special treatmend required for this 32bit unsigned (TODO: improve code here - allow get_dec with 64bit?)
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  char *next;
+	  unsigned long long value = strtoll(word, &next, 0);
+	  if( word == next ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid value for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    SEQ_CV_SusKeyAllSet((u32)value);
+	  }
 	} else {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 value = get_dec(word);
@@ -454,10 +478,6 @@ s32 SEQ_FILE_GC_Read(void)
 	      }
 	    }
 #endif
-	  } else if( strcmp(parameter, "CV_GateInv") == 0 ) {
-	    SEQ_CV_GateInversionAllSet(value);
-	  } else if( strcmp(parameter, "CV_SusKey") == 0 ) {
-	    SEQ_CV_SusKeyAllSet(value);
 	  } else if( strcmp(parameter, "CV_ClkPulsewidth") == 0 ) {
 	    SEQ_CV_ClkPulseWidthSet(0, value); // Legacy Value - replaced by CV_ExtClk
 	  } else if( strcmp(parameter, "CV_ClkDivider") == 0 ) {
@@ -779,10 +799,10 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
     }
   }
 
-  sprintf(line_buffer, "CV_GateInv 0x%02x\n", (u8)SEQ_CV_GateInversionAllGet());
+  sprintf(line_buffer, "CV_GateInv 0x%08x\n", (u32)SEQ_CV_GateInversionAllGet());
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "CV_SusKey 0x%02x\n", (u8)SEQ_CV_SusKeyAllGet());
+  sprintf(line_buffer, "CV_SusKey 0x%08x\n", (u32)SEQ_CV_SusKeyAllGet());
   FLUSH_BUFFER;
 
   {

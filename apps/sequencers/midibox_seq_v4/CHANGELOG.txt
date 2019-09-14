@@ -9,6 +9,15 @@ Wishlist for future features
 MIDIboxSEQ V4.096
 ~~~~~~~~~~~~~~~~~
 
+   o Only for MBSEQV4+: support for up to 32 CV outputs (and corresponding gates).
+     Means: up to 4 AOUT modules can be chained.
+     Tested with MAX525 (and midiphy Eurorack Expander), but should also work with TLV5630 based AOUT_NG
+     The additional CV outputs can be accessed with MIDI port CV2..4.
+
+   o AOUT port has been renamed to CV1..CV4
+
+   o Utility Page, GP Button #11 now changes to the CV Configuration Page
+
    o Improved selection handling for midiphy frontpanel:
        - if you press&hold the Bookm/Step/Track/Param/Trigger/Instr/Mute or Phrase button, and then
          make a selection with SEL or GP buttons, the selection button will jump back to the previous
@@ -52,8 +61,6 @@ MIDIboxSEQ V4.096
    o the MIDI mixer can now send CC values to a bus.
      This especially allows to record CC changes (configure MENU->MIDI->Port accordingly
      so that it listens to the bus in Jam mode)
-
-   o Utility Page, GP Button #11 now changes to the CV Configuration Page
 
 
 MIDIboxSEQ V4.095

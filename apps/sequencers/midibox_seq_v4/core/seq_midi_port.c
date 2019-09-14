@@ -35,7 +35,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // MIDI events are forwarded when sent to port 0xc0 to selectable ports
-// selects USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3, AOUT
+// selects USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3, CV0/1/2/3
 u32 seq_midi_port_multi_enable_flags;
 
 // MIDI OUT/IN activity
@@ -84,7 +84,7 @@ static const seq_midi_port_entry_t in_ports[NUM_IN_PORTS] = {
 };
 
 // has to be kept in synch with SEQ_MIDI_PORT_OutIxGet() !!!
-#define NUM_OUT_PORTS (18+MIOS32_IIC_MIDI_NUM)
+#define NUM_OUT_PORTS (21+MIOS32_IIC_MIDI_NUM)
 static const seq_midi_port_entry_t out_ports[NUM_OUT_PORTS] = {
   // port ID  Name
   { DEFAULT, "Def." },
@@ -124,7 +124,10 @@ static const seq_midi_port_entry_t out_ports[NUM_OUT_PORTS] = {
   { OSC1,    "OSC2" },
   { OSC2,    "OSC3" },
   { OSC3,    "OSC4" },
-  { 0x80,    "AOUT" },
+  { 0x80,    "CV1 " },
+  { 0x81,    "CV2 " },
+  { 0x82,    "CV3 " },
+  { 0x83,    "CV4 " },
   { 0xf0,    "Bus1" },
   { 0xf1,    "Bus2" },
   { 0xf2,    "Bus3" },
@@ -196,7 +199,7 @@ s32 SEQ_MIDI_PORT_Init(u32 mode)
   int i;
 
   // multi port (0xc0): default enables:
-  //                                   USB1,      OUT1,       OSC1,      AOUT
+  //                                   USB1,      OUT1,       OSC1,      CV1
   seq_midi_port_multi_enable_flags = (1 << 0) | (1 << 4) | (1 << 12) | (1 << 16);
 
   // unmute all Out ports
@@ -361,8 +364,8 @@ u8 SEQ_MIDI_PORT_OutIxGet(mios32_midi_port_t port)
     case UART0: return (port & 0x0f) + 5;
     case IIC0:  return (port & 0x0f) + 9;
     case OSC0:  return (port & 0x0f) + 9 + MIOS32_IIC_MIDI_NUM;
-    case 0x80:  return (port & 0x0f) + 9 + 4 + MIOS32_IIC_MIDI_NUM; // AOUT
-    case 0xf0:  return (port & 0x0f) + 9 + 5 + MIOS32_IIC_MIDI_NUM; // Bus
+    case 0x80:  return (port & 0x0f) + 9 + 4 + MIOS32_IIC_MIDI_NUM; // CV
+    case 0xf0:  return (port & 0x0f) + 9 + 8 + MIOS32_IIC_MIDI_NUM; // Bus
   }
 #endif
 
@@ -422,8 +425,8 @@ s32 SEQ_MIDI_PORT_OutCheckAvailable(mios32_midi_port_t port)
   u8 ix;
   for(ix=0; ix<NUM_OUT_PORTS; ++ix) {
     if( out_ports[ix].port == port ) {
-      if( port == 0x80 ) {
-	return SEQ_CV_IfGet() ? 1 : 0;
+      if( port >= 0x80 && port <= 0x83 ) {
+	return SEQ_CV_IfGet() ? ((((port & 0x3)+1)*8 <= SEQ_CV_NUM) ? 1 : 0) : 0;
       } else if ( port >= 0xf0 )
 	return 1; // Bus is always available
       else if( (port & 0xf0) == OSC0 )
@@ -857,7 +860,7 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
     // avoid OSC feedback in seq_live.c (can cause infinite loops or stack overflows)
     if( filter_osc_packets || OSC_CLIENT_SendMIDIEvent(port & 0xf, package) >= 0 )
       return 1; // filter package
-  } else if( port == 0x80 ) { // AOUT port
+  } else if( (port & 0xf0) == 0x80 ) { // CV port
     if( SEQ_CV_SendPackage(port & 0xf, package) )
       return 1; // filter package
   } else if( port == 0xc0 ) { // Multi OUT port
@@ -873,8 +876,13 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
       }
     }
 
-    if( seq_midi_port_multi_enable_flags & (1 << 16) ) {
-      MIOS32_MIDI_SendPackage(0x80, package); // AOUT
+    if( seq_midi_port_multi_enable_flags & (0xf << 16) ) {
+      int cv;
+      for(cv=0; cv<4; ++cv) {
+	if( seq_midi_port_multi_enable_flags & (1 << (16+cv)) ) {
+	  MIOS32_MIDI_SendPackage(0x80+cv, package); // CV
+	}
+      }
     }
 
     return 1; // filter forwarding
