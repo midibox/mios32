@@ -47,8 +47,12 @@ const char *MBNG_DIO_PortNameGet(u8 port)
 #if MBNG_PATCH_NUM_DIO > 0
   const char *port_name_table[MBNG_PATCH_NUM_DIO] = {
   "J5AB",
+#if MBNG_PATCH_NUM_DIO > 1
   "J10A",
+#endif
+#if MBNG_PATCH_NUM_DIO > 2
   "J10B"
+#endif
 #if MBNG_PATCH_NUM_DIO > 3
 # error "Please add new DIO port name here!"
 #endif
@@ -77,12 +81,15 @@ s32 MBNG_DIO_PortInit(u8 port, u8 output_mask)
       MIOS32_BOARD_J5_PinInit(i, (mbng_patch_ain.enable_mask & (1 << i)) ? MIOS32_BOARD_PIN_MODE_ANALOG : ((output_mask & (1 << i)) ? MIOS32_BOARD_PIN_MODE_OUTPUT_PP : MIOS32_BOARD_PIN_MODE_INPUT_PU));
   } break;
 
+#if MBNG_PATCH_NUM_DIO > 1
   case 1: {
     int i;
     for(i=0; i<8; ++i)
       MIOS32_BOARD_J10_PinInit(i, (output_mask & (1 << i)) ? MIOS32_BOARD_PIN_MODE_OUTPUT_PP : MIOS32_BOARD_PIN_MODE_INPUT_PU);
   } break;
+#endif
 
+#if MBNG_PATCH_NUM_DIO > 2
   case 2: {
     int i;
 #if defined(MIOS32_FAMILY_STM32F4xx)
@@ -96,6 +103,7 @@ s32 MBNG_DIO_PortInit(u8 port, u8 output_mask)
 # error "Please adapt J10B port assignments here"
 #endif
   } break;
+#endif
 
   default:
     return -1; // invalid port
@@ -122,6 +130,7 @@ u8 MBNG_DIO_PortGet(u8 port)
     return MIOS32_BOARD_J5_Get();
   } break;
 
+#if MBNG_PATCH_NUM_DIO > 1
   case 1: {
 #if defined(MIOS32_FAMILY_STM32F4xx)
     return MIOS32_BOARD_J10A_Get();
@@ -131,7 +140,9 @@ u8 MBNG_DIO_PortGet(u8 port)
 # error "Please adapt J10 port assignments here"
 #endif
   } break;
+#endif
 
+#if MBNG_PATCH_NUM_DIO > 2
   case 2: {
 #if defined(MIOS32_FAMILY_STM32F4xx)
     return MIOS32_BOARD_J10B_Get();
@@ -141,6 +152,7 @@ u8 MBNG_DIO_PortGet(u8 port)
 # error "Please adapt J10 port assignments here"
 #endif
   } break;
+#endif
 
 #if MBNG_PATCH_NUM_DIO > 3
 # error "Add pin get function here"
@@ -165,6 +177,7 @@ s32 MBNG_DIO_PortSet(u8 port, u8 value)
     MIOS32_BOARD_J5_Set(value);
   } break;
 
+#if MBNG_PATCH_NUM_DIO > 1
   case 1: {
 #if defined(MIOS32_FAMILY_STM32F4xx)
     MIOS32_BOARD_J10A_Set(value);
@@ -174,7 +187,9 @@ s32 MBNG_DIO_PortSet(u8 port, u8 value)
 # error "Please adapt J10 port assignments here"
 #endif
   } break;
+#endif
 
+#if MBNG_PATCH_NUM_DIO > 2
   case 2: {
 #if defined(MIOS32_FAMILY_STM32F4xx)
     MIOS32_BOARD_J10B_Set(value);
@@ -184,6 +199,7 @@ s32 MBNG_DIO_PortSet(u8 port, u8 value)
 # error "Please adapt J10 port assignments here"
 #endif
   } break;
+#endif
 
   default:
     return -1; // invalid port
