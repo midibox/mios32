@@ -166,6 +166,9 @@ typedef struct {
   u8   slewrate;
   u8   slewrate_enable;
   u8   pitchrange;
+#if AOUT_NUM_CALI_POINTS_X > 0
+  u16  cali_point[AOUT_NUM_CALI_POINTS_X];
+#endif
 } aout_channel_t;
 
 
@@ -274,17 +277,6 @@ s32 AOUT_Init(u32 mode)
   // number of devices is 0 (changed during re-configuration)
   aout_num_devices = 0;
 
-#if AOUT_NUM_CALI_POINTS_X > 0
-  // reset calibration points
-  for(pin=0; pin<AOUT_NUM_CHANNELS; ++pin) {
-    int i;
-    for(i=0; i<AOUT_NUM_CALI_POINTS_X; ++i) {
-      u32 cali_value = i * AOUT_NUM_CALI_POINTS_Y_INTERVAL;
-      aout_config.cali_point[pin][i] = (cali_value < 0x10000) ? cali_value : 0xffff;
-    }
-  }
-#endif
-
   // set all AOUT pins to 0
   aout_channel_t *c = (aout_channel_t *)&aout_channel[0];
   for(pin=0; pin<AOUT_NUM_CHANNELS; ++pin, ++c) {
@@ -296,6 +288,17 @@ s32 AOUT_Init(u32 mode)
     c->slewrate_enable = 1;
     c->pitchrange = 2; // semitones
     c->pitch = 0; // pitch offset
+
+#if AOUT_NUM_CALI_POINTS_X > 0
+    {
+      // reset calibration points
+      int i;
+      for(i=0; i<AOUT_NUM_CALI_POINTS_X; ++i) {
+	u32 cali_value = i * AOUT_NUM_CALI_POINTS_Y_INTERVAL;
+	c->cali_point[i] = (cali_value < 0x10000) ? cali_value : 0xffff;
+      }
+    }
+#endif
   }
 
   // set all digital outputs to 0
@@ -486,6 +489,35 @@ const char* AOUT_IfNameGet(aout_if_t if_type)
     if_type = 0; // select "none"
 
   return if_name[if_type];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// \return number of maximal supported channels depending on interface
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_IF_MaxChannelsGet(aout_if_t if_type)
+{
+  switch( if_type ) {
+  case AOUT_IF_NONE:
+    return 0;
+
+  case AOUT_IF_MAX525:
+  case AOUT_IF_TLV5630:
+  case AOUT_IF_74HC595:
+    return AOUT_NUM_CHANNELS;
+
+  case AOUT_IF_MCP4922_1:
+  case AOUT_IF_MCP4922_2:
+    return 2;
+
+  case AOUT_IF_INTDAC:
+    return 2; // actually derivative dependent... TODO for MIOS32
+
+  default:
+    return AOUT_NUM_CHANNELS;
+  }
+
+  return AOUT_NUM_CHANNELS; // just to avoid warning
 }
 
 
@@ -803,7 +835,7 @@ static s32 currentValueGet(u8 pin)
       u8 debug = cali_mode != AOUT_CALI_MODE_OFF && cali_mode != AOUT_CALI_MODE_WAVE && pin == cali_pin;
 
       int i;
-      u16 *cali_value = &aout_config.cali_point[pin][0];
+      u16 *cali_value = &c->cali_point[0];
       for(i=0; i<(AOUT_NUM_CALI_POINTS_X-1); ++i) {
 	s32 x0 = i * AOUT_NUM_CALI_POINTS_Y_INTERVAL;
 	if( x0 > 0xffff )
@@ -1104,7 +1136,7 @@ u16 *AOUT_CaliPointsPtrGet(u8 cv)
     return NULL; // pin not available
 
 #if AOUT_NUM_CALI_POINTS_X > 0
-  return &aout_config.cali_point[cv][0];
+  return &aout_channel[cv].cali_point[0];
 #else
   return NULL;
 #endif
