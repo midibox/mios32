@@ -18,6 +18,14 @@ MIDIbox NG V1.037
 
    o WS2812: revised version now supports 1024 RGB LEDs by default
 
+   o DIO configuration now allows to mix inputs and outputs for a single port by providing
+     an "output_mask"
+     An example can be found under cfg/tests/diocfg_3.ngc
+
+   o DIO support for J5AB (8 pins available at J5A and J5B)
+     It's even possible to mix digital inputs, outputs and analog inputs
+     An example can be found under cfg/tests/diocfg_4.ngc
+
 
 MIDIbox NG V1.036
 ~~~~~~~~~~~~~~~~~

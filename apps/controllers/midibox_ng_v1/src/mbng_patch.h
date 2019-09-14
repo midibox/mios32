@@ -49,13 +49,13 @@
 #define MBNG_PATCH_AIN_MAX_VALUE 4095
 #define MBNG_PATCH_AINSER_MAX_VALUE 4095
 
-// STM32F1: none
-// STM32F4: J10A and J10B
-// LPC17: J10 and J28
+// STM32F1: J5A+J5B
+// STM32F4: J5A+J5B, J10A, J10B
+// LPC17: J5A+J5B, J10, J28
 #if defined(MIOS32_FAMILY_STM32F10x)
-# define MBNG_PATCH_NUM_DIO 0
+# define MBNG_PATCH_NUM_DIO 1
 #else
-# define MBNG_PATCH_NUM_DIO 2
+# define MBNG_PATCH_NUM_DIO 3
 #endif
 
 
@@ -163,15 +163,10 @@ typedef struct {
   u8 sysex_chn;
 } mbng_patch_cfg_t;
 
-typedef enum {
-  MBNG_PATCH_DIO_CFG_MODE_Off = 0,
-  MBNG_PATCH_DIO_CFG_MODE_DIN,
-  MBNG_PATCH_DIO_CFG_MODE_DOUT
-} mbng_patch_dio_cfg_mode_t;
-
 typedef struct {
-  u8   mode:2; // mbng_patch_dio_cfg_mode_t
-  u8   emu_sr:8;
+  u8   emu_din_sr;
+  u8   emu_dout_sr;
+  u8   output_mask;
 } mbng_patch_dio_cfg_t;
 
 

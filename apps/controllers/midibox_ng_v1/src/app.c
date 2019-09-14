@@ -549,24 +549,22 @@ void APP_SRIO_ServiceFinishBeforeDINCompare(void)
     int port;
     for(port=0; port<MBNG_PATCH_NUM_DIO; ++port) {
       u8 sr;
-      if( (sr=mbng_patch_dio_cfg[port].emu_sr) > 0 && sr <= num_sr ) {
-	switch( mbng_patch_dio_cfg[port].mode ) {
-	case MBNG_PATCH_DIO_CFG_MODE_DIN: {
-	  // copy port value to specified DIN buffer
-	  u8 value = MBNG_DIO_PortGet(port);
-	  mios32_srio_din_buffer[sr-1] = value;
-	} break;
 
-	case MBNG_PATCH_DIO_CFG_MODE_DOUT: {
-	  // copy specified DOUT to port
+      if( (sr=mbng_patch_dio_cfg[port].emu_din_sr) > 0 && sr <= num_sr ) {
+	// copy port value to specified DIN buffer, ignore output pins (-> always 1)
+	u8 value = MBNG_DIO_PortGet(port);
+	u8 mask = (mbng_patch_dio_cfg[port].emu_dout_sr > 0) ? mbng_patch_dio_cfg[port].output_mask : 0x00;
+	mios32_srio_din_buffer[sr-1] = value | mask;
+      }
+
+      if( (sr=mbng_patch_dio_cfg[port].emu_dout_sr) > 0 && sr <= num_sr ) {
+	// copy specified DOUT to port
 #if MIOS32_SRIO_NUM_DOUT_PAGES < 2
-	  u8 value = mios32_dout_reverse_tab[mios32_srio_dout[0][num_sr-sr]];
+	u8 value = mios32_dout_reverse_tab[mios32_srio_dout[0][num_sr-sr]];
 #else
-	  u8 value = mios32_dout_reverse_tab[mios32_srio_dout[mios32_srio_dout_page_ctr][num_sr-sr]];
+	u8 value = mios32_dout_reverse_tab[mios32_srio_dout[mios32_srio_dout_page_ctr][num_sr-sr]];
 #endif
-	  MBNG_DIO_PortSet(port, value);
-	} break;
-	}
+	MBNG_DIO_PortSet(port, value);
       }
     }
   }
@@ -582,7 +580,7 @@ void APP_SRIO_ServiceFinish(void)
 #if MBNG_PATCH_NUM_DIO > 0
   {
     u8 sr;
-    skip_scs = mbng_patch_dio_cfg[0].mode != MBNG_PATCH_DIO_CFG_MODE_Off && (sr=mbng_patch_dio_cfg[0].emu_sr) > 0 && sr <= MIOS32_SRIO_NUM_SR;
+    skip_scs = (sr=mbng_patch_dio_cfg[0].emu_din_sr) > 0 && sr <= MIOS32_SRIO_NUM_SR;
   }
 #endif
 

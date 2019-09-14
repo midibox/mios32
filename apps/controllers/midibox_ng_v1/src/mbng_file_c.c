@@ -3143,8 +3143,9 @@ s32 parseDio(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
   int port = -1;
-  int emu_din_sr = -1;
-  int emu_dout_sr = -1;
+  int emu_din_sr = 0;
+  int emu_dout_sr = 0;
+  u8 output_mask = 0xff;
 
   char *parameter;
   char *value_str;
@@ -3157,10 +3158,12 @@ s32 parseDio(u32 line, char *cmd, char *brkt)
 #if MBNG_PATCH_NUM_DIO > 0
       // TODO: use MBNG_DIO_PortNameGet()?
       // disadvantage: DIO parameters incompatible between LPC17 and STM32F4
-      if( strcasecmp(value_str, "j10") == 0 || strcasecmp(value_str, "j10a") == 0 ) {
+      if( strcasecmp(value_str, "j5") == 0 || strcasecmp(value_str, "j5ab") == 0 ) {
 	port = 0;
-      } else if( strcasecmp(value_str, "j10b") == 0 || strcasecmp(value_str, "j28") == 0 ) { // STM32F4: J10B, LPC17: J28
+      } else if( strcasecmp(value_str, "j10") == 0 || strcasecmp(value_str, "j10a") == 0 ) {
 	port = 1;
+      } else if( strcasecmp(value_str, "j10b") == 0 || strcasecmp(value_str, "j28") == 0 ) { // STM32F4: J10B, LPC17: J28
+	port = 2;
       }
 #endif
 
@@ -3189,6 +3192,18 @@ s32 parseDio(u32 line, char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "output_mask") == 0 ) {
+      int value;
+      if( (value=get_bin(value_str, 8, 0)) < 0 || value >= 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid output mask for %s ... %s=%s (00000000..11111111)\n", line, cmd, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	output_mask = value;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s ... %s=%s\n", line, cmd, parameter, value_str);
@@ -3201,10 +3216,6 @@ s32 parseDio(u32 line, char *cmd, char *brkt)
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: no port has been specified for this %s command\n", line, cmd);
 #endif
-  } else if( emu_dout_sr > 1 && emu_din_sr > 1 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: conflicting %s emu_dout_sr and emu_din_sr - please specify either a DIN or DOUT SR, not both!\n", line, cmd);
-#endif
   } else if( port >= MBNG_PATCH_NUM_DIO ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: internal error in %s: unknown port #%d, please contact TK!\n", line, cmd, port);
@@ -3213,15 +3224,11 @@ s32 parseDio(u32 line, char *cmd, char *brkt)
 #if MBNG_PATCH_NUM_DIO > 0
     mbng_patch_dio_cfg_t *dio_cfg = (mbng_patch_dio_cfg_t *)&mbng_patch_dio_cfg[port];
 
-    dio_cfg->mode = MBNG_PATCH_DIO_CFG_MODE_Off;
-    if( emu_dout_sr > 0 ) {
-      dio_cfg->mode = MBNG_PATCH_DIO_CFG_MODE_DOUT;
-      dio_cfg->emu_sr = emu_dout_sr;
-      MBNG_DIO_PortInit(port, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
-    } else if( emu_din_sr > 0 ) {
-      dio_cfg->mode = MBNG_PATCH_DIO_CFG_MODE_DIN;
-      dio_cfg->emu_sr = emu_din_sr;
-      MBNG_DIO_PortInit(port, MIOS32_BOARD_PIN_MODE_INPUT_PU);
+    dio_cfg->emu_dout_sr = emu_dout_sr;
+    dio_cfg->emu_din_sr = emu_din_sr;
+    dio_cfg->output_mask = output_mask;
+    if( emu_dout_sr || emu_din_sr ) { // ensure that no pin is initialized if no SR is specified
+      MBNG_DIO_PortInit(port, emu_dout_sr ? output_mask : 0x00); // if no DOUT defined: turn output_mask to 0x00 for legacy reasons!
     }
 #endif
   }
@@ -4717,7 +4724,6 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	}
       }
     }
-
   }
 
 #if MBNG_PATCH_NUM_DIO > 0
@@ -4728,13 +4734,15 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     int port;
     mbng_patch_dio_cfg_t *dio_cfg = (mbng_patch_dio_cfg_t *)&mbng_patch_dio_cfg[0];
     for(port=0; port<MBNG_PATCH_NUM_DIO; ++port, ++dio_cfg) {
-      if( dio_cfg->mode == MBNG_PATCH_DIO_CFG_MODE_DOUT ) {
-	sprintf(line_buffer, "DIO port=%s  emu_dout_sr=%d\n", MBNG_DIO_PortNameGet(port), dio_cfg->emu_sr);
-	FLUSH_BUFFER;
-      } else if( dio_cfg->mode == MBNG_PATCH_DIO_CFG_MODE_DIN ) {
-	sprintf(line_buffer, "DIO port=%s  emu_din_sr=%d\n", MBNG_DIO_PortNameGet(port), dio_cfg->emu_sr);
-	FLUSH_BUFFER;
+      char output_mask_bin[9];
+      int bit;
+      for(bit=0; bit<8; ++bit) {
+        output_mask_bin[bit] = (dio_cfg->output_mask & (1 << bit)) ? '1' : '0';
       }
+      output_mask_bin[8] = 0;
+
+      sprintf(line_buffer, "DIO port=%s  emu_din_sr=%d  emu_dout_sr=%d  output_mask=%s\n", MBNG_DIO_PortNameGet(port), dio_cfg->emu_din_sr, dio_cfg->emu_dout_sr, output_mask_bin);
+      FLUSH_BUFFER;
     }
   }
 #endif

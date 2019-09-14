@@ -184,8 +184,9 @@ s32 MBNG_PATCH_Init(u32 mode)
     int dio;
 
     for(dio=0; dio<MBNG_PATCH_NUM_DIO; ++dio) {
-      mbng_patch_dio_cfg[dio].mode = MBNG_PATCH_DIO_CFG_MODE_Off;
-      mbng_patch_dio_cfg[dio].emu_sr = 0;
+      mbng_patch_dio_cfg[dio].emu_din_sr = 0;
+      mbng_patch_dio_cfg[dio].emu_dout_sr = 0;
+      mbng_patch_dio_cfg[dio].output_mask = 0x00;
     }
   }
 #endif
