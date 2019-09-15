@@ -691,13 +691,9 @@ s32 SEQ_CV_SRIO_Finish(void)
   // shift pipeline
 
   if( dout_trigger_width_ms > 0 ) {
-    int i;
-
     u8 width = (dout_trigger_width_ms < SEQ_CV_DOUT_TRIGGER_WIDTH_MS_MAX) ? dout_trigger_width_ms : SEQ_CV_DOUT_TRIGGER_WIDTH_MS_MAX;
 
-    for(i=0; i<width-1; ++i) {
-      memcpy(&dout_trigger_pipeline[i][0], &dout_trigger_pipeline[i+1][0], SEQ_HWCFG_NUM_SR_DOUT_GATES);
-    }
+    memcpy(&dout_trigger_pipeline[0][0], &dout_trigger_pipeline[1][0], SEQ_HWCFG_NUM_SR_DOUT_GATES*(width-1));
     memset(&dout_trigger_pipeline[width-1][0], 0, SEQ_HWCFG_NUM_SR_DOUT_GATES);
   }
 
