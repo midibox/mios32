@@ -827,11 +827,11 @@ static s32 parseValue(u32 line, char *command, char *value_str, u8 tokenize_req)
   s32 value = get_dec(value_str);
 #if NGR_TOKENIZED
     if( tokenize_req ) { // store token
-      if( value < 0 )
+      if( value < -16384 )
 	return -1000000000; // exit due to error
-      if( value > 65535 ) {
+      if( value > 65535 ) { // allow also 16bit unsigned...
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: constant value '%s' too big, it should be in the range of 0..65535!", line, value_str);
+	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: constant value '%s' too big, it should be in the range of -16384..16383!", line, value_str);
 #endif
 	return -1000000000;
       }
@@ -911,12 +911,12 @@ static s32 parseTokenizedValue(void)
   case TOKEN_VALUE_SYSEX_CHN: return mbng_patch_cfg.sysex_chn;
 
   case TOKEN_VALUE_CONST8: {
-    u16 value = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
+    s16 value = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
     return value;
   } break;
 
   case TOKEN_VALUE_CONST16: {
-    u16 value = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
+    s16 value = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
     value |= ((u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8);
     return value;
   } break;
@@ -930,7 +930,7 @@ static s32 parseTokenizedValue(void)
     u32 continue_ix = 0;
     if( (is_hw_id && MBNG_EVENT_ItemSearchByHwId(id, &item, &continue_ix) >= 0) ||
 	(!is_hw_id && MBNG_EVENT_ItemSearchById(id, &item, &continue_ix) >= 0) ) {
-      return item.value;
+      return (s16)item.value;
     }
     DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: (%s)%s:%d not found in event pool at mem pos 0x%x!", 
 	      is_hw_id ? "hw_id" : "id", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, init_ngr_token_mem_run_pos);
