@@ -783,33 +783,19 @@ void displayPageClip(void)
    displaySceneTrackInfo();
    displayTrackInstrumentInfo();
 
-   command_ == COMMAND_CLIPLEN ? setFontInverted() : setFontNonInverted();
+   command_ == COMMAND_CLIP_LEN ? setFontInverted() : setFontNonInverted();
    if (clipSteps_[activeTrack_][activeScene_] < 100)
       printFormattedString(0, 53, "Len %d", clipSteps_[activeTrack_][activeScene_]);
    else
       printFormattedString(0, 53, "Le %d", clipSteps_[activeTrack_][activeScene_]);
 
-   command_ == COMMAND_QUANTIZE ? setFontInverted() : setFontNonInverted();
-   switch (clipQuantize_[activeTrack_][activeScene_])
-   {
-      case 3: printFormattedString(42, 53, "Q1/128"); break;
-      case 6: printFormattedString(42, 53, "Qu1/64"); break;
-      case 12: printFormattedString(42, 53, "Qu1/32"); break;
-      case 24: printFormattedString(42, 53, "Qu1/16"); break;
-      case 48: printFormattedString(42, 53, "Qu 1/8"); break;
-      case 96: printFormattedString(42, 53, "Qu 1/4"); break;
-      case 192: printFormattedString(42, 53, "Qu 1/2"); break;
-      case 384: printFormattedString(42, 53, "Qu 1/1"); break;
-      default: printFormattedString(42, 53, "Qu OFF"); break;
-   }
-
-   command_ == COMMAND_TRANSPOSE ? setFontInverted() : setFontNonInverted();
+   command_ == COMMAND_CLIP_TRANSPOSE ? setFontInverted() : setFontNonInverted();
    printFormattedString(84, 53, "Trn %d", clipTranspose_[activeTrack_][activeScene_]);
 
-   command_ == COMMAND_SCROLL ? setFontInverted() : setFontNonInverted();
+   command_ == COMMAND_CLIP_SCROLL ? setFontInverted() : setFontNonInverted();
    printFormattedString(126, 53, "Scr %d", clipScroll_[activeTrack_][activeScene_]);
 
-   command_ == COMMAND_STRETCH ? setFontInverted() : setFontNonInverted();
+   command_ == COMMAND_CLIP_STRETCH ? setFontInverted() : setFontNonInverted();
    switch (clipStretch_[activeTrack_][activeScene_])
    {
       case 1: printFormattedString(168, 53, "Zo 1/16"); break;
@@ -822,7 +808,7 @@ void displayPageClip(void)
       case 128: printFormattedString(168, 53, "Zoom 8"); break;
    }
 
-   command_ == COMMAND_FREEZE ? setFontInverted() : setFontNonInverted();
+   command_ == COMMAND_CLIP_FREEZE ? setFontInverted() : setFontNonInverted();
    printFormattedString(210, 53, "Clear");
 
    setFontNonInverted();
@@ -880,7 +866,7 @@ void displayPageNotes(void)
       u8 note = clipNotes_[activeTrack_][activeScene_][activeNote].note;
       u8 velocity = clipNotes_[activeTrack_][activeScene_][activeNote].velocity;
 
-      command_ == COMMAND_POSITION ? setFontInverted() : setFontNonInverted();
+      command_ == COMMAND_NOTE_POSITION ? setFontInverted() : setFontNonInverted();
       if (pos < 100)
          printFormattedString(0, 53, "Pos %d", pos);
       else
@@ -898,7 +884,7 @@ void displayPageNotes(void)
       command_ == COMMAND_NOTE_LENGTH ? setFontInverted() : setFontNonInverted();
       printFormattedString(126, 53, "Len %d", length);
 
-      command_ == COMMAND_FREEZE ? setFontInverted() : setFontNonInverted();
+      command_ == COMMAND_CLIP_FREEZE ? setFontInverted() : setFontNonInverted();
       printFormattedString(210, 53, "Delete");
 
       setFontNonInverted();
@@ -1526,6 +1512,67 @@ void displayPageMIDIMonitor()
 }
 // ----------------------------------------------------------------------------------------
 
+/**
+ * Display the song page
+ *
+ */
+void displayPageSong()
+{
+
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Display the Live FX page
+ *
+ */
+void displayPageLiveFX()
+{
+   displaySceneTrackInfo();
+   displayTrackInstrumentInfo();
+
+   command_ == COMMAND_LIVEFX_QUANTIZE ? setFontInverted() : setFontNonInverted();
+   switch (clipQuantize_[activeTrack_][activeScene_])
+   {
+      case 3: printFormattedString(0, 53, "Q1/128"); break;
+      case 6: printFormattedString(0, 53, "Qu1/64"); break;
+      case 12: printFormattedString(0, 53, "Qu1/32"); break;
+      case 24: printFormattedString(0, 53, "Qu1/16"); break;
+      case 48: printFormattedString(0, 53, "Qu 1/8"); break;
+      case 96: printFormattedString(0, 53, "Qu 1/4"); break;
+      case 192: printFormattedString(0, 53, "Qu 1/2"); break;
+      case 384: printFormattedString(0, 53, "Qu 1/1"); break;
+      default: printFormattedString(0, 53, "Qu OFF"); break;
+   }
+
+   command_ == COMMAND_LIVEFX_SWING ? setFontInverted() : setFontNonInverted();
+   if (clipSwing_[activeTrack_][activeScene_])
+      printFormattedString(0, 53, "Sw %d", clipSwing_[activeTrack_][activeScene_]);
+   else
+      printFormattedString(0, 53, "Swing%%");
+
+   command_ == COMMAND_LIVEFX_PROBABILITY ? setFontInverted() : setFontNonInverted();
+   if (clipProbability_[activeTrack_][activeScene_])
+      printFormattedString(42, 53, "Pr %d", clipProbability_[activeTrack_][activeScene_]);
+   else
+      printFormattedString(42, 53, "Prob %%");
+
+   command_ == COMMAND_LIVEFX_FTS_MODE ? setFontInverted() : setFontNonInverted();
+   if (clipFTSMode_[activeTrack_][activeScene_])
+      printFormattedString(42, 53, "FTS %d", clipFTSMode_[activeTrack_][activeScene_]);
+   else
+      printFormattedString(42, 53, "FTS off");
+
+   command_ == COMMAND_LIVEFX_FTS_NOTE ? setFontInverted() : setFontNonInverted();
+   if (clipFTSNote_[activeTrack_][activeScene_])
+      printFormattedString(42, 53, "FNte %d", clipFTSNote_[activeTrack_][activeScene_]);
+
+   setFontNonInverted();
+   displayClip(activeTrack_);
+}
+// ----------------------------------------------------------------------------------------
+
 
 /**
  * Return, if screensaver is active
@@ -1577,6 +1624,9 @@ void display()
 
       int iconId;
 
+      iconId = (page_ == PAGE_SONG) ? 32 + KEYICON_SONG_INVERTED : 32 + KEYICON_SONG;
+      printFormattedString(0 * 36 + 18, 0, "%c", iconId);
+
       iconId = (page_ == PAGE_MIDIMONITOR) ? 32 + KEYICON_MIDIMONITOR_INVERTED : 32 + KEYICON_MIDIMONITOR;
       printFormattedString(1 * 36 + 18, 0, "%c", iconId);
 
@@ -1588,6 +1638,10 @@ void display()
 
       iconId = (page_ == PAGE_NOTES) ? 32 + KEYICON_NOTES_INVERTED : 32 + KEYICON_NOTES;
       printFormattedString(4 * 36 + 18, 0, "%c", iconId);
+
+      iconId = (page_ == PAGE_LIVEFX) ? 32 + KEYICON_LIVEFX_INVERTED : 32 + KEYICON_LIVEFX;
+      printFormattedString(5 * 36 + 18, 0, "%c", iconId);
+
 
       iconId = (page_ == PAGE_SETUP) ? 32 + KEYICON_SETUP_INVERTED : 32 + KEYICON_SETUP;
       printFormattedString(0 * 36, 32, "%c", iconId);
@@ -1651,6 +1705,14 @@ void display()
 
          case PAGE_MIDIMONITOR:
             displayPageMIDIMonitor();
+            break;
+
+         case PAGE_SONG:
+            displayPageSong();
+            break;
+
+         case PAGE_LIVEFX:
+            displayPageLiveFX();
             break;
       }
 

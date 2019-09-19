@@ -332,7 +332,7 @@ static void TASK_Period_1mS_LP(void *pvParameters)
       if (taskCtr % 20 == 0)
       {
          display();
-         updateLEDs();
+         updateSwitchLEDs();
       }
    }
 }

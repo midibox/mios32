@@ -77,8 +77,8 @@ void setActivePage(enum LoopAPage page)
       case PAGE_ROUTER: command_ = COMMAND_ROUTE_SELECT; break;
       case PAGE_DISK: command_ = COMMAND_DISK_SELECT_SESSION; break;
       case PAGE_TEMPO: command_= COMMAND_TEMPO_BPM; break;
-      case PAGE_CLIP: command_ = COMMAND_CLIPLEN; break;
-      case PAGE_NOTES: command_ = COMMAND_POSITION; break;
+      case PAGE_CLIP: command_ = COMMAND_CLIP_LEN; break;
+      case PAGE_NOTES: command_ = COMMAND_NOTE_POSITION; break;
       case PAGE_TRACK: command_ = COMMAND_TRACK_OUTPORT; break;
       case PAGE_SETUP: command_ = COMMAND_SETUP_SELECT; break;
       default:
@@ -99,7 +99,7 @@ void setActivePage(enum LoopAPage page)
  *
  */
 static u8 ledstate[13];
-void updateLED(u8 number, u8 newState)
+void updateSwitchLED(u8 number, u8 newState)
 {
    switch (number)
    {
@@ -224,13 +224,11 @@ void updateLED(u8 number, u8 newState)
 }
 // -------------------------------------------------------------------------------------------------
 
-
-
 /**
- * Update the LED states of the Matias switches (called every 20ms from app.c timer)
+ * Update the LED states of the general purpose switches (called every 20ms from app.c timer)
  *
  */
-void updateLEDs()
+void updateSwitchLEDs()
 {
    u8 led_gp1 = LED_OFF, led_gp2 = LED_OFF, led_gp3 = LED_OFF, led_gp4 = LED_OFF, led_gp5 = LED_OFF, led_gp6 = LED_OFF;
    u8 led_arm = LED_OFF, led_shift = LED_OFF, led_menu = LED_OFF;
@@ -254,6 +252,9 @@ void updateLEDs()
 
       switch (page_)
       {
+         case PAGE_SONG:
+            led_gp1 = LED_RED;
+            break;
          case PAGE_MIDIMONITOR:
             led_gp2 = LED_RED;
             break;
@@ -265,6 +266,9 @@ void updateLEDs()
             break;
          case PAGE_NOTES:
             led_gp5 = LED_RED;
+            break;
+         case PAGE_LIVEFX:
+            led_gp6 = LED_RED;
             break;
          case PAGE_SETUP:
             led_runstop = LED_RED;
@@ -303,6 +307,21 @@ void updateLEDs()
       // Page-specific additonal lighting
       switch (page_)
       {
+         case PAGE_SONG:
+            // TODO
+            break;
+
+         case PAGE_MIDIMONITOR:
+            // nothing to be done, no buttons
+            break;
+
+         case PAGE_TEMPO:
+            led_gp1 |= command_ == COMMAND_TEMPO_BPM ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_TEMPO_BPM_UP ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_TEMPO_BPM_DOWN ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_TEMPO_TOGGLE_METRONOME ? LED_RED : LED_OFF;
+            break;
+
          case PAGE_MUTE:
             led_gp1 |= trackMute_[0] ? LED_OFF : LED_GREEN;
             led_gp2 |= trackMute_[1] ? LED_OFF : LED_GREEN;
@@ -312,46 +331,28 @@ void updateLEDs()
             led_gp6 |= trackMute_[5] ? LED_OFF : LED_GREEN;
             break;
 
-         case PAGE_CLIP:
-            led_gp1 |= command_ == COMMAND_CLIPLEN ? LED_RED : LED_OFF;
-            led_gp2 |= command_ == COMMAND_QUANTIZE ? LED_RED : LED_OFF;
-            led_gp3 |= command_ == COMMAND_TRANSPOSE ? LED_RED : LED_OFF;
-            led_gp4 |= command_ == COMMAND_SCROLL ? LED_RED : LED_OFF;
-            led_gp5 |= command_ == COMMAND_STRETCH ? LED_RED : LED_OFF;
-            led_gp6 |= command_ == COMMAND_FREEZE ? LED_RED : LED_OFF;
-            break;
-
-         case PAGE_ARPECHO:
-            break;
-
          case PAGE_NOTES:
-            led_gp1 |= command_ == COMMAND_POSITION ? LED_RED : LED_OFF;
+            led_gp1 |= command_ == COMMAND_NOTE_POSITION ? LED_RED : LED_OFF;
             led_gp2 |= command_ == COMMAND_NOTE_KEY ? LED_RED : LED_OFF;
             led_gp3 |= command_ == COMMAND_NOTE_VELOCITY ? LED_RED : LED_OFF;
             led_gp4 |= command_ == COMMAND_NOTE_LENGTH ? LED_RED : LED_OFF;
             led_gp6 |= command_ == COMMAND_NOTE_DELETE ? LED_RED : LED_OFF;
             break;
 
-         case PAGE_TRACK:
-            led_gp1 |= command_ == COMMAND_TRACK_OUTPORT ? LED_RED : LED_OFF;
-            led_gp2 |= command_ == COMMAND_TRACK_OUTCHANNEL ? LED_RED : LED_OFF;
-            led_gp3 |= command_ == COMMAND_TRACK_INPORT ? LED_RED : LED_OFF;
-            led_gp4 |= command_ == COMMAND_TRACK_INCHANNEL ? LED_RED : LED_OFF;
-            led_gp5 |= command_ == COMMAND_TRACK_TOGGLE_FORWARD ? LED_RED : LED_OFF;
+         case PAGE_LIVEFX:
+            led_gp1 |= command_ == COMMAND_LIVEFX_QUANTIZE ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_LIVEFX_SWING ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_LIVEFX_PROBABILITY ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_LIVEFX_FTS_MODE ? LED_RED : LED_OFF;
+            led_gp6 |= command_ == COMMAND_LIVEFX_FTS_NOTE ? LED_RED : LED_OFF;
             break;
 
-         case PAGE_DISK:
-            led_gp1 |= command_ == COMMAND_DISK_SELECT_SESSION ? LED_RED : LED_OFF;
-            led_gp2 |= command_ == COMMAND_DISK_SAVE ? LED_RED : LED_OFF;
-            led_gp3 |= command_ == COMMAND_DISK_LOAD ? LED_RED : LED_OFF;
-            led_gp4 |= command_ == COMMAND_DISK_NEW ? LED_RED : LED_OFF;
-            break;
-
-         case PAGE_TEMPO:
-            led_gp1 |= command_ == COMMAND_TEMPO_BPM ? LED_RED : LED_OFF;
-            led_gp2 |= command_ == COMMAND_TEMPO_BPM_UP ? LED_RED : LED_OFF;
-            led_gp3 |= command_ == COMMAND_TEMPO_BPM_DOWN ? LED_RED : LED_OFF;
-            led_gp4 |= command_ == COMMAND_TEMPO_TOGGLE_METRONOME ? LED_RED : LED_OFF;
+         case PAGE_SETUP:
+            led_gp1 |= command_ == COMMAND_SETUP_SELECT ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_SETUP_PAR1 ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_SETUP_PAR2 ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_SETUP_PAR3 ? LED_RED : LED_OFF;
+            led_gp5 |= command_ == COMMAND_SETUP_PAR4 ? LED_RED : LED_OFF;
             break;
 
          case PAGE_ROUTER:
@@ -362,39 +363,261 @@ void updateLEDs()
             led_gp5 |= command_ == COMMAND_ROUTE_OUT_CHANNEL ? LED_RED : LED_OFF;
             break;
 
-         case PAGE_SETUP:
-            led_gp1 |= command_ == COMMAND_SETUP_SELECT ? LED_RED : LED_OFF;
-            led_gp2 |= command_ == COMMAND_SETUP_PAR1 ? LED_RED : LED_OFF;
-            led_gp3 |= command_ == COMMAND_SETUP_PAR2 ? LED_RED : LED_OFF;
-            led_gp4 |= command_ == COMMAND_SETUP_PAR3 ? LED_RED : LED_OFF;
-            led_gp5 |= command_ == COMMAND_SETUP_PAR4 ? LED_RED : LED_OFF;
+         case PAGE_DISK:
+            led_gp1 |= command_ == COMMAND_DISK_SELECT_SESSION ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_DISK_SAVE ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_DISK_LOAD ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_DISK_NEW ? LED_RED : LED_OFF;
+            break;
+
+         case PAGE_CLIP:
+            led_gp1 |= command_ == COMMAND_CLIP_LEN ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_CLIP_TRANSPOSE ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_CLIP_SCROLL ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_CLIP_STRETCH ? LED_RED : LED_OFF;
+            led_gp6 |= command_ == COMMAND_CLIP_FREEZE ? LED_RED : LED_OFF;
+            break;
+
+         case PAGE_ARPECHO:
+            led_gp1 |= command_ == COMMAND_ARPECHO_MODE ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_ARPECHO_PATTERN ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_ARPECHO_DELAY ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_ARPECHO_REPEATS ? LED_RED : LED_OFF;
+            led_gp5 |= command_ == COMMAND_ARPECHO_NOTELENGTH ? LED_RED : LED_OFF;
+            break;
+
+         case PAGE_TRACK:
+            led_gp1 |= command_ == COMMAND_TRACK_OUTPORT ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_TRACK_OUTCHANNEL ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_TRACK_INPORT ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_TRACK_INCHANNEL ? LED_RED : LED_OFF;
+            led_gp5 |= command_ == COMMAND_TRACK_TOGGLE_FORWARD ? LED_RED : LED_OFF;
             break;
       }
    }
 
    MUTEX_DIGITALOUT_TAKE;
 
-   updateLED(LED_GP1, led_gp1);
-   updateLED(LED_GP2, led_gp2);
-   updateLED(LED_GP3, led_gp3);
-   updateLED(LED_GP4, led_gp4);
-   updateLED(LED_GP5, led_gp5);
-   updateLED(LED_GP6, led_gp6);
-   updateLED(LED_RUNSTOP, led_runstop);
-   updateLED(LED_ARM, led_arm);
-   updateLED(LED_SHIFT, led_shift);
+   updateSwitchLED(LED_GP1, led_gp1);
+   updateSwitchLED(LED_GP2, led_gp2);
+   updateSwitchLED(LED_GP3, led_gp3);
+   updateSwitchLED(LED_GP4, led_gp4);
+   updateSwitchLED(LED_GP5, led_gp5);
+   updateSwitchLED(LED_GP6, led_gp6);
+   updateSwitchLED(LED_RUNSTOP, led_runstop);
+   updateSwitchLED(LED_ARM, led_arm);
+   updateSwitchLED(LED_SHIFT, led_shift);
 
    if (!gcBeatLEDsEnabled_ || !SEQ_BPM_IsRunning()) // If we are using the lower right matias LED as beat flashlights, don't control them from here
    {
-      updateLED(LED_MENU, led_menu);
-      updateLED(LED_COPY, led_copy);
-      updateLED(LED_PASTE, led_paste);
-      updateLED(LED_DELETE, led_delete);
+      updateSwitchLED(LED_MENU, led_menu);
+      updateSwitchLED(LED_COPY, led_copy);
+      updateSwitchLED(LED_PASTE, led_paste);
+      updateSwitchLED(LED_DELETE, led_delete);
    }
 
    MUTEX_DIGITALOUT_GIVE;
 }
 // -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Update BEAT LEDs/Clip positions
+ *
+ */
+void updateBeatLEDsAndClipPositions(u32 bpm_tick)
+{
+   static u8 lastLEDstate = 255;
+
+   u16 ticksPerStep = SEQ_BPM_PPQN_Get() / 4;
+   u8 beatled = (bpm_tick / ticksPerStep) % 4;
+
+   if (beatled != lastLEDstate)
+   {
+      lastLEDstate = beatled;
+
+      if (!screenIsInMenu() && !screenIsInShift())
+      {
+         MUTEX_DIGITALOUT_TAKE;
+         switch (beatled)
+         {
+            case 0:
+               oledBeatFlashState_ = (bpm_tick / (ticksPerStep * 4) % 4 == 0) ? 2 : 1; // flash background (strong/normal)
+
+               updateSwitchLED(LED_RUNSTOP, LED_GREEN);
+               if (gcBeatLEDsEnabled_)
+               {
+                  updateSwitchLED(LED_MENU, LED_GREEN);
+                  updateSwitchLED(LED_COPY, LED_OFF);
+                  updateSwitchLED(LED_PASTE, LED_OFF);
+                  updateSwitchLED(LED_DELETE, LED_OFF);
+               }
+               break;
+            case 1:
+               if (gcBeatLEDsEnabled_)
+               {
+                  updateSwitchLED(LED_MENU, LED_OFF);
+                  updateSwitchLED(LED_COPY, LED_BLUE | LED_GREEN);
+                  updateSwitchLED(LED_PASTE, LED_OFF);
+                  updateSwitchLED(LED_DELETE, LED_OFF);
+               }
+               else
+                  updateSwitchLED(LED_RUNSTOP, LED_OFF);
+               break;
+            case 2:
+               if (gcBeatLEDsEnabled_)
+               {
+                  updateSwitchLED(LED_MENU, 0);
+                  updateSwitchLED(LED_COPY, 0);
+                  updateSwitchLED(LED_PASTE, LED_BLUE | LED_GREEN);
+                  updateSwitchLED(LED_DELETE, 0);
+               }
+               else
+                  updateSwitchLED(LED_RUNSTOP, LED_OFF);
+               break;
+            case 3:
+               if (gcBeatLEDsEnabled_)
+               {
+                  updateSwitchLED(LED_MENU, 0);
+                  updateSwitchLED(LED_COPY, 0);
+                  updateSwitchLED(LED_PASTE, 0);
+                  updateSwitchLED(LED_DELETE, LED_BLUE | LED_GREEN);
+               }
+               else
+                  updateSwitchLED(LED_RUNSTOP, LED_OFF);
+               break;
+         }
+         MUTEX_DIGITALOUT_GIVE;
+      }
+
+      // New step, Update clip positions
+      u8 i;
+      for (i = 0; i < TRACKS; i++)
+      {
+         screenSetClipPosition(i, ((u32) (bpm_tick / ticksPerStep) % clipSteps_[i][activeScene_]));
+      }
+
+      // Set global song step (non-wrapping), e.g. for recording clips
+      screenSetSongStep(bpm_tick / ticksPerStep);
+   }
+}
+// -------------------------------------------------------------------------------------------------
+
+
+
+/**
+ * Perform live LED updates (upper right encoder section)
+ *
+ */
+void updateLiveLEDs()
+{
+   u8 led_livemode_transpose = LED_OFF, led_livemode_beatloop = LED_OFF;
+   u8 led_livemode_1 = LED_OFF, led_livemode_2 = LED_OFF, led_livemode_3 = LED_OFF;
+   u8 led_livemode_4 = LED_OFF, led_livemode_5 = LED_OFF, led_livemode_6 = LED_OFF;
+
+   // --- Live section (upper right) ---
+   s8 liveValue;
+   // Live mode LEDs
+   if (liveMode_ == LIVEMODE_TRANSPOSE)
+   {
+      led_livemode_transpose = 1;
+
+      liveValue = liveTransposeRequested_;
+
+      // flash-indicate live transpose target LEDs (only during synced/delayed transposition switch)
+      if (liveMode_ == LIVEMODE_TRANSPOSE && liveTransposeRequested_ != liveTranspose_)
+      {
+         if (tick_ % 16 >= 8)
+            liveValue = liveTranspose_;
+      }
+   }
+   else
+   {
+      // LIVEMODE_BEATLOOP
+      led_livemode_beatloop = 1;
+      liveValue = liveBeatLoop_;
+   }
+
+   switch(liveValue)
+   {
+      case 7:
+         led_livemode_1 = 1; led_livemode_2 = 1; led_livemode_3 = 1;
+         break;
+
+      case 6:
+         led_livemode_1 = 1; led_livemode_2 = 1; led_livemode_3 = 0;
+         break;
+
+      case 5:
+         led_livemode_1 = 1; led_livemode_2 = 0; led_livemode_3 = 1;
+         break;
+
+      case 4:
+         led_livemode_1 = 1; led_livemode_2 = 0; led_livemode_3 = 0;
+         break;
+
+      case 3:
+         led_livemode_1 = 0; led_livemode_2 = 1; led_livemode_3 = 1;
+         break;
+
+      case 2:
+         led_livemode_1 = 0; led_livemode_2 = 1; led_livemode_3 = 0;
+         break;
+
+      case 1:
+         led_livemode_1 = 0; led_livemode_2 = 0; led_livemode_3 = 1;
+         break;
+
+      case -1:
+         led_livemode_4 = 1; led_livemode_5 = 0; led_livemode_6 = 0;
+         break;
+
+      case -2:
+         led_livemode_4 = 0; led_livemode_5 = 1; led_livemode_6 = 0;
+         break;
+
+      case -3:
+         led_livemode_4 = 1; led_livemode_5 = 1; led_livemode_6 = 0;
+         break;
+
+      case -4:
+         led_livemode_4 = 0; led_livemode_5 = 0; led_livemode_6 = 1;
+         break;
+
+      case -5:
+         led_livemode_4 = 1; led_livemode_5 = 0; led_livemode_6 = 1;
+         break;
+
+      case -6:
+         led_livemode_4 = 0; led_livemode_5 = 1; led_livemode_6 = 1;
+         break;
+
+      case -7:
+         led_livemode_4 = 1; led_livemode_5 = 1; led_livemode_6 = 1;
+         break;
+
+      default: /* case 0, all off (by initializer) */
+         break;
+   }
+
+   MUTEX_DIGITALOUT_TAKE;
+
+   MIOS32_DOUT_PinSet(HW_LED_SCENE_SWITCH_ALL, 1);
+
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_BEATLOOP, led_livemode_beatloop);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_1, led_livemode_1);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_2, led_livemode_2);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_3, led_livemode_3);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_4, led_livemode_4);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_5, led_livemode_5);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_6, led_livemode_6);
+   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_TRANSPOSE, led_livemode_transpose);
+
+   MUTEX_DIGITALOUT_GIVE;
+
+}
+// -------------------------------------------------------------------------------------------------
+
 
 
 // -------------------------------------------------------------------------------------------------
@@ -408,7 +631,7 @@ void updateLEDs()
  */
 void editLen()
 {
-   command_ = command_ == COMMAND_CLIPLEN ? COMMAND_NONE : COMMAND_CLIPLEN;
+   command_ = command_ == COMMAND_CLIP_LEN ? COMMAND_NONE : COMMAND_CLIP_LEN;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -419,7 +642,7 @@ void editLen()
  */
 void clipQuantize()
 {
-   command_ = command_ == COMMAND_QUANTIZE ? COMMAND_NONE : COMMAND_QUANTIZE;
+   command_ = command_ == COMMAND_LIVEFX_QUANTIZE ? COMMAND_NONE : COMMAND_LIVEFX_QUANTIZE;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -430,7 +653,7 @@ void clipQuantize()
  */
 void clipTranspose()
 {
-   command_ = command_ == COMMAND_TRANSPOSE ? COMMAND_NONE : COMMAND_TRANSPOSE;
+   command_ = command_ == COMMAND_CLIP_TRANSPOSE ? COMMAND_NONE : COMMAND_CLIP_TRANSPOSE;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -441,7 +664,7 @@ void clipTranspose()
  */
 void clipScroll()
 {
-   command_ = command_ == COMMAND_SCROLL ? COMMAND_NONE : COMMAND_SCROLL;
+   command_ = command_ == COMMAND_CLIP_SCROLL ? COMMAND_NONE : COMMAND_CLIP_SCROLL;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -452,7 +675,7 @@ void clipScroll()
  */
 void clipZoom()
 {
-   command_ = command_ == COMMAND_STRETCH ? COMMAND_NONE : COMMAND_STRETCH;
+   command_ = command_ == COMMAND_CLIP_STRETCH ? COMMAND_NONE : COMMAND_CLIP_STRETCH;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -463,7 +686,7 @@ void clipZoom()
  */
 void clipClear()
 {
-   command_ = command_ == COMMAND_FREEZE ? COMMAND_NONE : COMMAND_FREEZE;
+   command_ = command_ == COMMAND_CLIP_FREEZE ? COMMAND_NONE : COMMAND_CLIP_FREEZE;
 
    clipNotesSize_[activeTrack_][activeScene_] = 0;
 
@@ -482,7 +705,7 @@ void clipClear()
  */
 void notesPosition()
 {
-   command_ = command_ == COMMAND_POSITION ? COMMAND_NONE : COMMAND_POSITION;
+   command_ = command_ == COMMAND_NOTE_POSITION ? COMMAND_NONE : COMMAND_NOTE_POSITION;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -1210,7 +1433,7 @@ void loopaButtonPressed(s32 pin)
       }
 
       if (!SEQ_BPM_IsRunning())
-         performLiveLEDUpdates();
+         updateLiveLEDs();
    }
 }
 // -------------------------------------------------------------------------------------------------
@@ -1366,7 +1589,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
       }
 
       if (!SEQ_BPM_IsRunning())
-         performLiveLEDUpdates();
+         updateLiveLEDs();
    }
 
    // Lower-right "Value" encoder
@@ -1391,7 +1614,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
 
          SEQ_BPM_Set(bpm_);
       }
-      else if (command_ == COMMAND_CLIPLEN)
+      else if (command_ == COMMAND_CLIP_LEN)
       {
          if (incrementer > 0)
             clipSteps_[activeTrack_][activeScene_] *= 2;
@@ -1404,7 +1627,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
          if (clipSteps_[activeTrack_][activeScene_] > 128)
             clipSteps_[activeTrack_][activeScene_] = 128;
       }
-      else if (command_ == COMMAND_QUANTIZE)
+      else if (command_ == COMMAND_LIVEFX_QUANTIZE)
       {
          if (incrementer > 0)
             clipQuantize_[activeTrack_][activeScene_] *= 2;
@@ -1420,7 +1643,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
          if (clipQuantize_[activeTrack_][activeScene_] > 384)
             clipQuantize_[activeTrack_][activeScene_] = 384;
       }
-      else if (command_ == COMMAND_TRANSPOSE)
+      else if (command_ == COMMAND_CLIP_TRANSPOSE)
       {
          if (incrementer > 0)
             clipTranspose_[activeTrack_][activeScene_]++;
@@ -1433,7 +1656,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
          if (clipTranspose_[activeTrack_][activeScene_] > 96)
             clipTranspose_[activeTrack_][activeScene_] = 96;
       }
-      else if (command_ == COMMAND_SCROLL)
+      else if (command_ == COMMAND_CLIP_SCROLL)
       {
          clipScroll_[activeTrack_][activeScene_] += incrementer;
 
@@ -1443,7 +1666,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
          if (clipScroll_[activeTrack_][activeScene_] > 1024)
             clipScroll_[activeTrack_][activeScene_] = 1024;
       }
-      else if (command_ == COMMAND_STRETCH)
+      else if (command_ == COMMAND_CLIP_STRETCH)
       {
          s16 newStretch = clipStretch_[activeTrack_][activeScene_];
          if (incrementer > 0)
@@ -1459,7 +1682,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
 
          clipStretch_[activeTrack_][activeScene_] = newStretch;
       }
-      else if (command_ == COMMAND_POSITION)
+      else if (command_ == COMMAND_NOTE_POSITION)
       {
          u16 activeNote = clipActiveNote_[activeTrack_][activeScene_];
 
@@ -1683,7 +1906,7 @@ s32 seqPlayStopButton(void)
       SEQ_BPM_Start();
 
       MUTEX_DIGITALOUT_TAKE;
-      updateLED(LED_RUNSTOP, LED_GREEN);
+      updateSwitchLED(LED_RUNSTOP, LED_GREEN);
       MUTEX_DIGITALOUT_GIVE;
 
       screenFormattedFlashMessage("Play");
@@ -1720,46 +1943,6 @@ s32 seqArmButton(void)
    }
 
    return 0; // no error
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
- * Fast forward is put on depressed LL encoder as "scrub"
- *
- */
-s32 seqFFwdButton(void)
-{
-   u32 tick = SEQ_BPM_TickGet();
-   u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
-   u32 ticks_per_measure = ticks_per_step * 16;
-
-   int measure = tick / ticks_per_measure;
-   int song_pos = 16 * (measure + 1);
-   if (song_pos > 65535)
-      song_pos = 65535;
-
-   return seqSongPos(song_pos);
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
- * Rewind is put on depressed LL encoder as "scrub"
- *
- */
-s32 seqFRewButton(void)
-{
-   u32 tick = SEQ_BPM_TickGet();
-   u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
-   u32 ticks_per_measure = ticks_per_step * 16;
-
-   int measure = tick / ticks_per_measure;
-   int song_pos = 16 * (measure - 1);
-   if (song_pos < 0)
-      song_pos = 0;
-
-   return seqSongPos(song_pos);
 }
 // -------------------------------------------------------------------------------------------------
 

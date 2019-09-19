@@ -31,7 +31,7 @@ static s8 liveBeatLoopJumpStep2_[15] =  {  16,   8,   4,   0,   0,   0,   0,   0
 
 u32 millisecondsSinceStartup_ = 0;    // global "uptime" timer
 u16 inactivitySeconds_ = 0;           // screensaver timer
-u32 tick_ = 0;                        // global seq tick
+u32 tick_ = 0xFFFFFFFF;               // global seq tick (initialize to non-zero value to avoid skipping first tick)
 u16 sessionNumber_ = 0;               // currently active session number (directory e.g. /SESSIONS/0001)
 u8 sessionExistsOnDisk_ = 0;          // is the currently selected session number already saved on disk/sd card
 enum LoopAPage page_ = PAGE_MUTE;     // currently active page/view
@@ -45,7 +45,6 @@ u8 oledBeatFlashState_ = 0;           // 0: don't flash, 1: flash slightly (norm
 
 s16 notePtrsOn_[128];                 // during recording - pointers to notes that are currently "on" (and waiting for an "off", therefore length yet undetermined) (-1: note not depressed)
 
-u8 ffwdSilentMode_;                   // for FFWD function
 char filename_[20];                   // global, for filename operations
 
 // --- Track data (saved to session on disk) ---
@@ -74,6 +73,11 @@ s8 trackMidiInPort_[TRACKS];          // If set to 0: enable recording from all 
 u8 trackMidiInChannel_[TRACKS];       // If set to 16: enable recording from all midi channels (default)
 u8 trackMidiForward_[TRACKS];         // If set to 1: forward midi notes to out port/channel (live play)
 u8 trackLiveTranspose_[TRACKS];       // If set to >0: selection of live transposer table (live transposing enabled for this track)
+s8 clipSwing_[TRACKS][SCENES];        // If set to >0: clip swing enabled (affects only notes on quantized steps)
+s8 clipProbability_[TRACKS][SCENES];  // If set to >0: percentage of note drops occuring
+u8 clipFTSMode_[TRACKS][SCENES];      // If set to >0: FTS enabled, contains FTS scale (major, minor ...)
+u8 clipFTSNote_[TRACKS][SCENES];      // FTS base note (C, C#, ...)
+
 
 // --- Secondary data (not on disk) ---
 u8 trackMuteToggleRequested_[TRACKS]; // 1: perform a mute/unmute toggle of the clip at the next measure (synced mute/unmute)
@@ -133,7 +137,7 @@ u32 quantize(u32 tick, u32 quantizeMeasure, u32 clipLengthInTicks)
    u32 tickBase = tick - (tick % quantizeMeasure); // default: snap to previous measure
 
    // note: i did not like this improvement, as notes were cut off as they were moved newly ahead of the current play position and
-   // thus were retriggered while still being held on the keyboard, but i fixed it, now not playing notes with length 0 (still being held) ;-)
+   // thus were retriggered while still being held on the keyboard, but fixed it, now we are not playing notes with length 0 (still being held) ;-)
    if (mod > (quantizeMeasure >> 1))
       tickBase = (tick - (tick % quantizeMeasure) + quantizeMeasure) % clipLengthInTicks; // snap to next measure as we are closer to this one
 
@@ -148,7 +152,6 @@ u32 quantize(u32 tick, u32 quantizeMeasure, u32 clipLengthInTicks)
  */
 s32 quantizeTransform(u8 clip, u16 noteNumber)
 {
-
    // Idea: scroll first, and modulo-map to trackstart/end boundaries
    //       scale afterwards
    //       apply track len afterwards
@@ -296,11 +299,14 @@ void performLiveTranspositionChanges()
 
 
 /**
- * Synchronized beat loop song position "jumps"
+ * Synchronized beat loop, song position "jumps"
+ * @return u32 newTick, which is != 0, if a jump occured/the tick was changed
  *
  */
-void performBeatLoop()
+u32 performBeatLoop()
 {
+   u32 newTick = 0;
+
    if (liveBeatLoop_ != 0)
    {
       u8 idx = liveBeatLoop_ + 7;
@@ -310,134 +316,23 @@ void performBeatLoop()
       if (at1 && tickToStep(tick_) % at1 == 0)
       {
          // Perform "Jump 1"
-         SEQ_BPM_TickSet(SEQ_BPM_TickGet() + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep1_[idx]);
+         newTick = SEQ_BPM_TickGet() + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep1_[idx];
+         SEQ_BPM_TickSet(newTick);
       }
       else if (at2 && tickToStep(tick_) % at2 == 0)
       {
          // Perform "Jump 2"
-         SEQ_BPM_TickSet(SEQ_BPM_TickGet() + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep2_[idx]);
+         newTick = SEQ_BPM_TickGet() + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep2_[idx];
+         SEQ_BPM_TickSet(newTick);
       }
    }
+
+   return newTick;
 }
 // -------------------------------------------------------------------------------------------------
 
-
 /**
- * Perform live LED updates (upper right encoder section)
- *
- */
- void performLiveLEDUpdates()
-{
-   u8 led_livemode_transpose = LED_OFF, led_livemode_beatloop = LED_OFF;
-   u8 led_livemode_1 = LED_OFF, led_livemode_2 = LED_OFF, led_livemode_3 = LED_OFF;
-   u8 led_livemode_4 = LED_OFF, led_livemode_5 = LED_OFF, led_livemode_6 = LED_OFF;
-
-   // --- Live section (upper right) ---
-   s8 liveValue;
-   // Live mode LEDs
-   if (liveMode_ == LIVEMODE_TRANSPOSE)
-   {
-      led_livemode_transpose = 1;
-
-      liveValue = liveTransposeRequested_;
-
-      // flash-indicate live transpose target LEDs (only during synced/delayed transposition switch)
-      if (liveMode_ == LIVEMODE_TRANSPOSE && liveTransposeRequested_ != liveTranspose_)
-      {
-         if (tick_ % 16 >= 8)
-            liveValue = liveTranspose_;
-      }
-   }
-   else
-   {
-      // LIVEMODE_BEATLOOP
-      led_livemode_beatloop = 1;
-      liveValue = liveBeatLoop_;
-   }
-
-   switch(liveValue)
-   {
-      case 7:
-         led_livemode_1 = 1; led_livemode_2 = 1; led_livemode_3 = 1;
-         break;
-
-      case 6:
-         led_livemode_1 = 1; led_livemode_2 = 1; led_livemode_3 = 0;
-         break;
-
-      case 5:
-         led_livemode_1 = 1; led_livemode_2 = 0; led_livemode_3 = 1;
-         break;
-
-      case 4:
-         led_livemode_1 = 1; led_livemode_2 = 0; led_livemode_3 = 0;
-         break;
-
-      case 3:
-         led_livemode_1 = 0; led_livemode_2 = 1; led_livemode_3 = 1;
-         break;
-
-      case 2:
-         led_livemode_1 = 0; led_livemode_2 = 1; led_livemode_3 = 0;
-         break;
-
-      case 1:
-         led_livemode_1 = 0; led_livemode_2 = 0; led_livemode_3 = 1;
-         break;
-
-      case -1:
-         led_livemode_4 = 1; led_livemode_5 = 0; led_livemode_6 = 0;
-         break;
-
-      case -2:
-         led_livemode_4 = 0; led_livemode_5 = 1; led_livemode_6 = 0;
-         break;
-
-      case -3:
-         led_livemode_4 = 1; led_livemode_5 = 1; led_livemode_6 = 0;
-         break;
-
-      case -4:
-         led_livemode_4 = 0; led_livemode_5 = 0; led_livemode_6 = 1;
-         break;
-
-      case -5:
-         led_livemode_4 = 1; led_livemode_5 = 0; led_livemode_6 = 1;
-         break;
-
-      case -6:
-         led_livemode_4 = 0; led_livemode_5 = 1; led_livemode_6 = 1;
-         break;
-
-      case -7:
-         led_livemode_4 = 1; led_livemode_5 = 1; led_livemode_6 = 1;
-         break;
-
-      default: /* case 0, all off (by initializer) */
-         break;
-   }
-
-   MUTEX_DIGITALOUT_TAKE;
-
-   MIOS32_DOUT_PinSet(HW_LED_SCENE_SWITCH_ALL, 1);
-
-   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_BEATLOOP, led_livemode_beatloop);
-   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_1, led_livemode_1);
-   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_2, led_livemode_2);
-   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_3, led_livemode_3);
-   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_4, led_livemode_4);
-   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_5, led_livemode_5);
-   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_6, led_livemode_6);
-   MIOS32_DOUT_PinSet(HW_LED_LIVEMODE_TRANSPOSE, led_livemode_transpose);
-
-   MUTEX_DIGITALOUT_GIVE;
-
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
- * convert sessionNumber to global filename_
+ * Convert sessionNumber to global filename_
  *
  */
 void sessionNumberToFilename(u16 sessionNumber)
@@ -493,7 +388,6 @@ void saveSession(u16 sessionNumber)
    MUTEX_SDCARD_GIVE;
 }
 // -------------------------------------------------------------------------------------------------
-
 
 
 /**
@@ -598,7 +492,7 @@ s32 loopaSeqHandler(void)
    u32 bpm_tick;
    if (SEQ_BPM_ChkReqClk(&bpm_tick) > 0)
    {
-      seqUpdateBeatLEDs(bpm_tick);
+      updateBeatLEDsAndClipPositions(bpm_tick);
 
       // set initial BPM
       if (bpm_tick == 0)
@@ -657,9 +551,6 @@ s32 seqReset(u8 play_off_events)
    if (play_off_events)
       seqPlayOffEvents();
 
-   // release  FFWD mode
-   ffwdSilentMode_ = 0;
-
    // set pulses per quarter note (internal resolution, 96 is standard)
    SEQ_BPM_PPQN_Set(96);
 
@@ -698,109 +589,41 @@ s32 seqSongPos(u16 new_song_pos)
 
 
 /**
- * Update BEAT LEDs / Clip positions
- *
- */
-void seqUpdateBeatLEDs(u32 bpm_tick)
-{
-   static u8 lastLEDstate = 255;
-
-   u16 ticksPerStep = SEQ_BPM_PPQN_Get() / 4;
-   u8 beatled = (bpm_tick / ticksPerStep) % 4;
-
-   if (beatled != lastLEDstate)
-   {
-      lastLEDstate = beatled;
-
-      if (!screenIsInMenu() && !screenIsInShift())
-      {
-         MUTEX_DIGITALOUT_TAKE;
-         switch (beatled)
-         {
-            case 0:
-               oledBeatFlashState_ = (bpm_tick / (ticksPerStep * 4) % 4 == 0) ? 2 : 1; // flash background (strong/normal)
-
-               updateLED(LED_RUNSTOP, LED_GREEN);
-               if (gcBeatLEDsEnabled_)
-               {
-                  updateLED(LED_MENU, LED_GREEN);
-                  updateLED(LED_COPY, LED_OFF);
-                  updateLED(LED_PASTE, LED_OFF);
-                  updateLED(LED_DELETE, LED_OFF);
-               }
-               break;
-            case 1:
-               if (gcBeatLEDsEnabled_)
-               {
-                  updateLED(LED_MENU, LED_OFF);
-                  updateLED(LED_COPY, LED_BLUE | LED_GREEN);
-                  updateLED(LED_PASTE, LED_OFF);
-                  updateLED(LED_DELETE, LED_OFF);
-               }
-               else
-                  updateLED(LED_RUNSTOP, LED_OFF);
-               break;
-            case 2:
-               if (gcBeatLEDsEnabled_)
-               {
-                  updateLED(LED_MENU, 0);
-                  updateLED(LED_COPY, 0);
-                  updateLED(LED_PASTE, LED_BLUE | LED_GREEN);
-                  updateLED(LED_DELETE, 0);
-               }
-               else
-                  updateLED(LED_RUNSTOP, LED_OFF);
-               break;
-            case 3:
-               if (gcBeatLEDsEnabled_)
-               {
-                  updateLED(LED_MENU, 0);
-                  updateLED(LED_COPY, 0);
-                  updateLED(LED_PASTE, 0);
-                  updateLED(LED_DELETE, LED_BLUE | LED_GREEN);
-               }
-               else
-                  updateLED(LED_RUNSTOP, LED_OFF);
-               break;
-         }
-         MUTEX_DIGITALOUT_GIVE;
-      }
-
-      // New step, Update clip positions
-      u8 i;
-      for (i = 0; i < TRACKS; i++)
-      {
-         screenSetClipPosition(i, ((u32) (bpm_tick / ticksPerStep) % clipSteps_[i][activeScene_]));
-      }
-
-      // Set global song step (non-wrapping), e.g. for recording clips
-      screenSetSongStep(bpm_tick / ticksPerStep);
-   }
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
  * Perform a single bpm tick
  *
  */
-s32 loopaSeqTick(u32 bpm_tick)
+s32 loopaSeqTick(u32 bpmTick)
 {
-   if (bpm_tick == tick_)
+   if (bpmTick == tick_)
    {
-      DEBUG_MSG("Tick %d already encountered", bpm_tick);
+      DEBUG_MSG("Tick %d already encountered", bpmTick);
    }
    else
    {
-      tick_ = bpm_tick;
+      tick_ = bpmTick;
 
-      u16 step = tickToStep(bpm_tick);
+      u16 step = tickToStep(bpmTick);
 
       // send MIDI clock depending on ppqn
-      if ((bpm_tick % (SEQ_BPM_PPQN_Get() / 24)) == 0)
+      if ((bpmTick % (SEQ_BPM_PPQN_Get() / 24)) == 0)
       {
-         // DEBUG_MSG("Tick %d, SEQ BPM PPQN/24 %d", bpm_tick, SEQ_BPM_PPQN_Get()/24);
-         MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
+         // DEBUG_MSG("Tick %d, SEQ BPM PPQN/24 %d", bpmTick, SEQ_BPM_PPQN_Get()/24);
+         MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpmTick);
+      }
+
+      // perform beat looping, synced track mutes/unmutes and synced transposition changes
+      if ((bpmTick % (SEQ_BPM_PPQN_Get() / 4)) == 0)
+      {
+         u32 newTick = performBeatLoop();
+         if (newTick != 0)
+         {
+            bpmTick = newTick;
+            tick_ = newTick;
+         }
+
+         performSyncedMutesAndUnmutes();
+         performSyncedSceneChanges();
+         performLiveTranspositionChanges();
       }
 
       u8 track;
@@ -811,7 +634,7 @@ s32 loopaSeqTick(u32 bpm_tick)
 
          if (!trackMute_[track])
          {
-            u32 clipNoteTime = boundTickToClipSteps(bpm_tick, track);
+            u32 clipNoteTime = boundTickToClipSteps(bpmTick, track);
             u16 i;
 
             for (i = 0; i < clipNotesSize_[track][activeScene_]; i++)
@@ -839,9 +662,8 @@ s32 loopaSeqTick(u32 bpm_tick)
 
                      package.type = NoteOff;
                      package.event = NoteOff;
-                     package.note = note;
                      package.velocity = 0;
-                     // seqPlayEvent(track, package, bpm_tick + clipNotes_[track][activeScene_][i].length); // always play off event (schedule later)
+                     // seqPlayEvent(track, package, bpmTick + clipNotes_[track][activeScene_][i].length); // always play off event (schedule later)
                      LoopA_MIDI_OUT_Send(getMIOSPortNumberFromLoopAPortNumber(trackMidiOutPort_[track]), package, LOOPA_MIDI_OUT_OffEvent, clipNotes_[track][activeScene_][i].length + 1, 1);
                   }
                }
@@ -851,7 +673,7 @@ s32 loopaSeqTick(u32 bpm_tick)
 
       // Send metronome tick on each beat, if enabled
 
-      if (metronomeEnabled_ && (bpm_tick % 96) == 0)
+      if (metronomeEnabled_ && (bpmTick % 96) == 0)
       {
          mios32_midi_package_t p;
 
@@ -873,19 +695,16 @@ s32 loopaSeqTick(u32 bpm_tick)
          /// screenFormattedFlashMessage("metr note %d on %x#%d", p.note, getMIOSPortNumberFromLoopAPortNumber(gcMetronomePort_), p.chn);
 
          if (p.note)
-            LoopA_MIDI_OUT_Send(METRONOME_PSEUDO_PORT, p, LOOPA_MIDI_OUT_OnOffEvent, bpm_tick, len);
+         {
+            hookMIDISendPackage(METRONOME_PSEUDO_PORT, p); // play NOW
+            p.type = NoteOff;
+            p.event = NoteOff;
+            p.velocity = 0;
+            LoopA_MIDI_OUT_Send(METRONOME_PSEUDO_PORT, p, LOOPA_MIDI_OUT_OffEvent, len, 1);
+         }
       }
 
-      // perform synced track mutes/unmutes
-      if ((bpm_tick % (SEQ_BPM_PPQN_Get() / 4)) == 0)
-      {
-         performBeatLoop();
-         performSyncedMutesAndUnmutes();
-         performSyncedSceneChanges();
-         performLiveTranspositionChanges();
-      }
-
-      performLiveLEDUpdates();
+      updateLiveLEDs();
 
       LoopA_MIDI_OUT_Tick();
    }
@@ -930,14 +749,14 @@ void handleStop()
    screenFormattedFlashMessage("Stopped");
 
    MUTEX_DIGITALOUT_TAKE;
-   updateLED(LED_RUNSTOP, LED_OFF);
-   updateLED(LED_ARM, LED_OFF);
+   updateSwitchLED(LED_RUNSTOP, LED_OFF);
+   updateSwitchLED(LED_ARM, LED_OFF);
    if (gcBeatLEDsEnabled_)
    {
-      updateLED(LED_MENU, LED_OFF);
-      updateLED(LED_COPY, LED_OFF);
-      updateLED(LED_PASTE, LED_OFF);
-      updateLED(LED_DELETE, LED_OFF);
+      updateSwitchLED(LED_MENU, LED_OFF);
+      updateSwitchLED(LED_COPY, LED_OFF);
+      updateSwitchLED(LED_PASTE, LED_OFF);
+      updateSwitchLED(LED_DELETE, LED_OFF);
    }
    MUTEX_DIGITALOUT_GIVE;
 

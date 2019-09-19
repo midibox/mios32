@@ -75,6 +75,10 @@ extern s8 trackMidiInPort_[TRACKS];          // If set to 0: enable recording fr
 extern u8 trackMidiInChannel_[TRACKS];       // If set to 16: enable recording from all midi channels (default)
 extern u8 trackMidiForward_[TRACKS];         // If set to 1: forward midi notes to out port/channel (live play)
 extern u8 trackLiveTranspose_[TRACKS];       // If set to >0: selection of live transposer table (live transposing enabled for this track)
+extern s8 clipSwing_[TRACKS][SCENES];        // If set to >0: clip swing enabled (affects only notes on quantized steps)
+extern s8 clipProbability_[TRACKS][SCENES];  // If set to >0: percentage of note drops occuring
+extern u8 clipFTSMode_[TRACKS][SCENES];      // If set to >0: FTS enabled, contains FTS scale (major, minor ...)
+extern u8 clipFTSNote_[TRACKS][SCENES];      // FTS base note (C, C#, ...)
 
 
 // --- Secondary data (not on disk) ---
@@ -106,7 +110,7 @@ u32 getClipLengthInTicks(u8 clip);
 void toggleMute(u8 clipNumber);
 
 // Perform live LED updates (upper right encoder section)
-void performLiveLEDUpdates();
+void updateLiveLEDs();
 
 // convert sessionNumber to global filename_
 void sessionNumberToFilename(u16 sessionNumber);
@@ -128,8 +132,8 @@ s32 LoopA_MIDI_OUT_Handler(void);
 s32  seqPlayOffEvents(void);
 s32  seqReset(u8 play_off_events);
 s32  seqSongPos(u16 new_song_pos);
-void seqUpdateBeatLEDs(u32 bpm_tick);
-s32  loopaSeqTick(u32 bpm_tick);
+void updateBeatLEDsAndClipPositions(u32 bpm_tick);
+s32  loopaSeqTick(u32 bpmTick);
 s32  hookMIDISendPackage(s8 loopaTrack, mios32_midi_package_t package);
 s32  seqPlayEvent(s8 loopaTrack, mios32_midi_package_t midi_package, u32 tick);
 s32  seqIgnoreMetaEvent(s8 loopaTrack, u8 meta, u32 len, u8 *buffer, u32 tick);
