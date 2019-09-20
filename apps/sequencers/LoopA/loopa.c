@@ -625,7 +625,7 @@ s32 loopaSeqTick(u32 bpmTick)
       if ((bpmTick % (SEQ_BPM_PPQN_Get() / 24)) == 0)
       {
          // DEBUG_MSG("Tick %d, SEQ BPM PPQN/24 %d", bpmTick, SEQ_BPM_PPQN_Get()/24);
-         MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpmTick);
+         MIDI_ROUTER_SendMIDIClockEvent(0xf8, 0);
       }
 
       // perform beat looping, synced track mutes/unmutes and synced transposition changes
