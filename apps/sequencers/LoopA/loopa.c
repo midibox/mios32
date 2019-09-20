@@ -32,6 +32,7 @@ static s8 liveBeatLoopJumpStep2_[15] =  {  16,   8,   4,   0,   0,   0,   0,   0
 u32 millisecondsSinceStartup_ = 0;    // global "uptime" timer
 u16 inactivitySeconds_ = 0;           // screensaver timer
 u32 tick_ = 0xFFFFFFFF;               // global seq tick (initialize to non-zero value to avoid skipping first tick)
+u32 ticked_ = 0;                      // number of ticks processed since sequencer started
 u16 sessionNumber_ = 0;               // currently active session number (directory e.g. /SESSIONS/0001)
 u8 sessionExistsOnDisk_ = 0;          // is the currently selected session number already saved on disk/sd card
 enum LoopAPage page_ = PAGE_MUTE;     // currently active page/view
@@ -230,7 +231,7 @@ void performSyncedMutesAndUnmutes()
          }
       }
    }
-};
+}
 // -------------------------------------------------------------------------------------------------
 
 
@@ -303,31 +304,46 @@ void performLiveTranspositionChanges()
  * @return u32 newTick, which is != 0, if a jump occured/the tick was changed
  *
  */
-u32 performBeatLoop()
+void performBeatLoop(u32 currentTick)
 {
-   u32 newTick = 0;
+   s32 newTick = 0;
 
    if (liveBeatLoop_ != 0)
    {
       u8 idx = liveBeatLoop_ + 7;
       s8 at1 = liveBeatLoopAtStep1_[idx];
       s8 at2 = liveBeatLoopAtStep2_[idx];
+      u16 currentStep = tickToStep(currentTick);
 
-      if (at1 && tickToStep(tick_) % at1 == 0)
+      if (at1 && currentStep % at1 == 0)
       {
+         /// DEBUG_MSG("J1 from %u", currentTick);
+
          // Perform "Jump 1"
-         newTick = SEQ_BPM_TickGet() + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep1_[idx];
-         SEQ_BPM_TickSet(newTick);
+         newTick = currentTick + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep1_[idx];
+         if (newTick >= 0)
+         {
+            // Avoid negative tick_ values (backward jumps)
+            tick_ = newTick;
+            SEQ_BPM_TickSet(newTick);
+            /// DEBUG_MSG("J1 to %u", newTick);
+         }
       }
-      else if (at2 && tickToStep(tick_) % at2 == 0)
+      else if (at2 && currentStep % at2 == 0)
       {
+         /// DEBUG_MSG("J2 from %u", SEQ_BPM_TickGet());
+
          // Perform "Jump 2"
-         newTick = SEQ_BPM_TickGet() + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep2_[idx];
-         SEQ_BPM_TickSet(newTick);
+         newTick = currentTick + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep2_[idx];
+         if (newTick >= 0)
+         {
+            // Avoid negative tick_ values (backward jumps)
+            tick_ = newTick;
+            SEQ_BPM_TickSet(newTick);
+            /// DEBUG_MSG("J2 to %u", newTick);
+         }
       }
    }
-
-   return newTick;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -470,11 +486,10 @@ s32 loopaSeqHandler(void)
       MIDI_ROUTER_SendMIDIClockEvent(0xfc, 0);
    }
 
-   /* Hawkeye new - no continuation if (SEQ_BPM_ChkReqCont())
+   if (SEQ_BPM_ChkReqCont())
    {
       MIDI_ROUTER_SendMIDIClockEvent(0xfb, 0);
    }
-   */
 
    if (SEQ_BPM_ChkReqStart())
    {
@@ -556,6 +571,7 @@ s32 seqReset(u8 play_off_events)
 
    // reset BPM tick
    SEQ_BPM_TickSet(0);
+   ticked_ = 0;
 
    return 0; // no error
 }
@@ -594,15 +610,16 @@ s32 seqSongPos(u16 new_song_pos)
  */
 s32 loopaSeqTick(u32 bpmTick)
 {
+   /// DEBUG_MSG("T %d", bpmTick);
+
    if (bpmTick == tick_)
    {
-      DEBUG_MSG("Tick %d already encountered", bpmTick);
+      /// DEBUG_MSG("Tick %u already encountered", bpmTick);
    }
    else
    {
       tick_ = bpmTick;
-
-      u16 step = tickToStep(bpmTick);
+      ticked_++;
 
       // send MIDI clock depending on ppqn
       if ((bpmTick % (SEQ_BPM_PPQN_Get() / 24)) == 0)
@@ -614,11 +631,12 @@ s32 loopaSeqTick(u32 bpmTick)
       // perform beat looping, synced track mutes/unmutes and synced transposition changes
       if ((bpmTick % (SEQ_BPM_PPQN_Get() / 4)) == 0)
       {
-         u32 newTick = performBeatLoop();
-         if (newTick != 0)
+         if (ticked_ > 48)
          {
-            bpmTick = newTick;
-            tick_ = newTick;
+            // sequencer may be super slightly unsteady when jumping around right after startup
+            // -> enable beatloop feature just after a few ticks...
+            performBeatLoop(bpmTick);
+            bpmTick = tick_;
          }
 
          performSyncedMutesAndUnmutes();
@@ -627,7 +645,6 @@ s32 loopaSeqTick(u32 bpmTick)
       }
 
       u8 track;
-
       for (track = 0; track < TRACKS; track++)
       {
          s8 liveTransposeSemi = trackLiveTranspose_[track] ? liveTransposeSemitones_[liveTranspose_ + 7] : 0;
@@ -672,7 +689,6 @@ s32 loopaSeqTick(u32 bpmTick)
       }
 
       // Send metronome tick on each beat, if enabled
-
       if (metronomeEnabled_ && (bpmTick % 96) == 0)
       {
          mios32_midi_package_t p;
@@ -686,6 +702,7 @@ s32 loopaSeqTick(u32 bpmTick)
          p.velocity = 96;
          u16 len = 5;
 
+         u16 step = tickToStep(bpmTick);
          if (step % stepsPerMeasure_ == 0)
          {
             p.note = gcMetronomeNoteM_;
@@ -705,7 +722,6 @@ s32 loopaSeqTick(u32 bpmTick)
       }
 
       updateLiveLEDs();
-
       LoopA_MIDI_OUT_Tick();
    }
 
@@ -777,14 +793,13 @@ void handleStop()
  */
 s32 seqInit()
 {
-   // reset sequencer
-   seqReset(0);
-
    // init BPM generator
    SEQ_BPM_Init(0);
-   SEQ_BPM_ModeSet(SEQ_BPM_MODE_Auto);
-   SEQ_BPM_Set(120.0);
-   bpm_ = 120;
+   bpm_ = 120.0;
+   SEQ_BPM_Set(bpm_);
+
+   // reset sequencer
+   seqReset(0);
 
    // scheduler should send packages to private hook
    LoopA_MIDI_OUT_Callback_MIDI_SendPackage_Set(hookMIDISendPackage);
