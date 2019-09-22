@@ -17,7 +17,6 @@
 // --  Local types ---
 
 // --- Tables ---
-
 s8 liveTransposeSemitones_[15] = { -36, -24, -19, -17, -12,  -7,  -5,   0,   5,   7,  12,  17,  19,  24,  36};
 
 // Todo: need to store interpret beatloop at/jump step tables relative to (configurable!) measure length, so
@@ -55,7 +54,7 @@ u8 trackMidiOutChannel_[TRACKS];
 
 // --- Clip data (saved to session on disk) ---
 u16 clipSteps_[TRACKS][SCENES];       // number of steps for each clip
-u32 clipQuantize_[TRACKS][SCENES];    // brings all clip notes close to the specified timing, e.g. quantize = 4 - close to 4th notes, 16th = quantize to step, ...
+u32 clipFxQuantize_[TRACKS][SCENES];    // brings all clip notes close to the specified timing, e.g. quantize = 4 - close to 4th notes, 16th = quantize to step, ...
 s8 clipTranspose_[TRACKS][SCENES];
 s16 clipScroll_[TRACKS][SCENES];
 u8 clipStretch_[TRACKS][SCENES];      // 1: compress to 1/16th, 2: compress to 1/8th ... 16: no stretch, 32: expand 2x, 64: expand 4x, 128: expand 8x
@@ -74,10 +73,10 @@ s8 trackMidiInPort_[TRACKS];          // If set to 0: enable recording from all 
 u8 trackMidiInChannel_[TRACKS];       // If set to 16: enable recording from all midi channels (default)
 u8 trackMidiForward_[TRACKS];         // If set to 1: forward midi notes to out port/channel (live play)
 u8 trackLiveTranspose_[TRACKS];       // If set to >0: selection of live transposer table (live transposing enabled for this track)
-s8 clipSwing_[TRACKS][SCENES];        // If set to >0: clip swing enabled (affects only notes on quantized steps)
-s8 clipProbability_[TRACKS][SCENES];  // If set to >0: percentage of note drops occuring
-u8 clipFTSMode_[TRACKS][SCENES];      // If set to >0: FTS enabled, contains FTS scale (major, minor ...)
-u8 clipFTSNote_[TRACKS][SCENES];      // FTS base note (C, C#, ...)
+s8 clipFxSwing_[TRACKS][SCENES];        // If set to >0: clip swing enabled (affects only notes on quantized steps)
+s8 clipFxProbability_[TRACKS][SCENES];  // If set to >0: percentage of note drops occuring
+u8 clipFxFTSMode_[TRACKS][SCENES];      // If set to >0: FTS enabled, contains FTS scale (major, minor ...)
+u8 clipFxFTSNote_[TRACKS][SCENES];      // FTS base note (C, C#, ...)
 
 
 // --- Secondary data (not on disk) ---
@@ -126,29 +125,50 @@ u32 boundTickToClipSteps(u32 tick, u8 clip)
 
 /**
  * Quantize a "tick" time event to a tick quantization measure (e.g. 384), wrap around
- * ticks going over the clip length (clipLengthInTicks)
+ * ticks going over the clip length (clipLengthInTicks), also apply swing (if != 50%)
  *
  */
-u32 quantize(u32 tick, u32 quantizeMeasure, u32 clipLengthInTicks)
+u32 quantize(u32 tick, u32 quantizeMeasure, s8 swingPercent, u32 clipLengthInTicks)
 {
    if (quantizeMeasure < 3)
       return tick; // no quantization
 
    u32 mod = tick % quantizeMeasure;
-   u32 tickBase = tick - (tick % quantizeMeasure); // default: snap to previous measure
+   u32 tickQuantized;
 
-   // note: i did not like this improvement, as notes were cut off as they were moved newly ahead of the current play position and
-   // thus were retriggered while still being held on the keyboard, but fixed it, now we are not playing notes with length 0 (still being held) ;-)
-   if (mod > (quantizeMeasure >> 1))
-      tickBase = (tick - (tick % quantizeMeasure) + quantizeMeasure) % clipLengthInTicks; // snap to next measure as we are closer to this one
+   if (mod <= (quantizeMeasure >> 1U))
+   {
+      // default: "snap" to previous measure
+      tickQuantized = tick - mod;
+   }
+   else
+   {
+      // snap to next measure as we are closer to this one, wrap around clip length if necessary
+      tickQuantized = (tick - mod + quantizeMeasure) % clipLengthInTicks;
 
-   return tickBase;
+      // note: at first this improvement was bad, as notes were cut off as they were moved newly ahead of the current play position and
+      // thus were retriggered while still being held on the keyboard, but fixed it, now we are not playing notes with length 0 (still being recorded/held) ;-)
+   }
+
+   // Swing normaly works in a way, that every second 16th note (i.e. every second step) is moved towards the
+   // next (swing > 50) or previous (swing < 50) step. Here, we enable swing on arbitrary quantization values
+   // i.e. 16ths quantiziation behaves like standard swing, but all other quantization targets work as well
+   if (swingPercent != 50)
+   {
+      // Apply swing, if the note is at the correct point in time (e.g. every second 16th note)
+      if ((tickQuantized % quantizeMeasure) == 0 && (tickQuantized / quantizeMeasure) % 2 == 1)
+      {
+         tickQuantized = ((s32)tickQuantized + ((swingPercent - 50) * (s32)quantizeMeasure) / 50) % clipLengthInTicks;
+      }
+   }
+
+   return tickQuantized;
 }
 // -------------------------------------------------------------------------------------------------
 
 
 /**
- * Transform (stretch and scroll) and then quantize a note in a clip
+ * Transform (stretch, scroll, probabilities/random) and then quantize/apply swing to a note in a clip
  *
  */
 s32 quantizeTransform(u8 clip, u16 noteNumber)
@@ -159,7 +179,7 @@ s32 quantizeTransform(u8 clip, u16 noteNumber)
    //       drop notes with ticks < 0 and ticks > tracklen
 
    s32 tick = clipNotes_[clip][activeScene_][noteNumber].tick;
-   s32 quantizeMeasure = clipQuantize_[clip][activeScene_];
+   s16 quantizeMeasure = clipFxQuantize_[clip][activeScene_];
    s32 clipLengthInTicks = getClipLengthInTicks(clip);
 
    // stretch
@@ -170,6 +190,15 @@ s32 quantizeTransform(u8 clip, u16 noteNumber)
    if (tick >= clipLengthInTicks)
       return -1;
 
+   // if clip fx probabilities/randomization is on, only consider notes that pass the random test
+   s8 randomMinimum = clipFxProbability_[clip][activeScene_];
+   if (randomMinimum)
+   {
+      srand(((millisecondsSinceStartup_ >> 5) << 8) + noteNumber);  // Newly rerandomize every ~ 32ms
+      if ((rand() % 100) < randomMinimum)
+         return -1;
+   }
+
    // scroll
    tick += clipScroll_[clip][activeScene_] * 24;
 
@@ -178,7 +207,7 @@ s32 quantizeTransform(u8 clip, u16 noteNumber)
 
    tick %= clipLengthInTicks;
 
-   return quantize(tick, quantizeMeasure, clipLengthInTicks);
+   return quantize(tick, quantizeMeasure, clipFxSwing_[clip][activeScene_], clipLengthInTicks);
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -384,7 +413,7 @@ void saveSession(u16 sessionNumber)
       status |= FILE_WriteBuffer((u8*)trackMidiOutChannel_, sizeof(trackMidiOutChannel_));
       
       status |= FILE_WriteBuffer((u8*)clipSteps_, sizeof(clipSteps_));
-      status |= FILE_WriteBuffer((u8*)clipQuantize_, sizeof(clipQuantize_));
+      status |= FILE_WriteBuffer((u8*)clipFxQuantize_, sizeof(clipFxQuantize_));
       status |= FILE_WriteBuffer((u8*)clipTranspose_, sizeof(clipTranspose_));
       status |= FILE_WriteBuffer((u8*)clipScroll_, sizeof(clipScroll_));
       status |= FILE_WriteBuffer((u8*)clipStretch_, sizeof(clipStretch_));
@@ -435,7 +464,7 @@ void loadSession(u16 sessionNumber)
       status |= FILE_ReadBuffer((u8*)trackMidiOutChannel_, sizeof(trackMidiOutChannel_));
 
       status |= FILE_ReadBuffer((u8*)clipSteps_, sizeof(clipSteps_));
-      status |= FILE_ReadBuffer((u8*)clipQuantize_, sizeof(clipQuantize_));
+      status |= FILE_ReadBuffer((u8*)clipFxQuantize_, sizeof(clipFxQuantize_));
       status |= FILE_ReadBuffer((u8*)clipTranspose_, sizeof(clipTranspose_));
       status |= FILE_ReadBuffer((u8*)clipScroll_, sizeof(clipScroll_));
       status |= FILE_ReadBuffer((u8*)clipStretch_, sizeof(clipStretch_));
@@ -567,7 +596,7 @@ s32 seqReset(u8 play_off_events)
       seqPlayOffEvents();
 
    // set pulses per quarter note (internal resolution, 96 is standard)
-   SEQ_BPM_PPQN_Set(96);
+   SEQ_BPM_PPQN_Set(TICKS_PER_QUARTERNOTE);
 
    // reset BPM tick
    SEQ_BPM_TickSet(0);
@@ -689,7 +718,7 @@ s32 loopaSeqTick(u32 bpmTick)
       }
 
       // Send metronome tick on each beat, if enabled
-      if (metronomeEnabled_ && (bpmTick % 96) == 0)
+      if (metronomeEnabled_ && (bpmTick % TICKS_PER_QUARTERNOTE) == 0)
       {
          mios32_midi_package_t p;
 
@@ -818,13 +847,15 @@ s32 seqInit()
 
       for (j = 0; j < SCENES; j++)
       {
-         clipQuantize_[i][j] = 1;
+         clipFxQuantize_[i][j] = 1;
          clipTranspose_[i][j] = 0;
          clipScroll_[i][j] = 0;
          clipStretch_[i][j] = 16;
          clipSteps_[i][j] = 64;
          clipNotesSize_[i][j] = 0;
          clipActiveNote_[i][j] = 0;
+         clipFxSwing_[i][j] = 50;
+         clipFxProbability_[i][j] = 0;
       }
    }
 

@@ -10,6 +10,8 @@
 #define METRONOME_PSEUDO_PORT 111
 #define MAXNOTES 256 // per clip, * TRACKS * SCENES for total note storage
 
+#define TICKS_PER_QUARTERNOTE 96
+#define TICKS_PER_STEP (TICKS_PER_QUARTERNOTE/4)
 
 // --- Data structures ---
 
@@ -55,7 +57,7 @@ extern s8 trackMidiOutPort_[TRACKS];         // if negative: map to user defined
 extern u8 trackMidiOutChannel_[TRACKS];
 
 extern u16 clipSteps_[TRACKS][SCENES];       // number of steps for each clip
-extern u32 clipQuantize_[TRACKS][SCENES];    // brings all clip notes close to the specified timing, e.g. qunatize = 4 - close to 4th notes, 16th = quantize to step, ...
+extern u32 clipFxQuantize_[TRACKS][SCENES];  // brings all clip notes close to the specified timing, e.g. quantize = 4 - close to 4th notes, 16th = quantize to step, ...
 extern s8 clipTranspose_[TRACKS][SCENES];
 extern s16 clipScroll_[TRACKS][SCENES];
 extern u8 clipStretch_[TRACKS][SCENES];      // 1: compress to 1/16th, 2: compress to 1/8th ... 16: no stretch, 32: expand 2x, 64: expand 4x, 128: expand 8x
@@ -75,10 +77,10 @@ extern s8 trackMidiInPort_[TRACKS];          // If set to 0: enable recording fr
 extern u8 trackMidiInChannel_[TRACKS];       // If set to 16: enable recording from all midi channels (default)
 extern u8 trackMidiForward_[TRACKS];         // If set to 1: forward midi notes to out port/channel (live play)
 extern u8 trackLiveTranspose_[TRACKS];       // If set to >0: selection of live transposer table (live transposing enabled for this track)
-extern s8 clipSwing_[TRACKS][SCENES];        // If set to >0: clip swing enabled (affects only notes on quantized steps)
-extern s8 clipProbability_[TRACKS][SCENES];  // If set to >0: percentage of note drops occuring
-extern u8 clipFTSMode_[TRACKS][SCENES];      // If set to >0: FTS enabled, contains FTS scale (major, minor ...)
-extern u8 clipFTSNote_[TRACKS][SCENES];      // FTS base note (C, C#, ...)
+extern s8 clipFxSwing_[TRACKS][SCENES];        // If set to >0: clip swing enabled (affects only notes on quantized steps)
+extern s8 clipFxProbability_[TRACKS][SCENES];  // If set to >0: percentage of note drops occuring
+extern u8 clipFxFTSMode_[TRACKS][SCENES];      // If set to >0: FTS enabled, contains FTS scale (major, minor ...)
+extern u8 clipFxFTSNote_[TRACKS][SCENES];      // FTS base note (C, C#, ...)
 
 
 // --- Secondary data (not on disk) ---
@@ -98,9 +100,9 @@ u32 stepToTick(u16 step);
 u32 boundTickToClipSteps(u32 tick, u8 clip);
 
 // Quantize a tick time event
-u32 quantize(u32 tick, u32 quantizeMeasure, u32 clipLengthInTicks);
+u32 quantize(u32 tick, u32 quantizeMeasure, s8 swingPercent, u32 clipLengthInTicks);
 
-// Transform (stretch and scroll) and then quantize a note in a clip
+// Transform (stretch, scroll, probabilities/random) and then quantize/apply swing a note in a clip
 s32 quantizeTransform(u8 clip, u16 noteNumber);
 
 // Get the clip length in ticks

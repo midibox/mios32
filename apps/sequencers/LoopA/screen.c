@@ -27,7 +27,6 @@ u32 screenSongStep_ = 0;
 char screenFlashMessage_[40];
 u8 screenFlashMessageFrameCtr_;
 char sceneChangeNotification_[20] = "";
-u8 screenNewPagePanelFrameCtr_ = 0;
 u8 screenshotRequested_ = 0;    // if set to 1, will save screenshot to sd card when the next frame is rendered
 
 unsigned char* fontptr_ = (unsigned char*) fontsmall_b_pixdata;
@@ -306,6 +305,10 @@ void printPageIcon()
       case PAGE_SETUP:
          c = KEYICON_SETUP;
          break;
+
+      case PAGE_LIVEFX:
+         c = KEYICON_LIVEFX;
+         break;
    }
 
    unsigned x;
@@ -344,6 +347,8 @@ void printPageIcon()
       s_y++;
    }
 }
+// ----------------------------------------------------------------------------------------
+
 
 /**
  * Display the given formatted string at the given y pixel coordinates, center x
@@ -602,17 +607,6 @@ void screenSetSceneChangeInTicks(u8 ticks)
 
 
 /**
- * Notify, that a screen page change has occured (flash a page descriptor for a while)
- *
- */
-void screenNotifyPageChanged()
-{
-   screenNewPagePanelFrameCtr_ = 20;
-}
-// ----------------------------------------------------------------------------------------
-
-
-/**
  * Convert note length to pixel width
  * if ticksLength == 0 (still recording),
  *
@@ -635,7 +629,7 @@ void displayClip(u8 track)
    u16 i;
    u16 mult = 128/clipSteps_[track][activeScene_];  // horizontal multiplier to make clips as wide as the screen
 
-   u16 curStep = ((u32)boundTickToClipSteps(tick_, track) * mult) / 24;
+   u16 curStep = ((u32)boundTickToClipSteps(tick_, track) * mult) / TICKS_PER_STEP;
 
    // Render vertical 1/4th note indicators
    for (i=0; i<clipSteps_[track][activeScene_] / 4; i++)
@@ -656,11 +650,11 @@ void displayClip(u8 track)
    // Render note data
    for (i=0; i < clipNotesSize_[track][activeScene_]; i++)
    {
-      s32 transformedStep = (s32)quantizeTransform(track, i) * mult;
+      s32 transformedTick = (s32)quantizeTransform(track, i) * mult;
 
-      if (transformedStep >= 0) // if note starts within (potentially reconfigured) track length
+      if (transformedTick >= 0) // if note starts within (potentially reconfigured) track length
       {
-         u16 step = transformedStep / 24;
+         u16 step = transformedTick / TICKS_PER_STEP;
 
          s16 note = clipNotes_[track][activeScene_][i].note + clipTranspose_[track][activeScene_] + liveTransposeSemi;
          note = note < 0 ? 0 : note;
@@ -861,7 +855,7 @@ void displayPageNotes(void)
       if (activeNote >= clipNotesSize_[activeTrack_][activeScene_]) // necessary e.g. for clip change
          activeNote = 0;
 
-      u16 pos = (clipNotes_[activeTrack_][activeScene_][activeNote].tick) / 24;
+      u16 pos = (clipNotes_[activeTrack_][activeScene_][activeNote].tick) / TICKS_PER_STEP;
       u16 length = clipNotes_[activeTrack_][activeScene_][activeNote].length;
       u8 note = clipNotes_[activeTrack_][activeScene_][activeNote].note;
       u8 velocity = clipNotes_[activeTrack_][activeScene_][activeNote].velocity;
@@ -1533,7 +1527,7 @@ void displayPageLiveFX()
    displayTrackInstrumentInfo();
 
    command_ == COMMAND_LIVEFX_QUANTIZE ? setFontInverted() : setFontNonInverted();
-   switch (clipQuantize_[activeTrack_][activeScene_])
+   switch (clipFxQuantize_[activeTrack_][activeScene_])
    {
       case 3: printFormattedString(0, 53, "Q1/128"); break;
       case 6: printFormattedString(0, 53, "Qu1/64"); break;
@@ -1547,26 +1541,28 @@ void displayPageLiveFX()
    }
 
    command_ == COMMAND_LIVEFX_SWING ? setFontInverted() : setFontNonInverted();
-   if (clipSwing_[activeTrack_][activeScene_])
-      printFormattedString(0, 53, "Sw %d", clipSwing_[activeTrack_][activeScene_]);
+   if (clipFxSwing_[activeTrack_][activeScene_] != 50)
+      printFormattedString(42, 53, "Sw %d%%", clipFxSwing_[activeTrack_][activeScene_]);
    else
-      printFormattedString(0, 53, "Swing%%");
+      printFormattedString(42, 53, "Swing%%");
 
    command_ == COMMAND_LIVEFX_PROBABILITY ? setFontInverted() : setFontNonInverted();
-   if (clipProbability_[activeTrack_][activeScene_])
-      printFormattedString(42, 53, "Pr %d", clipProbability_[activeTrack_][activeScene_]);
+   if (clipFxProbability_[activeTrack_][activeScene_])
+      printFormattedString(84, 53, "Pr %d%%", clipFxProbability_[activeTrack_][activeScene_]);
    else
-      printFormattedString(42, 53, "Prob %%");
+      printFormattedString(84, 53, "Prob %%");
 
+   /*
    command_ == COMMAND_LIVEFX_FTS_MODE ? setFontInverted() : setFontNonInverted();
-   if (clipFTSMode_[activeTrack_][activeScene_])
-      printFormattedString(42, 53, "FTS %d", clipFTSMode_[activeTrack_][activeScene_]);
+   if (clipFxFTSMode_[activeTrack_][activeScene_])
+      printFormattedString(126, 53, "FTS %d", clipFxFTSMode_[activeTrack_][activeScene_]);
    else
-      printFormattedString(42, 53, "FTS off");
+      printFormattedString(126, 53, "FTS off");
 
    command_ == COMMAND_LIVEFX_FTS_NOTE ? setFontInverted() : setFontNonInverted();
-   if (clipFTSNote_[activeTrack_][activeScene_])
-      printFormattedString(42, 53, "FNte %d", clipFTSNote_[activeTrack_][activeScene_]);
+   if (clipFxFTSNote_[activeTrack_][activeScene_])
+      printFormattedString(168, 53, "FNte %d", clipFxFTSNote_[activeTrack_][activeScene_]);
+   */
 
    setFontNonInverted();
    displayClip(activeTrack_);
@@ -1624,8 +1620,9 @@ void display()
 
       int iconId;
 
-      iconId = (page_ == PAGE_SONG) ? 32 + KEYICON_SONG_INVERTED : 32 + KEYICON_SONG;
+      /* iconId = (page_ == PAGE_SONG) ? 32 + KEYICON_SONG_INVERTED : 32 + KEYICON_SONG;
       printFormattedString(0 * 36 + 18, 0, "%c", iconId);
+      */
 
       iconId = (page_ == PAGE_MIDIMONITOR) ? 32 + KEYICON_MIDIMONITOR_INVERTED : 32 + KEYICON_MIDIMONITOR;
       printFormattedString(1 * 36 + 18, 0, "%c", iconId);
@@ -1639,9 +1636,9 @@ void display()
       iconId = (page_ == PAGE_NOTES) ? 32 + KEYICON_NOTES_INVERTED : 32 + KEYICON_NOTES;
       printFormattedString(4 * 36 + 18, 0, "%c", iconId);
 
-      iconId = (page_ == PAGE_LIVEFX) ? 32 + KEYICON_LIVEFX_INVERTED : 32 + KEYICON_LIVEFX;
+      /*iconId = (page_ == PAGE_ARPECHO) ? 32 + KEYICON_ARPECHO_INVERTED : 32 + KEYICON_ARPECHO;
       printFormattedString(5 * 36 + 18, 0, "%c", iconId);
-
+      */
 
       iconId = (page_ == PAGE_SETUP) ? 32 + KEYICON_SETUP_INVERTED : 32 + KEYICON_SETUP;
       printFormattedString(0 * 36, 32, "%c", iconId);
@@ -1658,7 +1655,7 @@ void display()
       iconId = (page_ == PAGE_CLIP) ? 32 + KEYICON_CLIP_INVERTED : 32 + KEYICON_CLIP;
       printFormattedString(4 * 36, 32, "%c", iconId);
 
-      iconId = (page_ == PAGE_ARPECHO) ? 32 + KEYICON_ARPECHO_INVERTED : 32 + KEYICON_ARPECHO;
+      iconId = (page_ == PAGE_LIVEFX) ? 32 + KEYICON_LIVEFX_INVERTED : 32 + KEYICON_LIVEFX;
       printFormattedString(5 * 36, 32, "%c", iconId);
 
       iconId = (page_ == PAGE_TRACK) ? 32 + KEYICON_TRACK_INVERTED : 32 + KEYICON_TRACK;

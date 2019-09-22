@@ -81,6 +81,7 @@ void setActivePage(enum LoopAPage page)
       case PAGE_NOTES: command_ = COMMAND_NOTE_POSITION; break;
       case PAGE_TRACK: command_ = COMMAND_TRACK_OUTPORT; break;
       case PAGE_SETUP: command_ = COMMAND_SETUP_SELECT; break;
+      case PAGE_LIVEFX: command_ = COMMAND_LIVEFX_QUANTIZE; break;
       default:
          command_ = COMMAND_NONE; break;
    }
@@ -252,9 +253,9 @@ void updateSwitchLEDs()
 
       switch (page_)
       {
-         case PAGE_SONG:
+         /* case PAGE_SONG:
             led_gp1 = LED_RED;
-            break;
+            break; */
          case PAGE_MIDIMONITOR:
             led_gp2 = LED_RED;
             break;
@@ -267,9 +268,9 @@ void updateSwitchLEDs()
          case PAGE_NOTES:
             led_gp5 = LED_RED;
             break;
-         case PAGE_LIVEFX:
+         /* case PAGE_ARPECHO:
             led_gp6 = LED_RED;
-            break;
+            break; */
          case PAGE_SETUP:
             led_runstop = LED_RED;
             break;
@@ -282,7 +283,7 @@ void updateSwitchLEDs()
          case PAGE_CLIP:
             led_copy = LED_RED;
             break;
-         case PAGE_ARPECHO:
+         case PAGE_LIVEFX:
             led_paste = LED_RED;
             break;
          case PAGE_TRACK:
@@ -637,17 +638,6 @@ void editLen()
 
 
 /**
- * Edit Clip Page: change clip quantization
- *
- */
-void clipQuantize()
-{
-   command_ = command_ == COMMAND_LIVEFX_QUANTIZE ? COMMAND_NONE : COMMAND_LIVEFX_QUANTIZE;
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
  * Edit Clip Page: change clip transpose
  *
  */
@@ -863,7 +853,6 @@ void diskSelectSession()
 // -------------------------------------------------------------------------------------------------
 
 
-
 /**
  * Disk Menu: Save session command
  *
@@ -876,7 +865,6 @@ void diskSave()
    diskScanSessionFileAvailable();
 
    setActivePage(PAGE_MUTE);
-   screenNotifyPageChanged();
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -892,7 +880,6 @@ void diskLoad()
    loadSession(sessionNumber_);
 
    setActivePage(PAGE_MUTE);
-   screenNotifyPageChanged();
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -907,7 +894,6 @@ void diskNew()
 
    seqInit();
    setActivePage(PAGE_MUTE);
-   screenNotifyPageChanged();
 
    screenFormattedFlashMessage("A fresh start... :-)");
 }
@@ -1075,6 +1061,39 @@ void setupPar4()
 // -------------------------------------------------------------------------------------------------
 
 
+/**
+ * LiveFX Page: change clip quantization
+ *
+ */
+void liveFxQuantize()
+{
+   command_ = command_ == COMMAND_LIVEFX_QUANTIZE ? COMMAND_NONE : COMMAND_LIVEFX_QUANTIZE;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * LiveFX Page: change clip swing
+ *
+ */
+void liveFxSwing()
+{
+   command_ = command_ == COMMAND_LIVEFX_SWING ? COMMAND_NONE : COMMAND_LIVEFX_SWING;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * LiveFX Page: change clip note probability
+ *
+ */
+void liveFxProbability()
+{
+   command_ = command_ == COMMAND_LIVEFX_PROBABILITY ? COMMAND_NONE : COMMAND_LIVEFX_PROBABILITY;
+}
+// -------------------------------------------------------------------------------------------------
+
+
 // -------------------------------------------------------------------------------------------------
 // --- EVENT DISPATCHING ---------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------
@@ -1147,7 +1166,7 @@ void loopaButtonPressed(s32 pin)
       {
          // normal mode "copy"
          copiedClipSteps_ = clipSteps_[activeTrack_][activeScene_];
-         copiedClipQuantize_ = clipQuantize_[activeTrack_][activeScene_];
+         copiedClipQuantize_ = clipFxQuantize_[activeTrack_][activeScene_];
          copiedClipTranspose_ = clipTranspose_[activeTrack_][activeScene_];
          copiedClipScroll_ = clipScroll_[activeTrack_][activeScene_];
          copiedClipStretch_ = clipStretch_[activeTrack_][activeScene_];
@@ -1160,7 +1179,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         setActivePage(PAGE_ARPECHO);
+         setActivePage(PAGE_LIVEFX);
       }
       else
       {
@@ -1168,7 +1187,7 @@ void loopaButtonPressed(s32 pin)
          if (copiedClipSteps_ > 0)
          {
             clipSteps_[activeTrack_][activeScene_] = copiedClipSteps_;
-            clipQuantize_[activeTrack_][activeScene_] = copiedClipQuantize_;
+            clipFxQuantize_[activeTrack_][activeScene_] = copiedClipQuantize_;
             clipTranspose_[activeTrack_][activeScene_] = copiedClipTranspose_;
             clipScroll_[activeTrack_][activeScene_] = copiedClipScroll_;
             clipStretch_[activeTrack_][activeScene_] = copiedClipStretch_;
@@ -1196,7 +1215,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         // setActivePage(PAGE_SYSEX); TODO
+         // setActivePage(PAGE_SONG); TODO
       }
       else
       {
@@ -1226,6 +1245,9 @@ void loopaButtonPressed(s32 pin)
             case PAGE_SETUP:
                setupSelectItem();
                break;
+            case PAGE_LIVEFX:
+               liveFxQuantize();
+               break;
          }
       }
    }
@@ -1243,7 +1265,7 @@ void loopaButtonPressed(s32 pin)
                toggleMute(1);
                break;
             case PAGE_CLIP:
-               clipQuantize();
+               /* TODO: clip type (note/cc) */
                break;
             case PAGE_NOTES:
                notesNote();
@@ -1259,6 +1281,9 @@ void loopaButtonPressed(s32 pin)
                break;
             case PAGE_ROUTER:
                routerPortIn();
+               break;
+            case PAGE_LIVEFX:
+               liveFxSwing();
                break;
          }
       }
@@ -1298,6 +1323,9 @@ void loopaButtonPressed(s32 pin)
                break;
             case PAGE_SETUP:
                setupPar1();
+               break;
+            case PAGE_LIVEFX:
+               liveFxProbability();
                break;
          }
       }
@@ -1371,7 +1399,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         // setActivePage(PAGE_SONG); TODO
+         // setActivePage(PAGE_ARPECHO); TODO
       }
       else
       {
@@ -1582,7 +1610,6 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
       else
       {
          // LIVEMODE_BEATLOOP
-
          s8 newLiveBeatloop = (s8) (liveBeatLoop_ + incrementer);
          newLiveBeatloop = (s8) (newLiveBeatloop < -7 ? -7 : newLiveBeatloop);
          liveBeatLoop_ = (s8) (newLiveBeatloop > 7 ? 7 : newLiveBeatloop);
@@ -1626,22 +1653,6 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
 
          if (clipSteps_[activeTrack_][activeScene_] > 128)
             clipSteps_[activeTrack_][activeScene_] = 128;
-      }
-      else if (command_ == COMMAND_LIVEFX_QUANTIZE)
-      {
-         if (incrementer > 0)
-            clipQuantize_[activeTrack_][activeScene_] *= 2;
-         else
-            clipQuantize_[activeTrack_][activeScene_] /= 2;
-
-         if (clipQuantize_[activeTrack_][activeScene_] < 2)
-            clipQuantize_[activeTrack_][activeScene_] = 1;  // no quantization
-
-         if (clipQuantize_[activeTrack_][activeScene_] == 2)
-            clipQuantize_[activeTrack_][activeScene_] = 3;  // 1/128th note quantization
-
-         if (clipQuantize_[activeTrack_][activeScene_] > 384)
-            clipQuantize_[activeTrack_][activeScene_] = 384;
       }
       else if (command_ == COMMAND_CLIP_TRANSPOSE)
       {
@@ -1691,7 +1702,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
             // only perform changes, if we are in range (still on the same clip)
 
             s16 newTick = clipNotes_[activeTrack_][activeScene_][activeNote].tick;
-            newTick += incrementer > 0 ? 24 : -24;
+            newTick += incrementer > 0 ? TICKS_PER_STEP : -TICKS_PER_STEP;
             u32 clipLength = getClipLengthInTicks(activeTrack_);
 
             if (newTick < 0)
@@ -1860,7 +1871,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
       }
       else if (command_ == COMMAND_SETUP_SELECT) // Setup page - left encoder changes active/selected setup item
       {
-         s8 newActiveItem = setupActiveItem_ += incrementer;
+         s8 newActiveItem = setupActiveItem_ + incrementer;
          newActiveItem = (s8)(newActiveItem < 0 ? 0 : newActiveItem);
          setupActiveItem_ = (u8)(newActiveItem < SETUP_NUM_ITEMS ? newActiveItem : (SETUP_NUM_ITEMS - 1));
       }
@@ -1879,6 +1890,36 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
       else if (command_ == COMMAND_SETUP_PAR4)
       {
          setupParameterEncoderTurned(4, incrementer);
+      }
+      else if (command_ == COMMAND_LIVEFX_QUANTIZE)
+      {
+         if (incrementer > 0)
+            clipFxQuantize_[activeTrack_][activeScene_] *= 2;
+         else
+            clipFxQuantize_[activeTrack_][activeScene_] /= 2;
+
+         if (clipFxQuantize_[activeTrack_][activeScene_] < 2)
+            clipFxQuantize_[activeTrack_][activeScene_] = 1;  // no quantization
+
+         if (clipFxQuantize_[activeTrack_][activeScene_] == 2)
+            clipFxQuantize_[activeTrack_][activeScene_] = 3;  // 1/128th note quantization
+
+         if (clipFxQuantize_[activeTrack_][activeScene_] > 384)
+            clipFxQuantize_[activeTrack_][activeScene_] = 384;
+      }
+      else if (command_ == COMMAND_LIVEFX_SWING)
+      {
+         s8 newSwing = clipFxSwing_[activeTrack_][activeScene_] + incrementer;
+         newSwing = (s8)(newSwing < 0 ? 0 : newSwing);
+         newSwing = (s8)(newSwing > 100 ? 100 : newSwing);
+         clipFxSwing_[activeTrack_][activeScene_] = newSwing;
+      }
+      else if (command_ == COMMAND_LIVEFX_PROBABILITY)
+      {
+         s8 newProbability = clipFxProbability_[activeTrack_][activeScene_] + incrementer;
+         newProbability = (s8)(newProbability < 0 ? 0 : newProbability);
+         newProbability = (s8)(newProbability > 100 ? 100 : newProbability);
+         clipFxProbability_[activeTrack_][activeScene_] = newProbability;
       }
    }
 }
