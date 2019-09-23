@@ -89,6 +89,9 @@ void setActiveScene(u8 sceneNumber);
 // Set a new active page
 void setActivePage(enum LoopAPage page);
 
+// Return 1, if user currently holds a track mute/unmute gp key
+u8 isShiftTrackMuteToggleKeyPressed(u8 track);
+
 // --- LED Handling ---
 
 void updateSwitchLED(u8 number, u8 newState);

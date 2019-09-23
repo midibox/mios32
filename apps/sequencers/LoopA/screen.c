@@ -733,7 +733,7 @@ void displayTrackInstrumentInfo()
 void displaySceneTrackInfo(void)
 {
    setFontSmall();
-   printFormattedString(0, 0, "%c%d", 'A' + activeScene_, activeTrack_ + 1);
+   printFormattedString(0, 0, "%d%c", activeTrack_ + 1, 'A' + activeScene_);
 
    if (trackMute_[activeTrack_])
       printFormattedString(18, 0, "[mute]%s",  sceneChangeNotification_);
@@ -942,7 +942,7 @@ void displayPageTrack(void)
 
 
 /**
- * Display the main menu (PAGE_DISK)
+ * Display the disk operations page (PAGE_DISK)
  *
  */
 void displayPageDisk(void)
@@ -1317,8 +1317,10 @@ void displayPageSetup(void)
 }
 // ----------------------------------------------------------------------------------------
 
+
 /**
  * Print a MIDI event in a 5-character slot of the MIDI monitor page
+ *
  */
 void MIDIMonitorPrintEvent(u8 x, u8 y, mios32_midi_package_t package, u8 num_chars)
 {
@@ -1506,13 +1508,14 @@ void displayPageMIDIMonitor()
 }
 // ----------------------------------------------------------------------------------------
 
+
 /**
  * Display the song page
  *
  */
 void displayPageSong()
 {
-
+   // Todo
 }
 // ----------------------------------------------------------------------------------------
 
@@ -1573,8 +1576,8 @@ void displayPageLiveFX()
 /**
  * Return, if screensaver is active
  * @return int 1, if screensaver should be displayed
+ *
  */
-
 int isScreensaverActive()
 {
    return inactivitySeconds_ > gcScreensaverAfterMinutes_ * 60;
@@ -1586,9 +1589,12 @@ int isScreensaverActive()
  * Display the current screen buffer (once per frame, called in app.c scheduler)
  *
  */
+static u32 frameCounter_ = 0;
 void display()
 {
    u8 i, j;
+
+   frameCounter_++;
 
    if (isScreensaverActive())
    {
@@ -1661,6 +1667,39 @@ void display()
       iconId = (page_ == PAGE_TRACK) ? 32 + KEYICON_TRACK_INVERTED : 32 + KEYICON_TRACK;
       printFormattedString(6 * 36, 32, "%c", iconId);
 
+      setFontBold();
+   }
+   else if (screenIsInShift())
+   {
+      voxelFrame();
+      s8 flashMuteToggle = (frameCounter_ % 2) == 0; // When SEQ is running, flash active synced mute/unmute toggles until performed
+      if (!SEQ_BPM_IsRunning())
+         flashMuteToggle = 0; // When SEQ is not running, no synced mute/unmute toggles
+
+      u8 iconId;
+      u8 invert;
+      s8 track;
+
+      for (track = 0; track < TRACKS; track++)
+      {
+         // Determine inversion/blinking
+         invert = (trackMuteToggleRequested_[track] && flashMuteToggle) ? (trackMute_[track] ? 1 : 0) : (trackMute_[track] ? 0 : 1);
+
+         // Render base icon
+         iconId = (trackMute_[track] ? (32 + KEYICON_TRACKUNMUTE) : (32 + KEYICON_TRACKMUTE)) -
+                  invert; // in case of inversion subtracts 1 and switches to inverted icons
+         setFontKeyIcon();
+         setFontNonInverted();
+         printFormattedString(track * 36 + 18, 0, "%c", iconId);
+
+         // Render clip info (e.g. 1A, 2B...)
+         setFontSmall();
+         if (invert)
+            setFontInverted();
+         printFormattedString(track * 36 + 30, 7, "%d%c", track + 1, 'A' + activeScene_);
+      }
+
+      setFontNonInverted();
       setFontBold();
    }
    else

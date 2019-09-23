@@ -249,18 +249,18 @@ void toggleMute(u8 clipNumber)
  */
 void performSyncedMutesAndUnmutes()
 {
-   u8 clip;
+   u8 track;
 
-   for (clip = 0; clip < TRACKS; clip++)
+   for (track = 0; track < TRACKS; track++)
    {
-      if (trackMuteToggleRequested_[clip])
+      if (trackMuteToggleRequested_[track])
       {
          if (tickToStep(tick_) % stepsPerMeasure_ == 0)
          {
-            u8 state = trackMute_[clip];
-            trackMute_[clip] = !state;
+            u8 state = trackMute_[track];
+            trackMute_[track] = !state;
 
-            trackMuteToggleRequested_[clip] = 0;
+            trackMuteToggleRequested_[track] = 0;
          }
       }
    }

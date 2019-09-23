@@ -26,6 +26,7 @@ s16 copiedClipScroll_;
 u8 copiedClipStretch_;
 NoteData copiedClipNotes_[MAXNOTES];
 u16 copiedClipNotesSize_;
+u8 shiftTrackMutePressed_[TRACKS] = { 0, 0, 0, 0, 0, 0};
 
 u8 routerActiveRoute_ = 0;
 u8 setupActiveItem_ = 0;
@@ -90,6 +91,41 @@ void setActivePage(enum LoopAPage page)
       writeSetup();
 }
 // -------------------------------------------------------------------------------------------------
+
+
+/**
+ * User pressed (and holds) a track mute/unmute gp key
+ * @param track u8
+ */
+void shiftTrackMuteTogglePressed(u8 track)
+{
+   shiftTrackMutePressed_[track] = 1;
+   toggleMute(track);
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * User released a track mute/unmute gp key
+ * @param track u8
+ */
+void shiftTrackMuteToggleReleased(u8 track)
+{
+   shiftTrackMutePressed_[track] = 0;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Return 1, if user currently holds a track mute/unmute gp key
+ * @param track u8
+ */
+u8 isShiftTrackMuteToggleKeyPressed(u8 track)
+{
+   return shiftTrackMutePressed_[track];
+}
+// -------------------------------------------------------------------------------------------------
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 // --- LED HANDLING
@@ -225,17 +261,21 @@ void updateSwitchLED(u8 number, u8 newState)
 }
 // -------------------------------------------------------------------------------------------------
 
+
 /**
  * Update the LED states of the general purpose switches (called every 20ms from app.c timer)
  *
  */
+static u32 ledUpdateCounter_ = 0;
 void updateSwitchLEDs()
 {
+   ledUpdateCounter_++;
+
    u8 led_gp1 = LED_OFF, led_gp2 = LED_OFF, led_gp3 = LED_OFF, led_gp4 = LED_OFF, led_gp5 = LED_OFF, led_gp6 = LED_OFF;
    u8 led_arm = LED_OFF, led_shift = LED_OFF, led_menu = LED_OFF;
    u8 led_copy = LED_OFF, led_paste = LED_OFF, led_delete = LED_OFF;
-
    u8 led_runstop = ledstate[LED_RUNSTOP];
+   s8 flashMuteToggle = (ledUpdateCounter_ % 2) == 0; // When SEQ is running, flash active synced mute/unmute toggles until performed
 
    if (!SEQ_BPM_IsRunning())
    {
@@ -244,6 +284,7 @@ void updateSwitchLEDs()
       led_copy = LED_OFF;
       led_paste = LED_OFF;
       led_delete = LED_OFF;
+      flashMuteToggle = 0; // When SEQ is not running, no synced mute/unmute toggles
    }
 
    // --- Menu LEDs ---
@@ -291,6 +332,29 @@ void updateSwitchLEDs()
             break;
       }
    }
+   else if (screenIsInShift())
+   {
+      // --- Within shift, indicate unmuted tracks (green) and keys currently pressed (red)
+      led_gp1 |= (trackMuteToggleRequested_[0] && flashMuteToggle) ? (trackMute_[0] ? LED_GREEN : LED_OFF) : (trackMute_[0] ? LED_OFF : LED_GREEN);
+      led_gp2 |= (trackMuteToggleRequested_[1] && flashMuteToggle) ? (trackMute_[1] ? LED_GREEN : LED_OFF) : (trackMute_[1] ? LED_OFF : LED_GREEN);
+      led_gp3 |= (trackMuteToggleRequested_[2] && flashMuteToggle) ? (trackMute_[2] ? LED_GREEN : LED_OFF) : (trackMute_[2] ? LED_OFF : LED_GREEN);
+      led_gp4 |= (trackMuteToggleRequested_[3] && flashMuteToggle) ? (trackMute_[3] ? LED_GREEN : LED_OFF) : (trackMute_[3] ? LED_OFF : LED_GREEN);
+      led_gp5 |= (trackMuteToggleRequested_[4] && flashMuteToggle) ? (trackMute_[4] ? LED_GREEN : LED_OFF) : (trackMute_[4] ? LED_OFF : LED_GREEN);
+      led_gp6 |= (trackMuteToggleRequested_[5] && flashMuteToggle) ? (trackMute_[5] ? LED_GREEN : LED_OFF) : (trackMute_[5] ? LED_OFF : LED_GREEN);
+
+      if (isShiftTrackMuteToggleKeyPressed(0))
+         led_gp1 |= LED_RED;
+      if (isShiftTrackMuteToggleKeyPressed(1))
+         led_gp2 |= LED_RED;
+      if (isShiftTrackMuteToggleKeyPressed(2))
+         led_gp3 |= LED_RED;
+      if (isShiftTrackMuteToggleKeyPressed(3))
+         led_gp4 |= LED_RED;
+      if (isShiftTrackMuteToggleKeyPressed(4))
+         led_gp5 |= LED_RED;
+      if (isShiftTrackMuteToggleKeyPressed(5))
+         led_gp6 |= LED_RED;
+   }
    else
    {
       // --- Normal pages, outside menu/shift ---
@@ -324,12 +388,12 @@ void updateSwitchLEDs()
             break;
 
          case PAGE_MUTE:
-            led_gp1 |= trackMute_[0] ? LED_OFF : LED_GREEN;
-            led_gp2 |= trackMute_[1] ? LED_OFF : LED_GREEN;
-            led_gp3 |= trackMute_[2] ? LED_OFF : LED_GREEN;
-            led_gp4 |= trackMute_[3] ? LED_OFF : LED_GREEN;
-            led_gp5 |= trackMute_[4] ? LED_OFF : LED_GREEN;
-            led_gp6 |= trackMute_[5] ? LED_OFF : LED_GREEN;
+            led_gp1 |= (trackMuteToggleRequested_[0] && flashMuteToggle) ? (trackMute_[0] ? LED_GREEN : LED_OFF) : (trackMute_[0] ? LED_OFF : LED_GREEN);
+            led_gp2 |= (trackMuteToggleRequested_[1] && flashMuteToggle) ? (trackMute_[1] ? LED_GREEN : LED_OFF) : (trackMute_[1] ? LED_OFF : LED_GREEN);
+            led_gp3 |= (trackMuteToggleRequested_[2] && flashMuteToggle) ? (trackMute_[2] ? LED_GREEN : LED_OFF) : (trackMute_[2] ? LED_OFF : LED_GREEN);
+            led_gp4 |= (trackMuteToggleRequested_[3] && flashMuteToggle) ? (trackMute_[3] ? LED_GREEN : LED_OFF) : (trackMute_[3] ? LED_OFF : LED_GREEN);
+            led_gp5 |= (trackMuteToggleRequested_[4] && flashMuteToggle) ? (trackMute_[4] ? LED_GREEN : LED_OFF) : (trackMute_[4] ? LED_OFF : LED_GREEN);
+            led_gp6 |= (trackMuteToggleRequested_[5] && flashMuteToggle) ? (trackMute_[5] ? LED_GREEN : LED_OFF) : (trackMute_[5] ? LED_OFF : LED_GREEN);
             break;
 
          case PAGE_NOTES:
@@ -505,7 +569,6 @@ void updateBeatLEDsAndClipPositions(u32 bpm_tick)
 // -------------------------------------------------------------------------------------------------
 
 
-
 /**
  * Perform live LED updates (upper right encoder section)
  *
@@ -618,7 +681,6 @@ void updateLiveLEDs()
 
 }
 // -------------------------------------------------------------------------------------------------
-
 
 
 // -------------------------------------------------------------------------------------------------
@@ -1217,6 +1279,10 @@ void loopaButtonPressed(s32 pin)
       {
          // setActivePage(PAGE_SONG); TODO
       }
+      else if (screenIsInShift())
+      {
+         shiftTrackMuteTogglePressed(0); // Toggling mute/unmute in shift menu
+      }
       else
       {
          switch (page_)
@@ -1257,6 +1323,10 @@ void loopaButtonPressed(s32 pin)
       {
          setActivePage(PAGE_MIDIMONITOR);
       }
+      else if (screenIsInShift())
+      {
+         shiftTrackMuteTogglePressed(1); // Toggling mute/unmute in shift menu
+      }
       else
       {
          switch (page_)
@@ -1293,6 +1363,10 @@ void loopaButtonPressed(s32 pin)
       if (screenIsInMenu())
       {
          setActivePage(PAGE_TEMPO);
+      }
+      else if (screenIsInShift())
+      {
+         shiftTrackMuteTogglePressed(2); // Toggling mute/unmute in shift menu
       }
       else
       {
@@ -1336,6 +1410,10 @@ void loopaButtonPressed(s32 pin)
       {
          setActivePage(PAGE_MUTE);
       }
+      else if (screenIsInShift())
+      {
+         shiftTrackMuteTogglePressed(3); // Toggling mute/unmute in shift menu
+      }
       else
       {
          switch (page_)
@@ -1373,6 +1451,10 @@ void loopaButtonPressed(s32 pin)
       {
          setActivePage(PAGE_NOTES);
       }
+      else if (screenIsInShift())
+      {
+         shiftTrackMuteTogglePressed(4); // Toggling mute/unmute in shift menu
+      }
       else
       {
          switch (page_)
@@ -1400,6 +1482,10 @@ void loopaButtonPressed(s32 pin)
       if (screenIsInMenu())
       {
          // setActivePage(PAGE_ARPECHO); TODO
+      }
+      else if (screenIsInShift())
+      {
+         shiftTrackMuteTogglePressed(5); // Toggling mute/unmute in shift menu
       }
       else
       {
@@ -1468,7 +1554,7 @@ void loopaButtonPressed(s32 pin)
 
 
 /**
- * * Handle switch/button release event
+ * Handle switch/button release event
  *
  */
 void loopaButtonReleased(s32 pin)
@@ -1478,12 +1564,8 @@ void loopaButtonReleased(s32 pin)
 
    if (pin == sw_menu)
    {
-
       if (screenIsInMenu())
-      {
-         DEBUG_MSG("leave menu");
          screenShowMenu(0); // Left the menu by releasing the menu button
-      }
    }
    else if (pin == sw_shift)
    {
@@ -1498,13 +1580,54 @@ void loopaButtonReleased(s32 pin)
    {
       if (scrubModeActive_)
       {
-         // Screenshot feature - depressed lower two encoder buttons
+         // Screenshot feature - triggered when two lower two encoder buttons are pressed
          screenshotRequested_ = 1;
          scrubModeActive_ = 0;
       }
    }
+   else if (pin == sw_gp1)
+   {
+      if (screenIsInShift())
+      {
+         shiftTrackMuteToggleReleased(0); // Released toggling mute/unmute in shift menu
+      }
+   }
+   else if (pin == sw_gp2)
+   {
+      if (screenIsInShift())
+      {
+         shiftTrackMuteToggleReleased(1); // Released toggling mute/unmute in shift menu
+      }
+   }
+   else if (pin == sw_gp3)
+   {
+      if (screenIsInShift())
+      {
+         shiftTrackMuteToggleReleased(2); // Released toggling mute/unmute in shift menu
+      }
+   }
+   else if (pin == sw_gp4)
+   {
+      if (screenIsInShift())
+      {
+         shiftTrackMuteToggleReleased(3); // Released toggling mute/unmute in shift menu
+      }
+   }
+   else if (pin == sw_gp5)
+   {
+      if (screenIsInShift())
+      {
+         shiftTrackMuteToggleReleased(4); // Released toggling mute/unmute in shift menu
+      }
+   }
+   else if (pin == sw_gp6)
+   {
+      if (screenIsInShift())
+      {
+         shiftTrackMuteToggleReleased(5); // Released toggling mute/unmute in shift menu
+      }
+   }
 }
-
 // -------------------------------------------------------------------------------------------------
 
 
