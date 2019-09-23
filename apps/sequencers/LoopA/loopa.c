@@ -27,6 +27,7 @@ static s8 liveBeatLoopAtStep2_[15] =    {   8,   4,   2,   0,   0,   0,   0,   0
 static s8 liveBeatLoopJumpStep2_[15] =  {  16,   8,   4,   0,   0,   0,   0,   0,   0,   0,   0,   0,  -4,  -8, -16};
 
 // --- Global vars ---
+char filename_[20];                   // global, for filename operations
 
 u32 millisecondsSinceStartup_ = 0;    // global "uptime" timer
 u16 inactivitySeconds_ = 0;           // screensaver timer
@@ -38,46 +39,49 @@ enum LoopAPage page_ = PAGE_MUTE;     // currently active page/view
 enum Command command_ = COMMAND_NONE; // currently active command
 s8 tempoFade_ = 0;                    // 0: no tempo change ongoing | +1: increase tempo button pressed | -1: decrease tempo button pressed (ongoing event)
 
+// --- Basic session data (saved to session on disk) ---
+char sessionName_[16];                // 15 characters max (plus trailing string delimiter zero)
 u8 activeTrack_ = 0;                  // currently active or last active clip number (0..5)
 u8 activeScene_ = 0;                  // currently active scene number (0-15)
 u8 isRecording_ = 0;                  // set, if currently recording to the selected clip
-u8 oledBeatFlashState_ = 0;           // 0: don't flash, 1: flash slightly (normal 1/4th note), 2: flash intensively (after four 1/4th notes or 16 steps)
-
-s16 notePtrsOn_[128];                 // during recording - pointers to notes that are currently "on" (and waiting for an "off", therefore length yet undetermined) (-1: note not depressed)
-
-char filename_[20];                   // global, for filename operations
-
-// --- Track data (saved to session on disk) ---
-u8 trackMute_[TRACKS];                // mute state of each clip
-s8 trackMidiOutPort_[TRACKS];         // if negative: map to user defined instrument, if positive: standard mios port number
-u8 trackMidiOutChannel_[TRACKS];
-
-// --- Clip data (saved to session on disk) ---
-u16 clipSteps_[TRACKS][SCENES];       // number of steps for each clip
-u32 clipFxQuantize_[TRACKS][SCENES];    // brings all clip notes close to the specified timing, e.g. quantize = 4 - close to 4th notes, 16th = quantize to step, ...
-s8 clipTranspose_[TRACKS][SCENES];
-s16 clipScroll_[TRACKS][SCENES];
-u8 clipStretch_[TRACKS][SCENES];      // 1: compress to 1/16th, 2: compress to 1/8th ... 16: no stretch, 32: expand 2x, 64: expand 4x, 128: expand 8x
-NoteData clipNotes_[TRACKS][SCENES][MAXNOTES];  // clip note data storage (chained list, note start time and length/velocity)
-u16 clipNotesSize_[TRACKS][SCENES];   // active number of notes currently in use for that clip
-
-// TODO: save to session
 float bpm_ = 120.0;                   // bpm
+s8 displayStyle_ = DISPLAYSTYLE_SINGLECLIP; // Current display style: e.g. show single, currently active clip
 u8 liveMode_ = LIVEMODE_TRANSPOSE;    // currently active upper-right encoder live mode
+u8 sceneMode_ = SCENEMODE_ALL;        // switch full scene when turning upper-left encoder
+u8 beatloopPattern_ = 0;              // currently active beatloop pattern (the first few are inbuilt, the rest is dynamically loaded from disk)
+u8 liveTransposePattern_ = 0;         // currently active live transposer pattern (the first few are inbuilt, the rest is dynamically loaded from disk)
 s8 liveTranspose_ = 0;                // Live transpose value (+/- 7)
 s8 liveBeatLoop_ = 0;                 // Live beatloop value (+/- 7)
 u16 stepsPerMeasure_ = 16;            // number of steps for one beatloop (session-adjustable in bpm menu)
 u8 stepsPerBeat_ = 4;                 // number of steps for one beat (adjustable) - 4 steps default for a 4/4 beat
 u8 metronomeEnabled_ = 0;             // Set to 1, if metronome is turned on in bpm screen
+
+u8 oledBeatFlashState_ = 0;           // 0: don't flash, 1: flash slightly (normal 1/4th note), 2: flash intensively (after four 1/4th notes or 16 steps)
+s16 notePtrsOn_[128];                 // during recording - pointers to notes that are currently "on" (and waiting for an "off", therefore length yet undetermined) (-1: note not depressed)
+
+// --- Track data (saved to session on disk) ---
+u8 trackMute_[TRACKS];                // mute state of each clip
+s8 trackMidiOutPort_[TRACKS];         // if negative: map to user defined instrument, if positive: standard mios port number
+u8 trackMidiOutChannel_[TRACKS];
 s8 trackMidiInPort_[TRACKS];          // If set to 0: enable recording from all midi ports (default)
 u8 trackMidiInChannel_[TRACKS];       // If set to 16: enable recording from all midi channels (default)
 u8 trackMidiForward_[TRACKS];         // If set to 1: forward midi notes to out port/channel (live play)
 u8 trackLiveTranspose_[TRACKS];       // If set to >0: selection of live transposer table (live transposing enabled for this track)
-s8 clipFxSwing_[TRACKS][SCENES];        // If set to >0: clip swing enabled (affects only notes on quantized steps)
-s8 clipFxProbability_[TRACKS][SCENES];  // If set to >0: percentage of note drops occuring
-u8 clipFxFTSMode_[TRACKS][SCENES];      // If set to >0: FTS enabled, contains FTS scale (major, minor ...)
-u8 clipFxFTSNote_[TRACKS][SCENES];      // FTS base note (C, C#, ...)
 
+// --- Clip data (saved to session on disk) ---
+u16 clipSteps_[TRACKS][SCENES];       // number of steps for each clip
+u32 clipFxQuantize_[TRACKS][SCENES];  // brings all clip notes close to the specified timing, e.g. quantize = 4 - close to 4th notes, 16th = quantize to step, ...
+s8 clipTranspose_[TRACKS][SCENES];
+s16 clipScroll_[TRACKS][SCENES];
+u8 clipStretch_[TRACKS][SCENES];      // 1: compress to 1/16th, 2: compress to 1/8th ... 16: no stretch, 32: expand 2x, 64: expand 4x, 128: expand 8x
+NoteData clipNotes_[TRACKS][SCENES][MAXNOTES];  // clip note data storage (chained list, note start time and length/velocity)
+u16 clipNotesSize_[TRACKS][SCENES];   // active number of notes currently in use for that clip
+s8 clipFxSwing_[TRACKS][SCENES];      // If set to >0: clip swing enabled (affects only notes on quantized steps)
+s8 clipFxProbability_[TRACKS][SCENES];// If set to >0: percentage of note drops occuring
+s8 clipFxWave_[TRACKS][SCENES];       // If set to != 0: wave/humanization effect strength active on clip
+u8 clipFxFTSMode_[TRACKS][SCENES];    // If set to >0: FTS enabled, contains FTS scale (major, minor ...)
+u8 clipFxFTSNote_[TRACKS][SCENES];    // FTS base note (C, C#, ...)
+u8 clipType_[TRACKS][SCENES];         // Clip type (0: standard note clip or CC clip of given value)
 
 // --- Secondary data (not on disk) ---
 u8 trackMuteToggleRequested_[TRACKS]; // 1: perform a mute/unmute toggle of the clip at the next measure (synced mute/unmute)
@@ -184,7 +188,7 @@ s32 quantizeTransform(u8 clip, u16 noteNumber)
 
    // stretch
    tick *= clipStretch_[clip][activeScene_];
-   tick = tick >> 4; // divide by 16 (stretch base)
+   tick = tick >> 4U; // divide by 16 (stretch base)
 
    // only consider notes, that are within the clip length after stretching
    if (tick >= clipLengthInTicks)
@@ -194,7 +198,7 @@ s32 quantizeTransform(u8 clip, u16 noteNumber)
    s8 randomMinimum = clipFxProbability_[clip][activeScene_];
    if (randomMinimum)
    {
-      srand(((millisecondsSinceStartup_ >> 5) << 8) + noteNumber);  // Newly rerandomize every ~ 32ms
+      srand(((millisecondsSinceStartup_ >> 5U) << 8U) + noteNumber);  // Newly rerandomize every ~ 32ms
       if ((rand() % 100) < randomMinimum)
          return -1;
    }
@@ -406,21 +410,44 @@ void saveSession(u16 sessionNumber)
    }
    else
    {
-      FILE_WriteBuffer((u8*)"LPAV2200", 8);
+      FILE_WriteBuffer((u8*)"LPAV2205", 8);
 
       status |= FILE_WriteBuffer((u8*)trackMute_, sizeof(trackMute_));
       status |= FILE_WriteBuffer((u8*)trackMidiOutPort_, sizeof(trackMidiOutPort_));
       status |= FILE_WriteBuffer((u8*)trackMidiOutChannel_, sizeof(trackMidiOutChannel_));
-      
       status |= FILE_WriteBuffer((u8*)clipSteps_, sizeof(clipSteps_));
       status |= FILE_WriteBuffer((u8*)clipFxQuantize_, sizeof(clipFxQuantize_));
       status |= FILE_WriteBuffer((u8*)clipTranspose_, sizeof(clipTranspose_));
       status |= FILE_WriteBuffer((u8*)clipScroll_, sizeof(clipScroll_));
       status |= FILE_WriteBuffer((u8*)clipStretch_, sizeof(clipStretch_));
-      
       status |= FILE_WriteBuffer((u8*)clipNotes_, sizeof(clipNotes_));
       status |= FILE_WriteBuffer((u8*)clipNotesSize_, sizeof(clipNotesSize_));
       status |= FILE_WriteBuffer((u8*)notePtrsOn_, sizeof(notePtrsOn_));
+
+      status |= FILE_WriteBuffer((u8*)clipType_, sizeof(clipType_));
+      status |= FILE_WriteBuffer((u8*)sessionName_, sizeof(sessionName_));
+      status |= FILE_WriteBuffer((u8*)&activeTrack_, sizeof(activeTrack_));
+      status |= FILE_WriteBuffer((u8*)&activeScene_, sizeof(activeScene_));
+      status |= FILE_WriteBuffer((u8*)&displayStyle_, sizeof(displayStyle_));
+      status |= FILE_WriteBuffer((u8*)&bpm_, sizeof(bpm_));
+      status |= FILE_WriteBuffer((u8*)&liveMode_, sizeof(liveMode_));
+      status |= FILE_WriteBuffer((u8*)&sceneMode_, sizeof(sceneMode_));
+      status |= FILE_WriteBuffer((u8*)&liveTranspose_, sizeof(liveTranspose_));
+      status |= FILE_WriteBuffer((u8*)&liveBeatLoop_, sizeof(liveBeatLoop_));
+      status |= FILE_WriteBuffer((u8*)&beatloopPattern_, sizeof(beatloopPattern_));
+      status |= FILE_WriteBuffer((u8*)&liveTransposePattern_, sizeof(liveTransposePattern_));
+      status |= FILE_WriteBuffer((u8*)&stepsPerMeasure_, sizeof(stepsPerMeasure_));
+      status |= FILE_WriteBuffer((u8*)&stepsPerBeat_, sizeof(stepsPerBeat_));
+      status |= FILE_WriteBuffer((u8*)&metronomeEnabled_, sizeof(metronomeEnabled_));
+      status |= FILE_WriteBuffer((u8*)trackMidiInPort_, sizeof(trackMidiInPort_));
+      status |= FILE_WriteBuffer((u8*)trackMidiInChannel_, sizeof(trackMidiInChannel_));
+      status |= FILE_WriteBuffer((u8*)trackMidiForward_, sizeof(trackMidiForward_));
+      status |= FILE_WriteBuffer((u8*)trackLiveTranspose_, sizeof(trackLiveTranspose_));
+      status |= FILE_WriteBuffer((u8*)clipFxSwing_, sizeof(clipFxSwing_));
+      status |= FILE_WriteBuffer((u8*)clipFxProbability_, sizeof(clipFxProbability_));
+      status |= FILE_WriteBuffer((u8*)clipFxWave_, sizeof(clipFxWave_));
+      status |= FILE_WriteBuffer((u8*)clipFxFTSMode_, sizeof(clipFxFTSMode_));
+      status |= FILE_WriteBuffer((u8*)clipFxFTSNote_, sizeof(clipFxFTSNote_));
 
       status |= FILE_WriteClose();
    }
@@ -462,16 +489,44 @@ void loadSession(u16 sessionNumber)
       status |= FILE_ReadBuffer((u8*)trackMute_, sizeof(trackMute_));
       status |= FILE_ReadBuffer((u8*)trackMidiOutPort_, sizeof(trackMidiOutPort_));
       status |= FILE_ReadBuffer((u8*)trackMidiOutChannel_, sizeof(trackMidiOutChannel_));
-
       status |= FILE_ReadBuffer((u8*)clipSteps_, sizeof(clipSteps_));
       status |= FILE_ReadBuffer((u8*)clipFxQuantize_, sizeof(clipFxQuantize_));
       status |= FILE_ReadBuffer((u8*)clipTranspose_, sizeof(clipTranspose_));
       status |= FILE_ReadBuffer((u8*)clipScroll_, sizeof(clipScroll_));
       status |= FILE_ReadBuffer((u8*)clipStretch_, sizeof(clipStretch_));
-
       status |= FILE_ReadBuffer((u8*)clipNotes_, sizeof(clipNotes_));
       status |= FILE_ReadBuffer((u8*)clipNotesSize_, sizeof(clipNotesSize_));
       status |= FILE_ReadBuffer((u8*)notePtrsOn_, sizeof(notePtrsOn_));
+
+      if (strncmp(version, "LPAV2200", 8) != 0)
+      {
+         status |= FILE_ReadBuffer((u8*)clipType_, sizeof(clipType_));
+         status |= FILE_ReadBuffer((u8*)sessionName_, sizeof(sessionName_));
+         status |= FILE_ReadBuffer((u8*)&activeTrack_, sizeof(activeTrack_));
+         status |= FILE_ReadBuffer((u8*)&activeScene_, sizeof(activeScene_));
+         sceneChangeRequested_ = activeScene_; // Make sure we don't "switch away" from loaded active scene
+         status |= FILE_ReadBuffer((u8*)&displayStyle_, sizeof(displayStyle_));
+         status |= FILE_ReadBuffer((u8*)&bpm_, sizeof(bpm_));
+         status |= FILE_ReadBuffer((u8*)&liveMode_, sizeof(liveMode_));
+         status |= FILE_ReadBuffer((u8*)&sceneMode_, sizeof(sceneMode_));
+         status |= FILE_ReadBuffer((u8*)&liveTranspose_, sizeof(liveTranspose_));
+         liveTransposeRequested_ = liveTranspose_; // Make sure we don't "switch away" from loaded live transposer setting
+         status |= FILE_ReadBuffer((u8*)&liveBeatLoop_, sizeof(liveBeatLoop_));
+         status |= FILE_ReadBuffer((u8*)&beatloopPattern_, sizeof(beatloopPattern_));
+         status |= FILE_ReadBuffer((u8*)&liveTransposePattern_, sizeof(liveTransposePattern_));
+         status |= FILE_ReadBuffer((u8*)&stepsPerMeasure_, sizeof(stepsPerMeasure_));
+         status |= FILE_ReadBuffer((u8*)&stepsPerBeat_, sizeof(stepsPerBeat_));
+         status |= FILE_ReadBuffer((u8*)&metronomeEnabled_, sizeof(metronomeEnabled_));
+         status |= FILE_ReadBuffer((u8*)trackMidiInPort_, sizeof(trackMidiInPort_));
+         status |= FILE_ReadBuffer((u8*)trackMidiInChannel_, sizeof(trackMidiInChannel_));
+         status |= FILE_ReadBuffer((u8*)trackMidiForward_, sizeof(trackMidiForward_));
+         status |= FILE_ReadBuffer((u8*)trackLiveTranspose_, sizeof(trackLiveTranspose_));
+         status |= FILE_ReadBuffer((u8*)clipFxSwing_, sizeof(clipFxSwing_));
+         status |= FILE_ReadBuffer((u8*)clipFxProbability_, sizeof(clipFxProbability_));
+         status |= FILE_ReadBuffer((u8*)clipFxWave_, sizeof(clipFxWave_));
+         status |= FILE_ReadBuffer((u8*)clipFxFTSMode_, sizeof(clipFxFTSMode_));
+         status |= FILE_ReadBuffer((u8*)clipFxFTSNote_, sizeof(clipFxFTSNote_));
+      }
 
       status |= FILE_ReadClose(&file);
    }
@@ -482,6 +537,9 @@ void loadSession(u16 sessionNumber)
       screenFormattedFlashMessage("Load failed");
 
    MUTEX_SDCARD_GIVE;
+
+   setActiveScene(activeScene_);
+   updateLiveLEDs();
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -833,6 +891,24 @@ s32 seqInit()
    // scheduler should send packages to private hook
    LoopA_MIDI_OUT_Callback_MIDI_SendPackage_Set(hookMIDISendPackage);
 
+   // init basic session data
+   strcpy(sessionName_, "Noname");
+   activeTrack_ = 0;
+   activeScene_ = 0;
+   isRecording_ = 0;
+
+   displayStyle_ = DISPLAYSTYLE_SINGLECLIP;
+   liveMode_ = LIVEMODE_TRANSPOSE;
+   sceneMode_ = SCENEMODE_ALL;
+   beatloopPattern_ = 0;
+   liveTransposePattern_ = 0;
+   liveTranspose_ = 0;
+   liveBeatLoop_ = 0;
+   stepsPerMeasure_ = 16;
+   stepsPerBeat_ = 4;
+   metronomeEnabled_ = 0;
+
+   // init track and scene data
    u8 i, j;
    for (i = 0; i < TRACKS; i++)
    {
@@ -847,15 +923,20 @@ s32 seqInit()
 
       for (j = 0; j < SCENES; j++)
       {
+         clipSteps_[i][j] = 64;
          clipFxQuantize_[i][j] = 1;
          clipTranspose_[i][j] = 0;
          clipScroll_[i][j] = 0;
          clipStretch_[i][j] = 16;
-         clipSteps_[i][j] = 64;
          clipNotesSize_[i][j] = 0;
-         clipActiveNote_[i][j] = 0;
          clipFxSwing_[i][j] = 50;
          clipFxProbability_[i][j] = 0;
+         clipFxWave_[i][j] = 0;
+         clipFxFTSMode_[i][j] = 0;
+         clipFxFTSNote_[i][j] = 0;
+         clipType_[i][j] = 0;
+
+         clipActiveNote_[i][j] = 0;
       }
    }
 
