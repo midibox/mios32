@@ -735,13 +735,11 @@ void clipZoom()
 
 
 /**
- * Edit Clip Page: Clear clip
+ * Clear clip
  *
  */
 void clipClear()
 {
-   command_ = command_ == COMMAND_CLIP_FREEZE ? COMMAND_NONE : COMMAND_CLIP_FREEZE;
-
    clipNotesSize_[activeTrack_][activeScene_] = 0;
 
    u8 i;
@@ -749,6 +747,64 @@ void clipClear()
       notePtrsOn_[i] = -1;
 
    screenFormattedFlashMessage("Clip %d cleared", activeTrack_ + 1);
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Edit Clip Page: Freeze/optimize clip
+ *
+ */
+void clipFreeze()
+{
+   command_ = command_ == COMMAND_CLIP_FREEZE ? COMMAND_NONE : COMMAND_CLIP_FREEZE;
+
+   u16 optimizedNotes = 0;
+   u16 optimizedAmount = 0;
+   u16 i;
+
+   s32 clipLengthInTicks = getClipLengthInTicks(activeTrack_);
+
+   // Copy over notes that have a velocity > 0 (not deleted) and that are visible in the current clip
+   // then reset all transformations, so the notes stay identical
+   for (i = 0; i < clipNotesSize_[activeTrack_][activeScene_]; i++)
+   {
+      if (clipNotes_[activeTrack_][activeScene_][i].velocity &&
+          clipNotes_[activeTrack_][activeScene_][i].length)
+      {
+         s32 tick = clipNotes_[activeTrack_][activeScene_][i].tick;
+         tick *= clipStretch_[activeTrack_][activeScene_];
+         tick = tick / 16; // divide by 16 (stretch base)
+
+         if (tick < clipLengthInTicks)
+         {
+            tick += clipScroll_[activeTrack_][activeScene_] * 24;
+
+            while (tick < 0)
+               tick += clipLengthInTicks;
+
+            clipNotes_[activeTrack_][activeScene_][optimizedNotes] = clipNotes_[activeTrack_][activeScene_][i];
+            clipNotes_[activeTrack_][activeScene_][optimizedNotes].tick = tick % clipLengthInTicks;
+
+            s16 note = clipNotes_[activeTrack_][activeScene_][optimizedNotes].note +
+                       clipTranspose_[activeTrack_][activeScene_];
+            note = note < 0 ? 0 : note;
+            note = note > 127 ? 127 : note;
+            clipNotes_[activeTrack_][activeScene_][optimizedNotes].note = note;
+
+            optimizedNotes++;
+         }
+      }
+   }
+
+   clipTranspose_[activeTrack_][activeScene_] = 0;
+   clipScroll_[activeTrack_][activeScene_] = 0;
+   clipStretch_[activeTrack_][activeScene_] = 16;
+
+   optimizedAmount = clipNotesSize_[activeTrack_][activeScene_] - optimizedNotes;
+   clipNotesSize_[activeTrack_][activeScene_] = optimizedNotes;
+
+   screenFormattedFlashMessage("%d notes optimized", optimizedAmount);
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -1271,7 +1327,7 @@ void loopaButtonPressed(s32 pin)
       }
       else
       {
-         clipClear(); // shortcut: clear track
+         clipClear();
          command_ = COMMAND_NONE;
       }
    }
@@ -1497,7 +1553,7 @@ void loopaButtonPressed(s32 pin)
                toggleMute(5);
                break;
             case PAGE_CLIP:
-               clipClear();
+               clipFreeze();
                break;
             case PAGE_TRACK:
                trackToggleLiveTranspose();

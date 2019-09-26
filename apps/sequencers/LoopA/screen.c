@@ -803,7 +803,7 @@ void displayPageClip(void)
    }
 
    command_ == COMMAND_CLIP_FREEZE ? setFontInverted() : setFontNonInverted();
-   printFormattedString(210, 53, "Clear");
+   printFormattedString(210, 53, "Freeze");
 
    setFontNonInverted();
    displayClip(activeTrack_);

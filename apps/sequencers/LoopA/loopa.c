@@ -114,7 +114,7 @@ u16 tickToStep(u32 tick)
  */
 u32 stepToTick(u16 step)
 {
-   return step * (SEQ_BPM_PPQN_Get() / 4);
+   return step * TICKS_PER_STEP;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -207,7 +207,7 @@ s32 quantizeTransform(u8 clip, u16 noteNumber)
    }
 
    // scroll
-   tick += clipScroll_[clip][activeScene_] * 24;
+   tick += clipScroll_[clip][activeScene_] * TICKS_PER_STEP;
 
    while (tick < 0)
       tick += clipLengthInTicks;
