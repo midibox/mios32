@@ -3,6 +3,8 @@
 #include <mios32.h>
 #include "commonIncludes.h"
 
+#include "app.h"
+#include "hardware.h"
 #include "tasks.h"
 #include "screen.h"
 #include "gfx_resources.h"
@@ -1596,7 +1598,7 @@ void display()
 
    frameCounter_++;
 
-   if (isScreensaverActive())
+   if (isScreensaverActive() && hw_enabled != HARDWARE_LOOPA_TESTMODE)
    {
       voxelFrame();
    }
@@ -1605,18 +1607,28 @@ void display()
       // Startup/initial session loading: Render the LoopA Logo
       voxelFrame();
 
-      setFontLoopALogo();
-      printFormattedString(52, 2, " ");
+      if (hw_enabled == HARDWARE_STARTUP || hw_enabled == HARDWARE_LOOPA_OPERATIONAL)
+      {
+         setFontLoopALogo();
+         printFormattedString(52, 2, " ");
 
-      setFontBold();  // width per letter: 10px (for center calculation)
-      printFormattedString(146, 2, "V2.05");
+         setFontBold();  // width per letter: 10px (for center calculation)
+         printFormattedString(146, 2, "V2.05");
 
-      setFontSmall(); // width per letter: 6px
-      printFormattedString(28, 20, "(C) Hawkeye, latigid on, TK. 2019");
-      printFormattedString(52, 32, "MIDIbox hardware platform");
+         setFontSmall(); // width per letter: 6px
+         printFormattedString(28, 20, "(C) Hawkeye, latigid on, TK. 2019");
+         printFormattedString(52, 32, "MIDIbox hardware platform");
 
-      setFontBold(); // width per letter: 10px;
-      printFormattedString(52, 44, "www.midiphy.com");
+         setFontBold(); // width per letter: 10px;
+         printFormattedString(52, 44, "www.midiphy.com");
+      }
+      else
+      {
+         // Testmode
+         setFontSmall();
+         printFormattedString(0, 40, "LoopA Testmode");
+         printFormattedString(0, 52, "Insert FAT32-formatted SD card to launch");
+      }
    }
    else if (screenIsInMenu())
    {
