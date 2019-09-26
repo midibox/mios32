@@ -13,6 +13,8 @@
 #define TICKS_PER_QUARTERNOTE 96
 #define TICKS_PER_STEP (TICKS_PER_QUARTERNOTE/4)
 
+#define ACCEL_FACTOR 4 // when value encoder is pushed, accellerate input changes
+
 // --- Data structures ---
 
 enum DisplayStyle
@@ -68,7 +70,9 @@ extern u8 sceneMode_;                        // switch full scene when turning u
 extern u8 beatloopPattern_;                  // currently active beatloop pattern (the first few are inbuilt, the rest is dynamically loaded from disk)
 extern u8 liveTransposePattern_;             // currently active live transposer pattern (the first few are inbuilt, the rest is dynamically loaded from disk)
 extern s8 liveTranspose_;                    // Live transpose value (+/- 7)
+extern s8 liveAlternatingTranspose_;         // Live alternating transpose value (switch between main and alternating vales with Shift + upper right encoder button)
 extern s8 liveBeatLoop_;                     // Live beatloop value (+/- 7)
+extern s8 liveAlternatingBeatLoop_;          // Live alternating beatloop value (switch between main and alternating vales with Shift + upper right encoder button)
 extern u16 stepsPerMeasure_;                 // number of steps for one measure (adjustable) - 16 steps default for a 4/4 beat
 extern u8 stepsPerBeat_;                     // number of steps for one beat (adjustable) - 4 steps default for a 4/4 beat
 extern u8 metronomeEnabled_;                 // Set to 1, if metronome is turned on in bpm screen
@@ -105,7 +109,7 @@ extern u8 trackMuteToggleRequested_[TRACKS]; // 1: perform a mute/unmute toggle 
 extern u8 sceneChangeRequested_;             // If != activeScene_, this will be the scene we are changing to at the next measure
 extern s8 liveTransposeRequested_;           // 1: perform a live transpose change at the next measure
 extern u16 clipActiveNote_[TRACKS][SCENES];  // currently active edited note number, when in noteroll editor
-
+extern s8 valueEncoderAccel_;                // 1: value encoder pushed (while turning) -> accellerate data inputs
 
 // Help function: convert tick number to step number
 u16 tickToStep(u32 tick);

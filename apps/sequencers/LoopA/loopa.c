@@ -51,7 +51,9 @@ u8 sceneMode_ = SCENEMODE_ALL;        // switch full scene when turning upper-le
 u8 beatloopPattern_ = 0;              // currently active beatloop pattern (the first few are inbuilt, the rest is dynamically loaded from disk)
 u8 liveTransposePattern_ = 0;         // currently active live transposer pattern (the first few are inbuilt, the rest is dynamically loaded from disk)
 s8 liveTranspose_ = 0;                // Live transpose value (+/- 7)
+s8 liveAlternatingTranspose_ = 0;     // Live alternating transpose value (switch between main and alternating vales with Shift + upper right encoder button)
 s8 liveBeatLoop_ = 0;                 // Live beatloop value (+/- 7)
+s8 liveAlternatingBeatLoop_ = 0;      // Live alternating beatloop value (switch between main and alternating vales with Shift + upper right encoder button)
 u16 stepsPerMeasure_ = 16;            // number of steps for one beatloop (session-adjustable in bpm menu)
 u8 stepsPerBeat_ = 4;                 // number of steps for one beat (adjustable) - 4 steps default for a 4/4 beat
 u8 metronomeEnabled_ = 0;             // Set to 1, if metronome is turned on in bpm screen
@@ -88,6 +90,7 @@ u8 trackMuteToggleRequested_[TRACKS]; // 1: perform a mute/unmute toggle of the 
 u8 sceneChangeRequested_ = 0;         // If != activeScene_, this will be the scene we are changing to at the next measure
 s8 liveTransposeRequested_ = 0;       // If != active liveTranspose_, perform a live transpose change at the next measure
 u16 clipActiveNote_[TRACKS][SCENES];  // currently active edited note number, when in noteroll editor
+s8 valueEncoderAccel_ = 0;            // 1: value encoder pushed (while turning) -> accellerate data inputs
 
 // =================================================================================================
 
@@ -448,6 +451,8 @@ void saveSession(u16 sessionNumber)
       status |= FILE_WriteBuffer((u8*)clipFxWave_, sizeof(clipFxWave_));
       status |= FILE_WriteBuffer((u8*)clipFxFTSMode_, sizeof(clipFxFTSMode_));
       status |= FILE_WriteBuffer((u8*)clipFxFTSNote_, sizeof(clipFxFTSNote_));
+      status |= FILE_WriteBuffer((u8*)&liveAlternatingTranspose_, sizeof(liveAlternatingTranspose_));
+      status |= FILE_WriteBuffer((u8*)&liveAlternatingBeatLoop_, sizeof(liveAlternatingBeatLoop_));
 
       status |= FILE_WriteClose();
    }
@@ -526,6 +531,8 @@ void loadSession(u16 sessionNumber)
          status |= FILE_ReadBuffer((u8*)clipFxWave_, sizeof(clipFxWave_));
          status |= FILE_ReadBuffer((u8*)clipFxFTSMode_, sizeof(clipFxFTSMode_));
          status |= FILE_ReadBuffer((u8*)clipFxFTSNote_, sizeof(clipFxFTSNote_));
+         status |= FILE_ReadBuffer((u8*)&liveAlternatingTranspose_, sizeof(liveAlternatingTranspose_));
+         status |= FILE_ReadBuffer((u8*)&liveAlternatingBeatLoop_, sizeof(liveAlternatingBeatLoop_));
       }
 
       status |= FILE_ReadClose(&file);

@@ -334,6 +334,8 @@ void updateSwitchLEDs()
    }
    else if (screenIsInShift())
    {
+      led_shift = LED_RED;
+
       // --- Within shift, indicate unmuted tracks (green) and keys currently pressed (red)
       led_gp1 |= (trackMuteToggleRequested_[0] && flashMuteToggle) ? (trackMute_[0] ? LED_GREEN : LED_OFF) : (trackMute_[0] ? LED_OFF : LED_GREEN);
       led_gp2 |= (trackMuteToggleRequested_[1] && flashMuteToggle) ? (trackMute_[1] ? LED_GREEN : LED_OFF) : (trackMute_[1] ? LED_OFF : LED_GREEN);
@@ -1535,20 +1537,37 @@ void loopaButtonPressed(s32 pin)
          switch (liveMode_)
          {
             case LIVEMODE_TRANSPOSE:
-               liveTransposeRequested_ = 0;
+               if (liveTranspose_ == 0)
+                  liveTransposeRequested_ = liveAlternatingTranspose_;
+               else
+               {
+                  liveAlternatingTranspose_ = liveTranspose_;
+                  liveTransposeRequested_ = 0;
+               }
+
                if (!SEQ_BPM_IsRunning())
-                  liveTranspose_ = 0;
+                  liveTranspose_ = liveTransposeRequested_;
                break;
 
             default: // LIVEMODE_BEATLOOP
-               liveBeatLoop_ = 0;
+               if (liveBeatLoop_ == 0)
+                  liveBeatLoop_ = liveAlternatingBeatLoop_;
+               else
+               {
+                  liveAlternatingBeatLoop_ = liveBeatLoop_;
+                  liveBeatLoop_ = 0;
+               }
                break;
          }
       }
-
       if (!SEQ_BPM_IsRunning())
          updateLiveLEDs();
    }
+   else if (pin == sw_enc_value)
+   {
+      valueEncoderAccel_ = 1;
+   }
+
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -1578,6 +1597,8 @@ void loopaButtonReleased(s32 pin)
    }
    else if (pin == sw_enc_value)
    {
+      valueEncoderAccel_ = 0;
+
       if (scrubModeActive_)
       {
          // Screenshot feature - triggered when two lower two encoder buttons are pressed
@@ -1640,6 +1661,31 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
    inactivitySeconds_ = 0;
    incrementer = -incrementer;
    DEBUG_MSG("[Encoder] %d turned, direction %d\n", encoder, incrementer);
+
+   // Value encoder input acceleration (when pressed)
+   if (valueEncoderAccel_)
+   {
+      switch (command_)
+      {
+         case COMMAND_CLIP_TRANSPOSE:
+            incrementer *= 12; // octave transposing
+            break;
+         case COMMAND_NOTE_POSITION:
+            incrementer *= TICKS_PER_STEP * ACCEL_FACTOR;
+         default:
+            incrementer *= ACCEL_FACTOR;
+            break;
+      }
+   }
+   else
+   {
+      switch (command_)
+      {
+         case COMMAND_NOTE_POSITION:
+            incrementer *= TICKS_PER_STEP;
+            break;
+      }
+   }
 
    // Upper-left Scene encoder
    if (encoder == enc_scene_id)
@@ -1779,10 +1825,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
       }
       else if (command_ == COMMAND_CLIP_TRANSPOSE)
       {
-         if (incrementer > 0)
-            clipTranspose_[activeTrack_][activeScene_]++;
-         else
-            clipTranspose_[activeTrack_][activeScene_]--;
+         clipTranspose_[activeTrack_][activeScene_] += incrementer;
 
          if (clipTranspose_[activeTrack_][activeScene_] < -96)
             clipTranspose_[activeTrack_][activeScene_] = -96;
@@ -1825,7 +1868,8 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
             // only perform changes, if we are in range (still on the same clip)
 
             s16 newTick = clipNotes_[activeTrack_][activeScene_][activeNote].tick;
-            newTick += incrementer > 0 ? TICKS_PER_STEP : -TICKS_PER_STEP;
+            newTick += incrementer;
+
             u32 clipLength = getClipLengthInTicks(activeTrack_);
 
             if (newTick < 0)
@@ -1833,6 +1877,9 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
 
             if (newTick >= clipLength)
                newTick -= clipLength;
+
+            // Normalize newTick to displayed step position
+            newTick = (newTick / TICKS_PER_STEP) * TICKS_PER_STEP;
 
             clipNotes_[activeTrack_][activeScene_][activeNote].tick = (u16)newTick;
          }

@@ -1698,8 +1698,12 @@ void display()
             setFontInverted();
          printFormattedString(track * 36 + 30, 7, "%d%c", track + 1, 'A' + activeScene_);
       }
-
       setFontNonInverted();
+
+      setFontKeyIcon();
+      iconId = 32 + KEYICON_SHIFT_INVERTED;
+      printFormattedString(2 * 36, 32, "%c", iconId);
+
       setFontBold();
    }
    else
