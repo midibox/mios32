@@ -37,7 +37,6 @@
 #include "screen.h"
 #include "midi_out.h"
 
-
 // #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
@@ -372,6 +371,7 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 
             // immediately go to next step
             sdcard_check_ctr = sdcard_check_delay;
+            FILE_MakeDir("/SESSIONS");
          }
          else if (status == 2)
          {

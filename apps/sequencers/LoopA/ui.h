@@ -77,6 +77,8 @@ enum KeyIcon
 extern u8 routerActiveRoute_;
 extern u8 setupActiveItem_;
 extern u8 scrubModeActive_;
+extern s8 showShiftAbout_;
+extern s8 showShiftHelp_;
 
 // --- UI State Changes ---
 

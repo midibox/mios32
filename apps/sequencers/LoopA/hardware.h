@@ -120,6 +120,7 @@ extern const u8 enc_live;
 extern const u8 enc_value_id;
 extern const u8 enc_value;
 
-// --- Functions (hardware testmode) --
+// --- Functions (hardware testmode) ---
+
 extern void testmodeFlashAllLEDs();
 extern void hardwareTestmodeIterateLEDs();

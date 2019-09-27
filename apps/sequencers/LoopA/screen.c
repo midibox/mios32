@@ -746,6 +746,100 @@ void displaySceneTrackInfo(void)
 
 
 /**
+ * Display context sensitive help text for given screen
+ *
+ */
+void displayHelp(void)
+{
+   setFontSmall();
+   switch(page_)
+   {
+      case PAGE_MUTE:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "The MUTE screen allows for measure-synced");
+         printFormattedString(0, 12, "muting and unmuting of the six tracks by ");
+         printFormattedString(0, 24, "pushing GP buttons 1 - 6. You can also");
+         printFormattedString(0, 36, "directly mute/unmute from everywhere");
+         printFormattedString(0, 48, "when pushing/holding the SHIFT button.");
+         break;
+      case PAGE_CLIP:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "The CLIP screen allows to set clip length,");
+         printFormattedString(0, 12, "transpose (TRN), scroll steps around (SCR)");
+         printFormattedString(0, 24, "and to time-stretch notes (ZOOM).");
+         printFormattedString(0, 36, "FREEZEing will reset these transformations");
+         printFormattedString(0, 48, "while retaining notes at their positions.");
+         break;
+      case PAGE_NOTES:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "On the NOTES screen, select the active");
+         printFormattedString(0, 12, "note with the SELECT encoder, then you can");
+         printFormattedString(0, 24, "move (POS), change the note (e.g. D-2),");
+         printFormattedString(0, 36, "velocity (VEL) and length (LEN) of the");
+         printFormattedString(0, 48, "active note and also DELETE unwanted notes.");
+         break;
+      case PAGE_LIVEFX:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "The LiveFX screen allows to quantize (QU)");
+         printFormattedString(0, 12, "notes, apply swing to quantized notes (SW)");
+         printFormattedString(0, 24, "and randomly skip notes (PR).");
+         printFormattedString(0, 36, "");
+         printFormattedString(0, 48, "More FX will be added :)");
+         break;
+      case PAGE_TRACK:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "Leftmost options configure OUTPUT MIDI");
+         printFormattedString(0, 12, "port/channel/instrument. I: and IC: define");
+         printFormattedString(0, 24, "INPUT MIDI ports (or ALL). FWD will live-");
+         printFormattedString(0, 36, "forward inputs to output. LTR ON enables");
+         printFormattedString(0, 48, "track transposition with the LIVE encoder");
+         break;
+      case PAGE_TEMPO:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "The leftmost option sets the current");
+         printFormattedString(0, 12, "BPM of this session. FASTER/SLOWER buttons");
+         printFormattedString(0, 24, "linearly increase/decrease BPM.");
+         printFormattedString(0, 36, "METR. enables/disables SETTINGS-configured");
+         printFormattedString(0, 48, "MIDI metronome output.");
+         break;
+      case PAGE_DISK:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "SELECT or the SELECT encoder choose the");
+         printFormattedString(0, 12, "session number. SAVE will store the memory");
+         printFormattedString(0, 24, "session to SD card. LOAD will restore the");
+         printFormattedString(0, 36, "selected session number from SD card and");
+         printFormattedString(0, 48, "NEW will create a new session in memory.");
+         break;
+      case PAGE_MIDIMONITOR:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "The MIDI monitor shows current interface");
+         printFormattedString(0, 12, "activity in the top two lines and displays");
+         printFormattedString(0, 24, "a log of inbound and outbound MIDI packets");
+         printFormattedString(0, 36, "with an abbreviated packet header hex dump");
+         printFormattedString(0, 48, "and the packet timestamp since LoopA start.");
+         break;
+      case PAGE_ROUTER:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "The MIDI router allows to set up permanent");
+         printFormattedString(0, 12, "routes from MIDI inputs (IN P and IN Ch)");
+         printFormattedString(0, 24, "to MIDI outputs (OUT P and OUT Ch).");
+         printFormattedString(0, 36, "You can use the SELECT encoder to scroll");
+         printFormattedString(0, 48, "and select the active route.");
+         break;
+      case PAGE_SETUP:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "In SETUP you can configure permanent");
+         printFormattedString(0, 12, "runtime parameters of your LoopA, like the");
+         printFormattedString(0, 24, "system font and metronome settings.");
+         printFormattedString(0, 36, "You can use the SELECT encoder to scroll");
+         printFormattedString(0, 48, "and select the configuration entry.");
+         break;
+   }
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
  * Display the normal loopa view (PAGE_TRACK)
  *
  */
@@ -1602,7 +1696,7 @@ void display()
    {
       voxelFrame();
    }
-   else if (screenShowLoopaLogo_)
+   else if (screenShowLoopaLogo_ || showShiftAbout_)
    {
       // Startup/initial session loading: Render the LoopA Logo
       voxelFrame();
@@ -1681,6 +1775,10 @@ void display()
 
       setFontBold();
    }
+   else if (showShiftHelp_)
+   {
+      displayHelp();
+   }
    else if (screenIsInShift())
    {
       voxelFrame();
@@ -1713,6 +1811,12 @@ void display()
       setFontNonInverted();
 
       setFontKeyIcon();
+      iconId = 32 + KEYICON_ABOUT;
+      printFormattedString(0 * 36, 32, "%c", iconId);
+
+      iconId = 32 + KEYICON_HELP;
+      printFormattedString(1 * 36, 32, "%c", iconId);
+
       iconId = 32 + KEYICON_SHIFT_INVERTED;
       printFormattedString(2 * 36, 32, "%c", iconId);
 

@@ -28,6 +28,8 @@ u8 copiedClipStretch_;
 NoteData copiedClipNotes_[MAXNOTES];
 u16 copiedClipNotesSize_;
 u8 shiftTrackMutePressed_[TRACKS] = { 0, 0, 0, 0, 0, 0};
+s8 showShiftAbout_ = 0;
+s8 showShiftHelp_ = 0;
 
 u8 routerActiveRoute_ = 0;
 u8 setupActiveItem_ = 0;
@@ -1240,31 +1242,45 @@ void loopaButtonPressed(s32 pin)
          if (screenIsInMenu())
          {
             setActivePage(PAGE_SETUP);
-         } else
+         }
+         else if (screenIsInShift())
+         {
+            showShiftAbout_ = 1;
+         }
+         else
          {
             seqPlayStopButton();
          }
-      } else if (pin == sw_armrecord)
+      }
+      else if (pin == sw_armrecord)
       {
          if (screenIsInMenu())
          {
             setActivePage(PAGE_ROUTER);
-         } else
+         }
+         else if (screenIsInShift())
+         {
+            showShiftHelp_ = 1;
+         }
+         else
          {
             seqArmButton();
          }
-      } else if (pin == sw_shift)
+      }
+      else if (pin == sw_shift)
       {
          if (screenIsInMenu())
          {
             diskScanSessionFileAvailable();
             setActivePage(PAGE_DISK);
-         } else
+         }
+         else
          {
             // normal mode "shift"
             screenShowShift(1);
          }
-      } else if (pin == sw_menu)
+      }
+      else if (pin == sw_menu)
       {
          /*if (screenIsInShift())
          {
@@ -1276,12 +1292,14 @@ void loopaButtonPressed(s32 pin)
             calcField();
             screenShowMenu(1);
          }
-      } else if (pin == sw_copy)
+      }
+      else if (pin == sw_copy)
       {
          if (screenIsInMenu())
          {
             setActivePage(PAGE_CLIP);
-         } else
+         }
+         else
          {
             // normal mode "copy"
             copiedClipSteps_ = clipSteps_[activeTrack_][activeScene_];
@@ -1293,12 +1311,14 @@ void loopaButtonPressed(s32 pin)
             copiedClipNotesSize_ = clipNotesSize_[activeTrack_][activeScene_];
             screenFormattedFlashMessage("copied clip to buffer");
          }
-      } else if (pin == sw_paste)
+      }
+      else if (pin == sw_paste)
       {
          if (screenIsInMenu())
          {
             setActivePage(PAGE_LIVEFX);
-         } else
+         }
+         else
          {
             // paste only, if we have a clip in memory
             if (copiedClipSteps_ > 0)
@@ -1311,28 +1331,34 @@ void loopaButtonPressed(s32 pin)
                memcpy(clipNotes_[activeTrack_][activeScene_], copiedClipNotes_, sizeof(copiedClipNotes_));
                clipNotesSize_[activeTrack_][activeScene_] = copiedClipNotesSize_;
                screenFormattedFlashMessage("pasted clip from buffer");
-            } else
+            }
+            else
                screenFormattedFlashMessage("no clip in buffer");
          }
-      } else if (pin == sw_delete)
+      }
+      else if (pin == sw_delete)
       {
          if (screenIsInMenu())
          {
             setActivePage(PAGE_TRACK);
-         } else
+         }
+         else
          {
             clipClear();
             command_ = COMMAND_NONE;
          }
-      } else if (pin == sw_gp1)
+      }
+      else if (pin == sw_gp1)
       {
          if (screenIsInMenu())
          {
             // setActivePage(PAGE_SONG); TODO
-         } else if (screenIsInShift())
+         }
+         else if (screenIsInShift())
          {
             shiftTrackMuteTogglePressed(0); // Toggling mute/unmute in shift menu
-         } else
+         }
+         else
          {
             switch (page_)
             {
@@ -1365,15 +1391,18 @@ void loopaButtonPressed(s32 pin)
                   break;
             }
          }
-      } else if (pin == sw_gp2)
+      }
+      else if (pin == sw_gp2)
       {
          if (screenIsInMenu())
          {
             setActivePage(PAGE_MIDIMONITOR);
-         } else if (screenIsInShift())
+         }
+         else if (screenIsInShift())
          {
             shiftTrackMuteTogglePressed(1); // Toggling mute/unmute in shift menu
-         } else
+         }
+         else
          {
             switch (page_)
             {
@@ -1403,15 +1432,18 @@ void loopaButtonPressed(s32 pin)
                   break;
             }
          }
-      } else if (pin == sw_gp3)
+      }
+      else if (pin == sw_gp3)
       {
          if (screenIsInMenu())
          {
             setActivePage(PAGE_TEMPO);
-         } else if (screenIsInShift())
+         }
+         else if (screenIsInShift())
          {
             shiftTrackMuteTogglePressed(2); // Toggling mute/unmute in shift menu
-         } else
+         }
+         else
          {
             // Normal GP3 page handling
 
@@ -1446,15 +1478,18 @@ void loopaButtonPressed(s32 pin)
                   break;
             }
          }
-      } else if (pin == sw_gp4)
+      }
+      else if (pin == sw_gp4)
       {
          if (screenIsInMenu())
          {
             setActivePage(PAGE_MUTE);
-         } else if (screenIsInShift())
+         }
+         else if (screenIsInShift())
          {
             shiftTrackMuteTogglePressed(3); // Toggling mute/unmute in shift menu
-         } else
+         }
+         else
          {
             switch (page_)
             {
@@ -1484,15 +1519,18 @@ void loopaButtonPressed(s32 pin)
                   break;
             }
          }
-      } else if (pin == sw_gp5)
+      }
+      else if (pin == sw_gp5)
       {
          if (screenIsInMenu())
          {
             setActivePage(PAGE_NOTES);
-         } else if (screenIsInShift())
+         }
+         else if (screenIsInShift())
          {
             shiftTrackMuteTogglePressed(4); // Toggling mute/unmute in shift menu
-         } else
+         }
+         else
          {
             switch (page_)
             {
@@ -1513,15 +1551,18 @@ void loopaButtonPressed(s32 pin)
                   break;
             }
          }
-      } else if (pin == sw_gp6)
+      }
+      else if (pin == sw_gp6)
       {
          if (screenIsInMenu())
          {
             // setActivePage(PAGE_ARPECHO); TODO
-         } else if (screenIsInShift())
+         }
+         else if (screenIsInShift())
          {
             shiftTrackMuteTogglePressed(5); // Toggling mute/unmute in shift menu
-         } else
+         }
+         else
          {
             switch (page_)
             {
@@ -1542,10 +1583,12 @@ void loopaButtonPressed(s32 pin)
                   break;
             }
          }
-      } else if (pin == sw_enc_select)
+      }
+      else if (pin == sw_enc_select)
       {
          scrubModeActive_ = 1;
-      } else if (pin == sw_enc_live)
+      }
+      else if (pin == sw_enc_live)
       {
          if (!screenIsInShift())
          {
@@ -1560,7 +1603,8 @@ void loopaButtonPressed(s32 pin)
                default:
                   liveMode_ = LIVEMODE_TRANSPOSE;
             }
-         } else
+         }
+         else
          {
             // Inside SHIFT menu: reset current live mode parameter
             switch (liveMode_)
@@ -1591,7 +1635,8 @@ void loopaButtonPressed(s32 pin)
          }
          if (!SEQ_BPM_IsRunning())
             updateLiveLEDs();
-      } else if (pin == sw_enc_value)
+      }
+      else if (pin == sw_enc_value)
       {
          valueEncoderAccel_ = 1;
       }
@@ -1617,18 +1662,31 @@ void loopaButtonReleased(s32 pin)
       inactivitySeconds_ = 0;
       tempoFade_ = 0;
 
-      if (pin == sw_menu)
+      if (pin == sw_runstop)
+      {
+         if (screenIsInShift())
+            showShiftAbout_ = 0;
+      }
+      else if (pin == sw_armrecord)
+      {
+         if (screenIsInShift())
+            showShiftHelp_ = 0;
+      }
+      else if (pin == sw_menu)
       {
          if (screenIsInMenu())
             screenShowMenu(0); // Left the menu by releasing the menu button
-      } else if (pin == sw_shift)
+      }
+      else if (pin == sw_shift)
       {
          if (screenIsInShift())
             screenShowShift(0); // Left the shift overlay by releasing the shift button
-      } else if (pin == sw_enc_select)
+      }
+      else if (pin == sw_enc_select)
       {
          scrubModeActive_ = 0;
-      } else if (pin == sw_enc_value)
+      }
+      else if (pin == sw_enc_value)
       {
          valueEncoderAccel_ = 0;
 
@@ -1638,37 +1696,43 @@ void loopaButtonReleased(s32 pin)
             screenshotRequested_ = 1;
             scrubModeActive_ = 0;
          }
-      } else if (pin == sw_gp1)
+      }
+      else if (pin == sw_gp1)
       {
          if (screenIsInShift())
          {
             shiftTrackMuteToggleReleased(0); // Released toggling mute/unmute in shift menu
          }
-      } else if (pin == sw_gp2)
+      }
+      else if (pin == sw_gp2)
       {
          if (screenIsInShift())
          {
             shiftTrackMuteToggleReleased(1); // Released toggling mute/unmute in shift menu
          }
-      } else if (pin == sw_gp3)
+      }
+      else if (pin == sw_gp3)
       {
          if (screenIsInShift())
          {
             shiftTrackMuteToggleReleased(2); // Released toggling mute/unmute in shift menu
          }
-      } else if (pin == sw_gp4)
+      }
+      else if (pin == sw_gp4)
       {
          if (screenIsInShift())
          {
             shiftTrackMuteToggleReleased(3); // Released toggling mute/unmute in shift menu
          }
-      } else if (pin == sw_gp5)
+      }
+      else if (pin == sw_gp5)
       {
          if (screenIsInShift())
          {
             shiftTrackMuteToggleReleased(4); // Released toggling mute/unmute in shift menu
          }
-      } else if (pin == sw_gp6)
+      }
+      else if (pin == sw_gp6)
       {
          if (screenIsInShift())
          {
