@@ -24,6 +24,13 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+enum HardwareMode
+{
+   HARDWARE_STARTUP,
+   HARDWARE_LOOPA_OPERATIONAL,
+   HARDWARE_LOOPA_TESTMODE
+
+};
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -46,7 +53,7 @@ extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u8 hw_enabled;
+extern enum HardwareMode hw_enabled;
 
 
 #endif /* _APP_H */

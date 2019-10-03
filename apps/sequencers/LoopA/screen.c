@@ -3,6 +3,8 @@
 #include <mios32.h>
 #include "commonIncludes.h"
 
+#include "app.h"
+#include "hardware.h"
 #include "tasks.h"
 #include "screen.h"
 #include "gfx_resources.h"
@@ -27,7 +29,6 @@ u32 screenSongStep_ = 0;
 char screenFlashMessage_[40];
 u8 screenFlashMessageFrameCtr_;
 char sceneChangeNotification_[20] = "";
-u8 screenNewPagePanelFrameCtr_ = 0;
 u8 screenshotRequested_ = 0;    // if set to 1, will save screenshot to sd card when the next frame is rendered
 
 unsigned char* fontptr_ = (unsigned char*) fontsmall_b_pixdata;
@@ -306,6 +307,10 @@ void printPageIcon()
       case PAGE_SETUP:
          c = KEYICON_SETUP;
          break;
+
+      case PAGE_LIVEFX:
+         c = KEYICON_LIVEFX;
+         break;
    }
 
    unsigned x;
@@ -344,6 +349,8 @@ void printPageIcon()
       s_y++;
    }
 }
+// ----------------------------------------------------------------------------------------
+
 
 /**
  * Display the given formatted string at the given y pixel coordinates, center x
@@ -602,17 +609,6 @@ void screenSetSceneChangeInTicks(u8 ticks)
 
 
 /**
- * Notify, that a screen page change has occured (flash a page descriptor for a while)
- *
- */
-void screenNotifyPageChanged()
-{
-   screenNewPagePanelFrameCtr_ = 20;
-}
-// ----------------------------------------------------------------------------------------
-
-
-/**
  * Convert note length to pixel width
  * if ticksLength == 0 (still recording),
  *
@@ -635,7 +631,7 @@ void displayClip(u8 track)
    u16 i;
    u16 mult = 128/clipSteps_[track][activeScene_];  // horizontal multiplier to make clips as wide as the screen
 
-   u16 curStep = ((u32)boundTickToClipSteps(tick_, track) * mult) / 24;
+   u16 curStep = ((u32)boundTickToClipSteps(tick_, track) * mult) / TICKS_PER_STEP;
 
    // Render vertical 1/4th note indicators
    for (i=0; i<clipSteps_[track][activeScene_] / 4; i++)
@@ -656,11 +652,11 @@ void displayClip(u8 track)
    // Render note data
    for (i=0; i < clipNotesSize_[track][activeScene_]; i++)
    {
-      s32 transformedStep = (s32)quantizeTransform(track, i) * mult;
+      s32 transformedTick = (s32)quantizeTransform(track, i) * mult;
 
-      if (transformedStep >= 0) // if note starts within (potentially reconfigured) track length
+      if (transformedTick >= 0) // if note starts within (potentially reconfigured) track length
       {
-         u16 step = transformedStep / 24;
+         u16 step = transformedTick / TICKS_PER_STEP;
 
          s16 note = clipNotes_[track][activeScene_][i].note + clipTranspose_[track][activeScene_] + liveTransposeSemi;
          note = note < 0 ? 0 : note;
@@ -739,12 +735,106 @@ void displayTrackInstrumentInfo()
 void displaySceneTrackInfo(void)
 {
    setFontSmall();
-   printFormattedString(0, 0, "%c%d", 'A' + activeScene_, activeTrack_ + 1);
+   printFormattedString(0, 0, "%d%c", activeTrack_ + 1, 'A' + activeScene_);
 
    if (trackMute_[activeTrack_])
       printFormattedString(18, 0, "[mute]%s",  sceneChangeNotification_);
    else
       printFormattedString(18, 0, "%s", sceneChangeNotification_);
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Display context sensitive help text for given screen
+ *
+ */
+void displayHelp(void)
+{
+   setFontSmall();
+   switch(page_)
+   {
+      case PAGE_MUTE:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "The MUTE screen allows for measure-synced");
+         printFormattedString(0, 12, "muting and unmuting of the six tracks by ");
+         printFormattedString(0, 24, "pushing GP buttons 1 - 6. You can also");
+         printFormattedString(0, 36, "directly mute/unmute from everywhere");
+         printFormattedString(0, 48, "when pushing/holding the SHIFT button.");
+         break;
+      case PAGE_CLIP:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "The CLIP screen allows to set clip length,");
+         printFormattedString(0, 12, "transpose (TRN), scroll steps around (SCR)");
+         printFormattedString(0, 24, "and to time-stretch notes (ZOOM).");
+         printFormattedString(0, 36, "FREEZEing will reset these transformations");
+         printFormattedString(0, 48, "while retaining notes at their positions.");
+         break;
+      case PAGE_NOTES:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "On the NOTES screen, select the active");
+         printFormattedString(0, 12, "note with the SELECT encoder, then you can");
+         printFormattedString(0, 24, "move (POS), change the note (e.g. D-2),");
+         printFormattedString(0, 36, "velocity (VEL) and length (LEN) of the");
+         printFormattedString(0, 48, "active note and also DELETE unwanted notes.");
+         break;
+      case PAGE_LIVEFX:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "The LiveFX screen allows to quantize (QU)");
+         printFormattedString(0, 12, "notes, apply swing to quantized notes (SW)");
+         printFormattedString(0, 24, "and randomly skip notes (PR).");
+         printFormattedString(0, 36, "");
+         printFormattedString(0, 48, "More FX will be added :)");
+         break;
+      case PAGE_TRACK:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "Leftmost options configure OUTPUT MIDI");
+         printFormattedString(0, 12, "port/channel/instrument. I: and IC: define");
+         printFormattedString(0, 24, "INPUT MIDI ports (or ALL). FWD will live-");
+         printFormattedString(0, 36, "forward inputs to output. LTR ON enables");
+         printFormattedString(0, 48, "track transposition with the LIVE encoder");
+         break;
+      case PAGE_TEMPO:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "The leftmost option sets the current");
+         printFormattedString(0, 12, "BPM of this session. FASTER/SLOWER buttons");
+         printFormattedString(0, 24, "linearly increase/decrease BPM.");
+         printFormattedString(0, 36, "METR. enables/disables SETTINGS-configured");
+         printFormattedString(0, 48, "MIDI metronome output.");
+         break;
+      case PAGE_DISK:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "SELECT or the SELECT encoder choose the");
+         printFormattedString(0, 12, "session number. SAVE will store the memory");
+         printFormattedString(0, 24, "session to SD card. LOAD will restore the");
+         printFormattedString(0, 36, "selected session number from SD card and");
+         printFormattedString(0, 48, "NEW will create a new session in memory.");
+         break;
+      case PAGE_MIDIMONITOR:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "The MIDI monitor shows current interface");
+         printFormattedString(0, 12, "activity in the top two lines and displays");
+         printFormattedString(0, 24, "a log of inbound and outbound MIDI packets");
+         printFormattedString(0, 36, "with an abbreviated packet header hex dump");
+         printFormattedString(0, 48, "and the packet timestamp since LoopA start.");
+         break;
+      case PAGE_ROUTER:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "The MIDI router allows to set up permanent");
+         printFormattedString(0, 12, "routes from MIDI inputs (IN P and IN Ch)");
+         printFormattedString(0, 24, "to MIDI outputs (OUT P and OUT Ch).");
+         printFormattedString(0, 36, "You can use the SELECT encoder to scroll");
+         printFormattedString(0, 48, "and select the active route.");
+         break;
+      case PAGE_SETUP:
+         //                          "------------------------------------------"
+         printFormattedString(0,  0, "In SETUP you can configure permanent");
+         printFormattedString(0, 12, "runtime parameters of your LoopA, like the");
+         printFormattedString(0, 24, "system font and metronome settings.");
+         printFormattedString(0, 36, "You can use the SELECT encoder to scroll");
+         printFormattedString(0, 48, "and select the configuration entry.");
+         break;
+   }
 }
 // ----------------------------------------------------------------------------------------
 
@@ -809,7 +899,7 @@ void displayPageClip(void)
    }
 
    command_ == COMMAND_CLIP_FREEZE ? setFontInverted() : setFontNonInverted();
-   printFormattedString(210, 53, "Clear");
+   printFormattedString(210, 53, "Freeze");
 
    setFontNonInverted();
    displayClip(activeTrack_);
@@ -861,7 +951,7 @@ void displayPageNotes(void)
       if (activeNote >= clipNotesSize_[activeTrack_][activeScene_]) // necessary e.g. for clip change
          activeNote = 0;
 
-      u16 pos = (clipNotes_[activeTrack_][activeScene_][activeNote].tick) / 24;
+      u16 pos = (clipNotes_[activeTrack_][activeScene_][activeNote].tick) / TICKS_PER_STEP;
       u16 length = clipNotes_[activeTrack_][activeScene_][activeNote].length;
       u8 note = clipNotes_[activeTrack_][activeScene_][activeNote].note;
       u8 velocity = clipNotes_[activeTrack_][activeScene_][activeNote].velocity;
@@ -948,7 +1038,7 @@ void displayPageTrack(void)
 
 
 /**
- * Display the main menu (PAGE_DISK)
+ * Display the disk operations page (PAGE_DISK)
  *
  */
 void displayPageDisk(void)
@@ -1323,8 +1413,10 @@ void displayPageSetup(void)
 }
 // ----------------------------------------------------------------------------------------
 
+
 /**
  * Print a MIDI event in a 5-character slot of the MIDI monitor page
+ *
  */
 void MIDIMonitorPrintEvent(u8 x, u8 y, mios32_midi_package_t package, u8 num_chars)
 {
@@ -1512,13 +1604,14 @@ void displayPageMIDIMonitor()
 }
 // ----------------------------------------------------------------------------------------
 
+
 /**
  * Display the song page
  *
  */
 void displayPageSong()
 {
-
+   // Todo
 }
 // ----------------------------------------------------------------------------------------
 
@@ -1533,7 +1626,7 @@ void displayPageLiveFX()
    displayTrackInstrumentInfo();
 
    command_ == COMMAND_LIVEFX_QUANTIZE ? setFontInverted() : setFontNonInverted();
-   switch (clipQuantize_[activeTrack_][activeScene_])
+   switch (clipFxQuantize_[activeTrack_][activeScene_])
    {
       case 3: printFormattedString(0, 53, "Q1/128"); break;
       case 6: printFormattedString(0, 53, "Qu1/64"); break;
@@ -1547,26 +1640,28 @@ void displayPageLiveFX()
    }
 
    command_ == COMMAND_LIVEFX_SWING ? setFontInverted() : setFontNonInverted();
-   if (clipSwing_[activeTrack_][activeScene_])
-      printFormattedString(0, 53, "Sw %d", clipSwing_[activeTrack_][activeScene_]);
+   if (clipFxSwing_[activeTrack_][activeScene_] != 50)
+      printFormattedString(42, 53, "Sw %d%%", clipFxSwing_[activeTrack_][activeScene_]);
    else
-      printFormattedString(0, 53, "Swing%%");
+      printFormattedString(42, 53, "Swing%%");
 
    command_ == COMMAND_LIVEFX_PROBABILITY ? setFontInverted() : setFontNonInverted();
-   if (clipProbability_[activeTrack_][activeScene_])
-      printFormattedString(42, 53, "Pr %d", clipProbability_[activeTrack_][activeScene_]);
+   if (clipFxProbability_[activeTrack_][activeScene_])
+      printFormattedString(84, 53, "Pr %d%%", clipFxProbability_[activeTrack_][activeScene_]);
    else
-      printFormattedString(42, 53, "Prob %%");
+      printFormattedString(84, 53, "Prob %%");
 
+   /*
    command_ == COMMAND_LIVEFX_FTS_MODE ? setFontInverted() : setFontNonInverted();
-   if (clipFTSMode_[activeTrack_][activeScene_])
-      printFormattedString(42, 53, "FTS %d", clipFTSMode_[activeTrack_][activeScene_]);
+   if (clipFxFTSMode_[activeTrack_][activeScene_])
+      printFormattedString(126, 53, "FTS %d", clipFxFTSMode_[activeTrack_][activeScene_]);
    else
-      printFormattedString(42, 53, "FTS off");
+      printFormattedString(126, 53, "FTS off");
 
    command_ == COMMAND_LIVEFX_FTS_NOTE ? setFontInverted() : setFontNonInverted();
-   if (clipFTSNote_[activeTrack_][activeScene_])
-      printFormattedString(42, 53, "FNte %d", clipFTSNote_[activeTrack_][activeScene_]);
+   if (clipFxFTSNote_[activeTrack_][activeScene_])
+      printFormattedString(168, 53, "FNte %d", clipFxFTSNote_[activeTrack_][activeScene_]);
+   */
 
    setFontNonInverted();
    displayClip(activeTrack_);
@@ -1577,8 +1672,8 @@ void displayPageLiveFX()
 /**
  * Return, if screensaver is active
  * @return int 1, if screensaver should be displayed
+ *
  */
-
 int isScreensaverActive()
 {
    return inactivitySeconds_ > gcScreensaverAfterMinutes_ * 60;
@@ -1590,31 +1685,44 @@ int isScreensaverActive()
  * Display the current screen buffer (once per frame, called in app.c scheduler)
  *
  */
+static u32 frameCounter_ = 0;
 void display()
 {
    u8 i, j;
 
-   if (isScreensaverActive())
+   frameCounter_++;
+
+   if (isScreensaverActive() && hw_enabled != HARDWARE_LOOPA_TESTMODE)
    {
       voxelFrame();
    }
-   else if (screenShowLoopaLogo_)
+   else if (screenShowLoopaLogo_ || showShiftAbout_)
    {
       // Startup/initial session loading: Render the LoopA Logo
       voxelFrame();
 
-      setFontLoopALogo();
-      printFormattedString(52, 2, " ");
+      if (hw_enabled == HARDWARE_STARTUP || hw_enabled == HARDWARE_LOOPA_OPERATIONAL)
+      {
+         setFontLoopALogo();
+         printFormattedString(52, 2, " ");
 
-      setFontBold();  // width per letter: 10px (for center calculation)
-      printFormattedString(146, 2, "V2.05");
+         setFontBold();  // width per letter: 10px (for center calculation)
+         printFormattedString(146, 2, "V2.05");
 
-      setFontSmall(); // width per letter: 6px
-      printFormattedString(28, 20, "(C) Hawkeye, latigid on, TK. 2019");
-      printFormattedString(52, 32, "MIDIbox hardware platform");
+         setFontSmall(); // width per letter: 6px
+         printFormattedString(28, 20, "(C) Hawkeye, latigid on, TK. 2019");
+         printFormattedString(52, 32, "MIDIbox hardware platform");
 
-      setFontBold(); // width per letter: 10px;
-      printFormattedString(52, 44, "www.midiphy.com");
+         setFontBold(); // width per letter: 10px;
+         printFormattedString(52, 44, "www.midiphy.com");
+      }
+      else
+      {
+         // Testmode
+         setFontSmall();
+         printFormattedString(0, 40, "LoopA Testmode");
+         printFormattedString(0, 52, "Insert FAT32-formatted SD card to launch");
+      }
    }
    else if (screenIsInMenu())
    {
@@ -1624,8 +1732,9 @@ void display()
 
       int iconId;
 
-      iconId = (page_ == PAGE_SONG) ? 32 + KEYICON_SONG_INVERTED : 32 + KEYICON_SONG;
+      /* iconId = (page_ == PAGE_SONG) ? 32 + KEYICON_SONG_INVERTED : 32 + KEYICON_SONG;
       printFormattedString(0 * 36 + 18, 0, "%c", iconId);
+      */
 
       iconId = (page_ == PAGE_MIDIMONITOR) ? 32 + KEYICON_MIDIMONITOR_INVERTED : 32 + KEYICON_MIDIMONITOR;
       printFormattedString(1 * 36 + 18, 0, "%c", iconId);
@@ -1639,9 +1748,9 @@ void display()
       iconId = (page_ == PAGE_NOTES) ? 32 + KEYICON_NOTES_INVERTED : 32 + KEYICON_NOTES;
       printFormattedString(4 * 36 + 18, 0, "%c", iconId);
 
-      iconId = (page_ == PAGE_LIVEFX) ? 32 + KEYICON_LIVEFX_INVERTED : 32 + KEYICON_LIVEFX;
+      /*iconId = (page_ == PAGE_ARPECHO) ? 32 + KEYICON_ARPECHO_INVERTED : 32 + KEYICON_ARPECHO;
       printFormattedString(5 * 36 + 18, 0, "%c", iconId);
-
+      */
 
       iconId = (page_ == PAGE_SETUP) ? 32 + KEYICON_SETUP_INVERTED : 32 + KEYICON_SETUP;
       printFormattedString(0 * 36, 32, "%c", iconId);
@@ -1658,11 +1767,58 @@ void display()
       iconId = (page_ == PAGE_CLIP) ? 32 + KEYICON_CLIP_INVERTED : 32 + KEYICON_CLIP;
       printFormattedString(4 * 36, 32, "%c", iconId);
 
-      iconId = (page_ == PAGE_ARPECHO) ? 32 + KEYICON_ARPECHO_INVERTED : 32 + KEYICON_ARPECHO;
+      iconId = (page_ == PAGE_LIVEFX) ? 32 + KEYICON_LIVEFX_INVERTED : 32 + KEYICON_LIVEFX;
       printFormattedString(5 * 36, 32, "%c", iconId);
 
       iconId = (page_ == PAGE_TRACK) ? 32 + KEYICON_TRACK_INVERTED : 32 + KEYICON_TRACK;
       printFormattedString(6 * 36, 32, "%c", iconId);
+
+      setFontBold();
+   }
+   else if (showShiftHelp_)
+   {
+      displayHelp();
+   }
+   else if (screenIsInShift())
+   {
+      voxelFrame();
+      s8 flashMuteToggle = (frameCounter_ % 2) == 0; // When SEQ is running, flash active synced mute/unmute toggles until performed
+      if (!SEQ_BPM_IsRunning())
+         flashMuteToggle = 0; // When SEQ is not running, no synced mute/unmute toggles
+
+      u8 iconId;
+      u8 invert;
+      s8 track;
+
+      for (track = 0; track < TRACKS; track++)
+      {
+         // Determine inversion/blinking
+         invert = (trackMuteToggleRequested_[track] && flashMuteToggle) ? (trackMute_[track] ? 1 : 0) : (trackMute_[track] ? 0 : 1);
+
+         // Render base icon
+         iconId = (trackMute_[track] ? (32 + KEYICON_TRACKUNMUTE) : (32 + KEYICON_TRACKMUTE)) -
+                  invert; // in case of inversion subtracts 1 and switches to inverted icons
+         setFontKeyIcon();
+         setFontNonInverted();
+         printFormattedString(track * 36 + 18, 0, "%c", iconId);
+
+         // Render clip info (e.g. 1A, 2B...)
+         setFontSmall();
+         if (invert)
+            setFontInverted();
+         printFormattedString(track * 36 + 30, 7, "%d%c", track + 1, 'A' + activeScene_);
+      }
+      setFontNonInverted();
+
+      setFontKeyIcon();
+      iconId = 32 + KEYICON_ABOUT;
+      printFormattedString(0 * 36, 32, "%c", iconId);
+
+      iconId = 32 + KEYICON_HELP;
+      printFormattedString(1 * 36, 32, "%c", iconId);
+
+      iconId = 32 + KEYICON_SHIFT_INVERTED;
+      printFormattedString(2 * 36, 32, "%c", iconId);
 
       setFontBold();
    }

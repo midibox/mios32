@@ -37,7 +37,6 @@
 #include "screen.h"
 #include "midi_out.h"
 
-
 // #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
@@ -64,7 +63,8 @@ static void TASK_Period_1mS_SD(void *pvParameters);
 /////////////////////////////////////////////////////////////////////////////
 // global variables
 /////////////////////////////////////////////////////////////////////////////
-u8 hw_enabled;    // After startup/config loaded, enable local hardware
+
+enum HardwareMode hw_enabled;    // After startup/config loaded, enable local hardware
 
 /////////////////////////////////////////////////////////////////////////////
 // Local types
@@ -123,7 +123,7 @@ void APP_Init(void)
 
    // hardware will be enabled once configuration has been loaded from SD Card
    // (resp. no SD Card is available)
-   hw_enabled = 0;
+   hw_enabled = HARDWARE_STARTUP;
 
    // create semaphores
    xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
@@ -332,7 +332,10 @@ static void TASK_Period_1mS_LP(void *pvParameters)
       if (taskCtr % 20 == 0)
       {
          display();
-         updateSwitchLEDs();
+         if (hw_enabled == HARDWARE_LOOPA_OPERATIONAL)
+         {
+            updateSwitchLEDs();
+         }
       }
    }
 }
@@ -368,9 +371,12 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 
             // immediately go to next step
             sdcard_check_ctr = sdcard_check_delay;
-         } else if (status == 2)
+            FILE_MakeDir("/SESSIONS");
+         }
+         else if (status == 2)
          {
             DEBUG_MSG("SD Card disconnected\n");
+            screenFormattedFlashMessage("SD Card disconnected");
             // invalidate all file infos
             /// MIDIO_FILE_UnloadAllFiles();
 
@@ -379,24 +385,31 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 
             // change status
             /// MIDIO_FILE_StatusMsgSet("No SD Card");
-         } else if (status == 3)
+         }
+         else if (status == 3)
          {
             if (!FILE_SDCardAvailable())
             {
                DEBUG_MSG("SD Card not found\n");
+               screenFormattedFlashMessage("SD Card not found");
                /// MIDIO_FILE_StatusMsgSet("No SD Card");
-            } else if (!FILE_VolumeAvailable())
+               hw_enabled = HARDWARE_LOOPA_TESTMODE; // Test mode
+            }
+            else if (!FILE_VolumeAvailable())
             {
                DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
+               screenFormattedFlashMessage("SD Card invalid FAT!");
                /// MIDIO_FILE_StatusMsgSet("No FAT");
-            } else
+               hw_enabled = HARDWARE_LOOPA_TESTMODE; // Test mode
+            }
+            else
             {
                // create the default files if they don't exist on SD Card
                /// MIDIO_FILE_CreateDefaultFiles();
                loopaSDCardAvailable();
+               hw_enabled = HARDWARE_LOOPA_OPERATIONAL; // enable hardware after first read...
             }
 
-            hw_enabled = 1; // enable hardware after first read...
          }
 
          MUTEX_SDCARD_GIVE;
@@ -469,7 +482,16 @@ static void TASK_Period_1mS(void *pvParameters)
 
       // execute sequencer handler
       MUTEX_SDCARD_TAKE;
-      loopaSeqHandler();
+      switch (hw_enabled)
+      {
+         case HARDWARE_LOOPA_OPERATIONAL:
+            loopaSeqHandler();
+            break;
+
+         case HARDWARE_LOOPA_TESTMODE:
+            hardwareTestmodeIterateLEDs();
+            break;
+      }
       MUTEX_SDCARD_GIVE;
 
       /// send timestamped MIDI events
@@ -567,14 +589,22 @@ s32 TASK_MSD_FlagStrGet(char str[5])
 // see also mios32_config.h
 /////////////////////////////////////////////////////////////////////////////
 void APP_MUTEX_MIDIOUT_Take(void)
-{MUTEX_MIDIOUT_TAKE; }
+{
+   MUTEX_MIDIOUT_TAKE;
+}
 
 void APP_MUTEX_MIDIOUT_Give(void)
-{MUTEX_MIDIOUT_GIVE; }
+{
+   MUTEX_MIDIOUT_GIVE;
+}
 
 void APP_MUTEX_MIDIIN_Take(void)
-{MUTEX_MIDIIN_TAKE; }
+{
+   MUTEX_MIDIIN_TAKE;
+}
 
 void APP_MUTEX_MIDIIN_Give(void)
-{MUTEX_MIDIIN_GIVE; }
+{
+   MUTEX_MIDIIN_GIVE;
+}
 

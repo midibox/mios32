@@ -77,6 +77,8 @@ enum KeyIcon
 extern u8 routerActiveRoute_;
 extern u8 setupActiveItem_;
 extern u8 scrubModeActive_;
+extern s8 showShiftAbout_;
+extern s8 showShiftHelp_;
 
 // --- UI State Changes ---
 
@@ -88,6 +90,9 @@ void setActiveScene(u8 sceneNumber);
 
 // Set a new active page
 void setActivePage(enum LoopAPage page);
+
+// Return 1, if user currently holds a track mute/unmute gp key
+u8 isShiftTrackMuteToggleKeyPressed(u8 track);
 
 // --- LED Handling ---
 
