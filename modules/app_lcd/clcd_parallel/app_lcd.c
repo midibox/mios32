@@ -2,16 +2,10 @@
 /*
  * Application specific LCD driver for up to 4 HD44870 LCDs,
  * connected via individual, parallel 8-wire data + 3-wire control buses.
- *
- * LCD DATA = PORT E 8..15
- * LCD RS   = PORT B 0
- * LCD RW   = PORT B 1
- * LCD E    = PORT B 2
  * ==========================================================================
- * When not working with LCD:
- * RS is 0 (command mode; don't remember why it was necessary),
- * RW is 0 (write; don't remember why it was necessary),
- * DATA pins are configured for input with or without pull-ups.
+ * Idle levels for LCD pins:
+ * RS must be set to 0 (command mode; don't remember why it was necessary),
+ * RW must be set to 0 (write; don't remember why it was necessary),
  */
 
 /////////////////////////////////////////////////////////////////////////////
@@ -42,6 +36,16 @@ struct hd44780_pins {
 // 4-LCD Layout, compatible with DIY-MORE board
 static struct hd44780_pins displays[4] = {
     {
+        .rs_port            = GPIOD,
+        .rs_pin_mask        = GPIO_Pin_4,
+        .rw_port            = GPIOD,
+        .rw_pin_mask        = GPIO_Pin_7,
+        .e_port             = GPIOD,
+        .e_pin_mask         = GPIO_Pin_3,
+        .data_port          = GPIOD,
+        .data_pins_offset   = 8U,
+    },
+    {
         .rs_port            = GPIOA,
         .rs_pin_mask        = GPIO_Pin_13,
         .rw_port            = GPIOA,
@@ -71,44 +75,7 @@ static struct hd44780_pins displays[4] = {
         .data_port          = GPIOE,
         .data_pins_offset   = 8U,
     },
-    {
-        .rs_port            = GPIOD,
-        .rs_pin_mask        = GPIO_Pin_4,
-        .rw_port            = GPIOD,
-        .rw_pin_mask        = GPIO_Pin_7,
-        .e_port             = GPIOD,
-        .e_pin_mask         = GPIO_Pin_3,
-        .data_port          = GPIOD,
-        .data_pins_offset   = 8U,
-    },
 };
-
-/*
-// 2-LCD Layout, compatible with Discovery board
-
-static struct hd44780_pins displays[4] = {
-    {
-        .rs_port            = GPIOB,
-        .rs_pin_mask        = GPIO_Pin_0,
-        .rw_port            = GPIOB,
-        .rw_pin_mask        = GPIO_Pin_1,
-        .e_port             = GPIOB,
-        .e_pin_mask         = GPIO_Pin_2,
-        .data_port          = GPIOE,
-        .data_pins_offset   = 8U,
-    },
-    {
-        .rs_port            = GPIOB,
-        .rs_pin_mask        = GPIO_Pin_0,
-        .rw_port            = GPIOB,
-        .rw_pin_mask        = GPIO_Pin_1,
-        .e_port             = GPIOB,
-        .e_pin_mask         = GPIO_Pin_2,
-        .data_port          = GPIOE,
-        .data_pins_offset   = 8U,
-    }
-};
-*/
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -303,7 +270,7 @@ void hd44780_lcd__data_port__mode_hi(const struct hd44780_pins * const lcd) {
  */
 void hd44780_lcd__data_port__write(const struct hd44780_pins *const lcd, const uint8_t value) {
     lcd->data_port->ODR = (uint16_t) (value << lcd->data_pins_offset)
-        | (lcd->data_port->ODR & ~0xFFU << lcd->data_pins_offset);
+        | (lcd->data_port->ODR & ~(0xFFU << lcd->data_pins_offset));
 }
 
 uint8_t hd44780_lcd__is_busy(const struct hd44780_pins * const lcd) {
