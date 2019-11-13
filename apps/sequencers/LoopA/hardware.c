@@ -214,6 +214,9 @@ void testmodeFlashAllLEDs()
  */
 void hardwareTestmodeIterateLEDs()
 {
+   // Enable frontside LEDs for testing
+   MIOS32_BOARD_LED_Set(0x000F, ~MIOS32_BOARD_LED_Get());
+
    testmodeCounter_++;
 
    u16 cycle;

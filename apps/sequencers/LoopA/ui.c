@@ -1680,7 +1680,11 @@ void loopaButtonReleased(s32 pin)
       else if (pin == sw_shift)
       {
          if (screenIsInShift())
+         {
             screenShowShift(0); // Left the shift overlay by releasing the shift button
+            showShiftAbout_ = 0;
+            showShiftHelp_ = 0;
+         }
       }
       else if (pin == sw_enc_select)
       {
