@@ -141,6 +141,9 @@ void APP_Init(void)
    // install timeout callback function
    MIOS32_MIDI_TimeOutCallback_Init(&NOTIFY_MIDI_TimeOut);
 
+   // light up power led
+   MIOS32_BOARD_LED_Set(0x0001, ~MIOS32_BOARD_LED_Get());
+
    // initialize code modules
    MIDI_PORT_Init(0);
    MIDI_ROUTER_Init(0);
