@@ -1,0 +1,13 @@
+The complete firmware installation procedure is shown in detail in the LoopA video tutorial. Here are short text instructions.
+
+How to install "project.hex" using MIOS studio from ucapps.de:
+
+1. Download and install MIOS studio from ucapps.de
+2. Connect your LoopA to your computer via USB
+3. Launch MIOS Studio
+4. Select the "MIOS bootloader" ports as both input and out MIDI ports
+5. Select firmware update file and choose "project.hex"
+6. Start the firmware update and wait for about 10 seconds to flash
+7. Restart the LoopA, e.g. by disconnecting the USB cable and plugging it in again
+
+Enjoy your new LoopA! :)
