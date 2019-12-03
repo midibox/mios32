@@ -1,6 +1,7 @@
 // LoopA 256x64px screen routines
 
 extern u8 screen[64][128];             // Screen buffer [y][x]
+extern u8 screenshotRequested_;        // if set to 1, will write screenshot to sd card when the next frame is rendered
 
 // If showLogo is true, draw the LoopA Logo (usually during unit startup)
 void screenShowLoopaLogo(u8 showLogo);
@@ -16,9 +17,6 @@ void screenShowMenu(u8 showMenu);
 
 // return true, if we are currently showing the menu
 u8 screenIsInMenu();
-
-// If showVoxel is true, draw the voxel screensaver
-void screenShowVoxel(u8 showVoxel);
 
 // Set the currently selected clip
 void screenSetClipSelected(u8 clipNumber);
@@ -44,8 +42,17 @@ void screenSetSceneChangeInTicks(u8 ticks);
 // Notify, that a screen page change has occured (flash a page descriptor for a while)
 void screenNotifyPageChanged();
 
+// Add a new MIDI input/output log line (only if we are viewing the MIDI Monitor page)
+void MIDIMonitorAddLog(u8 inputFlag, mios32_midi_port_t port, mios32_midi_package_t package);
+
+// Return, if screensaver is active
+int isScreensaverActive();
+
 // Display the current screen buffer
 void display();
+
+//Save the screen as a screenshot file on the SD card
+void saveScreenshot();
 
 // Render test screen, one half is "full on" for flicker tests
 void testScreen();

@@ -33,7 +33,7 @@
 // following constants can be safely changed (therefore documented)
 
 // max. number of SRs which can be used for CV gates (each SR provides 8 gates)
-#define SEQ_HWCFG_NUM_SR_CV_GATES 1
+#define SEQ_HWCFG_NUM_SR_CV_GATES 4
 
 // max. number of SRs which can be used for triggering gates (each SR provides 8 gates)
 #define SEQ_HWCFG_NUM_SR_DOUT_GATES 8
@@ -323,7 +323,6 @@ extern seq_hwcfg_step_digits_t seq_hwcfg_step_digits;
 extern seq_hwcfg_tpd_t seq_hwcfg_tpd;
 
 extern u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
-extern u8 seq_hwcfg_dout_gate_1ms;
 extern u8 seq_hwcfg_cv_gate_sr[SEQ_HWCFG_NUM_SR_CV_GATES];
 extern u8 seq_hwcfg_clk_sr;
 extern u8 seq_hwcfg_j5_enabled;

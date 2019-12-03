@@ -50,9 +50,11 @@ extern unsigned long _edata;
     
 /* start address for the .bss section. defined in linker script */
 extern unsigned long _sbss;
+extern unsigned long _sbss_ccm;
 
 /* end address for the .bss section. defined in linker script */      
-extern unsigned long _ebss;  
+extern unsigned long _ebss;
+extern unsigned long _ebss_ccm;
     
 /* init value for the stack pointer. defined in linker script */
 extern unsigned long _estack;
@@ -321,6 +323,12 @@ void Reset_Handler(void)
   }
   /* Zero fill the bss segment. */
   for(pulDest = &_sbss; pulDest < &_ebss; )
+  {
+    *(pulDest++) = 0;
+  }
+
+  /* Zero fill the bss_ccm segment. */
+  for(pulDest = &_sbss_ccm; pulDest < &_ebss_ccm; )
   {
     *(pulDest++) = 0;
   }

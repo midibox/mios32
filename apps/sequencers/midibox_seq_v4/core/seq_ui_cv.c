@@ -32,7 +32,7 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       12
+#define NUM_OF_ITEMS       13
 #define ITEM_CV            0
 #define ITEM_CURVE         1
 #define ITEM_SLEWRATE      2
@@ -44,7 +44,8 @@
 #define ITEM_CLK_SEL       8
 #define ITEM_CLK_PPQN      9
 #define ITEM_CLK_WIDTH     10
-#define ITEM_MODULE        11
+#define ITEM_TRG_WIDTH     11
+#define ITEM_MODULE        12
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -84,6 +85,7 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_CLK_SEL:     *gp_leds = 0x0100; break;
     case ITEM_CLK_PPQN:    *gp_leds = 0x0600; break;
     case ITEM_CLK_WIDTH:   *gp_leds = 0x0800; break;
+    case ITEM_TRG_WIDTH:   *gp_leds = 0x2000; break;
     case ITEM_MODULE:      *gp_leds = 0xc000; break;
   }
 
@@ -175,8 +177,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP13:
-    case SEQ_UI_ENCODER_GP14:
       return -1; // not mapped
+
+    case SEQ_UI_ENCODER_GP14:
+      ui_selected_item = ITEM_TRG_WIDTH;
+      break;
 
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
@@ -187,7 +192,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_CV:
-      if( SEQ_UI_Var8_Inc(&selected_cv, 0, SEQ_CV_NUM-1, incrementer) >= 0 ) {
+      if( SEQ_UI_Var8_Inc(&selected_cv, 0, SEQ_CV_NumChnGet()-1, incrementer) >= 0 ) {
 	SEQ_CV_CaliModeSet(selected_cv, SEQ_CV_CaliModeGet()); // change calibration mode to new pin
 	return 1;
       }
@@ -329,6 +334,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 0;
     } break;
 
+    case ITEM_TRG_WIDTH: {
+      u8 width = SEQ_CV_DOUT_TriggerWidthGet();
+      if( SEQ_UI_Var8_Inc(&width, 0, SEQ_CV_DOUT_TRIGGER_WIDTH_MS_MAX, incrementer) >= 0 ) {
+	SEQ_CV_DOUT_TriggerWidthSet(width);
+	ui_store_file_required = 1;
+	return 1;
+      }
+      return 0;
+    } break;
+
     case ITEM_MODULE: {
       u8 if_type = SEQ_CV_IfGet();
       if( SEQ_UI_Var8_Inc(&if_type, 0, SEQ_CV_NUM_IF-1, incrementer) >= 0 ) {
@@ -404,17 +419,22 @@ static s32 LCD_Handler(u8 high_prio)
   if( high_prio )
     return 0; // there are no high-priority updates
 
+  // ensure that selected CV is within supported range for the selected module
+  if( selected_cv >= SEQ_CV_NumChnGet() )
+    selected_cv = 0;
+
+
   // layout:
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  CV Curve SlewR SusK PRng Gate  Calibr.  Clk   Rate    Width             Module 
-  //   1 V/Oct  0 mS  on    2  Pos.    off      1   24 PPQN   1mS             AOUT_NG
+  //  CV Curve SlewR SusK PRng Gate  Calibr.  Clk   Rate    Width   TrgWidth  Module 
+  //   1 V/Oct  0 mS  on    2  Pos.    off      1   24 PPQN   1mS      1ms    AOUT_NG
 
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" CV Curve SlewR SusK PRng Gate  Calibr.  Clk   Rate    Width             Module ");
+  SEQ_LCD_PrintString(" CV Curve SlewR SusK PRng Gate  Calibr.  Clk   Rate    Width   TrgWidth   Module ");
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
@@ -456,7 +476,7 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_GATE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(6);
+    SEQ_LCD_PrintSpaces(4);
   } else {
     SEQ_LCD_PrintString(SEQ_CV_GateInversionGet(selected_cv) ? "Neg." : "Pos.");
   }
@@ -497,13 +517,35 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintFormattedString("%3dmS", SEQ_CV_ClkPulseWidthGet(selected_clkout));
   }
 
-  SEQ_LCD_PrintSpaces(13);
+  SEQ_LCD_PrintSpaces(5);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_TRG_WIDTH && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(4);
+  } else {
+    u8 width = SEQ_CV_DOUT_TriggerWidthGet();
+
+    if( width > 0 ) {
+      SEQ_LCD_PrintFormattedString("%2dmS", SEQ_CV_DOUT_TriggerWidthGet());
+    } else {
+      SEQ_LCD_PrintFormattedString(" off");
+    }
+  }
+
+  SEQ_LCD_PrintSpaces(4);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_MODULE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(8);
   } else {
-    SEQ_LCD_PrintString((char *)SEQ_CV_IfNameGet(SEQ_CV_IfGet()));
+    aout_if_t aout_if = SEQ_CV_IfGet();
+
+    if( aout_if == AOUT_IF_NONE || aout_if == AOUT_IF_MAX525 ) {
+      SEQ_LCD_PrintSpaces(1); // beautify display output... align "AOUT" and "none" with "Module" above
+    }
+
+    SEQ_LCD_PrintString((char *)SEQ_CV_IfNameGet(aout_if));
+    SEQ_LCD_PrintSpaces(8); // clear artifacts
   }
 
 

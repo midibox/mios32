@@ -5,3 +5,4 @@ project_build/*
 .idea/
 loopa
 loopa.cbp
+convPNM

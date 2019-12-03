@@ -44,6 +44,9 @@ s32 MBNG_AIN_Init(u32 mode)
     ain_timeout[i] = 0;
   }
 
+  // this will re-initialize AIN IOs in case they have been hijacked by DIO function
+  MIOS32_AIN_Init(0);
+
   return 0; // no error
 }
 

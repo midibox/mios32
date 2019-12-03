@@ -1322,15 +1322,7 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
-	  aout_config_t config;
-	  config = AOUT_ConfigGet();
-	  config.if_type = aout_type;
-	  config.if_option = (config.if_type == AOUT_IF_74HC595) ? 0xffffffff : 0x00000000; // AOUT_LC: select 8/8 bit configuration
-	  config.num_channels = 8;
-	  config.chn_inverted = 0;
-	  AOUT_ConfigSet(config);
-	  AOUT_IF_Init(0);
-
+	  SEQ_CV_IfSet(aout_type);
 	} else if( strncasecmp(parameter, "CV_GATE_SR", 10) == 0 && // CV_GATE_SR%d
 		     (hlp=atoi(parameter+10)) >= 1 && hlp <= SEQ_HWCFG_NUM_SR_CV_GATES ) {
 
@@ -1442,17 +1434,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	} else if( strcasecmp(parameter, "DOUT_1MS_TRIGGER") == 0 ) {
 
-	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 trg_enabled = get_dec(word);
-	  if( trg_enabled < 0 || trg_enabled > 1 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: expecting 0 or 1!", parameter);
-#endif
-	    continue;
-	  }
-
-	  seq_hwcfg_dout_gate_1ms = trg_enabled;
-
+	  // obsolete - now configured in CV menu - ignore!
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// unknown

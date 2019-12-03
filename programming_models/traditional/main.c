@@ -63,7 +63,9 @@ static void TASK_MIDI_Hooks(void *pvParameters);
 # if defined(MIOS32_FAMILY_LPC17xx) && !defined(MIOS32_FREERTOS_HEAP_SECTION)
 #  define MIOS32_FREERTOS_HEAP_SECTION __attribute__ ((section (".bss_ahb")))
 # else
-#  define MIOS32_FREERTOS_HEAP_SECTION
+#  ifndef MIOS32_FREERTOS_HEAP_SECTION
+#   define MIOS32_FREERTOS_HEAP_SECTION
+#  endif
 # endif
 
 uint8_t MIOS32_FREERTOS_HEAP_SECTION ucHeap[configTOTAL_HEAP_SIZE];

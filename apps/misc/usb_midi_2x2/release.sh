@@ -20,10 +20,10 @@ cp README.txt $RELEASE_DIR
 #cp CHANGELOG.txt $RELEASE_DIR
 
 ###############################################################################
-configs=( stm32f1 lpc17 stm32f4 )
+configs=( MBHP_CORE_STM32 MBHP_CORE_LPC17 MBHP_CORE_STM32F4 )
 for i in "${configs[@]}"; do
   echo "Building for $i"
-  source ../../../../source_me_${i}
+  source ../../../source_me_${i}
   make cleanall
   mkdir -p $RELEASE_DIR/$MIOS32_BOARD
   make > $RELEASE_DIR/$MIOS32_BOARD/log.txt || exit 1

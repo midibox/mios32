@@ -6,7 +6,8 @@ Based on scripts from Raisonance
 /* Memory Spaces Definitions */
 MEMORY
 {
-  RAM (xrw) :     ORIGIN = 0x20000000, LENGTH = 192K
+  RAM (xrw) :     ORIGIN = 0x20000000, LENGTH = 128K
+  CCMRAM (xrw) :  ORIGIN = 0x10000000, LENGTH = 64K
   FLASH_SECTOR0(rx) : ORIGIN = 0x08000000, LENGTH = 16K /* Bootloader */
   FLASH_SECTOR1(rx) : ORIGIN = 0x08004000, LENGTH = 16K /* Vectors */
   FLASH_SECTOR2(rx) : ORIGIN = 0x08008000, LENGTH = 16K /* EEPROM Emulation Page 0 (only used by $MIOS32_PATH/modules/eeprom/STM32F4xx/eeprom.c) */
@@ -305,6 +306,47 @@ SECTIONS
         __ram_end = .;
     } >RAM
     
+
+        /* This is the initialized data section in CCMRAM
+        The program executes knowing that the data is in the RAM
+        but the loader puts the initial values in the FLASH (inidata).
+        It is one task of the startup to copy the initial values from FLASH to RAM. */
+        .data_ccm : ALIGN (8)
+        {
+                __ram_start_ccm = .;
+                /* This is used by the startup in order to initialize the .data section */
+                _sdata_ccm = . ;
+                
+                . = ALIGN(4);
+                *(.shdata_ccm)
+                *(.data_ccm .data_ccm.*)
+                . = ALIGN (8);
+                *(.ram_ccm)
+                *(.ram_ccm_func*)
+                 . = ALIGN(4);
+                /* This is used by the startup in order to initialize the .data section */
+                _edata_ccm = .;
+        } >CCMRAM AT>FLASH
+
+        /* This is the uninitialized data section */
+        .bss_cmm (NOLOAD):
+        {
+                . = ALIGN(4);
+                /* This is used by the startup in order to initialize the .bss section */
+                _sbss_ccm = .;
+                *(.shbss_cmm)
+                *(.bss_ccm .bss_ccm.*)
+                *(COMMON)
+                . = ALIGN (8);
+                *(.ram_ccm.b)
+                . = ALIGN(4);
+                 /* This is used by the startup in order to initialize the .bss section */
+                 _ebss_ccm = . ;
+                _end_ccm = .;
+
+		__ram_end_ccm = .;
+        } >CCMRAM AT>FLASH
+
 
    
     /* this is the FLASH Bank1 */

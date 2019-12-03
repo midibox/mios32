@@ -1,0 +1,41 @@
+# This example demonstrates how to emulate a DIN and DOUT shift register with J5A/B together with analog functions
+
+RESET_HW
+
+LCD "%CDIO Cfg Demo #4"
+
+# special config: this port serves as mixed input/output - with the output mask we specify the pins which are used as output
+# 00111100 means:
+# - J5A.A0 used as input
+# - J5A.A1 used as input
+# - J5A.A2 used as output
+# - J5A.A3 used as output
+# - J5B.A4 used as output
+# - J5B.A5 used as output
+# - J5B.A6 used as input (and with the AIN config below we will turn it into an analog input)
+# - J5B.A7 used as input (and with the AIN config below we will turn it into an analog input)
+
+
+# Analog pins should be initialized first (!)
+# enable only A6 and A7
+# NOTE: if pins are unconnected, you will notice a flood of MIDI messages - at least connect them to ground if not used!
+# or disable them (set enable_mask=00000000)
+AIN  enable_mask=00000011  resolution=7bit
+
+# now enable DIOs
+DIO  port=J5AB  emu_din_sr=1  emu_dout_sr=1  output_mask=00111100
+
+
+# 2 button events (DIN SR1 pins are assigned to hw_id=1..2)
+EVENT_BUTTON id=1  hw_id=1  type=CC chn=1 cc=16 range=0:127  fwd_id=LED:3
+EVENT_BUTTON id=2  hw_id=2  type=CC chn=1 cc=17 range=0:127  fwd_id=LED:4
+
+# 4 LED events (DOUT SR1 pins are assigned to hw_id=5..8)
+EVENT_LED    id=3  hw_id=3  type=CC chn=1 cc=16 range=0:127
+EVENT_LED    id=4  hw_id=4  type=CC chn=1 cc=17 range=0:127
+EVENT_LED    id=5  hw_id=5  type=CC chn=1 cc=18 range=0:127
+EVENT_LED    id=6  hw_id=6  type=CC chn=1 cc=19 range=0:127
+
+# AIN events
+EVENT_AIN    id=7           type=CC chn=1 cc=20 range=0:127
+EVENT_AIN    id=8           type=CC chn=1 cc=21 range=0:127

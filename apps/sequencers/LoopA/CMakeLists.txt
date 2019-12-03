@@ -6,13 +6,14 @@ add_custom_target(loopa ALL COMMAND cd /home/code/mios32/trunk/apps/sequencers/L
 
 add_executable(dummyForClionHeaders
 	convPNM.C
-   screen.c
 	app.c        
 	app_lcd.c    
 	loopa.c
-        ui.c
+   ui.c
 	hardware.c   
+	midi_out.c
 	screen.c     
+	setup.c
 	terminal.c
 	voxelspace.c
 )

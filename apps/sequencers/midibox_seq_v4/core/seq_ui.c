@@ -3443,7 +3443,11 @@ s32 SEQ_UI_LED_Handler_Periodic()
   // beat LED
   u8 beat_led_on = sequencer_running && ((seq_core_state.ref_step % 4) == 0);
   u8 measure_led_on = sequencer_running && ((seq_core_state.ref_step % (seq_core_steps_per_measure+1)) == 0);
-  SEQ_LED_PinSet(seq_hwcfg_led.beat, (seq_hwcfg_led.measure && measure_led_on) ? 0 : beat_led_on);
+  if( seq_hwcfg_led.measure <= 0x7fff ) {
+    SEQ_LED_PinSet(seq_hwcfg_led.beat, (seq_hwcfg_led.measure && measure_led_on) ? 0 : beat_led_on);
+  } else {
+    SEQ_LED_PinSet(seq_hwcfg_led.beat, beat_led_on);
+  }
 
   // mirror to green status LED (inverted, so that LED is normaly on)
   MIOS32_BOARD_LED_Set(0x00000001, sequencer_running ? (beat_led_on ? 1 : 0) : 1);

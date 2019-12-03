@@ -16,49 +16,81 @@
 
 // --  Local types ---
 
+// --- Tables ---
+s8 liveTransposeSemitones_[15] = { -36, -24, -19, -17, -12,  -7,  -5,   0,   5,   7,  12,  17,  19,  24,  36};
+
+// Todo: need to store interpret beatloop at/jump step tables relative to (configurable!) measure length, so
+// that it sounds better e.g. for a measure length of 12 steps (3/4 beat instead of 4/4 beat)
+static s8 liveBeatLoopAtStep1_[15] =    {  16,   8,   4,   2,   4,   8,  16,   0,  16,   8,   4,   2,   4,   8,  16};
+static s8 liveBeatLoopJumpStep1_[15] =  { -16,  -8,  -4,  -2,  -4,  -8, -16,   0,  16,   8,   4,   2,   4,   8,  16};
+static s8 liveBeatLoopAtStep2_[15] =    {   8,   4,   2,   0,   0,   0,   0,   0,   0,   0,   0,   0,   2,   4,   8};
+static s8 liveBeatLoopJumpStep2_[15] =  {  16,   8,   4,   0,   0,   0,   0,   0,   0,   0,   0,   0,  -4,  -8, -16};
+
 // --- Global vars ---
+char filename_[20];                   // global, for filename operations
 
-static s32 (*clipPlayEventCallback)(u8 clipNumber, mios32_midi_package_t midi_package, u32 tick) = 0;     // fetchClipEvents() callback
-static s32 (*clipMetaEventCallback)(u8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick) = 0; // fetchClipEvents() callback
-
-u32 tick_ = 0;                        // global seq tick
-u16 bpm_ = 120;                       // bpm
+u32 millisecondsSinceStartup_ = 0;    // global "uptime" timer
+u16 inactivitySeconds_ = 0;           // screensaver timer
+u32 tick_ = 0xFFFFFFFF;               // global seq tick (initialize to non-zero value to avoid skipping first tick)
+u32 ticked_ = 0;                      // number of ticks processed since sequencer started
 u16 sessionNumber_ = 0;               // currently active session number (directory e.g. /SESSIONS/0001)
 u8 sessionExistsOnDisk_ = 0;          // is the currently selected session number already saved on disk/sd card
-enum LoopaPage page_ = PAGE_MUTE;     // currently active page/view
+enum LoopAPage page_ = PAGE_MUTE;     // currently active page/view
 enum Command command_ = COMMAND_NONE; // currently active command
+s8 tempoFade_ = 0;                    // 0: no tempo change ongoing | +1: increase tempo button pressed | -1: decrease tempo button pressed (ongoing event)
 
+// --- Basic session data (saved to session on disk) ---
+char sessionName_[16];                // 15 characters max (plus trailing string delimiter zero)
 u8 activeTrack_ = 0;                  // currently active or last active clip number (0..5)
 u8 activeScene_ = 0;                  // currently active scene number (0-15)
-u16 beatLoopSteps_ = 16;              // number of steps for one beatloop (adjustable)
 u8 isRecording_ = 0;                  // set, if currently recording to the selected clip
+float bpm_ = 120.0;                   // bpm
+s8 displayStyle_ = DISPLAYSTYLE_SINGLECLIP; // Current display style: e.g. show single, currently active clip
+u8 liveMode_ = LIVEMODE_TRANSPOSE;    // currently active upper-right encoder live mode
+u8 sceneMode_ = SCENEMODE_ALL;        // switch full scene when turning upper-left encoder
+u8 beatloopPattern_ = 0;              // currently active beatloop pattern (the first few are inbuilt, the rest is dynamically loaded from disk)
+u8 liveTransposePattern_ = 0;         // currently active live transposer pattern (the first few are inbuilt, the rest is dynamically loaded from disk)
+s8 liveTranspose_ = 0;                // Live transpose value (+/- 7)
+s8 liveAlternatingTranspose_ = 0;     // Live alternating transpose value (switch between main and alternating vales with Shift + upper right encoder button)
+s8 liveBeatLoop_ = 0;                 // Live beatloop value (+/- 7)
+s8 liveAlternatingBeatLoop_ = 0;      // Live alternating beatloop value (switch between main and alternating vales with Shift + upper right encoder button)
+u16 stepsPerMeasure_ = 16;            // number of steps for one beatloop (session-adjustable in bpm menu)
+u8 stepsPerBeat_ = 4;                 // number of steps for one beat (adjustable) - 4 steps default for a 4/4 beat
+u8 metronomeEnabled_ = 0;             // Set to 1, if metronome is turned on in bpm screen
+
 u8 oledBeatFlashState_ = 0;           // 0: don't flash, 1: flash slightly (normal 1/4th note), 2: flash intensively (after four 1/4th notes or 16 steps)
-
-u16 seqRecEnabledPorts_;
 s16 notePtrsOn_[128];                 // during recording - pointers to notes that are currently "on" (and waiting for an "off", therefore length yet undetermined) (-1: note not depressed)
-
-u8 ffwdSilentMode_;                   // for FFWD function
-u8 seqClkLocked;                      // lock BPM, so that it can't be changed from MIDI player
-char filename_[20];                   // global, for filename operations
 
 // --- Track data (saved to session on disk) ---
 u8 trackMute_[TRACKS];                // mute state of each clip
-u8 trackMidiPort_[TRACKS];
-u8 trackMidiChannel_[TRACKS];
+s8 trackMidiOutPort_[TRACKS];         // if negative: map to user defined instrument, if positive: standard mios port number
+u8 trackMidiOutChannel_[TRACKS];
+s8 trackMidiInPort_[TRACKS];          // If set to 0: enable recording from all midi ports (default)
+u8 trackMidiInChannel_[TRACKS];       // If set to 16: enable recording from all midi channels (default)
+u8 trackMidiForward_[TRACKS];         // If set to 1: forward midi notes to out port/channel (live play)
+u8 trackLiveTranspose_[TRACKS];       // If set to >0: selection of live transposer table (live transposing enabled for this track)
 
 // --- Clip data (saved to session on disk) ---
 u16 clipSteps_[TRACKS][SCENES];       // number of steps for each clip
-u32 clipQuantize_[TRACKS][SCENES];    // brings all clip notes close to the specified timing, e.g. quantize = 4 - close to 4th notes, 16th = quantize to step, ...
+u32 clipFxQuantize_[TRACKS][SCENES];  // brings all clip notes close to the specified timing, e.g. quantize = 4 - close to 4th notes, 16th = quantize to step, ...
 s8 clipTranspose_[TRACKS][SCENES];
 s16 clipScroll_[TRACKS][SCENES];
 u8 clipStretch_[TRACKS][SCENES];      // 1: compress to 1/16th, 2: compress to 1/8th ... 16: no stretch, 32: expand 2x, 64: expand 4x, 128: expand 8x
 NoteData clipNotes_[TRACKS][SCENES][MAXNOTES];  // clip note data storage (chained list, note start time and length/velocity)
 u16 clipNotesSize_[TRACKS][SCENES];   // active number of notes currently in use for that clip
+s8 clipFxSwing_[TRACKS][SCENES];      // If set to >0: clip swing enabled (affects only notes on quantized steps)
+s8 clipFxProbability_[TRACKS][SCENES];// If set to >0: percentage of note drops occuring
+s8 clipFxWave_[TRACKS][SCENES];       // If set to != 0: wave/humanization effect strength active on clip
+u8 clipFxFTSMode_[TRACKS][SCENES];    // If set to >0: FTS enabled, contains FTS scale (major, minor ...)
+u8 clipFxFTSNote_[TRACKS][SCENES];    // FTS base note (C, C#, ...)
+u8 clipType_[TRACKS][SCENES];         // Clip type (0: standard note clip or CC clip of given value)
 
 // --- Secondary data (not on disk) ---
-u8 trackMuteToggleRequested_[TRACKS]; // 1: perform a mute/unmute toggle of the clip at the next beatstep (synced mute/unmute)
-u8 sceneChangeRequested_ = 0;         // If != activeScene_, this will be the scene we are changing to
+u8 trackMuteToggleRequested_[TRACKS]; // 1: perform a mute/unmute toggle of the clip at the next measure (synced mute/unmute)
+u8 sceneChangeRequested_ = 0;         // If != activeScene_, this will be the scene we are changing to at the next measure
+s8 liveTransposeRequested_ = 0;       // If != active liveTranspose_, perform a live transpose change at the next measure
 u16 clipActiveNote_[TRACKS][SCENES];  // currently active edited note number, when in noteroll editor
+s8 valueEncoderAccel_ = 0;            // 1: value encoder pushed (while turning) -> accellerate data inputs
 
 // =================================================================================================
 
@@ -82,7 +114,7 @@ u16 tickToStep(u32 tick)
  */
 u32 stepToTick(u16 step)
 {
-   return step * (SEQ_BPM_PPQN_Get() / 4);
+   return step * TICKS_PER_STEP;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -100,60 +132,89 @@ u32 boundTickToClipSteps(u32 tick, u8 clip)
 
 /**
  * Quantize a "tick" time event to a tick quantization measure (e.g. 384), wrap around
- * ticks going over the clip length (clipLengthInTicks)
+ * ticks going over the clip length (clipLengthInTicks), also apply swing (if != 50%)
  *
  */
-u32 quantize(u32 tick, u32 quantizeMeasure, u32 clipLengthInTicks)
+u32 quantize(u32 tick, u32 quantizeMeasure, s8 swingPercent, u32 clipLengthInTicks)
 {
    if (quantizeMeasure < 3)
       return tick; // no quantization
 
    u32 mod = tick % quantizeMeasure;
-   u32 tickBase = tick - (tick % quantizeMeasure); // default: snap to previous measure
+   u32 tickQuantized;
 
-   // note: i did not like this improvement, as notes were cut off as they were moved newly ahead of the current play position and
-   // thus were retriggered while still being held on the keyboard, but i fixed it, now not playing notes with length 0 (still being held) ;-)
-   if (mod > (quantizeMeasure >> 1))
-      tickBase = (tick - (tick % quantizeMeasure) + quantizeMeasure) % clipLengthInTicks; // snap to next measure as we are closer to this one
+   if (mod <= (quantizeMeasure >> 1U))
+   {
+      // default: "snap" to previous measure
+      tickQuantized = tick - mod;
+   }
+   else
+   {
+      // snap to next measure as we are closer to this one, wrap around clip length if necessary
+      tickQuantized = (tick - mod + quantizeMeasure) % clipLengthInTicks;
 
-   return tickBase;
+      // note: at first this improvement was bad, as notes were cut off as they were moved newly ahead of the current play position and
+      // thus were retriggered while still being held on the keyboard, but fixed it, now we are not playing notes with length 0 (still being recorded/held) ;-)
+   }
+
+   // Swing normaly works in a way, that every second 16th note (i.e. every second step) is moved towards the
+   // next (swing > 50) or previous (swing < 50) step. Here, we enable swing on arbitrary quantization values
+   // i.e. 16ths quantiziation behaves like standard swing, but all other quantization targets work as well
+   if (swingPercent != 50)
+   {
+      // Apply swing, if the note is at the correct point in time (e.g. every second 16th note)
+      if ((tickQuantized % quantizeMeasure) == 0 && (tickQuantized / quantizeMeasure) % 2 == 1)
+      {
+         tickQuantized = ((s32)tickQuantized + ((swingPercent - 50) * (s32)quantizeMeasure) / 50) % clipLengthInTicks;
+      }
+   }
+
+   return tickQuantized;
 }
 // -------------------------------------------------------------------------------------------------
 
 
 /**
- * Transform (stretch and scroll) and then quantize a note in a clip
+ * Transform (stretch, scroll, probabilities/random) and then quantize/apply swing to a note in a clip
  *
  */
 s32 quantizeTransform(u8 clip, u16 noteNumber)
 {
-
    // Idea: scroll first, and modulo-map to trackstart/end boundaries
    //       scale afterwards
    //       apply track len afterwards
    //       drop notes with ticks < 0 and ticks > tracklen
 
    s32 tick = clipNotes_[clip][activeScene_][noteNumber].tick;
-   s32 quantizeMeasure = clipQuantize_[clip][activeScene_];
+   s16 quantizeMeasure = clipFxQuantize_[clip][activeScene_];
    s32 clipLengthInTicks = getClipLengthInTicks(clip);
 
    // stretch
    tick *= clipStretch_[clip][activeScene_];
-   tick = tick >> 4; // divide by 16 (stretch base)
+   tick = tick >> 4U; // divide by 16 (stretch base)
 
    // only consider notes, that are within the clip length after stretching
    if (tick >= clipLengthInTicks)
       return -1;
 
+   // if clip fx probabilities/randomization is on, only consider notes that pass the random test
+   s8 randomMinimum = clipFxProbability_[clip][activeScene_];
+   if (randomMinimum)
+   {
+      srand(((millisecondsSinceStartup_ >> 5U) << 8U) + noteNumber);  // Newly rerandomize every ~ 32ms
+      if ((rand() % 100) < randomMinimum)
+         return -1;
+   }
+
    // scroll
-   tick += clipScroll_[clip][activeScene_] * 24;
+   tick += clipScroll_[clip][activeScene_] * TICKS_PER_STEP;
 
    while (tick < 0)
       tick += clipLengthInTicks;
 
    tick %= clipLengthInTicks;
 
-   return quantize(tick, quantizeMeasure, clipLengthInTicks);
+   return quantize(tick, quantizeMeasure, clipFxSwing_[clip][activeScene_], clipLengthInTicks);
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -186,65 +247,65 @@ void toggleMute(u8 clipNumber)
 
 
 /**
- * Synchronized (to beatstep) mutes and unmutes
+ * Synchronized (to measure) mutes and unmutes
  *
  */
 void performSyncedMutesAndUnmutes()
 {
-   u8 clip;
+   u8 track;
 
-   for (clip = 0; clip < TRACKS; clip++)
+   for (track = 0; track < TRACKS; track++)
    {
-      if (trackMuteToggleRequested_[clip])
+      if (trackMuteToggleRequested_[track])
       {
-         if (tickToStep(tick_) % beatLoopSteps_ == 0)
+         if (tickToStep(tick_) % stepsPerMeasure_ == 0)
          {
-            u8 state = trackMute_[clip];
-            trackMute_[clip] = !state;
+            u8 state = trackMute_[track];
+            trackMute_[track] = !state;
 
-            trackMuteToggleRequested_[clip] = 0;
+            trackMuteToggleRequested_[track] = 0;
          }
       }
    }
-};
+}
 // -------------------------------------------------------------------------------------------------
 
 
 /**
- * Synchronized (to beatstep) scene changes
+ * Synchronized (to measure) scene changes
  *
  */
 void performSyncedSceneChanges()
 {
    if (sceneChangeRequested_ != activeScene_)
    {
-      u8 sceneChangeInTicks = beatLoopSteps_ - (tickToStep(tick_) % beatLoopSteps_);
+      u8 sceneChangeInTicks = stepsPerMeasure_ - (tickToStep(tick_) % stepsPerMeasure_);
 
       // flash indicate target scene (after synced scene switch)
       if (tick_ % 16 < 8)
       {
          MUTEX_DIGITALOUT_TAKE;
-         MIOS32_DOUT_PinSet(led_scene1, sceneChangeRequested_ == 0);
-         MIOS32_DOUT_PinSet(led_scene2, sceneChangeRequested_ == 1);
-         MIOS32_DOUT_PinSet(led_scene3, sceneChangeRequested_ == 2);
-         MIOS32_DOUT_PinSet(led_scene4, sceneChangeRequested_ == 3);
-         MIOS32_DOUT_PinSet(led_scene5, sceneChangeRequested_ == 4);
-         MIOS32_DOUT_PinSet(led_scene6, sceneChangeRequested_ == 5);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_1, sceneChangeRequested_ == 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_2, sceneChangeRequested_ == 1);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_3, sceneChangeRequested_ == 2);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_4, sceneChangeRequested_ == 3);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_5, sceneChangeRequested_ == 4);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_6, sceneChangeRequested_ == 5);
          MUTEX_DIGITALOUT_GIVE;
       }
       else
       {
          MUTEX_DIGITALOUT_TAKE;
-         MIOS32_DOUT_PinSet(led_scene1, 0);
-         MIOS32_DOUT_PinSet(led_scene2, 0);
-         MIOS32_DOUT_PinSet(led_scene3, 0);
-         MIOS32_DOUT_PinSet(led_scene4, 0);
-         MIOS32_DOUT_PinSet(led_scene5, 0);
-         MIOS32_DOUT_PinSet(led_scene6, 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_1, 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_2, 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_3, 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_4, 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_5, 0);
+         MIOS32_DOUT_PinSet(HW_LED_SCENE_6, 0);
          MUTEX_DIGITALOUT_GIVE;
       }
 
-      if (tickToStep(tick_) % beatLoopSteps_ == 0)
+      if (tickToStep(tick_) % stepsPerMeasure_ == 0)
       {
          setActiveScene(sceneChangeRequested_);
          sceneChangeRequested_ = activeScene_;
@@ -258,7 +319,72 @@ void performSyncedSceneChanges()
 
 
 /**
- * convert sessionNumber to global filename_
+ * Synchronized (to measure) live transposition changes
+ *
+ */
+void performLiveTranspositionChanges()
+{
+   if (liveTransposeRequested_ != liveTranspose_)
+   {
+      if (tickToStep(tick_) % stepsPerMeasure_ == 0)
+      {
+         liveTranspose_ = liveTransposeRequested_;
+      }
+   }
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Synchronized beat loop, song position "jumps"
+ * @return u32 newTick, which is != 0, if a jump occured/the tick was changed
+ *
+ */
+void performBeatLoop(u32 currentTick)
+{
+   s32 newTick = 0;
+
+   if (liveBeatLoop_ != 0)
+   {
+      u8 idx = liveBeatLoop_ + 7;
+      s8 at1 = liveBeatLoopAtStep1_[idx];
+      s8 at2 = liveBeatLoopAtStep2_[idx];
+      u16 currentStep = tickToStep(currentTick);
+
+      if (at1 && currentStep % at1 == 0)
+      {
+         /// DEBUG_MSG("J1 from %u", currentTick);
+
+         // Perform "Jump 1"
+         newTick = currentTick + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep1_[idx];
+         if (newTick >= 0)
+         {
+            // Avoid negative tick_ values (backward jumps)
+            tick_ = newTick;
+            SEQ_BPM_TickSet(newTick);
+            /// DEBUG_MSG("J1 to %u", newTick);
+         }
+      }
+      else if (at2 && currentStep % at2 == 0)
+      {
+         /// DEBUG_MSG("J2 from %u", SEQ_BPM_TickGet());
+
+         // Perform "Jump 2"
+         newTick = currentTick + (SEQ_BPM_PPQN_Get()/4) * liveBeatLoopJumpStep2_[idx];
+         if (newTick >= 0)
+         {
+            // Avoid negative tick_ values (backward jumps)
+            tick_ = newTick;
+            SEQ_BPM_TickSet(newTick);
+            /// DEBUG_MSG("J2 to %u", newTick);
+         }
+      }
+   }
+}
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * Convert sessionNumber to global filename_
  *
  */
 void sessionNumberToFilename(u16 sessionNumber)
@@ -275,6 +401,8 @@ void sessionNumberToFilename(u16 sessionNumber)
 void saveSession(u16 sessionNumber)
 {
    sessionNumberToFilename(sessionNumber);
+   gcLastUsedSessionNumber_ = sessionNumber;
+   configChangesToBeWritten_ = 1;
 
    MUTEX_SDCARD_TAKE;
 
@@ -285,21 +413,46 @@ void saveSession(u16 sessionNumber)
    }
    else
    {
-      FILE_WriteBuffer((u8*)"LPAV2200", 8);
+      FILE_WriteBuffer((u8*)"LPAV2205", 8);
 
       status |= FILE_WriteBuffer((u8*)trackMute_, sizeof(trackMute_));
-      status |= FILE_WriteBuffer((u8*)trackMidiPort_, sizeof(trackMidiPort_));
-      status |= FILE_WriteBuffer((u8*)trackMidiChannel_, sizeof(trackMidiChannel_));
-      
+      status |= FILE_WriteBuffer((u8*)trackMidiOutPort_, sizeof(trackMidiOutPort_));
+      status |= FILE_WriteBuffer((u8*)trackMidiOutChannel_, sizeof(trackMidiOutChannel_));
       status |= FILE_WriteBuffer((u8*)clipSteps_, sizeof(clipSteps_));
-      status |= FILE_WriteBuffer((u8*)clipQuantize_, sizeof(clipQuantize_));
+      status |= FILE_WriteBuffer((u8*)clipFxQuantize_, sizeof(clipFxQuantize_));
       status |= FILE_WriteBuffer((u8*)clipTranspose_, sizeof(clipTranspose_));
       status |= FILE_WriteBuffer((u8*)clipScroll_, sizeof(clipScroll_));
       status |= FILE_WriteBuffer((u8*)clipStretch_, sizeof(clipStretch_));
-      
       status |= FILE_WriteBuffer((u8*)clipNotes_, sizeof(clipNotes_));
       status |= FILE_WriteBuffer((u8*)clipNotesSize_, sizeof(clipNotesSize_));
       status |= FILE_WriteBuffer((u8*)notePtrsOn_, sizeof(notePtrsOn_));
+
+      status |= FILE_WriteBuffer((u8*)clipType_, sizeof(clipType_));
+      status |= FILE_WriteBuffer((u8*)sessionName_, sizeof(sessionName_));
+      status |= FILE_WriteBuffer((u8*)&activeTrack_, sizeof(activeTrack_));
+      status |= FILE_WriteBuffer((u8*)&activeScene_, sizeof(activeScene_));
+      status |= FILE_WriteBuffer((u8*)&displayStyle_, sizeof(displayStyle_));
+      status |= FILE_WriteBuffer((u8*)&bpm_, sizeof(bpm_));
+      status |= FILE_WriteBuffer((u8*)&liveMode_, sizeof(liveMode_));
+      status |= FILE_WriteBuffer((u8*)&sceneMode_, sizeof(sceneMode_));
+      status |= FILE_WriteBuffer((u8*)&liveTranspose_, sizeof(liveTranspose_));
+      status |= FILE_WriteBuffer((u8*)&liveBeatLoop_, sizeof(liveBeatLoop_));
+      status |= FILE_WriteBuffer((u8*)&beatloopPattern_, sizeof(beatloopPattern_));
+      status |= FILE_WriteBuffer((u8*)&liveTransposePattern_, sizeof(liveTransposePattern_));
+      status |= FILE_WriteBuffer((u8*)&stepsPerMeasure_, sizeof(stepsPerMeasure_));
+      status |= FILE_WriteBuffer((u8*)&stepsPerBeat_, sizeof(stepsPerBeat_));
+      status |= FILE_WriteBuffer((u8*)&metronomeEnabled_, sizeof(metronomeEnabled_));
+      status |= FILE_WriteBuffer((u8*)trackMidiInPort_, sizeof(trackMidiInPort_));
+      status |= FILE_WriteBuffer((u8*)trackMidiInChannel_, sizeof(trackMidiInChannel_));
+      status |= FILE_WriteBuffer((u8*)trackMidiForward_, sizeof(trackMidiForward_));
+      status |= FILE_WriteBuffer((u8*)trackLiveTranspose_, sizeof(trackLiveTranspose_));
+      status |= FILE_WriteBuffer((u8*)clipFxSwing_, sizeof(clipFxSwing_));
+      status |= FILE_WriteBuffer((u8*)clipFxProbability_, sizeof(clipFxProbability_));
+      status |= FILE_WriteBuffer((u8*)clipFxWave_, sizeof(clipFxWave_));
+      status |= FILE_WriteBuffer((u8*)clipFxFTSMode_, sizeof(clipFxFTSMode_));
+      status |= FILE_WriteBuffer((u8*)clipFxFTSNote_, sizeof(clipFxFTSNote_));
+      status |= FILE_WriteBuffer((u8*)&liveAlternatingTranspose_, sizeof(liveAlternatingTranspose_));
+      status |= FILE_WriteBuffer((u8*)&liveAlternatingBeatLoop_, sizeof(liveAlternatingBeatLoop_));
 
       status |= FILE_WriteClose();
    }
@@ -314,14 +467,16 @@ void saveSession(u16 sessionNumber)
 // -------------------------------------------------------------------------------------------------
 
 
-
 /**
  * Load session from defined session number file
  *
  */
 void loadSession(u16 sessionNumber)
 {
+   sessionNumber_ = sessionNumber;
    sessionNumberToFilename(sessionNumber);
+   gcLastUsedSessionNumber_ = sessionNumber;
+   configChangesToBeWritten_ = 1;
 
    MUTEX_SDCARD_TAKE;
 
@@ -337,28 +492,61 @@ void loadSession(u16 sessionNumber)
       FILE_ReadBuffer((u8*)version, 8);
 
       status |= FILE_ReadBuffer((u8*)trackMute_, sizeof(trackMute_));
-      status |= FILE_ReadBuffer((u8*)trackMidiPort_, sizeof(trackMidiPort_));
-      status |= FILE_ReadBuffer((u8*)trackMidiChannel_, sizeof(trackMidiChannel_));
-
+      status |= FILE_ReadBuffer((u8*)trackMidiOutPort_, sizeof(trackMidiOutPort_));
+      status |= FILE_ReadBuffer((u8*)trackMidiOutChannel_, sizeof(trackMidiOutChannel_));
       status |= FILE_ReadBuffer((u8*)clipSteps_, sizeof(clipSteps_));
-      status |= FILE_ReadBuffer((u8*)clipQuantize_, sizeof(clipQuantize_));
+      status |= FILE_ReadBuffer((u8*)clipFxQuantize_, sizeof(clipFxQuantize_));
       status |= FILE_ReadBuffer((u8*)clipTranspose_, sizeof(clipTranspose_));
       status |= FILE_ReadBuffer((u8*)clipScroll_, sizeof(clipScroll_));
       status |= FILE_ReadBuffer((u8*)clipStretch_, sizeof(clipStretch_));
-
       status |= FILE_ReadBuffer((u8*)clipNotes_, sizeof(clipNotes_));
       status |= FILE_ReadBuffer((u8*)clipNotesSize_, sizeof(clipNotesSize_));
       status |= FILE_ReadBuffer((u8*)notePtrsOn_, sizeof(notePtrsOn_));
+
+      if (strncmp(version, "LPAV2200", 8) != 0)
+      {
+         status |= FILE_ReadBuffer((u8*)clipType_, sizeof(clipType_));
+         status |= FILE_ReadBuffer((u8*)sessionName_, sizeof(sessionName_));
+         status |= FILE_ReadBuffer((u8*)&activeTrack_, sizeof(activeTrack_));
+         status |= FILE_ReadBuffer((u8*)&activeScene_, sizeof(activeScene_));
+         sceneChangeRequested_ = activeScene_; // Make sure we don't "switch away" from loaded active scene
+         status |= FILE_ReadBuffer((u8*)&displayStyle_, sizeof(displayStyle_));
+         status |= FILE_ReadBuffer((u8*)&bpm_, sizeof(bpm_));
+         status |= FILE_ReadBuffer((u8*)&liveMode_, sizeof(liveMode_));
+         status |= FILE_ReadBuffer((u8*)&sceneMode_, sizeof(sceneMode_));
+         status |= FILE_ReadBuffer((u8*)&liveTranspose_, sizeof(liveTranspose_));
+         liveTransposeRequested_ = liveTranspose_; // Make sure we don't "switch away" from loaded live transposer setting
+         status |= FILE_ReadBuffer((u8*)&liveBeatLoop_, sizeof(liveBeatLoop_));
+         status |= FILE_ReadBuffer((u8*)&beatloopPattern_, sizeof(beatloopPattern_));
+         status |= FILE_ReadBuffer((u8*)&liveTransposePattern_, sizeof(liveTransposePattern_));
+         status |= FILE_ReadBuffer((u8*)&stepsPerMeasure_, sizeof(stepsPerMeasure_));
+         status |= FILE_ReadBuffer((u8*)&stepsPerBeat_, sizeof(stepsPerBeat_));
+         status |= FILE_ReadBuffer((u8*)&metronomeEnabled_, sizeof(metronomeEnabled_));
+         status |= FILE_ReadBuffer((u8*)trackMidiInPort_, sizeof(trackMidiInPort_));
+         status |= FILE_ReadBuffer((u8*)trackMidiInChannel_, sizeof(trackMidiInChannel_));
+         status |= FILE_ReadBuffer((u8*)trackMidiForward_, sizeof(trackMidiForward_));
+         status |= FILE_ReadBuffer((u8*)trackLiveTranspose_, sizeof(trackLiveTranspose_));
+         status |= FILE_ReadBuffer((u8*)clipFxSwing_, sizeof(clipFxSwing_));
+         status |= FILE_ReadBuffer((u8*)clipFxProbability_, sizeof(clipFxProbability_));
+         status |= FILE_ReadBuffer((u8*)clipFxWave_, sizeof(clipFxWave_));
+         status |= FILE_ReadBuffer((u8*)clipFxFTSMode_, sizeof(clipFxFTSMode_));
+         status |= FILE_ReadBuffer((u8*)clipFxFTSNote_, sizeof(clipFxFTSNote_));
+         status |= FILE_ReadBuffer((u8*)&liveAlternatingTranspose_, sizeof(liveAlternatingTranspose_));
+         status |= FILE_ReadBuffer((u8*)&liveAlternatingBeatLoop_, sizeof(liveAlternatingBeatLoop_));
+      }
 
       status |= FILE_ReadClose(&file);
    }
 
    if (status == 0)
-      screenFormattedFlashMessage("Loaded");
+      screenFormattedFlashMessage("Loaded Session %d", sessionNumber);
    else
       screenFormattedFlashMessage("Load failed");
 
    MUTEX_SDCARD_GIVE;
+
+   setActiveScene(activeScene_);
+   updateLiveLEDs();
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -369,59 +557,18 @@ void loadSession(u16 sessionNumber)
  */
 void loopaStartup()
 {
+   calcField();
    screenShowLoopaLogo(1);
 }
 // -------------------------------------------------------------------------------------------------
 
 
 /**
- * Get Clock Mode
- * adds a fourth mode which locks the BPM so that it can't be modified by the MIDI file
- *
- */
-/*u8 seqClockModeGet(void)
-{
-   if (seqClkLocked)
-      return 3;
-
-   return SEQ_BPM_ModeGet();
-}
-// -------------------------------------------------------------------------------------------------
-*/
-
-/**
- * Set Clock Mode
- * adds a fourth mode which locks the BPM so that it can't be modified by the MIDI file
- *
- */
-/*
-s32 seqClockModeSet(u8 mode)
-{
-  if (mode > 3)
-     return -1; // invalid mode
-
-  if (mode == 3)
-  {
-     SEQ_BPM_ModeSet(SEQ_BPM_MODE_Master);
-     seqClkLocked = 1;
-  }
-  else
-  {
-     SEQ_BPM_ModeSet(mode);
-     seqClkLocked = 0;
-  }
-
-  return 0; // no error
-}
-// -------------------------------------------------------------------------------------------------
-*/
-
-/**
  * This main sequencer handler is called periodically to poll the clock/current tick
  * from BPM generator
  *
  */
-s32 seqHandler(void)
+s32 loopaSeqHandler(void)
 {
    // handle BPM requests
 
@@ -433,11 +580,10 @@ s32 seqHandler(void)
       MIDI_ROUTER_SendMIDIClockEvent(0xfc, 0);
    }
 
-   /* Hawkeye new - no continuation if (SEQ_BPM_ChkReqCont())
+   if (SEQ_BPM_ChkReqCont())
    {
       MIDI_ROUTER_SendMIDIClockEvent(0xfb, 0);
    }
-   */
 
    if (SEQ_BPM_ChkReqStart())
    {
@@ -455,16 +601,16 @@ s32 seqHandler(void)
    u32 bpm_tick;
    if (SEQ_BPM_ChkReqClk(&bpm_tick) > 0)
    {
-      seqUpdateBeatLEDs(bpm_tick);
+      updateBeatLEDsAndClipPositions(bpm_tick);
 
-      // set initial BPM according to MIDI spec
-      if (bpm_tick == 0 && !seqClkLocked)
-         SEQ_BPM_Set(120.0);
+      // set initial BPM
+      if (bpm_tick == 0)
+         SEQ_BPM_Set(bpm_);
 
       if (bpm_tick == 0) // send start (again) to synchronize with new MIDI songs
          MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
 
-      seqTick(bpm_tick);
+      loopaSeqTick(bpm_tick);
    }
 
    return 0; // no error
@@ -479,28 +625,26 @@ s32 seqHandler(void)
  */
 s32 seqPlayOffEvents(void)
 {
-  // play "off events"
-  SEQ_MIDI_OUT_FlushQueue();
+   // play remaining "off events"
+   LoopA_MIDI_OUT_FlushQueue();
 
-  // send Note Off to all channels
-  // TODO: howto handle different ports?
-  // TODO: should we also send Note Off events? Or should we trace Note On events and send Off if required?
-  int chn;
-  mios32_midi_package_t midi_package;
-  midi_package.type = CC;
-  midi_package.event = CC;
-  midi_package.evnt2 = 0;
+   // Additionally send Note Off to all channels (may be unnecessary after FlushQueue)
+   int chn;
+   mios32_midi_package_t midi_package;
+   midi_package.type = CC;
+   midi_package.event = CC;
+   midi_package.evnt2 = 0;
 
-  for (chn=0; chn<16; ++chn)
-  {
-     midi_package.chn = chn;
-     midi_package.evnt1 = 123; // All Notes Off
-     hookMIDISendPackage(UART0, midi_package);
-     midi_package.evnt1 = 121; // Controller Reset
-     hookMIDISendPackage(UART0, midi_package);
-  }
+   for (chn=0; chn<16; ++chn)
+   {
+      midi_package.chn = chn;
+      midi_package.evnt1 = 123; // All Notes Off
+      hookMIDISendPackage(UART0, midi_package);
+      midi_package.evnt1 = 121; // Controller Reset
+      hookMIDISendPackage(UART0, midi_package);
+   }
 
-  return 0; // no error
+   return 0; // no error
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -511,22 +655,17 @@ s32 seqPlayOffEvents(void)
  */
 s32 seqReset(u8 play_off_events)
 {
-   // install seqPlayEvent callback for clipFetchEvents()
-   clipPlayEventCallback = seqPlayEvent;
-
    // since timebase has been changed, ensure that Off-Events are played
    // (otherwise they will be played much later...)
    if (play_off_events)
       seqPlayOffEvents();
 
-   // release  FFWD mode
-   ffwdSilentMode_ = 0;
-
    // set pulses per quarter note (internal resolution, 96 is standard)
-   SEQ_BPM_PPQN_Set(96); // 384
+   SEQ_BPM_PPQN_Set(TICKS_PER_QUARTERNOTE);
 
    // reset BPM tick
    SEQ_BPM_TickSet(0);
+   ticked_ = 0;
 
    return 0; // no error
 }
@@ -560,130 +699,124 @@ s32 seqSongPos(u16 new_song_pos)
 
 
 /**
- * Update BEAT LEDs / Clip positions
- *
- */
-void seqUpdateBeatLEDs(u32 bpm_tick)
-{
-   static u8 lastLEDstate = 255;
-
-   u16 ticksPerStep = SEQ_BPM_PPQN_Get() / 4;
-   u8 beatled = (bpm_tick / ticksPerStep) % 4;
-
-   if (beatled != lastLEDstate)
-   {
-      lastLEDstate = beatled;
-
-      if (!screenIsInMenu() && !screenIsInShift())
-      {
-         MUTEX_DIGITALOUT_TAKE;
-         switch (beatled) {
-            case 0:
-               oledBeatFlashState_ = (bpm_tick / (ticksPerStep * 4) % 4 == 0) ? 2
-                                                                              : 1; // flash background (strong/normal)
-               MIOS32_DOUT_PinSet(led_beat0, 1);
-               MIOS32_DOUT_PinSet(led_beat1, 0);
-               MIOS32_DOUT_PinSet(led_beat2, 0);
-               MIOS32_DOUT_PinSet(led_beat3, 0);
-               break;
-            case 1:
-               MIOS32_DOUT_PinSet(led_beat0, 0);
-               MIOS32_DOUT_PinSet(led_beat1, 1);
-               MIOS32_DOUT_PinSet(led_beat2, 0);
-               MIOS32_DOUT_PinSet(led_beat3, 0);
-               break;
-            case 2:
-               MIOS32_DOUT_PinSet(led_beat0, 0);
-               MIOS32_DOUT_PinSet(led_beat1, 0);
-               MIOS32_DOUT_PinSet(led_beat2, 1);
-               MIOS32_DOUT_PinSet(led_beat3, 0);
-               break;
-            case 3:
-               MIOS32_DOUT_PinSet(led_beat0, 0);
-               MIOS32_DOUT_PinSet(led_beat1, 0);
-               MIOS32_DOUT_PinSet(led_beat2, 0);
-               MIOS32_DOUT_PinSet(led_beat3, 1);
-               break;
-         }
-         MUTEX_DIGITALOUT_GIVE;
-      }
-
-      // New step, Update clip positions
-      u8 i;
-      for (i = 0; i < TRACKS; i++)
-      {
-         screenSetClipPosition(i, ((u32) (bpm_tick / ticksPerStep) % clipSteps_[i][activeScene_]));
-      }
-
-      // Set global song step (non-wrapping), e.g. for recording clips
-      screenSetSongStep(bpm_tick / ticksPerStep);
-   }
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
  * Perform a single bpm tick
  *
  */
-s32 seqTick(u32 bpm_tick)
+s32 loopaSeqTick(u32 bpmTick)
 {
-   tick_ = bpm_tick;
+   /// DEBUG_MSG("T %d", bpmTick);
 
-   // send MIDI clock depending on ppqn
-   if ((bpm_tick % (SEQ_BPM_PPQN_Get()/24)) == 0)
+   if (bpmTick == tick_)
    {
-      // TODO: Don't send MIDI clock, when receiving external clock!
-
-      // DEBUG_MSG("Tick %d, SEQ BPM PPQN/24 %d", bpm_tick, SEQ_BPM_PPQN_Get()/24);
-      MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
+      /// DEBUG_MSG("Tick %u already encountered", bpmTick);
    }
-
-   // perform synced clip mutes/unmutes (only at full steps)
-   if ((bpm_tick % (SEQ_BPM_PPQN_Get()/4)) == 0)
+   else
    {
-      performSyncedMutesAndUnmutes();
-      performSyncedSceneChanges();
-   }
+      tick_ = bpmTick;
+      ticked_++;
 
-   u8 clip;
-   for (clip = 0; clip < TRACKS; clip++)
-   {
-      if (!trackMute_[clip])
+      // send MIDI clock depending on ppqn
+      if ((bpmTick % (SEQ_BPM_PPQN_Get() / 24)) == 0)
       {
-         u32 clipNoteTime = boundTickToClipSteps(bpm_tick, clip);
-         u16 i;
+         // DEBUG_MSG("Tick %d, SEQ BPM PPQN/24 %d", bpmTick, SEQ_BPM_PPQN_Get()/24);
+         MIDI_ROUTER_SendMIDIClockEvent(0xf8, 0);
+      }
 
-         for (i=0; i < clipNotesSize_[clip][activeScene_]; i++)
+      // perform beat looping, synced track mutes/unmutes and synced transposition changes
+      if ((bpmTick % (SEQ_BPM_PPQN_Get() / 4)) == 0)
+      {
+         if (ticked_ > 48)
          {
-            if (clipNotes_[clip][activeScene_][i].length > 0) // not still being held/recorded!
+            // sequencer may be super slightly unsteady when jumping around right after startup
+            // -> enable beatloop feature just after a few ticks...
+            performBeatLoop(bpmTick);
+            bpmTick = tick_;
+         }
+
+         performSyncedMutesAndUnmutes();
+         performSyncedSceneChanges();
+         performLiveTranspositionChanges();
+      }
+
+      u8 track;
+      for (track = 0; track < TRACKS; track++)
+      {
+         s8 liveTransposeSemi = trackLiveTranspose_[track] ? liveTransposeSemitones_[liveTranspose_ + 7] : 0;
+
+         if (!trackMute_[track])
+         {
+            u32 clipNoteTime = boundTickToClipSteps(bpmTick, track);
+            u16 i;
+
+            for (i = 0; i < clipNotesSize_[track][activeScene_]; i++)
             {
-               if (/*quantize(clipNotes_[clip][activeScene_][i].tick,
-                            clipQuantize_[clip][activeScene_],
-                            getClipLengthInTicks(clip)) == clipNoteTime */
-                     quantizeTransform(clip, i) == clipNoteTime)
+               if (clipNotes_[track][activeScene_][i].length > 0) // not still being held/recorded!
                {
-                  s16 note = clipNotes_[clip][activeScene_][i].note + clipTranspose_[clip][activeScene_];
-                  note = note < 0 ? 0 : note;
-                  note = note > 127 ? 127 : note;
+                  if (quantizeTransform(track, i) == clipNoteTime)
+                  {
+                     s16 note = clipNotes_[track][activeScene_][i].note + clipTranspose_[track][activeScene_] +
+                                liveTransposeSemi;
+                     note = note < 0 ? 0 : note;
+                     note = note > 127 ? 127 : note;
 
-                  mios32_midi_package_t package;
-                  package.type = NoteOn;
-                  package.event = NoteOn;
-                  package.chn = trackMidiChannel_[clip];
-                  package.note = note;
-                  package.velocity = clipNotes_[clip][activeScene_][i].velocity;
-                  hookMIDISendPackage(clip, package); // play NOW
+                     mios32_midi_package_t package;
+                     package.type = NoteOn;
+                     package.event = NoteOn;
+                     package.chn = isInstrument(trackMidiOutPort_[track])
+                                   ? getInstrumentChannelNumberFromLoopAPortNumber(trackMidiOutPort_[track])
+                                   : trackMidiOutChannel_[track];
+                     package.note = note;
+                     package.velocity = clipNotes_[track][activeScene_][i].velocity;
 
-                  package.type = NoteOff;
-                  package.event = NoteOff;
-                  package.note = note;
-                  package.velocity = 0;
-                  seqPlayEvent(clip, package, bpm_tick + clipNotes_[clip][activeScene_][i].length); // always play off event (schedule later)
+                     hookMIDISendPackage(getMIOSPortNumberFromLoopAPortNumber(trackMidiOutPort_[track]), package); // play NOW
+                     // LoopA_MIDI_OUT_Send(track, package, LOOPA_MIDI_OUT_OnOffEvent, 0, clipNotes_[track][activeScene_][i].length + 1, 1);
+
+                     package.type = NoteOff;
+                     package.event = NoteOff;
+                     package.velocity = 0;
+                     // seqPlayEvent(track, package, bpmTick + clipNotes_[track][activeScene_][i].length); // always play off event (schedule later)
+                     LoopA_MIDI_OUT_Send(getMIOSPortNumberFromLoopAPortNumber(trackMidiOutPort_[track]), package, LOOPA_MIDI_OUT_OffEvent, clipNotes_[track][activeScene_][i].length + 1, 1);
+                  }
                }
             }
          }
       }
+
+      // Send metronome tick on each beat, if enabled
+      if (metronomeEnabled_ && (bpmTick % TICKS_PER_QUARTERNOTE) == 0)
+      {
+         mios32_midi_package_t p;
+
+         p.type = NoteOn;
+         p.cable = 15; // use tag of track #16 - unfortunately more than 16 tags are not supported
+         p.event = NoteOn;
+         p.chn = isInstrument(gcMetronomePort_) ? getInstrumentChannelNumberFromLoopAPortNumber(gcMetronomePort_)
+                                                : gcMetronomeChannel_;
+         p.note = gcMetronomeNoteB_;
+         p.velocity = 96;
+         u16 len = 5;
+
+         u16 step = tickToStep(bpmTick);
+         if (step % stepsPerMeasure_ == 0)
+         {
+            p.note = gcMetronomeNoteM_;
+            p.velocity = 127;
+         }
+
+         /// screenFormattedFlashMessage("metr note %d on %x#%d", p.note, getMIOSPortNumberFromLoopAPortNumber(gcMetronomePort_), p.chn);
+
+         if (p.note)
+         {
+            hookMIDISendPackage(METRONOME_PSEUDO_PORT, p); // play NOW
+            p.type = NoteOff;
+            p.event = NoteOff;
+            p.velocity = 0;
+            LoopA_MIDI_OUT_Send(METRONOME_PSEUDO_PORT, p, LOOPA_MIDI_OUT_OffEvent, len, 1);
+         }
+      }
+
+      updateLiveLEDs();
+      LoopA_MIDI_OUT_Tick();
    }
 
    return 0; // no error
@@ -692,73 +825,25 @@ s32 seqTick(u32 bpm_tick)
 
 
 /**
- * Schedule a MIDI event to be played at a given tick
- *
- */
-s32 seqPlayEvent(u8 clipNumber, mios32_midi_package_t midi_package, u32 tick)
-{
-   // DEBUG_MSG("[seqPlayEvent] silent:%d type:%d", ffwdSilentMode_, midi_package.type);
-
-   // ignore all events in silent mode (for SEQ_SongPos function)
-   // we could implement a more intelligent parser, which stores the sent CC/program change, etc...
-   // and sends the last received values before restarting the song...
-   if (ffwdSilentMode_)
-      return 0;
-
-   // In order to support an unlimited SysEx stream length, we pass them as single bytes directly w/o the sequencer!
-   if (midi_package.type == 0xf)
-   {
-      hookMIDISendPackage(clipNumber, midi_package);
-      return 0;
-   }
-
-   seq_midi_out_event_type_t event_type = SEQ_MIDI_OUT_OnEvent;
-   if (midi_package.event == NoteOff || (midi_package.event == NoteOn && midi_package.velocity == 0))
-      event_type = SEQ_MIDI_OUT_OffEvent;
-
-   // output events on "clipNumber" port (which are then redirected just in time by the SEQ back to hookMIDISendPackage)
-   u32 status = 0;
-   status |= SEQ_MIDI_OUT_Send(clipNumber, midi_package, event_type, tick, 0);
-
-   return status;
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
- * Ignore track meta events
- *
- */
-s32 seqIgnoreMetaEvent(u8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick)
-{
-   return 0;
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
  * Realtime output hook: called exactly, when the MIDI scheduler has a package to send
- * TODO: fix this, use (only) configured ports, allow for USB configuration
- *
+ * @param loopaTrack s8 if zero or positive = loopa track number, else virtual metronome channel
  */
-s32 hookMIDISendPackage(mios32_midi_port_t clipNumber, mios32_midi_package_t package)
+s32 hookMIDISendPackage(s8 loopaTrack, mios32_midi_package_t package)
 {
-   // realtime events are already scheduled by MIDI_ROUTER_SendMIDIClockEvent()
-   if (package.evnt0 >= 0xf8)
-   {
-      MIOS32_MIDI_SendPackage(UART0, package);
-   }
+   mios32_midi_port_t port;
+
+   if (loopaTrack >= 0 && loopaTrack < TRACKS)
+      port = getMIOSPortNumberFromLoopAPortNumber(trackMidiOutPort_[loopaTrack]);
+   else if (loopaTrack == METRONOME_PSEUDO_PORT)
+      port = getMIOSPortNumberFromLoopAPortNumber(gcMetronomePort_);
    else
-   {
-      mios32_midi_port_t port = trackMidiPort_[clipNumber];
-      MIOS32_MIDI_SendPackage(port, package);
+      port = loopaTrack; // original MIOS port sent, e.g. a MIDI CLK sent by SEQ scheduler
 
-      // screenFormattedFlashMessage("play %d on %x", package.note, port);
+   /// screenFormattedFlashMessage("HMSP - intr %d outp %d", loopaTrack, port);
 
-      // DEBUG: SEND TO USB0, too (can be removed)
-      port = USB0;
-      MIOS32_MIDI_SendPackage(port, package);
-   }
+   MIOS32_MIDI_SendPackage(port, package);
+
+   /// screenFormattedFlashMessage("trk %d note %d on %x#%d", loopaTrack, package.note, port, package.chn);
 
    return 0; // no error
 }
@@ -774,8 +859,15 @@ void handleStop()
    screenFormattedFlashMessage("Stopped");
 
    MUTEX_DIGITALOUT_TAKE;
-   MIOS32_DOUT_PinSet(HW_LED_GREEN_RUNSTOP, 0);
-   MIOS32_DOUT_PinSet(HW_LED_RED_ARM, 0);
+   updateSwitchLED(LED_RUNSTOP, LED_OFF);
+   updateSwitchLED(LED_ARM, LED_OFF);
+   if (gcBeatLEDsEnabled_)
+   {
+      updateSwitchLED(LED_MENU, LED_OFF);
+      updateSwitchLED(LED_COPY, LED_OFF);
+      updateSwitchLED(LED_PASTE, LED_OFF);
+      updateSwitchLED(LED_DELETE, LED_OFF);
+   }
    MUTEX_DIGITALOUT_GIVE;
 
    SEQ_BPM_Stop(); // stop sequencer
@@ -789,52 +881,68 @@ void handleStop()
 }
 // -------------------------------------------------------------------------------------------------
 
-
-
 /**
- * Initialize Loopa SEQ
+ * Initialize LoopA SEQ
  *
  */
 s32 seqInit()
 {
-   // play mode
-   seqClkLocked = 0;
-
-   // record over USB0 and UART0/1
-   seqRecEnabledPorts_ = 0x01 | (0x03 << 4);
+   // init BPM generator
+   SEQ_BPM_Init(0);
+   bpm_ = 120.0;
+   SEQ_BPM_Set(bpm_);
 
    // reset sequencer
    seqReset(0);
 
-   // init BPM generator
-   SEQ_BPM_Init(0);
-   SEQ_BPM_ModeSet(SEQ_BPM_MODE_Auto);
-   SEQ_BPM_Set(120.0);
-   bpm_ = 120;
-
    // scheduler should send packages to private hook
-   SEQ_MIDI_OUT_Callback_MIDI_SendPackage_Set(hookMIDISendPackage);
+   LoopA_MIDI_OUT_Callback_MIDI_SendPackage_Set(hookMIDISendPackage);
 
-   // install seqPlayEvent callback for clipFetchEvents()
-   clipPlayEventCallback = seqPlayEvent;
-   clipMetaEventCallback = seqIgnoreMetaEvent;
+   // init basic session data
+   strcpy(sessionName_, "Noname");
+   activeTrack_ = 0;
+   activeScene_ = 0;
+   isRecording_ = 0;
 
+   displayStyle_ = DISPLAYSTYLE_SINGLECLIP;
+   liveMode_ = LIVEMODE_TRANSPOSE;
+   sceneMode_ = SCENEMODE_ALL;
+   beatloopPattern_ = 0;
+   liveTransposePattern_ = 0;
+   liveTranspose_ = 0;
+   liveBeatLoop_ = 0;
+   stepsPerMeasure_ = 16;
+   stepsPerBeat_ = 4;
+   metronomeEnabled_ = 0;
+
+   // init track and scene data
    u8 i, j;
    for (i = 0; i < TRACKS; i++)
    {
       trackMute_[i] = 0;
-      trackMidiPort_[i] = 0x20; // UART0 aka OUT1
-      trackMidiChannel_[i] = 0; // Channel 1
+      trackMidiOutPort_[i] = 0x20; // UART0 aka OUT1
+      trackMidiOutChannel_[i] = 0; // Channel 1
+      trackMidiInPort_[i] = 0;     // Enable recording from all ports
+      trackMidiInChannel_[i] = 16; // Enable recording from all channels
+      trackMidiForward_[i] = 0;    // Disable note forwarding/live play on this track by default
+      trackLiveTranspose_[i] = 1;  // Enable live transposition of notes on this track by default
       trackMuteToggleRequested_[i] = 0;
-      
+
       for (j = 0; j < SCENES; j++)
       {
-         clipQuantize_[i][j] = 1;
+         clipSteps_[i][j] = 64;
+         clipFxQuantize_[i][j] = 1;
          clipTranspose_[i][j] = 0;
          clipScroll_[i][j] = 0;
          clipStretch_[i][j] = 16;
-         clipSteps_[i][j] = 64;
          clipNotesSize_[i][j] = 0;
+         clipFxSwing_[i][j] = 50;
+         clipFxProbability_[i][j] = 0;
+         clipFxWave_[i][j] = 0;
+         clipFxFTSMode_[i][j] = 0;
+         clipFxFTSNote_[i][j] = 0;
+         clipType_[i][j] = 0;
+
          clipActiveNote_[i][j] = 0;
       }
    }
@@ -860,11 +968,13 @@ void loopaSDCardAvailable()
 {
    readSetup();
 
-   loadSession(1); // Todo: load last session (stored in setup)
    seqInit();
    trackMute_[0] = 0;
    seqArmButton();
    screenShowLoopaLogo(0); // Disable logo, normal operations started
+
+   if (sessionNumber_ > 0) // last-used session may have been set by readSetup(), if so, load it!
+      loadSession(sessionNumber_);
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -875,45 +985,66 @@ void loopaSDCardAvailable()
  */
 void loopaRecord(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
-   u16 clipNoteNumber = clipNotesSize_[activeTrack_][activeScene_];
-
-   if (isRecording_ && SEQ_BPM_IsRunning())
+   // Check, if the active track should record this event (matching input port)
+   if (trackMidiInPort_[activeTrack_] == 0 || trackMidiInPort_[activeTrack_] == port)
    {
-      u32 clipNoteTime = boundTickToClipSteps(tick_, activeTrack_);
-
-      if (clipNoteNumber < MAXNOTES && midi_package.type == NoteOn && midi_package.velocity > 0)
+      // Check, if the active track should record this event (matching input channel)
+      if (trackMidiInChannel_[activeTrack_] == 16 || trackMidiInChannel_[activeTrack_] == midi_package.chn)
       {
-         clipNotes_[activeTrack_][activeScene_][clipNoteNumber].tick = clipNoteTime;
-         clipNotes_[activeTrack_][activeScene_][clipNoteNumber].length = 0; // not yet determined
-         clipNotes_[activeTrack_][activeScene_][clipNoteNumber].note = midi_package.note;
-         clipNotes_[activeTrack_][activeScene_][clipNoteNumber].velocity = midi_package.velocity;
-
-         if (notePtrsOn_[midi_package.note] >= 0)
-            screenFormattedFlashMessage("dbg: note alrdy on");
-
-         notePtrsOn_[midi_package.note] = clipNoteNumber;
-
-         // screenFormattedFlashMessage("Note %d on - ptr %d", midi_package.note, clipNoteNumber);
-         clipNotesSize_[activeTrack_][activeScene_]++;
-      }
-      else if (midi_package.type == NoteOff || (midi_package.type == NoteOn && midi_package.velocity == 0))
-      {
-         s16 notePtr = notePtrsOn_[midi_package.note];
-
-         if (notePtr >= 0)
+         // Record event, if armed, sequencer running and we have enough space left
+         if (isRecording_ && SEQ_BPM_IsRunning())
          {
-            s32 len = clipNoteTime - clipNotes_[activeTrack_][activeScene_][notePtr].tick;
+            /// screenFormattedFlashMessage("port trk: %d in: %d", trackMidiInPort_[activeTrack_], port);
 
-            if (len == 0)
-               len = 1;
+            u16 clipNoteNumber = clipNotesSize_[activeTrack_][activeScene_];
+            u32 clipNoteTime = boundTickToClipSteps(tick_, activeTrack_);
 
-            if (len < 0)
-               len += getClipLengthInTicks(activeTrack_);
+            if (clipNoteNumber < MAXNOTES && midi_package.type == NoteOn && midi_package.velocity > 0)
+            {
+               clipNotes_[activeTrack_][activeScene_][clipNoteNumber].tick = clipNoteTime;
+               clipNotes_[activeTrack_][activeScene_][clipNoteNumber].length = 0; // not yet determined
+               clipNotes_[activeTrack_][activeScene_][clipNoteNumber].note = midi_package.note;
+               clipNotes_[activeTrack_][activeScene_][clipNoteNumber].velocity = midi_package.velocity;
 
-            // screenFormattedFlashMessage("o %d - p %d - l %d", midi_package.note, notePtr, len);
-            clipNotes_[activeTrack_][activeScene_][notePtr].length = len;
+               if (notePtrsOn_[midi_package.note] >= 0)
+                  screenFormattedFlashMessage("dbg: note alrdy on");
+
+               notePtrsOn_[midi_package.note] = clipNoteNumber;
+
+               // screenFormattedFlashMessage("Note %d on - ptr %d", midi_package.note, clipNoteNumber);
+               clipNotesSize_[activeTrack_][activeScene_]++;
+            }
+            else if (midi_package.type == NoteOff || (midi_package.type == NoteOn && midi_package.velocity == 0))
+            {
+               s16 notePtr = notePtrsOn_[midi_package.note];
+
+               if (notePtr >= 0)
+               {
+                  s32 len = clipNoteTime - clipNotes_[activeTrack_][activeScene_][notePtr].tick;
+
+                  if (len == 0)
+                     len = 1;
+
+                  if (len < 0)
+                     len += getClipLengthInTicks(activeTrack_);
+
+                  // screenFormattedFlashMessage("o %d - p %d - l %d", midi_package.note, notePtr, len);
+                  clipNotes_[activeTrack_][activeScene_][notePtr].length = len;
+               }
+               notePtrsOn_[midi_package.note] = -1;
+            }
          }
-         notePtrsOn_[midi_package.note] = -1;
+
+         // Live Forward
+         if (trackMidiForward_[activeTrack_])
+         {
+            // Todo later: may process midi_package to incorporate live fx like transposition
+            midi_package.chn = isInstrument(trackMidiOutPort_[activeTrack_]) ?
+                               getInstrumentChannelNumberFromLoopAPortNumber(trackMidiOutPort_[activeTrack_]) :
+                               trackMidiOutChannel_[activeTrack_];
+
+            hookMIDISendPackage(activeTrack_, midi_package);
+         }
       }
    }
 }

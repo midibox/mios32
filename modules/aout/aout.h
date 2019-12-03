@@ -86,9 +86,6 @@ typedef struct {
   u32        if_option;
   u32        chn_inverted;
   u32        chn_hz_v;
-#if AOUT_NUM_CALI_POINTS_X > 0
-  u16        cali_point[AOUT_NUM_CHANNELS][AOUT_NUM_CALI_POINTS_X];
-#endif
 } aout_config_t;
 
 
@@ -117,6 +114,8 @@ typedef enum {
 
 extern s32 AOUT_Init(u32 mode);
 extern s32 AOUT_IF_Init(u32 mode);
+
+extern s32 AOUT_IF_MaxChannelsGet(aout_if_t if_type);
 
 extern s32 AOUT_ConfigSet(aout_config_t config);
 extern aout_config_t AOUT_ConfigGet(void);

@@ -9,6 +9,19 @@
 
 #include "loopa_datatypes.h"
 
+
+// This section is only necessary for automatic clion IDE Macro expansion (and to get rid of clion IDE warnings)
+#include "FreeRTOS.h"
+#define configUSE_RECURSIVE_MUTEXES 1
+#include <semphr.h>
+typedef long BaseType_t;
+typedef u32 TickType_t;
+extern void vPortEnterCritical(void);
+extern void vPortExitCritical(void);
+#define portENTER_CRITICAL() vPortEnterCritical()
+#define portEXIT_CRITICAL() vPortExitCritical()
+// ---
+
 #include <string.h>
 #include <stdarg.h>
 
@@ -16,7 +29,8 @@
 #include <mios32_midi.h>
 #include <app_lcd.h>
 #include <seq_bpm.h>
-#include <seq_midi_out.h>
+#include "midi_out.h"
+//#include <seq_midi_out.h>
 #include <midi_port.h>
 #include <midi_router.h>
 
