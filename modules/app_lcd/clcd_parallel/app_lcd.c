@@ -34,47 +34,162 @@ struct hd44780_pins {
 };
 
 // 4-LCD Layout, compatible with DIY-MORE board
-static struct hd44780_pins displays[4] = {
+
+#ifndef MIOS32_CLCD_PARALLEL_DISPLAYS
+#define MIOS32_CLCD_PARALLEL_DISPLAYS 1
+#endif
+
+#ifndef MIOS32_CLCD_PARALLEL_LCD0_RS_PORT
+#define MIOS32_CLCD_PARALLEL_LCD0_RS_PORT GPIOD
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD0_RS_PIN
+#define MIOS32_CLCD_PARALLEL_LCD0_RS_PIN GPIO_Pin_4
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD0_RW_PORT
+#define MIOS32_CLCD_PARALLEL_LCD0_RW_PORT GPIOD
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD0_RW_PIN
+#define MIOS32_CLCD_PARALLEL_LCD0_RW_PIN GPIO_Pin_7
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD0_E_PORT
+#define MIOS32_CLCD_PARALLEL_LCD0_E_PORT GPIOD
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD0_E_PIN
+#define MIOS32_CLCD_PARALLEL_LCD0_E_PIN GPIO_Pin_7
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD0_DATA_PORT
+#define MIOS32_CLCD_PARALLEL_LCD0_DATA_PORT GPIOD
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD0_DATA_PINS_OFFSET
+#define MIOS32_CLCD_PARALLEL_LCD0_DATA_PINS_OFFSET 8U
+#endif
+
+
+#ifndef MIOS32_CLCD_PARALLEL_LCD1_RS_PORT
+#define MIOS32_CLCD_PARALLEL_LCD1_RS_PORT GPIOA
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD1_RS_PIN
+#define MIOS32_CLCD_PARALLEL_LCD1_RS_PIN GPIO_Pin_13
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD1_RW_PORT
+#define MIOS32_CLCD_PARALLEL_LCD1_RW_PORT GPIOA
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD1_RW_PIN
+#define MIOS32_CLCD_PARALLEL_LCD1_RW_PIN GPIO_Pin_14
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD1_E_PORT
+#define MIOS32_CLCD_PARALLEL_LCD1_E_PORT GPIOA
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD1_E_PIN
+#define MIOS32_CLCD_PARALLEL_LCD1_E_PIN GPIO_Pin_15
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD1_DATA_PORT
+#define MIOS32_CLCD_PARALLEL_LCD1_DATA_PORT GPIOB
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD1_DATA_PINS_OFFSET
+#define MIOS32_CLCD_PARALLEL_LCD1_DATA_PINS_OFFSET 0U
+#endif
+
+
+#ifndef MIOS32_CLCD_PARALLEL_LCD2_RS_PORT
+#define MIOS32_CLCD_PARALLEL_LCD2_RS_PORT GPIOC
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD2_RS_PIN
+#define MIOS32_CLCD_PARALLEL_LCD2_RS_PIN GPIO_Pin_0
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD2_RW_PORT
+#define MIOS32_CLCD_PARALLEL_LCD2_RW_PORT GPIOC
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD2_RW_PIN
+#define MIOS32_CLCD_PARALLEL_LCD2_RW_PIN GPIO_Pin_2
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD2_E_PORT
+#define MIOS32_CLCD_PARALLEL_LCD2_E_PORT GPIOC
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD2_E_PIN
+#define MIOS32_CLCD_PARALLEL_LCD2_E_PIN GPIO_Pin_3
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD2_DATA_PORT
+#define MIOS32_CLCD_PARALLEL_LCD2_DATA_PORT GPIOE
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD2_DATA_PINS_OFFSET
+#define MIOS32_CLCD_PARALLEL_LCD2_DATA_PINS_OFFSET 0U
+#endif
+
+
+#ifndef MIOS32_CLCD_PARALLEL_LCD3_RS_PORT
+#define MIOS32_CLCD_PARALLEL_LCD3_RS_PORT GPIOC
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD3_RS_PIN
+#define MIOS32_CLCD_PARALLEL_LCD3_RS_PIN GPIO_Pin_13
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD3_RW_PORT
+#define MIOS32_CLCD_PARALLEL_LCD3_RW_PORT GPIOA
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD3_RW_PIN
+#define MIOS32_CLCD_PARALLEL_LCD3_RW_PIN GPIO_Pin_3
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD3_E_PORT
+#define MIOS32_CLCD_PARALLEL_LCD3_E_PORT GPIOA
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD3_E_PIN
+#define MIOS32_CLCD_PARALLEL_LCD3_E_PIN GPIO_Pin_6
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD3_DATA_PORT
+#define MIOS32_CLCD_PARALLEL_LCD3_DATA_PORT GPIOE
+#endif
+#ifndef MIOS32_CLCD_PARALLEL_LCD3_DATA_PINS_OFFSET
+#define MIOS32_CLCD_PARALLEL_LCD3_DATA_PINS_OFFSET 8U
+#endif
+
+
+static struct hd44780_pins displays[MIOS32_CLCD_PARALLEL_DISPLAYS] = {
     {
-        .rs_port            = GPIOD,
-        .rs_pin_mask        = GPIO_Pin_4,
-        .rw_port            = GPIOD,
-        .rw_pin_mask        = GPIO_Pin_7,
-        .e_port             = GPIOD,
-        .e_pin_mask         = GPIO_Pin_3,
-        .data_port          = GPIOD,
-        .data_pins_offset   = 8U,
+        .rs_port            = MIOS32_CLCD_PARALLEL_LCD0_RS_PORT,
+        .rs_pin_mask        = MIOS32_CLCD_PARALLEL_LCD0_RS_PIN,
+        .rw_port            = MIOS32_CLCD_PARALLEL_LCD0_RW_PORT,
+        .rw_pin_mask        = MIOS32_CLCD_PARALLEL_LCD0_RW_PIN,
+        .e_port             = MIOS32_CLCD_PARALLEL_LCD0_E_PORT,
+        .e_pin_mask         = MIOS32_CLCD_PARALLEL_LCD0_E_PIN,
+        .data_port          = MIOS32_CLCD_PARALLEL_LCD0_DATA_PORT,
+        .data_pins_offset   = MIOS32_CLCD_PARALLEL_LCD0_DATA_PINS_OFFSET,
     },
+#if MIOS32_CLCD_PARALLEL_DISPLAYS >= 2
     {
-        .rs_port            = GPIOA,
-        .rs_pin_mask        = GPIO_Pin_13,
-        .rw_port            = GPIOA,
-        .rw_pin_mask        = GPIO_Pin_14,
-        .e_port             = GPIOA,
-        .e_pin_mask         = GPIO_Pin_15,
-        .data_port          = GPIOB,
-        .data_pins_offset   = 0U,
+        .rs_port            = MIOS32_CLCD_PARALLEL_LCD1_RS_PORT,
+        .rs_pin_mask        = MIOS32_CLCD_PARALLEL_LCD1_RS_PIN,
+        .rw_port            = MIOS32_CLCD_PARALLEL_LCD1_RW_PORT,
+        .rw_pin_mask        = MIOS32_CLCD_PARALLEL_LCD1_RW_PIN,
+        .e_port             = MIOS32_CLCD_PARALLEL_LCD1_E_PORT,
+        .e_pin_mask         = MIOS32_CLCD_PARALLEL_LCD1_E_PIN,
+        .data_port          = MIOS32_CLCD_PARALLEL_LCD1_DATA_PORT,
+        .data_pins_offset   = MIOS32_CLCD_PARALLEL_LCD1_DATA_PINS_OFFSET,
     },
+#endif
+#if MIOS32_CLCD_PARALLEL_DISPLAYS >= 3
     {
-        .rs_port            = GPIOC,
-        .rs_pin_mask        = GPIO_Pin_0,
-        .rw_port            = GPIOC,
-        .rw_pin_mask        = GPIO_Pin_2,
-        .e_port             = GPIOC,
-        .e_pin_mask         = GPIO_Pin_3,
-        .data_port          = GPIOE,
-        .data_pins_offset   = 0U,
+        .rs_port            = MIOS32_CLCD_PARALLEL_LCD2_RS_PORT,
+        .rs_pin_mask        = MIOS32_CLCD_PARALLEL_LCD2_RS_PIN,
+        .rw_port            = MIOS32_CLCD_PARALLEL_LCD2_RW_PORT,
+        .rw_pin_mask        = MIOS32_CLCD_PARALLEL_LCD2_RW_PIN,
+        .e_port             = MIOS32_CLCD_PARALLEL_LCD2_E_PORT,
+        .e_pin_mask         = MIOS32_CLCD_PARALLEL_LCD2_E_PIN,
+        .data_port          = MIOS32_CLCD_PARALLEL_LCD2_DATA_PORT,
+        .data_pins_offset   = MIOS32_CLCD_PARALLEL_LCD2_DATA_PINS_OFFSET,
     },
+#endif
+#if MIOS32_CLCD_PARALLEL_DISPLAYS >= 4
     {
-        .rs_port            = GPIOC,
-        .rs_pin_mask        = GPIO_Pin_13,
-        .rw_port            = GPIOA,
-        .rw_pin_mask        = GPIO_Pin_3,
-        .e_port             = GPIOA,
-        .e_pin_mask         = GPIO_Pin_6,
-        .data_port          = GPIOE,
-        .data_pins_offset   = 8U,
+        .rs_port            = MIOS32_CLCD_PARALLEL_LCD3_RS_PORT,
+        .rs_pin_mask        = MIOS32_CLCD_PARALLEL_LCD3_RS_PIN,
+        .rw_port            = MIOS32_CLCD_PARALLEL_LCD3_RW_PORT,
+        .rw_pin_mask        = MIOS32_CLCD_PARALLEL_LCD3_RW_PIN,
+        .e_port             = MIOS32_CLCD_PARALLEL_LCD3_E_PORT,
+        .e_pin_mask         = MIOS32_CLCD_PARALLEL_LCD3_E_PIN,
+        .data_port          = MIOS32_CLCD_PARALLEL_LCD3_DATA_PORT,
+        .data_pins_offset   = MIOS32_CLCD_PARALLEL_LCD3_DATA_PINS_OFFSET,
     },
+#endif
 };
 
 
