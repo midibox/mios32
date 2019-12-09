@@ -277,13 +277,13 @@ static s32 SEQ_SONG_FetchHlp_PatternChange(u8 group, u8 pattern, u8 bank, u8 for
       p.pattern = pattern;
       p.bank = bank;
       SEQ_PATTERN_Change(group, p, force_immediate_change);
-    } else {
-      // pattern not reloaded... we have to consider the RATOPC flag which is normally done in SEQ_PATTERN_Handler()
-      if( seq_core_options.RATOPC ) {
-	MIOS32_IRQ_Disable(); // must be atomic
-	seq_core_state.reset_trkpos_req |= (0xf << (4*group));
-	MIOS32_IRQ_Enable();
-      }
+    }
+
+    // pattern not reloaded... we have to consider the RATOPC flag which is normally done in SEQ_PATTERN_Handler()
+    if( seq_core_options.RATOPC ) {
+      MIOS32_IRQ_Disable(); // must be atomic
+      seq_core_state.reset_trkpos_req |= (0xf << (4*group));
+      MIOS32_IRQ_Enable();
     }
   }
 
