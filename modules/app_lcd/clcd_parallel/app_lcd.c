@@ -55,7 +55,7 @@ struct hd44780_pins {
 #define MIOS32_CLCD_PARALLEL_LCD0_E_PORT GPIOD
 #endif
 #ifndef MIOS32_CLCD_PARALLEL_LCD0_E_PIN
-#define MIOS32_CLCD_PARALLEL_LCD0_E_PIN GPIO_Pin_7
+#define MIOS32_CLCD_PARALLEL_LCD0_E_PIN GPIO_Pin_3
 #endif
 #ifndef MIOS32_CLCD_PARALLEL_LCD0_DATA_PORT
 #define MIOS32_CLCD_PARALLEL_LCD0_DATA_PORT GPIOD
@@ -229,6 +229,7 @@ static struct hd44780_pins displays[MIOS32_CLCD_PARALLEL_DISPLAYS] = {
 #define HD44780_LCD__ENABLE_PULSE_WIDTH_US          10
 #define HD44780_LCD__ADDRESS_SETUP_TIME_US          1
 #define HD44780_LCD__EXECUTION_DELAY_US             40
+#define HD44780_LCD__SLOW_COMMAND_DELAY_US          1600
 
 #define HD44780_LCD__COMMAND__CLEAR                 0x01U
 /**
@@ -526,7 +527,11 @@ s32 hd44780_lcd__init4(const struct hd44780_pins * const lcd) {
     return hd44780_lcd__send_command(lcd, HD44780_LCD__COMMAND__SCREEN | HD44780_LCD__COMMAND__SCREEN_ADDRESS_INC);
 }
 s32 hd44780_lcd__init5(const struct hd44780_pins * const lcd) {
-    return hd44780_lcd__send_command(lcd, HD44780_LCD__COMMAND__RETURN_HOME);
+    s32 result = hd44780_lcd__send_command(lcd, HD44780_LCD__COMMAND__RETURN_HOME);
+#ifdef HD44780_LCD__DONT_USE_BUSY_FLAG
+    MIOS32_DELAY_Wait_uS(HD44780_LCD__SLOW_COMMAND_DELAY_US);
+#endif
+    return result;
 }
 s32 hd44780_lcd__init6(const struct hd44780_pins * const lcd) {
     return hd44780_lcd__send_command(lcd, HD44780_LCD__COMMAND__CLEAR);
@@ -629,7 +634,11 @@ s32 APP_LCD_Cmd(u8 cmd) {
 // OUT: returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_Clear(void) {
-    return hd44780_lcd__send_command(&displays[mios32_lcd_device], HD44780_LCD__COMMAND__CLEAR);
+    s32 result = hd44780_lcd__send_command(&displays[mios32_lcd_device], HD44780_LCD__COMMAND__CLEAR);
+#ifdef HD44780_LCD__DONT_USE_BUSY_FLAG
+    MIOS32_DELAY_Wait_uS(HD44780_LCD__SLOW_COMMAND_DELAY_US);
+#endif
+    return result;
 }
 
 
@@ -881,7 +890,7 @@ test_mode__set_lcd_pin_and_report(struct hd44780_pins *lcd, int pin_number, int 
     case 15: {
         // init
         out("Going to init %d", level);
-        s32 init_result;
+        s32 init_result = 0;
         switch (level) {
         case 0: hd44780_lcd__init0(lcd); init_result = 0; break;
         case 1: hd44780_lcd__init1(lcd); init_result = 0; break;
