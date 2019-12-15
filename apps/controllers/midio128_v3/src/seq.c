@@ -577,7 +577,7 @@ static s32 SEQ_CheckSongFinished(u32 bpm_tick)
 #if DEBUG_VERBOSE_LEVEL >= 2
       DEBUG_MSG("[SEQ] End of song reached after %u ticks - restarting song!\n", bpm_tick);
 #endif
-      SEQ_Reset(1);
+      SEQ_Reset(0); // don't play off events here, we assume that they are correctly reset by the file
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
       DEBUG_MSG("[SEQ] End of song reached after %u ticks - loading next file!\n", bpm_tick);
