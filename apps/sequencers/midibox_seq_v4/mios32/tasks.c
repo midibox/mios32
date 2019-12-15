@@ -91,8 +91,10 @@ s32 TASKS_Init(u32 mode)
   xTaskCreate(TASK_Period1mS,         "Period1mS",    (PERIOD1MS_TASK_STACK_SIZE)/4,         NULL, PRIORITY_TASK_PERIOD1MS, NULL);
   xTaskCreate(TASK_Period1mS_LowPrio, "Period1mS_LP", (PERIOD1MS_LOWPRIO_TASK_STACK_SIZE)/4, NULL, PRIORITY_TASK_PERIOD1MS_LOW_PRIO, NULL);
 
-  // finally init the uIP task
+#if !defined(MIOS32_DONT_USE_OSC)
+    // finally init the uIP task
   UIP_TASK_Init(0);
+#endif
 
   return 0; // no error
 }

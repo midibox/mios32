@@ -856,14 +856,17 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
     return 1; // filter package
   }
 
+#if !defined(MIOS32_DONT_USE_OSC)
   if( (port & 0xf0) == OSC0 ) { // OSC1..4 port
     // avoid OSC feedback in seq_live.c (can cause infinite loops or stack overflows)
-    if( filter_osc_packets || OSC_CLIENT_SendMIDIEvent(port & 0xf, package) >= 0 )
+    if( filter_osc_packets ||  OSC_CLIENT_SendMIDIEvent(port & 0xf, package) >= 0 )
       return 1; // filter package
   } else if( (port & 0xf0) == 0x80 ) { // CV port
     if( SEQ_CV_SendPackage(port & 0xf, package) )
       return 1; // filter package
-  } else if( port == 0xc0 ) { // Multi OUT port
+  } else
+#endif
+  if( port == 0xc0 ) { // Multi OUT port
     int i;
     u32 mask = 1;
     mios32_midi_port_t blm_port = BLM_SCALAR_MASTER_MIDI_PortGet(0);

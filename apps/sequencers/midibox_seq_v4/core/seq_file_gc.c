@@ -246,6 +246,7 @@ s32 SEQ_FILE_GC_Read(void)
 	if( *parameter == '#' ) {
 	  // ignore comments
 #if !defined(MIOS32_FAMILY_EMULATION)
+#if !defined(MIOS32_DONT_USE_OSC)
 	} else if( strcmp(parameter, "ETH_LocalIp") == 0 ) {
 	  u32 value;
 	  if( !(value=get_ip(brkt)) ) {
@@ -274,6 +275,7 @@ s32 SEQ_FILE_GC_Read(void)
 	    UIP_TASK_GatewaySet(value);
 	  }
 #endif /* !defined(MIOS32_FAMILY_EMULATION) */
+#endif /* #if !defined(MIOS32_DONT_USE_OSC) */
 	} else if( strcmp(parameter, "CV_GateInv") == 0 ) {
 	  // special treatmend required for this 32bit unsigned (TODO: improve code here - allow get_dec with 64bit?)
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -512,6 +514,7 @@ s32 SEQ_FILE_GC_Read(void)
 	    BLM_SCALAR_MASTER_SendRequest(0, 0x00); // request layout from BLM_SCALAR
 
 #if !defined(MIOS32_FAMILY_EMULATION)
+#if !defined(MIOS32_DONT_USE_OSC)
 	  } else if( strcmp(parameter, "BLM_SCALAR_AlwaysUseFts") == 0 ) {
 	    seq_blm_options.ALWAYS_USE_FTS = value;
 	  } else if( strcmp(parameter, "ETH_Dhcp") == 0 ) {
@@ -567,6 +570,7 @@ s32 SEQ_FILE_GC_Read(void)
 	      }
 	    }
 #endif
+#endif
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	    // changed error level from 1 to 2 here, since people are sometimes confused about these messages
@@ -587,9 +591,11 @@ s32 SEQ_FILE_GC_Read(void)
   // close file
   status |= FILE_ReadClose(&file);
 
+#if !defined(MIOS32_DONT_USE_OSC)
 #if !defined(MIOS32_FAMILY_EMULATION)
   // OSC_SERVER_Init(0) has to be called after all settings have been done!
   OSC_SERVER_Init(0);
+#endif
 #endif
 
   if( status < 0 ) {
@@ -829,6 +835,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
 #if !defined(MIOS32_FAMILY_EMULATION)
+#if !defined(MIOS32_DONT_USE_OSC)
   {
     u32 value = UIP_TASK_IP_AddressGet();
     sprintf(line_buffer, "ETH_LocalIp %d.%d.%d.%d\n",
@@ -882,6 +889,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
     sprintf(line_buffer, "OSC_TransferMode %d %d\n", con, OSC_CLIENT_TransferModeGet(con));
     FLUSH_BUFFER;
   }
+#endif
 #endif
 
 #ifndef MBSEQV4L

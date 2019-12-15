@@ -17,6 +17,8 @@
 #include <mios32.h>
 #include <string.h>
 
+#if !defined(MIOS32_DONT_USE_OSC)
+
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include "uip.h"
 #endif
@@ -564,3 +566,5 @@ s32 OSC_CLIENT_SendMIDIEventBundled(u8 osc_port, mios32_midi_package_t *p, u8 nu
   // send packet and exit
   return OSC_SERVER_SendPacket(osc_port, packet, (u32)(end_ptr-packet));
 }
+
+#endif

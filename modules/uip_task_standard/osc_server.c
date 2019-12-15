@@ -17,6 +17,8 @@
 #include <mios32.h>
 #include <string.h>
 
+#if !defined(MIOS32_DONT_USE_OSC)
+
 #include "uip.h"
 #include "uip_arp.h"
 #include "network-device.h"
@@ -933,3 +935,5 @@ const static mios32_osc_search_tree_t parse_root[] = {
 
   { NULL, NULL, NULL, 0 } // terminator
 };
+
+#endif
