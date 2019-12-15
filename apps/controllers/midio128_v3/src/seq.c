@@ -251,6 +251,9 @@ s32 SEQ_Handler(void)
 	// check if song is finished
 	if( SEQ_CheckSongFinished(bpm_tick) >= 1 ) {
 	  bpm_tick = 0;
+
+	  if( SEQ_PauseEnabled() ) // don't play bpm_tick 0 events...
+	    break;
 	}
 
 	// set initial BPM according to MIDI spec

@@ -1,5 +1,11 @@
 $Id$
 
+MIDIO128 V3.021
+~~~~~~~~~~~~~~~
+
+   o Fixed issue where MIDI file player sent the first note before NoteOff CCs
+
+
 MIDIO128 V3.020
 ~~~~~~~~~~~~~~~
 
