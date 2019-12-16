@@ -11,6 +11,9 @@ MIDIO128 V3.021
      - or in your DEFAULT.MIO file, add following line:
        MidiFileResetWithAllNotesOff;0
 
+     Please note that there will be a negative side effect if this switch is disabled: if the sequence
+     is stopped, it might happen that there are "hanging notes" due to unplayed Note Off events.
+
 
 MIDIO128 V3.020
 ~~~~~~~~~~~~~~~
