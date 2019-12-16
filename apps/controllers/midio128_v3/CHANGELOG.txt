@@ -3,7 +3,13 @@ $Id$
 MIDIO128 V3.021
 ~~~~~~~~~~~~~~~
 
-   o Fixed issue where MIDI file player sent the first note before NoteOff CCs
+   o Fixed issue where MIDI file player sent the first note before "All Notes Off" CCs
+
+   o "All Notes Off" and "Controller Reset" CCs, which are normally sent when the song is finished,
+     can now be optionally disabled:
+     - in the SCS, change to .MID->Play, scroll screen right and disable the AlNO flag
+     - or in your DEFAULT.MIO file, add following line:
+       MidiFileResetWithAllNotesOff;0
 
 
 MIDIO128 V3.020

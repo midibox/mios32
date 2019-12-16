@@ -56,6 +56,9 @@ extern s32 SEQ_PlayFile(char *midifile);
 extern s32 SEQ_MidiPlayModeGet(void);
 extern s32 SEQ_MidiPlayModeSet(u8 mode);
 
+extern s32 SEQ_ResetWithAllNotesOffGet(void);
+extern s32 SEQ_ResetWithAllNotesOffSet(u8 send_notes_off);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
