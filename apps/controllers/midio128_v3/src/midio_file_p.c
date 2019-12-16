@@ -784,6 +784,14 @@ s32 MIDIO_FILE_P_Read(char *filename)
 #endif
 	  }
 
+	} else if( strcmp(parameter, "MidiFileResetWithAllNotesOff") == 0 ) {
+	  int value;
+	  if( (value=get_dec(brkt)) < 0 || SEQ_ResetWithAllNotesOffSet(value) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid value for parameter '%s'\n", parameter);
+#endif
+	  }
+
 	} else if( strcmp(parameter, "BPM_Preset") == 0 ) {
 	  int value;
 	  if( (value=get_dec(brkt)) < 0 ) {
@@ -1320,6 +1328,8 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "ConvertNoteOffToOn0 %d\n", midio_patch_cfg.convert_note_off_to_on0);
   FLUSH_BUFFER;
   sprintf(line_buffer, "MidiFilePlayMode;%d\n", SEQ_MidiPlayModeGet());
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "MidiFileResetWithAllNotesOff;%d\n", SEQ_ResetWithAllNotesOffGet());
   FLUSH_BUFFER;
   sprintf(line_buffer, "BPM_Preset;%d\n", (int)SEQ_BPM_Get());
   FLUSH_BUFFER;
