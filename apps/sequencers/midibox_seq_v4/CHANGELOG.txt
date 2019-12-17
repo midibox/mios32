@@ -65,6 +65,10 @@ MIDIboxSEQ V4.096
      This especially allows to record CC changes (configure MENU->MIDI->Port accordingly
      so that it listens to the bus in Jam mode)
 
+   o fixed "lost button mapping" issue if SD Card is removed
+
+   o MBSEQV4+: fixed MIDI export crash
+   
 
 MIDIboxSEQ V4.095
 ~~~~~~~~~~~~~~~~~

@@ -2909,6 +2909,7 @@ const char *MBNG_EVENT_ItemSysExVarStrGet(mbng_event_item_t *item, u8 stream_pos
   case MBNG_EVENT_SYSEX_VAR_CHK_START:  return "chk_start";
   case MBNG_EVENT_SYSEX_VAR_CHK:        return "chk";
   case MBNG_EVENT_SYSEX_VAR_CHK_INV:    return "chk_inv";
+  case MBNG_EVENT_SYSEX_VAR_CHK_ROLAND: return "chk_roland";
   case MBNG_EVENT_SYSEX_VAR_VAL:        return "val";
   case MBNG_EVENT_SYSEX_VAR_VAL_H:      return "val_h";
   case MBNG_EVENT_SYSEX_VAR_VAL_N1:     return "val_n1";
@@ -2935,6 +2936,7 @@ mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
   if( strcasecmp(sysex_var, "chk_start") == 0 )  return MBNG_EVENT_SYSEX_VAR_CHK_START;
   if( strcasecmp(sysex_var, "chk") == 0 )        return MBNG_EVENT_SYSEX_VAR_CHK;
   if( strcasecmp(sysex_var, "chk_inv") == 0 )    return MBNG_EVENT_SYSEX_VAR_CHK_INV;
+  if( strcasecmp(sysex_var, "chk_roland") == 0 ) return MBNG_EVENT_SYSEX_VAR_CHK_ROLAND;
   if( strcasecmp(sysex_var, "val") == 0 || strcasecmp(sysex_var, "value") == 0 ) return MBNG_EVENT_SYSEX_VAR_VAL;
   if( strcasecmp(sysex_var, "val_h") == 0 )      return MBNG_EVENT_SYSEX_VAR_VAL_H;
   if( strcasecmp(sysex_var, "val_n1") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N1;
@@ -3307,6 +3309,7 @@ s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, mbng_event_item_t *item)
       case MBNG_EVENT_SYSEX_VAR_CHK_START:  chk = 0; break;
       case MBNG_EVENT_SYSEX_VAR_CHK:        MBNG_EVENT_ADD_STREAM(chk & 0x7f); break;
       case MBNG_EVENT_SYSEX_VAR_CHK_INV:    MBNG_EVENT_ADD_STREAM((chk ^ 0x7f) & 0x7f); break;
+      case MBNG_EVENT_SYSEX_VAR_CHK_ROLAND: MBNG_EVENT_ADD_STREAM((128 - (chk & 0x7f)) & 0x7f); break;
       case MBNG_EVENT_SYSEX_VAR_VAL:        MBNG_EVENT_ADD_STREAM(item_value & 0x7f); break;
       case MBNG_EVENT_SYSEX_VAR_VAL_H:      MBNG_EVENT_ADD_STREAM((item_value >>  7) & 0x7f); break;
       case MBNG_EVENT_SYSEX_VAR_VAL_N1:     MBNG_EVENT_ADD_STREAM((item_value >>  0) & 0xf); break;
@@ -4797,6 +4800,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	    case MBNG_EVENT_SYSEX_VAR_CHK_START:  match = 1; again = 1; break;
 	    case MBNG_EVENT_SYSEX_VAR_CHK:        match = 1; break; // ignore checksum
 	    case MBNG_EVENT_SYSEX_VAR_CHK_INV:    match = 1; break; // ignore checksum
+	    case MBNG_EVENT_SYSEX_VAR_CHK_ROLAND: match = 1; break; // ignore checksum
 	    case MBNG_EVENT_SYSEX_VAR_VAL:        match = 1; pool_item->value = (pool_item->value & 0xff80) | (midi_in & 0x7f); break;
 	    case MBNG_EVENT_SYSEX_VAR_VAL_H:      match = 1; pool_item->value = (pool_item->value & 0xf07f) | (((u16)midi_in & 0x7f) << 7); break;
 	    case MBNG_EVENT_SYSEX_VAR_VAL_N1:     match = 1; pool_item->value = (pool_item->value & 0xfff0) | (((u16)midi_in <<  0) & 0x000f); break;

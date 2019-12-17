@@ -26,6 +26,8 @@ MIDIbox NG V1.037
      It's even possible to mix digital inputs, outputs and analog inputs
      An example can be found under cfg/tests/diocfg_4.ngc
 
+   o SysEx streams: added ^chk_roland
+
 
 MIDIbox NG V1.036
 ~~~~~~~~~~~~~~~~~

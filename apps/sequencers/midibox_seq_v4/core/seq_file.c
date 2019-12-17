@@ -185,7 +185,9 @@ s32 SEQ_FILE_UnloadAllFiles(void)
   status |= SEQ_FILE_BM_Unload(0);
   status |= SEQ_FILE_BM_Unload(1);
   status |= SEQ_FILE_PRESETS_Unload();
-  status |= SEQ_FILE_HW_Unload();
+
+  // keep HW config valid!
+  //status |= SEQ_FILE_HW_Unload();
 
   // invalidate session
   strcpy(seq_file_session_name, "DEFAULT");

@@ -616,6 +616,9 @@ static void selIpParSet(u32 ix, u16 value)
 static u16  midiPlayModeGet(u32 ix)            { return SEQ_MidiPlayModeGet(); }
 static void midiPlayModeSet(u32 ix, u16 value) { SEQ_MidiPlayModeSet(value); }
 
+static u16  midiAllNotesOffGet(u32 ix)            { return SEQ_ResetWithAllNotesOffGet(); }
+static void midiAllNotesOffSet(u32 ix, u16 value) { SEQ_ResetWithAllNotesOffSet(value); }
+
 static u16 midiPlayMaskGet(void)
 {
   mios32_midi_port_t port = MIDI_PORT_OutPortGet(selectedMidiPlayerPort);
@@ -898,6 +901,7 @@ const scs_menu_item_t pageMIDIFile[] = {
   SCS_ITEM("Filen", 0, 0,           dummyGet,        dummySet,        selectMidiFile, stringMidiFileName, NULL),
   SCS_ITEM("ame  ", 1, 0,           dummyGet,        dummySet,        selectMidiFile, stringMidiFileName, NULL),
   SCS_ITEM("     ", 2, 0,           dummyGet,        dummySet,        selectMidiFile, stringMidiFileName, NULL),
+  SCS_ITEM("AlNO ", 0, 1,           midiAllNotesOffGet, midiAllNotesOffSet, selectNOP,  stringOnOff, NULL),
 };
 
 const scs_menu_item_t pageMIDIPorts[] = {

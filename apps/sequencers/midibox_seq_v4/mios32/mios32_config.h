@@ -57,13 +57,14 @@ extern void APP_SendDebugMessage(char *format, ...);
 # define UIP_TASK_STACK_SIZE               2100
 # define MIOS32_TASK_MIDI_HOOKS_STACK_SIZE 2100
 # define MIDI_TASK_STACK_SIZE              2100
+# define PERIOD1MS_TASK_STACK_SIZE         2100
 #else
 # define MIOS32_TASK_HOOKS_STACK_SIZE      1000
 # define UIP_TASK_STACK_SIZE               1000
 # define MIOS32_TASK_MIDI_HOOKS_STACK_SIZE 1400
 # define MIDI_TASK_STACK_SIZE              1400
+# define PERIOD1MS_TASK_STACK_SIZE         1400
 #endif
-#define PERIOD1MS_TASK_STACK_SIZE          1400
 #define PERIOD1MS_LOWPRIO_TASK_STACK_SIZE  1400
 
 // only used by idle task
@@ -75,7 +76,7 @@ extern void APP_SendDebugMessage(char *format, ...);
 
 // reserved memory for FreeRTOS pvPortMalloc function
 #ifdef MBSEQV4P
-# define MIOS32_HEAP_SIZE 18*1024
+# define MIOS32_HEAP_SIZE 20*1024
 #else
 # define MIOS32_HEAP_SIZE 13*1024
 #endif

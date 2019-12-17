@@ -100,6 +100,9 @@ static s8 next_file_req;
 // the MIDI play mode
 static u8 midi_play_mode;
 
+// should we send "All Notes Off" and "Controller Reset" after song is played?
+static u8 reset_with_all_notes_off;
+
 // pause mode
 static u8 seq_pause;
 
@@ -113,6 +116,7 @@ s32 SEQ_Init(u32 mode)
 {
   // play mode
   midi_play_mode = SEQ_MIDI_PLAY_MODE_ALL;
+  reset_with_all_notes_off = 1;
   seq_clk_locked = 0;
 
   // play over USB0 and UART0/1
@@ -199,6 +203,21 @@ s32 SEQ_MidiPlayModeSet(u8 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// set/get reset behaviour
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_ResetWithAllNotesOffGet(void)
+{
+  return reset_with_all_notes_off;
+}
+
+s32 SEQ_ResetWithAllNotesOffSet(u8 send_notes_off)
+{
+  reset_with_all_notes_off = send_notes_off;
+  
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // this sequencer handler is called periodically to check for new requests
 // from BPM generator
 /////////////////////////////////////////////////////////////////////////////
@@ -251,6 +270,9 @@ s32 SEQ_Handler(void)
 	// check if song is finished
 	if( SEQ_CheckSongFinished(bpm_tick) >= 1 ) {
 	  bpm_tick = 0;
+
+	  if( SEQ_PauseEnabled() ) // don't play bpm_tick 0 events...
+	    break;
 	}
 
 	// set initial BPM according to MIDI spec
@@ -279,20 +301,22 @@ static s32 SEQ_PlayOffEvents(void)
   // play "off events"
   SEQ_MIDI_OUT_FlushQueue();
 
-  // send Note Off to all channels
-  // TODO: howto handle different ports?
-  // TODO: should we also send Note Off events? Or should we trace Note On events and send Off if required?
-  int chn;
-  mios32_midi_package_t midi_package;
-  midi_package.type = CC;
-  midi_package.event = CC;
-  midi_package.evnt2 = 0;
-  for(chn=0; chn<16; ++chn) {
-    midi_package.chn = chn;
-    midi_package.evnt1 = 123; // All Notes Off
-    Hook_MIDI_SendPackage(DEFAULT, midi_package);
-    midi_package.evnt1 = 121; // Controller Reset
-    Hook_MIDI_SendPackage(DEFAULT, midi_package);
+  if( reset_with_all_notes_off ) {
+    // send Note Off to all channels
+    // TODO: howto handle different ports?
+    // TODO: should we also send Note Off events? Or should we trace Note On events and send Off if required?
+    int chn;
+    mios32_midi_package_t midi_package;
+    midi_package.type = CC;
+    midi_package.event = CC;
+    midi_package.evnt2 = 0;
+    for(chn=0; chn<16; ++chn) {
+      midi_package.chn = chn;
+      midi_package.evnt1 = 123; // All Notes Off
+      Hook_MIDI_SendPackage(DEFAULT, midi_package);
+      midi_package.evnt1 = 121; // Controller Reset
+      Hook_MIDI_SendPackage(DEFAULT, midi_package);
+    }
   }
 
   return 0; // no error
