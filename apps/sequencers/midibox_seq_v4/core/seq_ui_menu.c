@@ -517,8 +517,10 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	}
 	*p++ = 0;
 
+#if !defined(MIOS32_DONT_USE_AOUT)
 	// reset CV channels (makes sense here to have a proper start)
 	SEQ_CV_ResetAllChannels();
+#endif
 
 	// reset MIDI IN stacks as well
 	SEQ_MIDI_IN_ResetAllStacks();

@@ -276,6 +276,8 @@ s32 SEQ_FILE_GC_Read(void)
 	  }
 #endif /* !defined(MIOS32_FAMILY_EMULATION) */
 #endif /* #if !defined(MIOS32_DONT_USE_OSC) */
+
+#if !defined(MIOS32_DONT_USE_AOUT)
 	} else if( strcmp(parameter, "CV_GateInv") == 0 ) {
 	  // special treatmend required for this 32bit unsigned (TODO: improve code here - allow get_dec with 64bit?)
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -300,6 +302,7 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else {
 	    SEQ_CV_SusKeyAllSet((u32)value);
 	  }
+#endif
 	} else {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 value = get_dec(word);
@@ -434,6 +437,7 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else if( strcmp(parameter, "ScreenSaverDelay") == 0 ) {
 	    seq_lcd_logo_screensaver_delay = (value > 255) ? 255 : value;
 #endif
+#if !defined(MIOS32_DONT_USE_AOUT)
 	  } else if( strcmp(parameter, "CV_AOUT_Type") == 0 ) {
 	    SEQ_CV_IfSet(value);
 	  } else if( strcmp(parameter, "CV_PinMode") == 0 ) {
@@ -505,6 +509,7 @@ s32 SEQ_FILE_GC_Read(void)
 		SEQ_CV_ClkPulseWidthSet(clkout, pulsewidth);
 	      }
 	    }
+#endif
 	  } else if( strcmp(parameter, "TpdMode") == 0 ) {
 	    SEQ_TPD_ModeSet(value);
 	  } else if( strcmp(parameter, "BLM_SCALAR_Port") == 0 ) {
@@ -783,6 +788,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "RemoteID %d\n", (u8)seq_midi_sysex_remote_id);
   FLUSH_BUFFER;
 
+#if !defined(MIOS32_DONT_USE_AOUT)
   sprintf(line_buffer, "CV_AOUT_Type %d\n", (u8)SEQ_CV_IfGet());
   FLUSH_BUFFER;
 
@@ -824,6 +830,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
 
   sprintf(line_buffer, "CV_DOUT_TriggerWidth %d\n", (u8)SEQ_CV_DOUT_TriggerWidthGet());
   FLUSH_BUFFER;
+#endif
 
   sprintf(line_buffer, "TpdMode %d\n", SEQ_TPD_ModeGet());
   FLUSH_BUFFER;

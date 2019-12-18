@@ -1308,7 +1308,7 @@ s32 SEQ_FILE_HW_Read(void)
 	      SEQ_BLM8X8_ConfigSet(blm, config);
 	    }
 	  }
-
+#if !defined(MIOS32_DONT_USE_AOUT)
 	} else if( strcasecmp(parameter, "AOUT_INTERFACE_TYPE") == 0 ) {
 	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!
 	  // can be removed once most users switched to beta28 and later!
@@ -1336,7 +1336,7 @@ s32 SEQ_FILE_HW_Read(void)
 	  }
 
 	    seq_hwcfg_cv_gate_sr[hlp-1] = sr;
-
+#endif
 	} else if( strcasecmp(parameter, "CLK_SR") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_sr(word);
@@ -1416,7 +1416,7 @@ s32 SEQ_FILE_HW_Read(void)
 # warning "please adapt for this MIOS32_FAMILY"
 #endif
 	  }
-
+#if !defined(MIOS32_DONT_USE_AOUT)
 	} else if( strcasecmp(parameter, "DIN_SYNC_CLK_PULSEWIDTH") == 0 ) {
 	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!
 	  // can be removed once most users switched to beta28 and later!
@@ -1431,7 +1431,7 @@ s32 SEQ_FILE_HW_Read(void)
 	  }
 
 	  SEQ_CV_ClkPulseWidthSet(0, pulsewidth);
-
+#endif
 	} else if( strcasecmp(parameter, "DOUT_1MS_TRIGGER") == 0 ) {
 
 	  // obsolete - now configured in CV menu - ignore!

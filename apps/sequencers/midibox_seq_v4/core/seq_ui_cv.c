@@ -16,6 +16,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+
+#if !defined(MIOS32_DONT_USE_AOUT)
+
 #include <aout.h>
 #include "tasks.h"
 
@@ -591,3 +594,4 @@ s32 SEQ_UI_CV_Init(u32 mode)
 
   return 0; // no error
 }
+#endif

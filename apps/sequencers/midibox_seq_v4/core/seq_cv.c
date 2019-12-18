@@ -16,6 +16,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+
+#if !defined(MIOS32_DONT_USE_AOUT)
+
 #include <string.h>
 #include <aout.h>
 #include <notestack.h>
@@ -862,3 +865,4 @@ s32 SEQ_CV_ResetAllChannels(void)
 
   return 0; // no error
 }
+#endif

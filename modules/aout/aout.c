@@ -148,6 +148,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#if !defined(MIOS32_DONT_USE_AOUT)
 #include <string.h>
 
 #include "aout.h"
@@ -1672,3 +1673,4 @@ s32 AOUT_TerminalPrintConfig(void *_output_function)
 
 
 //! \}
+#endif

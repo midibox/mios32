@@ -14,6 +14,9 @@
 #ifndef _AOUT_H
 #define _AOUT_H
 
+#include <mios32.h>
+#if !defined(MIOS32_DONT_USE_AOUT)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -169,6 +172,7 @@ extern s32 AOUT_TerminalPrintConfig(void *_output_function);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+#endif
 
 #ifdef __cplusplus
 }

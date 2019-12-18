@@ -14,6 +14,8 @@
 #ifndef _SEQ_CV_H
 #define _SEQ_CV_H
 
+#include <mios32.h>
+#if !defined(MIOS32_DONT_USE_AOUT)
 #include <aout.h>
 
 /////////////////////////////////////////////////////////////////////////////
@@ -122,5 +124,5 @@ extern s32 SEQ_CV_ResetAllChannels(void);
 u16 seq_cv_clkout_divider[SEQ_CV_NUM_CLKOUT];
 u8  seq_cv_clkout_pulsewidth[SEQ_CV_NUM_CLKOUT];
 
-
+#endif
 #endif /* _SEQ_CV_H */
