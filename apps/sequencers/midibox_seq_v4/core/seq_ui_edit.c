@@ -1076,10 +1076,10 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
   if( layer_event.midi_package.event == CC ) {
     mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
-    u8 loopback = port == 0xf0;
+    u8 loopback = (port & 0xf0) == 0xf0;
 
     if( loopback )
-      SEQ_LCD_PrintString((char *)SEQ_CC_LABELS_Get(port, layer_event.midi_package.cc_number));
+      SEQ_LCD_PrintString((char *)SEQ_CC_LABELS_Get(port, layer_event.midi_package.cc_number, 1));
     else {
       if( layer_event.midi_package.cc_number >= 0x80 ) {
 	SEQ_LCD_PrintFormattedString("  CC#off");

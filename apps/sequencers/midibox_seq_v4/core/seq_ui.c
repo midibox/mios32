@@ -269,6 +269,7 @@ s32 SEQ_UI_InitEncSpeed(u32 auto_config)
       case SEQ_PAR_Type_Velocity:
       case SEQ_PAR_Type_Length:
       case SEQ_PAR_Type_CC:
+      case SEQ_PAR_Type_Ctrl:
       case SEQ_PAR_Type_PitchBend:
       case SEQ_PAR_Type_Probability:
       case SEQ_PAR_Type_Delay:

@@ -172,7 +172,7 @@ static const char cc_labels[128][9] = {
 
 
 
-static const char loopback_labels[128][9] = {
+static const char ctrl_labels[128][9] = {
   // 0x00..0x0f
   "00: ----",
   "MorphCC ",
@@ -272,10 +272,10 @@ static const char loopback_labels[128][9] = {
   "EchoFB.G",
   "EchoFB.T",
   "57: ----",
-  "58: ----",
-  "59: ----",
-  "5A: ----",
-  "5B: ----",
+  "FxMiMode",
+  "FxMiPort",
+  "FxMiChn.",
+  "FxMi#Chn",
   "5C: ----",
   "5D: ----",
   "5E: ----",
@@ -334,12 +334,12 @@ s32 SEQ_CC_LABELS_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // Returns CC label
 /////////////////////////////////////////////////////////////////////////////
-const char *SEQ_CC_LABELS_Get(mios32_midi_port_t port, u8 cc)
+const char *SEQ_CC_LABELS_Get(mios32_midi_port_t port, u8 cc, u8 enforce_ctrl)
 {
-  u8 loopback = port == 0xf0;
+  u8 loopback = ((port & 0xf0) == 0xf0) || enforce_ctrl;
 
   if( cc >= 128 )
     cc = 0; // just to avoid buffer overruns if invalid CC number selected
 
-  return loopback ? loopback_labels[cc] : cc_labels[cc];
+  return loopback ? ctrl_labels[cc] : cc_labels[cc];
 }

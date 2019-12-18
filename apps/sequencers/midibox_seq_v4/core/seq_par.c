@@ -63,6 +63,7 @@ static const char seq_par_type_names[SEQ_PAR_NUM_TYPES][6] = {
   "Root ", // 16
   "Scale", // 17
   "Chrd3", // 18
+  "Ctrl ",  // 19
 };
 
 static const u8 seq_par_map[SEQ_PAR_NUM_TYPES] = { // allows to change the order for the UI selection
@@ -85,6 +86,7 @@ static const u8 seq_par_map[SEQ_PAR_NUM_TYPES] = { // allows to change the order
   SEQ_PAR_Type_Nth2,
   SEQ_PAR_Type_Root,
   SEQ_PAR_Type_Scale,
+  SEQ_PAR_Type_Ctrl,
 };
 
 static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
@@ -107,6 +109,7 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0,    // Root: C
   0,    // Scale: 0
   0x01, // Chord3: 1
+  0x00, // Ctrl
 };
 
 static const u8 seq_par_max_value[SEQ_PAR_NUM_TYPES] = {
@@ -129,6 +132,7 @@ static const u8 seq_par_max_value[SEQ_PAR_NUM_TYPES] = {
   0x7f, // Root
   0x7f, // Scale
   0x7f, // Chord3
+  0x80, // Ctrl
 };
 
 
@@ -515,7 +519,7 @@ s32 SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer, u8 instrument, char *str_buf
 {
   seq_par_layer_type_t asg = SEQ_PAR_AssignmentGet(track, par_layer);
 
-  if( asg == SEQ_PAR_Type_CC ) {
+  if( asg == SEQ_PAR_Type_CC || asg == SEQ_PAR_Type_Ctrl ) {
     seq_cc_trk_t *tcc = &seq_cc_trk[track];
     u8 cc_number;
     if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {

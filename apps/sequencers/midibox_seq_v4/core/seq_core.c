@@ -1121,7 +1121,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    *next_ptr++ = 0;
 	  }
 	}
-
+	
 #ifdef MBSEQV4P
         seq_layer_evnt_t layer_events[83];
         s32 number_of_events = 0;
