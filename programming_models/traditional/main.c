@@ -210,7 +210,7 @@ void vApplicationTickHook(void)
   MIOS32_TIMESTAMP_Inc();
 #endif
 
-#if !defined(MIOS32_DONT_USE_SRIO) && !defined(MIOS32_DONT_SERVICE_SRIO_SCAN)
+#if !defined(MIOS32_DONT_USE_SRIO) && !defined(MIOS32_DONT_SERVICE_SRIO_SCAN) && !defined(MIOS32_DONT_USE_SRIO_SCAN)
   // notify application about SRIO scan start
   APP_SRIO_ServicePrepare();
 

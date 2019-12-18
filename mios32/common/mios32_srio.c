@@ -127,6 +127,8 @@ s32 MIOS32_SRIO_Init(u32 mode)
   mios32_srio_dout_page_ctr = 0;
 #endif
 
+
+#if !defined(MIOS32_DONT_USE_SRIO_SCAN)
   // initial state of RCLK
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 #ifdef MIOS32_SRIO_SPI_RC_PIN2
@@ -144,6 +146,7 @@ s32 MIOS32_SRIO_Init(u32 mode)
 
   // init SPI port for baudrate of ca. 2 uS period @ 72 MHz
   MIOS32_SPI_TransferModeInit(MIOS32_SRIO_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_128);
+#endif
 
   // notify that SRIO values have been transfered
   // (cleared on each ScanStart, set on each DMA IRQ invokation for proper synchronisation)
@@ -256,7 +259,7 @@ s32 MIOS32_SRIO_DebounceStart(void)
   return 0; // no error
 }
 
-
+#if !defined(MIOS32_DONT_USE_SRIO_SCAN)
 /////////////////////////////////////////////////////////////////////////////
 //! (Re-)Starts the SPI IRQ Handler which scans the SRIO chain
 //! \param[in] _notify_hook notification function which will be called after the scan has been finished
@@ -381,6 +384,8 @@ static void MIOS32_SRIO_DMA_Callback(void)
 }
 
 //! \}
+
+#endif
 
 #endif /* MIOS32_DONT_USE_SRIO */
 
