@@ -1363,6 +1363,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	    seq_hwcfg_dout_gate_sr[hlp-1] = sr;
 
+#if !defined(MIOS32_DONT_USE_BOARD_J5)
 	} else if( strcasecmp(parameter, "J5_ENABLED") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 j5_enabled = get_dec(word);
@@ -1401,21 +1402,27 @@ s32 SEQ_FILE_HW_Read(void)
 	      MIOS32_BOARD_J5_PinInit(i, pin_mode);
 	      MIOS32_BOARD_J5_PinSet(i, 0);
 	    }
+#if !defined(MIOS32_DONT_USE_BOARD_J10)
 	    // and J10B for additional outputs
 	    for(i=8; i<16; ++i) {
 	      MIOS32_BOARD_J10_PinInit(i, pin_mode);
 	      MIOS32_BOARD_J10_PinSet(i, 0);
 	    }
+#endif
 #elif defined(MIOS32_FAMILY_LPC17xx)
+#if !defined(MIOS32_DONT_USE_BOARD_J28)
 	    // and pin J28 for additional outputs
 	    for(i=0; i<4; ++i) {
 	      MIOS32_BOARD_J28_PinInit(i, pin_mode);
 	      MIOS32_BOARD_J28_PinSet(i, 0);
 	    }
+#endif
 #else
 # warning "please adapt for this MIOS32_FAMILY"
 #endif
 	  }
+#endif
+
 #if !defined(MIOS32_DONT_USE_AOUT)
 	} else if( strcasecmp(parameter, "DIN_SYNC_CLK_PULSEWIDTH") == 0 ) {
 	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!

@@ -248,8 +248,10 @@ s32 MIOS32_SYS_Reset(void)
   // disable all interrupts
   MIOS32_IRQ_Disable();
 
+#if !defined(MIOS32_DONT_USE_BOARD_LED)
   // turn off all board LEDs
   MIOS32_BOARD_LED_Set(0xffffffff, 0x00000000);
+#endif
 
   // wait for 50 mS to ensure that all ongoing operations (e.g. DMA driver SPI transfers) are finished
   {

@@ -96,8 +96,10 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
+#if !defined(MIOS32_DONT_USE_BOARD_LED)
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
+#endif
 
   // disable DIN test mode by default
   app_din_testmode = 0;
