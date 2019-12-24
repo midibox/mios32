@@ -19,6 +19,10 @@
 #include <string.h>
 #include <stdarg.h>
 
+#if defined(SEQ_USE_MOD)
+#include "seq_mod.h"
+#endif
+
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
 
@@ -161,6 +165,10 @@ void APP_Init(void)
   // initial load of filesystem
   SEQ_FILE_Init(0);
 
+#if defined(SEQ_USE_MOD)
+  SEQ_Mod_Init(0);
+#endif
+
   // start tasks (differs between MIOS32 and MacOS)
   TASKS_Init(0);
 
@@ -173,10 +181,6 @@ void APP_Init(void)
 
   // install timeout callback function
   MIOS32_MIDI_TimeOutCallback_Init(&NOTIFY_MIDI_TimeOut);
-
-  // ===========================================================================
-  MIOS32_IIC_Init(0);
-  MIOS32_SRIO_Init(0);
 }
 
 
@@ -193,17 +197,9 @@ void APP_Background(void)
     // for idle time measurements
     SEQ_STATISTICS_Idle();
 
-    u8 buffer[4] = {0xFF, 0x77, 0x77, 0xFF};
-    u8 address = 0x20;
-    while(address < 0x24) {
-        s32 error = MIOS32_IIC_Transfer(MIOS32_IIC_IO_PORT, IIC_Write, 2 * address, buffer, 4);
-        if( !error )
-            error = MIOS32_IIC_TransferWait(MIOS32_IIC_IO_PORT);
-        ++address;
-    }
-
-    // release IIC peripheral
-    MIOS32_IIC_TransferFinished(MIOS32_IIC_IO_PORT);
+#if defined(SEQ_USE_MOD)
+    SEQ_Mod_Idle();
+#endif
 }
 
 
