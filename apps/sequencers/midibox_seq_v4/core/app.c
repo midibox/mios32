@@ -120,7 +120,10 @@ void APP_Init(void)
 #else
   BLM_CHEAPO_Init(0);
 #endif
+
+#if !defined(SEQ_DONT_USE_BLM8X8)
   SEQ_BLM8X8_Init(0);
+#endif
 
   // initialize hardware soft-config
   SEQ_HWCFG_Init(0);
@@ -170,6 +173,10 @@ void APP_Init(void)
 
   // install timeout callback function
   MIOS32_MIDI_TimeOutCallback_Init(&NOTIFY_MIDI_TimeOut);
+
+  // ===========================================================================
+  MIOS32_IIC_Init(0);
+  MIOS32_SRIO_Init(0);
 }
 
 
@@ -183,8 +190,20 @@ void APP_Background(void)
   MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 #endif
 
-  // for idle time measurements
-  SEQ_STATISTICS_Idle();
+    // for idle time measurements
+    SEQ_STATISTICS_Idle();
+
+    u8 buffer[4] = {0xFF, 0x77, 0x77, 0xFF};
+    u8 address = 0x20;
+    while(address < 0x24) {
+        s32 error = MIOS32_IIC_Transfer(MIOS32_IIC_IO_PORT, IIC_Write, 2 * address, buffer, 4);
+        if( !error )
+            error = MIOS32_IIC_TransferWait(MIOS32_IIC_IO_PORT);
+        ++address;
+    }
+
+    // release IIC peripheral
+    MIOS32_IIC_TransferFinished(MIOS32_IIC_IO_PORT);
 }
 
 
@@ -512,10 +531,13 @@ void SEQ_TASK_Period1mS(void)
   BLM_CHEAPO_ButtonHandler(APP_BLM_NotifyToggle);
 #endif
 
+#if !defined(SEQ_DONT_USE_BLM8X8)
   if( seq_hwcfg_blm8x8.enabled ) {
     // check for SEQ_BLM8X8 pin changes, call button handler of sequencer on each toggled pin
     SEQ_BLM8X8_ButtonHandler(APP_SEQ_BLM8X8_NotifyToggle);
   }
+#endif
+
 #endif
 }
 

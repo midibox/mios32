@@ -557,6 +557,7 @@ s32 SEQ_HWCFG_Init(u32 mode)
   for(i=0; i<SEQ_HWCFG_NUM_SR_CV_GATES; ++i)
     seq_hwcfg_cv_gate_sr[i] = 0;
 
+#if !defined(SEQ_DONT_USE_BLM8X8)
   // initial debounce delay for BLM8x8
   {
     int blm;
@@ -567,6 +568,7 @@ s32 SEQ_HWCFG_Init(u32 mode)
       SEQ_BLM8X8_ConfigSet(blm, config);
     }
   }
+#endif
 
   return 0; // no error
 }

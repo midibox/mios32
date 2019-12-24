@@ -17,6 +17,8 @@
 
 #include <mios32.h>
 
+#if !defined(SEQ_DONT_USE_BLM8X8)
+
 #include "seq_blm8x8.h"
 #include "seq_hwcfg.h"
 
@@ -350,3 +352,5 @@ seq_blm8x8_config_t SEQ_BLM8X8_ConfigGet(u8 blm)
 
   return seq_blm8x8_config[blm];
 }
+
+#endif

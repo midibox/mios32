@@ -1053,7 +1053,7 @@ s32 SEQ_FILE_HW_Read(void)
 #endif
 	  }
 
-
+#if !defined(SEQ_DONT_USE_BLM8X8)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// BLM8X8_
 	////////////////////////////////////////////////////////////////////////////////////////////
@@ -1112,6 +1112,7 @@ s32 SEQ_FILE_HW_Read(void)
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown BLM8X8_* name '%s'!", parameter);
 #endif
 	  }
+#endif
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// BPM_DIGITS_
@@ -1297,7 +1298,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  // common DINs
 	  MIOS32_SRIO_DebounceSet(delay);
-
+#if !defined(SEQ_DONT_USE_BLM8X8)
 	  // SEQ_BLM8X8 based DINs
 	  {
 	    int blm;
@@ -1308,6 +1309,7 @@ s32 SEQ_FILE_HW_Read(void)
 	      SEQ_BLM8X8_ConfigSet(blm, config);
 	    }
 	  }
+#endif
 #if !defined(MIOS32_DONT_USE_AOUT)
 	} else if( strcasecmp(parameter, "AOUT_INTERFACE_TYPE") == 0 ) {
 	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!
