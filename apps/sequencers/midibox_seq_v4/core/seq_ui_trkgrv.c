@@ -159,7 +159,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     }
     s32 status = 0;
     if( SEQ_UI_Var8_Inc(&selected_groove, 0, grooves_total-1, incrementer) > 0 ) {
-      SEQ_CC_Set(visible_track, SEQ_CC_GROOVE_STYLE, (selected_groove & 0x3f) | (selected_groove_org & 0x40)); // keep sync flag
+      SEQ_UI_CC_Set(SEQ_CC_GROOVE_STYLE, (selected_groove & 0x3f) | (selected_groove_org & 0x40)); // keep sync flag
       status = 1;
     }
 
@@ -192,7 +192,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     u8 sync_to_track = (selected_groove_org & 0x40) ? 1 : 0;
     if( !incrementer ) incrementer = sync_to_track ? -1 : 1;
     if( SEQ_UI_Var8_Inc(&sync_to_track, 0, 1, incrementer) > 0 ) {
-      SEQ_CC_Set(visible_track, SEQ_CC_GROOVE_STYLE, (sync_to_track ? 0x40 : 0x00) | (selected_groove_org & 0x3f)); // keep sync flag
+      SEQ_UI_CC_Set(SEQ_CC_GROOVE_STYLE, (sync_to_track ? 0x40 : 0x00) | (selected_groove_org & 0x3f)); // keep sync flag
       status = 1;
     }
 

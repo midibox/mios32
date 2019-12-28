@@ -4164,6 +4164,8 @@ s32 SEQ_UI_CC_Set(u8 cc, u8 value)
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
     if( SEQ_UI_IsSelectedTrack(track) ) {
+      SEQ_RECORD_CtrlCC(track, cc, value);
+      
       int prev_value = SEQ_CC_Get(track, cc);
       if( value == prev_value )
 	continue; // no change
@@ -4215,6 +4217,8 @@ s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value)
       int prev_value = new_value;
       new_value = (new_value & ~flag_mask) | value;
 
+      SEQ_RECORD_CtrlCC(track, cc, new_value);
+      
       if( new_value == prev_value )
 	continue; // no change
 

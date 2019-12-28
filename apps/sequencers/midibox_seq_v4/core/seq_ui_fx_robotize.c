@@ -244,8 +244,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 			  break;
 		  }//endswitch
 		u8 visible_track = SEQ_UI_VisibleTrackGet();
-		SEQ_CC_Set(visible_track, SEQ_CC_ROBOTIZE_MASK1, SEQ_CC_Get(visible_track, SEQ_CC_ROBOTIZE_MASK1) ^ xormask);
-		SEQ_CC_Set(visible_track, SEQ_CC_ROBOTIZE_MASK2, SEQ_CC_Get(visible_track, SEQ_CC_ROBOTIZE_MASK2) ^ xormask2);
+		SEQ_UI_CC_Set(SEQ_CC_ROBOTIZE_MASK1, SEQ_CC_Get(visible_track, SEQ_CC_ROBOTIZE_MASK1) ^ xormask);
+		SEQ_UI_CC_Set(SEQ_CC_ROBOTIZE_MASK2, SEQ_CC_Get(visible_track, SEQ_CC_ROBOTIZE_MASK2) ^ xormask2);
 		
 		return 1;
 	}//endif

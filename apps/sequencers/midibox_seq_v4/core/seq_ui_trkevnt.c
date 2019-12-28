@@ -533,7 +533,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 		SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please confirm new type", "with GP button!");
 	      } else {
 		if( edit_layer_type != SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer) ) {
-		  // TODO: has to be done for all selected tracks
 		  SEQ_CC_Set(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer, edit_layer_type);
 		  SEQ_LAYER_CopyParLayerPreset(visible_track, ui_selected_par_layer);
 		  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Layer Type", "has been changed.");

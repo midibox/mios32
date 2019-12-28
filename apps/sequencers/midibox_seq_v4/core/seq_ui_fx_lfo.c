@@ -158,7 +158,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please confirm CC", "with GP button!");
       } else if( incrementer == 0 ) {
 	if( edit_cc_number != SEQ_CC_Get(visible_track, SEQ_CC_LFO_CC) ) {
-	  SEQ_CC_Set(visible_track, SEQ_CC_LFO_CC, edit_cc_number);
+	  SEQ_UI_CC_Set(SEQ_CC_LFO_CC, edit_cc_number);
 	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "CC number", "has been changed.");
 	}
 

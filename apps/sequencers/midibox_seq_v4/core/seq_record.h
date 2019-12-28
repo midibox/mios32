@@ -61,6 +61,8 @@ extern s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track);
 
 extern s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick);
 
+extern s32 SEQ_RECORD_CtrlCC(u8 track, u8 cc, u8 value);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
