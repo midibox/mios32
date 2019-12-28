@@ -713,10 +713,12 @@ static u16 caliValue(u8 pin)
   case AOUT_CALI_MODE_8V: return hz_v ? hz_v_table[0x48] : (0x60 << 9);
   }
 
+#if AOUT_NUM_CALI_POINTS_X > 0
   if( aout_config.chn_hz_v & (1 << pin) ) {
-    u8 ix = (cali_cfg_value >> 9) / 12; // 0..15
+    u8 ix = (cali_cfg_value >> 9) / 12; // 0..11
     return cali_hz_v_table[ix];
   }
+#endif
   
   return cali_cfg_value; // in case UI want's to configure calibration values
 }
