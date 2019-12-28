@@ -70,7 +70,7 @@ extern const char* SEQ_CV_CurveNameGet(u8 cv);
 
 extern s32 SEQ_CV_CaliModeSet(u8 cv, aout_cali_mode_t mode);
 extern aout_cali_mode_t SEQ_CV_CaliModeGet(void);
-extern s32 SEQ_CV_CaliNameGet(char *str, u8 cv);
+extern s32 SEQ_CV_CaliNameGet(char *str, u8 cv, u8 display_bipolar);
 
 extern s32 SEQ_CV_SlewRateSet(u8 cv, u8 value);
 extern s32 SEQ_CV_SlewRateGet(u8 cv);

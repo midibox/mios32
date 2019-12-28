@@ -1,5 +1,5 @@
 // generated with 'perl hz_v_table.pl > aout_hz_v_table.inc'
-static u16 hz_v_table[128] = {
+static const u16 hz_v_table[128] = {
 	0x0320, // C-0:  0.125V
 	0x034f, // C#0:  0.132V
 	0x0381, // D-0:  0.140V
@@ -129,3 +129,21 @@ static u16 hz_v_table[128] = {
 	0xffff, // F#10: 181.017V
 	0xffff, // G-10: 191.781V
 };
+
+#if AOUT_NUM_CALI_POINTS_X > 0
+// simplified mapping since we know that cali_cfg_value will be set to x.00V
+static const u16 cali_hz_v_table[AOUT_NUM_CALI_POINTS_X] = { // from aout_hz_v_table.inc
+      0x0000, // 0.00V
+      0x18ff, // 1.00V
+      0x31ff, // 2.00V
+      0x4aea, // 3.00V
+      0x63ff, // 4.00V
+      0x7dfd, // 5.00V
+      0x95d4, // 6.00V
+      0xb000, // ca. 7.00V -- TODO chk?
+      0xc7ff, // 8.00V
+      0xe0ff, // 9.00V
+      0xfbfb, // 10.00V
+      0xffff
+};
+#endif

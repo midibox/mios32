@@ -279,12 +279,31 @@ aout_cali_mode_t SEQ_CV_CaliModeGet(void)
 }
 
 // str must be reserved for up to 10+1 characters!
-s32 SEQ_CV_CaliNameGet(char *str, u8 cv)
+s32 SEQ_CV_CaliNameGet(char *str, u8 cv, u8 display_bipolar)
 {
   u32 mode = (u32)SEQ_CV_CaliModeGet();
 
   if( mode < AOUT_NUM_CALI_MODES ) {
-    sprintf(str, "  %s  ", AOUT_CaliNameGet(mode));
+    if( display_bipolar ) {
+      switch( mode ) {
+      case AOUT_CALI_MODE_1V:
+	sprintf(str, "  -4.00V  ");
+	break;
+      case AOUT_CALI_MODE_2V:
+	sprintf(str, "  -3.00V  ");
+	break;
+      case AOUT_CALI_MODE_4V:
+	sprintf(str, "  -1.00V  ");
+	break;
+      case AOUT_CALI_MODE_8V:
+	sprintf(str, "   3.00V  ");
+	break;
+      default:
+	sprintf(str, "  %s  ", AOUT_CaliNameGet(mode));
+      }
+    } else {
+      sprintf(str, "  %s  ", AOUT_CaliNameGet(mode));
+    }
   } else {
     // calibration values
     u16 *cali_points = SEQ_CV_CaliPointsPtrGet(cv);
@@ -302,7 +321,7 @@ s32 SEQ_CV_CaliNameGet(char *str, u8 cv)
       if( x >= (AOUT_NUM_CALI_POINTS_X-1) ) {
 	sprintf(str, " Max:%5d", cali_diff);
       } else {
-	sprintf(str, " %2dV:%5d", x, cali_diff);
+	sprintf(str, " %2dV:%5d", display_bipolar ? (x - 5) : x, cali_diff);
       }
     }
   }
