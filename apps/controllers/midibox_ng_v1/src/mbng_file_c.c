@@ -825,8 +825,8 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	} else {
 	  // no extra check if event_type already defined...
-	  stream[1] = value & 0xff;
-	  stream[2] = value >> 8;
+	  stream[1] = value & 0x7f;
+	  stream[2] = value >> 7;
 	  item.secondary_value = stream[1];
 	}
       }
