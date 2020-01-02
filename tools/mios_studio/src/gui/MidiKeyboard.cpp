@@ -138,7 +138,7 @@ void MidiKeyboard::handleNoteOn(MidiKeyboardState *source, int midiChannel, int 
 
 void MidiKeyboard::handleNoteOff(MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity)
 {
-    MidiMessage message = MidiMessage::noteOn(midiChannel, midiNoteNumber, (uint8)(velocity*128));
+    MidiMessage message = MidiMessage::noteOff(midiChannel, midiNoteNumber, (uint8)(velocity*128));
     miosStudio->sendMidiMessage(message);
 }
 
