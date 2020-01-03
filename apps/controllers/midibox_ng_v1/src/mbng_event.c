@@ -4909,7 +4909,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	  } else if( *stream == midi_in ) { // matching byte
 	    // begin of stream?
 	    if( midi_in == 0xf0 ) {
-	      pool_item->value = 0;
+	      //pool_item->value = 0; // TK: why did I clear the value here? This overwrites all values of events which are listening to SysEx streams!
 	      pool_item->sysex_runtime_var.ALL = 0;
 	    }
 
