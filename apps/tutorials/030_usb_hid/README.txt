@@ -1,8 +1,8 @@
 $Id$
 
-<Application Title>
+MIOS32 Tutorial #030: USB HOST HID Keyboard and Mouse support
 ===============================================================================
-Copyright (C) <year> <your name> (<your email address>)
+Copyright (C) 2020 Bruno Dupeyron (bdupeyron@gmail.com)
 Licensed for personal non-commercial use only.
 All other rights reserved.
 ===============================================================================
@@ -13,11 +13,11 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
+   o MBHP_CORE_STM32
    o ..
 
 ===============================================================================
 
-<Application Description>
+Doc: TODO
 
 ===============================================================================

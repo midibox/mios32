@@ -66,6 +66,7 @@ typedef enum {
 } USBH_MIDI_transfer_state_t;
 
 static USBH_MIDI_transfer_state_t USBH_MIDI_transfer_state;
+extern USBH_Class_Status USB_Host_Class;
 #endif
 
 
@@ -154,15 +155,19 @@ s32 MIOS32_USB_MIDI_ChangeConnectionState(u8 connected)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_CheckAvailable(u8 cable)
 {
+  if(USB_OTG_IsDeviceMode(&USB_OTG_dev)){
 #ifdef MIOS32_SYS_ADDR_BSL_INFO_BEGIN
-  if( MIOS32_USB_ForceSingleUSB() && cable >= 1 )
-    return 0;
+    if( MIOS32_USB_ForceSingleUSB() && cable >= 1 )
+      return 0;
 #endif
-
-  if( cable >= MIOS32_USB_MIDI_NUM_PORTS )
-    return 0;
-
-  return transfer_possible ? 1 : 0;
+    if( cable >= MIOS32_USB_MIDI_NUM_PORTS )
+      return 0;
+    return transfer_possible ? 1 : 0;
+  }else{
+    // toDo: Get available port number from descriptor
+    return transfer_possible ? 1 : 0;
+  }
+  return 0; // never reached
 }
 
 
@@ -283,8 +288,8 @@ s32 MIOS32_USB_MIDI_Periodic_mS(void)
 {
   if( USB_OTG_IsHostMode(&USB_OTG_dev) ) {
 #ifndef MIOS32_DONT_USE_USB_HOST
-    // process the USB host events
-    USBH_Process(&USB_OTG_dev, &USB_Host);
+    // process the USB host events only if class is MIDI
+    if(USB_Host_Class == USBH_IS_MIDI)USBH_Process(&USB_OTG_dev, &USB_Host);
 #endif
   } else {
     // check for received packages
@@ -491,7 +496,7 @@ static USBH_Status USBH_InterfaceInit(USB_OTG_CORE_HANDLE *pdev, void *phost)
     }
   }
 
-  if( MIOS32_USB_MIDI_CheckAvailable(0) ) {
+  if( MIOS32_USB_MIDI_CheckAvailable(0)==0 ) {
     pphost->usr_cb->DeviceNotSupported();
   }
 	
@@ -520,6 +525,7 @@ static void USBH_InterfaceDeInit(USB_OTG_CORE_HANDLE *pdev, void *phost)
     USBH_Free_Channel  (pdev, USBH_hc_num_in);
     USBH_hc_num_in = 0;     /* Reset the Channel as Free */
   }
+  MIOS32_USB_MIDI_ChangeConnectionState(0);
 }
 
 /**

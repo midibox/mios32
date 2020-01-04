@@ -283,6 +283,11 @@ static void TASK_Hooks(void *pvParameters)
     if( xLastExecutionTime < (xCurrentTickCount-5) )
       xLastExecutionTime = xCurrentTickCount;
 
+#if !defined(MIOS32_DONT_USE_USB_HOST)
+    // process USB Host, only others than USB MIDI
+    MIOS32_USB_HOST_Process();
+#endif
+    
 #if !defined(MIOS32_DONT_USE_DIN) && !defined(MIOS32_DONT_USE_SRIO)
     // check for DIN pin changes, call APP_DIN_NotifyToggle on each toggled pin
     MIOS32_DIN_Handler(APP_DIN_NotifyToggle);
