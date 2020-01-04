@@ -19,6 +19,10 @@
 #include <string.h>
 #include <stdarg.h>
 
+#if defined(SEQ_USE_MOD)
+#include "seq_mod.h"
+#endif
+
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
 
@@ -96,8 +100,10 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
+#if !defined(MIOS32_DONT_USE_BOARD_LED)
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
+#endif
 
   // disable DIN test mode by default
   app_din_testmode = 0;
@@ -118,15 +124,20 @@ void APP_Init(void)
 #else
   BLM_CHEAPO_Init(0);
 #endif
+
+#if !defined(SEQ_DONT_USE_BLM8X8)
   SEQ_BLM8X8_Init(0);
+#endif
 
   // initialize hardware soft-config
   SEQ_HWCFG_Init(0);
 
   SEQ_TPD_Init(0);
 
+#if !defined(MIOS32_DONT_USE_AOUT)
   // initialize CV
   SEQ_CV_Init(0);
+#endif
 
   // initialize MIDI handlers
   SEQ_MIDI_PORT_Init(0);
@@ -154,6 +165,10 @@ void APP_Init(void)
   // initial load of filesystem
   SEQ_FILE_Init(0);
 
+#if defined(SEQ_USE_MOD)
+  SEQ_Mod_Init(0);
+#endif
+
   // start tasks (differs between MIOS32 and MacOS)
   TASKS_Init(0);
 
@@ -179,8 +194,12 @@ void APP_Background(void)
   MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 #endif
 
-  // for idle time measurements
-  SEQ_STATISTICS_Idle();
+    // for idle time measurements
+    SEQ_STATISTICS_Idle();
+
+#if defined(SEQ_USE_MOD)
+    SEQ_Mod_Idle();
+#endif
 }
 
 
@@ -260,7 +279,9 @@ void APP_SRIO_ServicePrepare(void)
     SEQ_BLM8X8_PrepareRow();
   }
 
+#if !defined(MIOS32_DONT_USE_AOUT)
   SEQ_CV_SRIO_Prepare();
+#endif
 
   // TK: using MIOS32_DOUT_SRSet/PinSet instead of SEQ_LED_SRSet/PinSet to ensure compatibility with MBSEQV4L
   if( seq_hwcfg_bpm_digits.enabled ) {
@@ -356,7 +377,9 @@ void APP_SRIO_ServiceFinish(void)
   BLM_CHEAPO_GetRow();
 #endif
 
+#if !defined(MIOS32_DONT_USE_AOUT)
   SEQ_CV_SRIO_Finish();
+#endif
 
   if( seq_hwcfg_blm8x8.enabled ) {
     // call the BL_X_GetRow function after scan is finished to capture the read DIN values
@@ -504,10 +527,13 @@ void SEQ_TASK_Period1mS(void)
   BLM_CHEAPO_ButtonHandler(APP_BLM_NotifyToggle);
 #endif
 
+#if !defined(SEQ_DONT_USE_BLM8X8)
   if( seq_hwcfg_blm8x8.enabled ) {
     // check for SEQ_BLM8X8 pin changes, call button handler of sequencer on each toggled pin
     SEQ_BLM8X8_ButtonHandler(APP_SEQ_BLM8X8_NotifyToggle);
   }
+#endif
+
 #endif
 }
 
@@ -560,10 +586,12 @@ void SEQ_TASK_Period1S(void)
   // poll for IIC modules as long as HW config hasn't been locked (read from SD card)
   // TODO: use proper mutex handling here
 #ifndef MIOS32_FAMILY_EMULATION
+#ifndef MIOS32_DONT_USE_IIC_MIDI
   if( !SEQ_FILE_HW_ConfigLocked() ) {
     MIOS32_IIC_MIDI_ScanInterfaces();
   }
-#endif  
+#endif
+#endif
 
   // boot phase of 2 seconds finished?
   if( wait_boot_ctr > 0 ) {
@@ -791,8 +819,10 @@ void SEQ_TASK_MIDI(void)
   // send timestamped MIDI events
   SEQ_MIDI_OUT_Handler();
 
+#if !defined(MIOS32_DONT_USE_AOUT)
   // update CV and gates
   SEQ_CV_Update();
+#endif
 
   MUTEX_MIDIOUT_GIVE;
 #endif

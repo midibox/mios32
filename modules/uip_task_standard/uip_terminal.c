@@ -18,6 +18,8 @@
 #include <mios32.h>
 #include <string.h>
 
+#if !defined(MIOS32_DONT_USE_OSC)
+
 #include "uip.h"
 #include "uip_arp.h"
 #include "uip_task.h"
@@ -498,3 +500,5 @@ static s32 UIP_TERMINAL_PrintIPs(void *_output_function)
 
   return 0; // no error
 }
+
+#endif

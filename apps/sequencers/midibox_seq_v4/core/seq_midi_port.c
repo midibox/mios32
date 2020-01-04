@@ -425,9 +425,12 @@ s32 SEQ_MIDI_PORT_OutCheckAvailable(mios32_midi_port_t port)
   u8 ix;
   for(ix=0; ix<NUM_OUT_PORTS; ++ix) {
     if( out_ports[ix].port == port ) {
+#if !defined(MIOS32_DONT_USE_AOUT)
       if( port >= 0x80 && port <= 0x83 ) {
 	return SEQ_CV_IfGet() ? ((((port & 0x3)+1)*8 <= SEQ_CV_NUM) ? 1 : 0) : 0;
-      } else if ( port >= 0xf0 )
+      } else
+#endif
+      if ( port >= 0xf0 )
 	return 1; // Bus is always available
       else if( (port & 0xf0) == OSC0 )
 	return 1; // TODO: check for ethernet connection here
@@ -852,18 +855,23 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
 
   // DIN Sync Event (0xf9 sent over port 0xff)
   if( port == 0xff && package.evnt0 == 0xf9 ) {
+#if !defined(MIOS32_DONT_USE_AOUT)
     SEQ_CV_Clk_Trigger(package.evnt1); // second byte contains clock number (see also 0xf9 generation in seq_core)
+#endif
     return 1; // filter package
   }
 
+#if !defined(MIOS32_DONT_USE_OSC)
   if( (port & 0xf0) == OSC0 ) { // OSC1..4 port
     // avoid OSC feedback in seq_live.c (can cause infinite loops or stack overflows)
-    if( filter_osc_packets || OSC_CLIENT_SendMIDIEvent(port & 0xf, package) >= 0 )
+    if( filter_osc_packets ||  OSC_CLIENT_SendMIDIEvent(port & 0xf, package) >= 0 )
       return 1; // filter package
   } else if( (port & 0xf0) == 0x80 ) { // CV port
     if( SEQ_CV_SendPackage(port & 0xf, package) )
       return 1; // filter package
-  } else if( port == 0xc0 ) { // Multi OUT port
+  } else
+#endif
+  if( port == 0xc0 ) { // Multi OUT port
     int i;
     u32 mask = 1;
     mios32_midi_port_t blm_port = BLM_SCALAR_MASTER_MIDI_PortGet(0);

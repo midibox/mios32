@@ -299,14 +299,18 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 
   MUTEX_MIDIOUT_TAKE;
 
+#if !defined(MIOS32_DONT_USE_OSC)
 #if !defined(MIOS32_FAMILY_EMULATION)
   if( UIP_TERMINAL_ParseLine(input, _output_function) >= 1 )
     return 0; // command parsed by UIP Terminal
 #endif
+#endif
 
 #if !defined(MIOS32_FAMILY_EMULATION)
+#if !defined(MIOS32_DONT_USE_AOUT)
   if( AOUT_TerminalParseLine(input, _output_function) >= 1 )
     return 0; // command parsed
+#endif
 #endif
 
 #ifdef MIOS32_LCD_universal
@@ -916,13 +920,17 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
 
   MUTEX_MIDIOUT_TAKE;
 #if !defined(MIOS32_FAMILY_EMULATION)
+#if !defined(MIOS32_DONT_USE_AOUT)
   AOUT_TerminalHelp(_output_function);
+#endif
 #endif
 #ifdef MIOS32_LCD_universal
   APP_LCD_TerminalHelp(_output_function);
 #endif
+#if !defined(MIOS32_DONT_USE_OSC)
 #if !defined(MIOS32_FAMILY_EMULATION)
   UIP_TERMINAL_Help(_output_function);
+#endif
 #endif
   MUTEX_MIDIOUT_GIVE;
 

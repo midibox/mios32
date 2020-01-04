@@ -210,7 +210,7 @@ void vApplicationTickHook(void)
   MIOS32_TIMESTAMP_Inc();
 #endif
 
-#if !defined(MIOS32_DONT_USE_SRIO) && !defined(MIOS32_DONT_SERVICE_SRIO_SCAN)
+#if !defined(MIOS32_DONT_USE_SRIO) && !defined(MIOS32_DONT_SERVICE_SRIO_SCAN) && !defined(MIOS32_DONT_USE_SRIO_SCAN)
   // notify application about SRIO scan start
   APP_SRIO_ServicePrepare();
 
@@ -331,21 +331,24 @@ void _abort(void)
 
     // check for incoming MIDI packages and call hook
     MIOS32_MIDI_Receive_Handler(APP_MIDI_NotifyPackage);
-
+#if !defined(MIOS32_DONT_USE_BOARD_LED)
     if( (delay_ctr % 10000) == 0 ) {
       // toggle board LED
       MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
     }
+#endif
   }
 #else
   u32 delay_ctr = 0;
   while( 1 ) {
     ++delay_ctr;
 
+#if !defined(MIOS32_DONT_USE_BOARD_LED)
     if( (delay_ctr % 1000000) == 0 ) {
       // toggle board LED
       MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
     }
+#endif
   }
 #endif
 }

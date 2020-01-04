@@ -504,7 +504,9 @@ seq_hwcfg_tpd_t seq_hwcfg_tpd = {
 u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 u8 seq_hwcfg_cv_gate_sr[SEQ_HWCFG_NUM_SR_CV_GATES];
 u8 seq_hwcfg_clk_sr = 0;
+#if !defined(MIOS32_DONT_USE_BOARD_J5)
 u8 seq_hwcfg_j5_enabled = 0;
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -542,12 +544,12 @@ s32 SEQ_HWCFG_Init(u32 mode)
 {
   int i;
 
-  // using 16 SRs by default, can be increased to up to 23 SRs
-  MIOS32_SRIO_ScanNumSet(16);
-
   // initialize encoders
   for(i=0; i<SEQ_HWCFG_NUM_ENCODERS; ++i)
     MIOS32_ENC_ConfigSet(i, enc_config[i]);
+
+  // using 16 SRs by default, can be increased to up to 23 SRs
+  MIOS32_SRIO_ScanNumSet(16);
 
   // disable gate SRs
   for(i=0; i<SEQ_HWCFG_NUM_SR_DOUT_GATES; ++i)
@@ -555,6 +557,7 @@ s32 SEQ_HWCFG_Init(u32 mode)
   for(i=0; i<SEQ_HWCFG_NUM_SR_CV_GATES; ++i)
     seq_hwcfg_cv_gate_sr[i] = 0;
 
+#if !defined(SEQ_DONT_USE_BLM8X8)
   // initial debounce delay for BLM8x8
   {
     int blm;
@@ -565,6 +568,7 @@ s32 SEQ_HWCFG_Init(u32 mode)
       SEQ_BLM8X8_ConfigSet(blm, config);
     }
   }
+#endif
 
   return 0; // no error
 }

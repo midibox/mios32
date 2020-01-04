@@ -246,6 +246,7 @@ s32 SEQ_FILE_GC_Read(void)
 	if( *parameter == '#' ) {
 	  // ignore comments
 #if !defined(MIOS32_FAMILY_EMULATION)
+#if !defined(MIOS32_DONT_USE_OSC)
 	} else if( strcmp(parameter, "ETH_LocalIp") == 0 ) {
 	  u32 value;
 	  if( !(value=get_ip(brkt)) ) {
@@ -274,6 +275,9 @@ s32 SEQ_FILE_GC_Read(void)
 	    UIP_TASK_GatewaySet(value);
 	  }
 #endif /* !defined(MIOS32_FAMILY_EMULATION) */
+#endif /* #if !defined(MIOS32_DONT_USE_OSC) */
+
+#if !defined(MIOS32_DONT_USE_AOUT)
 	} else if( strcmp(parameter, "CV_GateInv") == 0 ) {
 	  // special treatmend required for this 32bit unsigned (TODO: improve code here - allow get_dec with 64bit?)
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -298,6 +302,7 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else {
 	    SEQ_CV_SusKeyAllSet((u32)value);
 	  }
+#endif
 	} else {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 value = get_dec(word);
@@ -432,6 +437,7 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else if( strcmp(parameter, "ScreenSaverDelay") == 0 ) {
 	    seq_lcd_logo_screensaver_delay = (value > 255) ? 255 : value;
 #endif
+#if !defined(MIOS32_DONT_USE_AOUT)
 	  } else if( strcmp(parameter, "CV_AOUT_Type") == 0 ) {
 	    SEQ_CV_IfSet(value);
 	  } else if( strcmp(parameter, "CV_PinMode") == 0 ) {
@@ -503,6 +509,7 @@ s32 SEQ_FILE_GC_Read(void)
 		SEQ_CV_ClkPulseWidthSet(clkout, pulsewidth);
 	      }
 	    }
+#endif
 	  } else if( strcmp(parameter, "TpdMode") == 0 ) {
 	    SEQ_TPD_ModeSet(value);
 	  } else if( strcmp(parameter, "BLM_SCALAR_Port") == 0 ) {
@@ -512,6 +519,7 @@ s32 SEQ_FILE_GC_Read(void)
 	    BLM_SCALAR_MASTER_SendRequest(0, 0x00); // request layout from BLM_SCALAR
 
 #if !defined(MIOS32_FAMILY_EMULATION)
+#if !defined(MIOS32_DONT_USE_OSC)
 	  } else if( strcmp(parameter, "BLM_SCALAR_AlwaysUseFts") == 0 ) {
 	    seq_blm_options.ALWAYS_USE_FTS = value;
 	  } else if( strcmp(parameter, "ETH_Dhcp") == 0 ) {
@@ -567,6 +575,7 @@ s32 SEQ_FILE_GC_Read(void)
 	      }
 	    }
 #endif
+#endif
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	    // changed error level from 1 to 2 here, since people are sometimes confused about these messages
@@ -587,9 +596,11 @@ s32 SEQ_FILE_GC_Read(void)
   // close file
   status |= FILE_ReadClose(&file);
 
+#if !defined(MIOS32_DONT_USE_OSC)
 #if !defined(MIOS32_FAMILY_EMULATION)
   // OSC_SERVER_Init(0) has to be called after all settings have been done!
   OSC_SERVER_Init(0);
+#endif
 #endif
 
   if( status < 0 ) {
@@ -777,6 +788,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "RemoteID %d\n", (u8)seq_midi_sysex_remote_id);
   FLUSH_BUFFER;
 
+#if !defined(MIOS32_DONT_USE_AOUT)
   sprintf(line_buffer, "CV_AOUT_Type %d\n", (u8)SEQ_CV_IfGet());
   FLUSH_BUFFER;
 
@@ -818,6 +830,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
 
   sprintf(line_buffer, "CV_DOUT_TriggerWidth %d\n", (u8)SEQ_CV_DOUT_TriggerWidthGet());
   FLUSH_BUFFER;
+#endif
 
   sprintf(line_buffer, "TpdMode %d\n", SEQ_TPD_ModeGet());
   FLUSH_BUFFER;
@@ -829,6 +842,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
 #if !defined(MIOS32_FAMILY_EMULATION)
+#if !defined(MIOS32_DONT_USE_OSC)
   {
     u32 value = UIP_TASK_IP_AddressGet();
     sprintf(line_buffer, "ETH_LocalIp %d.%d.%d.%d\n",
@@ -882,6 +896,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
     sprintf(line_buffer, "OSC_TransferMode %d %d\n", con, OSC_CLIENT_TransferModeGet(con));
     FLUSH_BUFFER;
   }
+#endif
 #endif
 
 #ifndef MBSEQV4L

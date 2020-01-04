@@ -22,7 +22,7 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_BOARD)
 
-
+#if !defined(MIOS32_DONT_USE_BOARD_LED)
 /////////////////////////////////////////////////////////////////////////////
 // On-Board LEDs
 /////////////////////////////////////////////////////////////////////////////
@@ -35,6 +35,10 @@
 #  warning "Please define number of available LEDs (take only 1 by default)"
 # endif
 #endif
+
+#endif
+
+#if !defined(MIOS32_DONT_USE_BOARD_J5)
 
 /////////////////////////////////////////////////////////////////////////////
 // J5 pin mapping
@@ -67,6 +71,9 @@ static const j5_pin_t j5_pin[J5_NUM_PINS] = {
 #warning "No J5 pins defined for this MIOS32_BOARD"
 #endif
 
+#endif
+
+#if !defined(MIOS32_DONT_USE_BOARD_J10)
 
 /////////////////////////////////////////////////////////////////////////////
 // J10 pin mapping
@@ -109,6 +116,9 @@ static const j10_pin_t j10_pin[J10_NUM_PINS] = {
 #warning "No J10 pins defined for this MIOS32_BOARD"
 #endif
 
+#endif
+
+#if !defined(MIOS32_DONT_USE_BOARD_J28)
 
 /////////////////////////////////////////////////////////////////////////////
 // J28 pin mapping
@@ -122,6 +132,9 @@ static const j10_pin_t j10_pin[J10_NUM_PINS] = {
 # warning "No J28 pins defined for this MIOS32_BOARD"
 #endif
 
+#endif
+
+#if !defined(MIOS32_DONT_USE_BOARD_J15)
 
 /////////////////////////////////////////////////////////////////////////////
 // J15 (LCD) pin mapping
@@ -194,13 +207,18 @@ static const j10_pin_t j10_pin[J10_NUM_PINS] = {
 #warning "No J15 (LCD) port defined for this MIOS32_BOARD"
 #endif
 
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+#if !defined(MIOS32_DONT_USE_BOARD_J5)
 static u16 j5_enable_mask;
+#endif
+#if !defined(MIOS32_DONT_USE_BOARD_J10)
 static u16 j10_enable_mask;
+#endif
 
 
 
@@ -215,8 +233,12 @@ s32 MIOS32_BOARD_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
+#if !defined(MIOS32_DONT_USE_BOARD_J5)
   j5_enable_mask = 0;
+#endif
+#if !defined(MIOS32_DONT_USE_BOARD_J10)
   j10_enable_mask = 0;
+#endif
 
   return 0; // no error
 }
@@ -269,6 +291,7 @@ static s32 MIOS32_BOARD_PinInitHlp(GPIO_TypeDef *port, u16 pin_mask, mios32_boar
   return 0; // no error
 }
 
+#if !defined(MIOS32_DONT_USE_BOARD_LED)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes LEDs of the board
@@ -391,6 +414,9 @@ u32 MIOS32_BOARD_LED_Get(void)
   return values;
 }
 
+#endif
+
+#if !defined(MIOS32_DONT_USE_BOARD_J5)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes a J5 pin
@@ -523,7 +549,9 @@ s32 MIOS32_BOARD_J5_PinGet(u8 pin)
 #endif
 }
 
+#endif
 
+#if !defined(MIOS32_DONT_USE_BOARD_J10)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes a J10 pin
@@ -770,7 +798,9 @@ s32 MIOS32_BOARD_J10B_Set(u8 value)
 #endif
 }
 
+#endif
 
+#if !defined(MIOS32_DONT_USE_BOARD_J28)
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -863,6 +893,9 @@ s32 MIOS32_BOARD_J28_PinGet(u8 pin)
 #endif
 }
 
+#endif
+
+#if !defined(MIOS32_DONT_USE_BOARD_J15)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes the J15 port
@@ -1193,7 +1226,9 @@ s32 MIOS32_BOARD_J15_PollUnbusy(u8 lcd, u32 time_out)
 #endif
 }
 
+#endif
 
+#if !defined(MIOS32_DONT_USE_BOARD_DAC)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function enables or disables one of the two DAC channels provided by 
@@ -1297,6 +1332,8 @@ s32 MIOS32_BOARD_DAC_PinSet(u8 chn, u16 value)
   return 0; // no error
 #endif
 }
+
+#endif
 
 //! \}
 
