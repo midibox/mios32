@@ -18,6 +18,9 @@
 #define MIOS32_LCD_BOOT_MSG_LINE1 "Tutorial #030"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2020 TK/Antichambre"
 
+// Keyboard is AZERTY by default, uncomment this line for QWERTY
+//#define QWERTY_KEYBOARD
+
 //#define MIOS32_DONT_USE_USB_HOST
 //#define MIOS32_DONT_USE_USB_HID
 
