@@ -56,7 +56,6 @@
 
 static u8 selected_cv;
 static u8 selected_clkout;
-static u8 cv_display_bipolar = 0;
 
 const u16 din_sync_div_presets[] =
   // 1    2    3    4   6   8  12  16  24  32  48  96  192  384 ppqn, StartStop(=0)
@@ -137,9 +136,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
       // extra: switch unipolar/bipolar display
       if( incrementer == 0 ) {
-	cv_display_bipolar ^= 1;
+        seq_ui_options.CV_DISPLAY_BIPOLAR ^= 1;
+        ui_store_file_required = 1;
 
-	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Calibration Values:", cv_display_bipolar ? "Bipolar" : "Unipolar");
+	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Calibration Values:", seq_ui_options.CV_DISPLAY_BIPOLAR ? "Bipolar" : "Unipolar");
       }      
       break;
 
@@ -497,7 +497,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(10);
   } else {
     char str[11];
-    SEQ_CV_CaliNameGet(str, selected_cv, cv_display_bipolar);
+    SEQ_CV_CaliNameGet(str, selected_cv, seq_ui_options.CV_DISPLAY_BIPOLAR);
     SEQ_LCD_PrintString(str);
   }
 
