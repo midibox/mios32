@@ -143,7 +143,7 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This hook is called on HID Keyboard change
+// This hook is called on HID Mouse change
 /////////////////////////////////////////////////////////////////////////////
 void APP_MOUSE_NotifyChange(mios32_mouse_data_t mouse_data)
 {
@@ -200,7 +200,7 @@ void APP_MOUSE_NotifyChange(mios32_mouse_data_t mouse_data)
     if((app_cc11_value + mouse_data.z)<0)app_cc11_value=0; else app_cc11_value += mouse_data.z;
     if(app_cc11_value>127)app_cc11_value=127;
     // forward CC to UART0
-    MIOS32_MIDI_SendCC(UART0, 0, 10, app_cc11_value);
+    MIOS32_MIDI_SendCC(UART0, 0, 11, app_cc11_value);
 #ifdef APP_DEBUG_VERBOSE
     DEBUG_MSG("[APP_MOUSE_NotifyChange]wheel(y axis) = %d.", mouse_data.z);
 #endif
@@ -223,10 +223,10 @@ void APP_KBD_NotifyChange(mios32_kbd_state_t kbd_state, mios32_kbd_key_t kbd_key
   /* uses some of the key to play some notes */
   // Octave/Semi input
   switch (kbd_key.code) {
-    case 0x1e ... 0x27:    // 1 ... 0 for Octave -2 to 7, only with capd_lock On
+    case 0x1e ... 0x27:    // 1 ... 0 for Octave -2 to 7, only with caps_lock On
       if(kbd_key.value && kbd_state.caps_lock)app_last_octave = kbd_key.code-0x1e;
       break;
-    case 0x3a ... 0x45:    // F1 ... F12 for Semitone value, only with capd_lock On
+    case 0x3a ... 0x45:    // F1 ... F12 for Semitone value, only with caps_lock On
       if(kbd_state.caps_lock){
         u8 note = app_last_octave*12 + kbd_key.code-0x3a;
         if(note>127)note =127;
