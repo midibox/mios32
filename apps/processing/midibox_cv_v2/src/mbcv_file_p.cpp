@@ -296,17 +296,48 @@ s32 MBCV_FILE_P_Read(char *filename)
 	    }
 	  }
 
-	} else if( strcasecmp(parameter, "CV_UpdateRateFactor") == 0 ) {
-	  s32 factor;
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  if( (factor=get_dec(word)) < 1 || factor > APP_CV_UPDATE_RATE_FACTOR_MAX ) {
+        } else if( strcasecmp(parameter, "CV_UpdateRateFactor") == 0 ) {
+          s32 factor;
+          char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+          if( (factor=get_dec(word)) < 1 || factor > APP_CV_UPDATE_RATE_FACTOR_MAX ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBCV_FILE_P] ERROR '%s' should be between 1..%d\n", parameter, APP_CV_UPDATE_RATE_FACTOR_MAX);
+            DEBUG_MSG("[MBCV_FILE_P] ERROR '%s' should be between 1..%d\n", parameter, APP_CV_UPDATE_RATE_FACTOR_MAX);
 #endif
-	  } else {
-	    APP_CvUpdateRateFactorSet(factor);
-	  }
+          } else {
+            APP_CvUpdateRateFactorSet(factor);
+          }
 
+        } else if( strcasecmp(parameter, "CV_BipolarOutputDisplay") == 0 ) {
+          s32 value;
+          char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+          if( (value=get_dec(word)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+            DEBUG_MSG("[MBCV_FILE_P] ERROR '%s' should be between 0..1\n", parameter);
+#endif
+          } else {
+            APP_CvBipolarOutputDisplaySet(value);
+          }
+
+#if AOUT_NUM_CALI_POINTS_X > 0
+          } else if( strcmp(parameter, "CV_Cali") == 0 ) {
+            s32 cv;
+            char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+            if( (cv=get_dec(word)) < 0 || cv > AOUT_NUM_CHANNELS ) {
+              DEBUG_MSG("[MBCV_FILE_P] ERROR wrong CV channel %u for parameter '%s'\n", cv, parameter);
+            } else {
+              int i;
+              u16 *cali_point = AOUT_CaliPointsPtrGet(cv);
+              for(i=0; i<AOUT_NUM_CALI_POINTS_X; ++i, ++cali_point) {
+                char *word = strtok_r(NULL, separators, &brkt);
+                u16 cali_value = 0;
+                if( word == NULL || (cali_value=get_dec(word)) < 0 ) {
+                  DEBUG_MSG("[MBCV_FILE_P] ERROR invalid or missing calibration value(s) for CV channel %u for parameter '%s'\n", cv, parameter);
+                  break;
+                }
+                *cali_point = cali_value;
+              }
+            }
+#endif
 	} else if( strcasecmp(parameter, "EXTCLK_Divider") == 0 ) {
 	  s32 clk;
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
@@ -682,6 +713,26 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
   sprintf(line_buffer, "CV_UpdateRateFactor %d\n", APP_CvUpdateRateFactorGet());
   FLUSH_BUFFER;
+  sprintf(line_buffer, "CV_BipolarOutputDisplay %d\n", APP_CvBipolarOutputDisplayGet());
+  FLUSH_BUFFER;
+
+#if AOUT_NUM_CALI_POINTS_X > 0
+  {
+    int cv;
+    for(cv=0; cv<AOUT_NUM_CHANNELS; ++cv) {
+      sprintf(line_buffer, "CV_Cali %d", cv);
+      {
+        int i;
+        u16 *cali_point = AOUT_CaliPointsPtrGet(cv);
+        for(i=0; i<AOUT_NUM_CALI_POINTS_X; ++i, ++cali_point) {
+          sprintf(line_buffer + strlen(line_buffer), " 0x%04x", *cali_point);
+        }
+      }
+      strcat(line_buffer, "\n");
+      FLUSH_BUFFER;
+    }
+  }
+#endif
 
   sprintf(line_buffer, "\n\n# External Clock Outputs (available at DOUT_DinSyncSR D1..D7)\n");
   FLUSH_BUFFER;

@@ -15,7 +15,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="midibox_seq_v4" buildProperties="" description="" id="0.1672637858" name="Default" optionalBuildProperties="" parent="org.eclipse.cdt.build.core.prefbase.cfg">
+				<configuration artifactName="midibox_cv_v2" buildProperties="" description="" id="0.1672637858" name="Default" optionalBuildProperties="" parent="org.eclipse.cdt.build.core.prefbase.cfg">
 					<folderInfo id="0.1672637858." name="/" resourcePath="">
 						<toolChain id="org.eclipse.cdt.build.core.prefbase.toolchain.17674054" name="No ToolChain" resourceTypeBasedDiscovery="false" superClass="org.eclipse.cdt.build.core.prefbase.toolchain">
 							<targetPlatform binaryParser="org.eclipse.cdt.core.GNU_ELF" id="org.eclipse.cdt.build.core.prefbase.toolchain.17674054.278919905" name=""/>
@@ -41,26 +41,33 @@
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/FreeRTOS/Source/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/FreeRTOS/Source/portable/GCC/ARM_CM3&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/FreeRTOS/Source/portable/MemMang&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/blm&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/blm_x&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/aout&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/sequencer&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/notestack&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/midifile&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/fatfs/src&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/file&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/random&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/msd/${MIOS32_FAMILY}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/app_lcd/${MIOS32_LCD}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/glcd_font&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/midi_router&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/midimon&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/uip_task_standard&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/freertos_utils&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/uip/uip&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/uip/lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/uip/mios32&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/uip_task_standard&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/keyboard&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/ainser&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/aout&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/notestack&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/file&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/md5&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/sequencer&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/msd/${MIOS32_FAMILY}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/scs&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/include/mios32&quot;"/>
 									<listOptionValue builtIn="false" value="/usr/include"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/uip/mios32/${MIOS32_FAMILY}&quot;"/>
 									<listOptionValue builtIn="false" value="/opt/gcc-arm-none-eabi-4_7-2013q3/arm-none-eabi/include"/>
 									<listOptionValue builtIn="false" value="/opt/gcc-arm-none-eabi-4_7-2013q3/lib/gcc/arm-none-eabi/4.7.4/include"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/ws2812&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/fatfs/src&quot;"/>
+									<listOptionValue builtIn="false" value="../src/components"/>
+									<listOptionValue builtIn="false" value="../src"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="org.eclipse.cdt.build.core.settings.holder.symbols.1201499957" name="Symbols" superClass="org.eclipse.cdt.build.core.settings.holder.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="&quot;MIOS32_FAMILY_${MIOS32_FAMILY}&quot;"/>
@@ -78,26 +85,33 @@
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/FreeRTOS/Source/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/FreeRTOS/Source/portable/GCC/ARM_CM3&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/FreeRTOS/Source/portable/MemMang&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/blm&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/blm_x&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/aout&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/sequencer&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/notestack&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/midifile&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/fatfs/src&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/file&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/random&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/msd/${MIOS32_FAMILY}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/app_lcd/${MIOS32_LCD}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/glcd_font&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/midi_router&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/midimon&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/uip_task_standard&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/freertos_utils&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/uip/uip&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/uip/lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/uip/mios32&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/uip_task_standard&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/keyboard&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/ainser&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/aout&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/notestack&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/file&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/md5&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/sequencer&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/msd/${MIOS32_FAMILY}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/scs&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/include/mios32&quot;"/>
 									<listOptionValue builtIn="false" value="/usr/include"/>
 									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/uip/mios32/${MIOS32_FAMILY}&quot;"/>
 									<listOptionValue builtIn="false" value="/opt/gcc-arm-none-eabi-4_7-2013q3/arm-none-eabi/include"/>
 									<listOptionValue builtIn="false" value="/opt/gcc-arm-none-eabi-4_7-2013q3/lib/gcc/arm-none-eabi/4.7.4/include"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/ws2812&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MIOS32_PATH}/modules/fatfs/src&quot;"/>
+									<listOptionValue builtIn="false" value="../src/components"/>
+									<listOptionValue builtIn="false" value="../src"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="org.eclipse.cdt.build.core.settings.holder.symbols.1482580605" name="Symbols" superClass="org.eclipse.cdt.build.core.settings.holder.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="&quot;MIOS32_FAMILY_${MIOS32_FAMILY}&quot;"/>
@@ -105,7 +119,6 @@
 									<listOptionValue builtIn="false" value="MIOS32_FAMILY_STR=&quot;xxx&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;MIOS32_BOARD_${MIOS32_BOARD}&quot;"/>
 									<listOptionValue builtIn="false" value="MIOS32_BOARD_STR=&quot;xxx&quot;"/>
-									<listOptionValue builtIn="false" value="MIOS32_FAMILY_STM32F4xx=1"/>
 								</option>
 								<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.104847778" languageId="org.eclipse.cdt.core.gcc" languageName="GNU C" sourceContentType="org.eclipse.cdt.core.cSource,org.eclipse.cdt.core.cHeader" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
 							</tool>
@@ -117,7 +130,7 @@
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="midibox_seq_v4.null.459062181" name="midibox_seq_v4"/>
+		<project id="midibox_cv_v2.null.459062181" name="midibox_cv_v2"/>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
@@ -125,8 +138,10 @@
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
-	<storageModule moduleId="refreshScope" versionNumber="1">
-		<resource resourceType="PROJECT" workspacePath="/midibox_seq_v4"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Default">
+			<resource resourceType="PROJECT" workspacePath="/midibox_cv_v2"/>
+		</configuration>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>

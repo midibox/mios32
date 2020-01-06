@@ -14,6 +14,8 @@
 #ifndef _SEQ_CV_H
 #define _SEQ_CV_H
 
+#include <mios32.h>
+#if !defined(MIOS32_DONT_USE_AOUT)
 #include <aout.h>
 
 /////////////////////////////////////////////////////////////////////////////
@@ -70,7 +72,7 @@ extern const char* SEQ_CV_CurveNameGet(u8 cv);
 
 extern s32 SEQ_CV_CaliModeSet(u8 cv, aout_cali_mode_t mode);
 extern aout_cali_mode_t SEQ_CV_CaliModeGet(void);
-extern s32 SEQ_CV_CaliNameGet(char *str, u8 cv);
+extern s32 SEQ_CV_CaliNameGet(char *str, u8 cv, u8 display_bipolar);
 
 extern s32 SEQ_CV_SlewRateSet(u8 cv, u8 value);
 extern s32 SEQ_CV_SlewRateGet(u8 cv);
@@ -122,5 +124,5 @@ extern s32 SEQ_CV_ResetAllChannels(void);
 u16 seq_cv_clkout_divider[SEQ_CV_NUM_CLKOUT];
 u8  seq_cv_clkout_pulsewidth[SEQ_CV_NUM_CLKOUT];
 
-
+#endif
 #endif /* _SEQ_CV_H */

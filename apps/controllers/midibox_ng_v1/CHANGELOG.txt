@@ -28,6 +28,8 @@ MIDIbox NG V1.037
 
    o SysEx streams: added ^chk_roland
 
+   o Fixed wrong NRPN number issue
+
 
 MIDIbox NG V1.036
 ~~~~~~~~~~~~~~~~~

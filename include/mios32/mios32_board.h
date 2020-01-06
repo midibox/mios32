@@ -40,17 +40,21 @@ typedef enum {
 
 extern s32 MIOS32_BOARD_Init(u32 mode);
 
+#if !defined(MIOS32_DONT_USE_BOARD_LED)
 extern s32 MIOS32_BOARD_LED_Init(u32 leds);
 extern s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value);
 extern u32 MIOS32_BOARD_LED_Get(void);
+#endif
 
+#if !defined(MIOS32_DONT_USE_BOARD_J5)
 extern s32 MIOS32_BOARD_J5_PinInit(u8 pin, mios32_board_pin_mode_t mode);
 extern s32 MIOS32_BOARD_J5_Set(u16 value);
 extern s32 MIOS32_BOARD_J5_PinSet(u8 pin, u8 value);
 extern s32 MIOS32_BOARD_J5_Get(void);
 extern s32 MIOS32_BOARD_J5_PinGet(u8 pin);
+#endif
 
-
+#if !defined(MIOS32_DONT_USE_BOARD_J10)
 extern s32 MIOS32_BOARD_J10_PinInit(u8 pin, mios32_board_pin_mode_t mode);
 extern s32 MIOS32_BOARD_J10_Set(u16 value);
 extern s32 MIOS32_BOARD_J10_PinSet(u8 pin, u8 value);
@@ -61,13 +65,17 @@ extern s32 MIOS32_BOARD_J10A_Get(void);
 extern s32 MIOS32_BOARD_J10A_Set(u8 value);
 extern s32 MIOS32_BOARD_J10B_Get(void);
 extern s32 MIOS32_BOARD_J10B_Set(u8 value);
+#endif
 
+#if !defined(MIOS32_DONT_USE_BOARD_J28)
 extern s32 MIOS32_BOARD_J28_PinInit(u8 pin, mios32_board_pin_mode_t mode);
 extern s32 MIOS32_BOARD_J28_Set(u16 value);
 extern s32 MIOS32_BOARD_J28_PinSet(u8 pin, u8 value);
 extern s32 MIOS32_BOARD_J28_Get(void);
 extern s32 MIOS32_BOARD_J28_PinGet(u8 pin);
+#endif
 
+#if !defined(MIOS32_DONT_USE_BOARD_J15)
 extern s32 MIOS32_BOARD_J15_PortInit(u32 mode);
 extern s32 MIOS32_BOARD_J15_DataSet(u8 data);
 extern s32 MIOS32_BOARD_J15_SerDataShift(u8 data);
@@ -77,10 +85,12 @@ extern s32 MIOS32_BOARD_J15_E_Set(u8 lcd, u8 e);
 extern s32 MIOS32_BOARD_J15_GetD7In(void);
 extern s32 MIOS32_BOARD_J15_D7InPullUpEnable(u8 enable);
 extern s32 MIOS32_BOARD_J15_PollUnbusy(u8 lcd, u32 time_out);
+#endif
 
+#if !defined(MIOS32_DONT_USE_BOARD_DAC)
 extern s32 MIOS32_BOARD_DAC_PinInit(u8 chn, u8 enable);
 extern s32 MIOS32_BOARD_DAC_PinSet(u8 chn, u16 value);
-
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

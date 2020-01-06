@@ -93,11 +93,19 @@ extern "C" s32 MBCV_MAP_CaliModeSet(u8 cv, aout_cali_mode_t mode)
   if( cv >= CV_SE_NUM )
     return -1; // invalid cv channel selected
 
-  if( mode >= MBCV_MAP_NUM_CALI_MODES )
-    return -2; // invalid mode selected
+  // for calibration we allow higher values
+  //if( mode >= MBCV_MAP_NUM_CALI_MODES )
+  //  return -2; // invalid mode selected
 
-  return AOUT_CaliModeSet(cv, mode);
+  // set calibration value
+  AOUT_CaliModeSet(cv, mode);
 
+  s32 x = mode - AOUT_NUM_CALI_MODES;
+  u32 ref_value = x*AOUT_NUM_CALI_POINTS_Y_INTERVAL;
+  if( ref_value > 0xffff )
+    ref_value = 0xffff;
+
+  return AOUT_CaliCfgValueSet(ref_value);
 }
 
 extern "C" aout_cali_mode_t MBCV_MAP_CaliModeGet(void)
@@ -110,6 +118,42 @@ extern "C" const char* MBCV_MAP_CaliNameGet(void)
   return AOUT_CaliNameGet(MBCV_MAP_CaliModeGet());
 }
 
+extern "C" u16 MBCV_MAP_CaliPointGet(u8 cv)
+{
+  u8 mode = AOUT_CaliModeGet();
+  if( mode >= AOUT_NUM_CALI_MODES ) {
+    u16 *cali_points = AOUT_CaliPointsPtrGet(cv);
+    if( cali_points != NULL ) {
+      s32 x = mode - AOUT_NUM_CALI_MODES;
+      if( x >= AOUT_NUM_CALI_POINTS_X )
+        x = AOUT_NUM_CALI_POINTS_X-1;
+      u16 cali_value = cali_points[x] >> 4; // 16bit -> 12bit
+
+      return cali_value;
+    }
+  }
+
+  return 0;
+}
+
+extern "C" s32 MBCV_MAP_CaliPointSet(u32 cv, u16 value)
+{
+  u8 mode = AOUT_CaliModeGet();
+  if( mode >= AOUT_NUM_CALI_MODES ) {
+    u16 *cali_points = AOUT_CaliPointsPtrGet(cv);
+    if( cali_points != NULL ) {
+      s32 x = mode - AOUT_NUM_CALI_MODES;
+      if( x >= AOUT_NUM_CALI_POINTS_X )
+        x = AOUT_NUM_CALI_POINTS_X-1;
+      cali_points[x] = value << 4; // 12bit -> 16bit
+      AOUT_CaliModeSet(cv, AOUT_CaliModeGet()); // this will update the CV pin
+      return 0; // no error
+    }
+  }
+
+  return -1; // invalid cali point
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Updates all CV channels and gates
@@ -119,9 +163,14 @@ extern "C" s32 MBCV_MAP_Update(void)
   // retrieve the AOUT values of all channels
   MbCvEnvironment* env = APP_GetEnv();
 
+  u8 caliMode = AOUT_CaliModeGet();
+  u8 caliPin = AOUT_CaliPinGet();
   u16 *out = env->cvOut.first();
-  for(int cv=0; cv<CV_SE_NUM; ++cv, ++out)
-    AOUT_PinSet(cv, *out);
+  for(int cv=0; cv<CV_SE_NUM; ++cv, ++out) {
+    if( caliMode == 0 || caliPin != cv ) {
+      AOUT_PinSet(cv, *out);
+    }
+  }
 
   // update AOUTs
   AOUT_Update();

@@ -18,6 +18,8 @@
 /////////////////////////////////////////////////////////////////////////////
 #include <mios32.h>
 
+#if !defined(MIOS32_DONT_USE_OSC)
+
 #include <FreeRTOS.h>
 #include <task.h>
 #include <queue.h>
@@ -667,3 +669,5 @@ void dhcpc_configured(const struct dhcpc_state *s)
   UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
 }
+
+#endif

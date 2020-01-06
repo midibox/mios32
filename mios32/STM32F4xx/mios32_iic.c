@@ -51,20 +51,63 @@
 /////////////////////////////////////////////////////////////////////////////
 // Pin definitions
 /////////////////////////////////////////////////////////////////////////////
+#if defined(MIOS32_IIC_NUM)
+#if !defined(MIOS32_IIC0_ENABLED) && MIOS32_IIC_NUM >= 1
+#define MIOS32_IIC0_ENABLED 1
+#endif
+#if !defined(MIOS32_IIC1_ENABLED) && MIOS32_IIC_NUM >= 2
+#define MIOS32_IIC1_ENABLED 1
+#endif
+#endif
 
+
+#if defined(MIOS32_IIC0_ENABLED) && MIOS32_IIC0_ENABLED > 0
+
+#ifndef MIOS32_IIC0_SCL_PORT
 #define MIOS32_IIC0_SCL_PORT    GPIOB
+#endif
+#ifndef MIOS32_IIC0_SCL_PIN
 #define MIOS32_IIC0_SCL_PIN     GPIO_Pin_10
+#endif
+#ifndef MIOS32_IIC0_SCL_AF
 #define MIOS32_IIC0_SCL_AF      { GPIO_PinAFConfig(GPIOB, GPIO_PinSource10, GPIO_AF_I2C2); }
+#endif
+#ifndef MIOS32_IIC0_SDA_PORT
 #define MIOS32_IIC0_SDA_PORT    GPIOB
+#endif
+#ifndef MIOS32_IIC0_SDA_PIN
 #define MIOS32_IIC0_SDA_PIN     GPIO_Pin_11
+#endif
+#ifndef MIOS32_IIC0_SDA_AF
 #define MIOS32_IIC0_SDA_AF      { GPIO_PinAFConfig(GPIOB, GPIO_PinSource11, GPIO_AF_I2C2); }
+#endif
 
+#endif
+
+
+#if defined(MIOS32_IIC1_ENABLED) && MIOS32_IIC1_ENABLED > 0
+
+#ifndef MIOS32_IIC1_SCL_PORT
 #define MIOS32_IIC1_SCL_PORT    GPIOB
+#endif
+#ifndef MIOS32_IIC1_SCL_PIN
 #define MIOS32_IIC1_SCL_PIN     GPIO_Pin_6
+#endif
+#ifndef MIOS32_IIC1_SCL_AF
 #define MIOS32_IIC1_SCL_AF      { GPIO_PinAFConfig(GPIOB, GPIO_PinSource6, GPIO_AF_I2C1); }
+#endif
+#ifndef MIOS32_IIC1_SDA_PORT
 #define MIOS32_IIC1_SDA_PORT    GPIOB
+#endif
+#ifndef MIOS32_IIC1_SDA_PIN
 #define MIOS32_IIC1_SDA_PIN     GPIO_Pin_9
+#endif
+#ifndef MIOS32_IIC1_SDA_AF
 #define MIOS32_IIC1_SDA_AF      { GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_I2C1); }
+#endif
+
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Duty cycle definitions
@@ -141,8 +184,6 @@ static iic_rec_t iic_rec[MIOS32_IIC_NUM];
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_Init(u32 mode)
 {
-  int i;
-
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
@@ -154,6 +195,7 @@ s32 MIOS32_IIC_Init(u32 mode)
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
   GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
 
+#if defined(MIOS32_IIC0_ENABLED) && MIOS32_IIC0_ENABLED > 0
   GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SCL_PIN;
   GPIO_Init(MIOS32_IIC0_SCL_PORT, &GPIO_InitStructure);
   MIOS32_IIC0_SCL_AF;
@@ -161,8 +203,9 @@ s32 MIOS32_IIC_Init(u32 mode)
   GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SDA_PIN;
   GPIO_Init(MIOS32_IIC0_SDA_PORT, &GPIO_InitStructure);
   MIOS32_IIC0_SDA_AF;
+#endif
 
-#if MIOS32_IIC_NUM >= 2
+#if defined(MIOS32_IIC1_ENABLED) && MIOS32_IIC1_ENABLED > 0
   GPIO_InitStructure.GPIO_Pin = MIOS32_IIC1_SCL_PIN;
   GPIO_Init(MIOS32_IIC1_SCL_PORT, &GPIO_InitStructure);
   MIOS32_IIC1_SCL_AF;
@@ -172,23 +215,37 @@ s32 MIOS32_IIC_Init(u32 mode)
   MIOS32_IIC1_SDA_AF;
 #endif
 
-  for(i=0; i<MIOS32_IIC_NUM; ++i) {
+
+#if defined(MIOS32_IIC0_ENABLED) && MIOS32_IIC0_ENABLED > 0
     // configure I2C peripheral
-    MIOS32_IIC_InitPeripheral(i);
+    MIOS32_IIC_InitPeripheral(0);
 
     // now accessible for other tasks
-    iic_rec[i].iic_semaphore = 0;
-    iic_rec[i].last_transfer_error = 0;
-  }
+    iic_rec[0].iic_semaphore = 0;
+    iic_rec[0].last_transfer_error = 0;
+#endif
+
+#if defined(MIOS32_IIC1_ENABLED) && MIOS32_IIC1_ENABLED > 0
+    // configure I2C peripheral
+    MIOS32_IIC_InitPeripheral(1);
+
+    // now accessible for other tasks
+    iic_rec[1].iic_semaphore = 0;
+    iic_rec[1].last_transfer_error = 0;
+#endif
 
   // configure and enable I2C2 interrupts
-  MIOS32_IRQ_Install(I2C2_EV_IRQn, MIOS32_IRQ_IIC_EV_PRIORITY);  
-#if MIOS32_IIC_NUM >= 2
+#if defined(MIOS32_IIC0_ENABLED) && MIOS32_IIC0_ENABLED > 0
+  MIOS32_IRQ_Install(I2C2_EV_IRQn, MIOS32_IRQ_IIC_EV_PRIORITY);
+#endif
+#if defined(MIOS32_IIC1_ENABLED) && MIOS32_IIC1_ENABLED > 0
   MIOS32_IRQ_Install(I2C1_EV_IRQn, MIOS32_IRQ_IIC_EV_PRIORITY);
 #endif
 
+#if defined(MIOS32_IIC1_ENABLED) && MIOS32_IIC0_ENABLED > 0
   MIOS32_IRQ_Install(I2C2_ER_IRQn, MIOS32_IRQ_IIC_ER_PRIORITY);
-#if MIOS32_IIC_NUM >= 2
+#endif
+#if defined(MIOS32_IIC1_ENABLED) && MIOS32_IIC1_ENABLED > 0
   MIOS32_IRQ_Install(I2C1_ER_IRQn, MIOS32_IRQ_IIC_ER_PRIORITY);
 #endif
 
@@ -212,6 +269,7 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
   I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
 
   switch( iic_port ) {
+#if defined(MIOS32_IIC0_ENABLED) && MIOS32_IIC0_ENABLED > 0
     case 0:
       // define base address
       iicx->base = I2C2;
@@ -226,8 +284,8 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
       I2C_InitStructure.I2C_ClockSpeed = MIOS32_IIC0_BUS_FREQUENCY;
 
       break;
-
-#if MIOS32_IIC_NUM >= 2
+#endif
+#if defined(MIOS32_IIC1_ENABLED) && MIOS32_IIC1_ENABLED > 0
     case 1:
       // define base address
       iicx->base = I2C1;
@@ -273,6 +331,12 @@ s32 MIOS32_IIC_TransferBegin(u8 iic_port, mios32_iic_semaphore_t semaphore_type)
   iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
   s32 status = -1;
 
+#if !defined(MIOS32_IIC0_ENABLED) || MIOS32_IIC0_ENABLED == 0
+  if (iic_port == 0) return MIOS32_IIC_ERROR_INVALID_PORT;
+#endif
+#if !defined(MIOS32_IIC1_ENABLED) || MIOS32_IIC1_ENABLED == 0
+  if (iic_port == 1) return MIOS32_IIC_ERROR_INVALID_PORT;
+#endif
   if( iic_port >= MIOS32_IIC_NUM )
     return MIOS32_IIC_ERROR_INVALID_PORT;
 
@@ -299,6 +363,12 @@ s32 MIOS32_IIC_TransferBegin(u8 iic_port, mios32_iic_semaphore_t semaphore_type)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_TransferFinished(u8 iic_port)
 {
+#if !defined(MIOS32_IIC0_ENABLED) || MIOS32_IIC0_ENABLED == 0
+  if (iic_port == 0) return MIOS32_IIC_ERROR_INVALID_PORT;
+#endif
+#if !defined(MIOS32_IIC1_ENABLED) || MIOS32_IIC1_ENABLED == 0
+  if (iic_port == 1) return MIOS32_IIC_ERROR_INVALID_PORT;
+#endif
   if( iic_port >= MIOS32_IIC_NUM )
     return MIOS32_IIC_ERROR_INVALID_PORT;
 
@@ -318,6 +388,12 @@ s32 MIOS32_IIC_TransferFinished(u8 iic_port)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_LastErrorGet(u8 iic_port)
 {
+#if !defined(MIOS32_IIC0_ENABLED) || MIOS32_IIC0_ENABLED == 0
+  if (iic_port == 0) return MIOS32_IIC_ERROR_INVALID_PORT;
+#endif
+#if !defined(MIOS32_IIC1_ENABLED) || MIOS32_IIC1_ENABLED == 0
+  if (iic_port == 1) return MIOS32_IIC_ERROR_INVALID_PORT;
+#endif
   if( iic_port >= MIOS32_IIC_NUM )
     return MIOS32_IIC_ERROR_INVALID_PORT;
 
@@ -336,11 +412,16 @@ s32 MIOS32_IIC_LastErrorGet(u8 iic_port)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_TransferCheck(u8 iic_port)
 {
-  iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
-
+#if !defined(MIOS32_IIC0_ENABLED) || MIOS32_IIC0_ENABLED == 0
+  if (iic_port == 0) return MIOS32_IIC_ERROR_INVALID_PORT;
+#endif
+#if !defined(MIOS32_IIC1_ENABLED) || MIOS32_IIC1_ENABLED == 0
+  if (iic_port == 1) return MIOS32_IIC_ERROR_INVALID_PORT;
+#endif
   if( iic_port >= MIOS32_IIC_NUM )
     return MIOS32_IIC_ERROR_INVALID_PORT;
 
+  iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
   // ongoing transfer?
   if( iicx->transfer_state.BUSY )
     return 1;
@@ -367,6 +448,50 @@ s32 MIOS32_IIC_TransferCheck(u8 iic_port)
 }
 
 
+// added by wackazong
+// see also http://midibox.org/forums/topic/15770-sda-stuck-low-on-i2c-transfer/
+// try to deblock a SDA line that is stuck low by bit-banging out a clock signal
+// and waiting until the send buffer of any slave is empty
+void MIOS32_IIC_Deblock(const iic_rec_t *iicx, GPIO_TypeDef *scl_port, uint32_t scl_pin, GPIO_TypeDef *sda_port, uint32_t sda_pin) {
+  // disable interrupts
+  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+  I2C_Cmd(iicx->base, DISABLE);
+  GPIO_InitTypeDef GPIO_InitStructure;
+  // reconfigure IIC pins to push pull
+  GPIO_StructInit(&GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_Pin = scl_pin;
+  GPIO_Init(scl_port, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = sda_pin;
+  GPIO_Init(sda_port, &GPIO_InitStructure);
+  u32 i;
+  for (i=0; i<16; i++) {
+    /*Reset the SDA Pin*/
+    GPIO_ResetBits(sda_port, sda_pin);
+    MIOS32_DELAY_Wait_uS(1000);
+    /*Reset the SCL Pin*/
+    GPIO_ResetBits(scl_port, scl_pin);
+    MIOS32_DELAY_Wait_uS(1000);
+    /*Set the SCL Pin*/
+    GPIO_SetBits(scl_port, scl_pin);
+    MIOS32_DELAY_Wait_uS(1000);
+    /*Set the SDA Pin*/
+    GPIO_SetBits(sda_port, sda_pin);
+    MIOS32_DELAY_Wait_uS(1000);
+  }
+  GPIO_StructInit(&GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+  GPIO_InitStructure.GPIO_Pin = scl_pin;
+  GPIO_Init(scl_port, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Pin = sda_pin;
+  GPIO_Init(sda_port, &GPIO_InitStructure);
+  I2C_Cmd(iicx->base, ENABLE);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 //! Waits until transfer is finished
 //! \param[in] iic_port the IIC port (0..MIOS32_IIC_NUM-1)
@@ -377,12 +502,18 @@ s32 MIOS32_IIC_TransferCheck(u8 iic_port)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_TransferWait(u8 iic_port)
 {
+#if !defined(MIOS32_IIC0_ENABLED) || MIOS32_IIC0_ENABLED == 0
+  if (iic_port == 0) return MIOS32_IIC_ERROR_INVALID_PORT;
+#endif
+#if !defined(MIOS32_IIC1_ENABLED) || MIOS32_IIC1_ENABLED == 0
+  if (iic_port == 1) return MIOS32_IIC_ERROR_INVALID_PORT;
+#endif
+  if( iic_port >= MIOS32_IIC_NUM )
+    return MIOS32_IIC_ERROR_INVALID_PORT;
+
   iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
   u32 repeat_ctr = MIOS32_IIC_TIMEOUT_VALUE;
   u16 last_buffer_ix = iicx->buffer_ix;
-
-  if( iic_port >= MIOS32_IIC_NUM )
-    return MIOS32_IIC_ERROR_INVALID_PORT;
 
   while( --repeat_ctr > 0 ) {
     // check if buffer index has changed - if so, reload repeat counter
@@ -408,55 +539,18 @@ s32 MIOS32_IIC_TransferWait(u8 iic_port)
   // send stop condition
   I2C_GenerateSTOP(iicx->base, ENABLE);
 #else
-  // added by wackazong
-  // see also http://midibox.org/forums/topic/15770-sda-stuck-low-on-i2c-transfer/
-  // try to deblock a SDA line that is stuck low by bit-banging out a clock signal
-  // and waiting until the send buffer of any slave is empty
-
-  // disable interrupts
-  I2C_ITConfig(iicx->base, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
-
-  I2C_Cmd(I2C2, DISABLE);
-  GPIO_InitTypeDef GPIO_InitStructure;
-
-  // reconfigure IIC pins to push pull
-  GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-
-  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SCL_PIN;
-  GPIO_Init(MIOS32_IIC0_SCL_PORT, &GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SDA_PIN;
-  GPIO_Init(MIOS32_IIC0_SDA_PORT, &GPIO_InitStructure);
-
-  u32 i;
-  for (i=0; i<16; i++) {
-    /*Reset the SDA Pin*/
-    GPIO_ResetBits(GPIOB, MIOS32_IIC0_SDA_PIN);
-    MIOS32_DELAY_Wait_uS(1000);
-    /*Reset the SCL Pin*/
-    GPIO_ResetBits(GPIOB, MIOS32_IIC0_SCL_PIN);
-    MIOS32_DELAY_Wait_uS(1000);
-    /*Set the SCL Pin*/
-    GPIO_SetBits(GPIOB, MIOS32_IIC0_SCL_PIN);
-    MIOS32_DELAY_Wait_uS(1000);
-    /*Set the SDA Pin*/
-    GPIO_SetBits(GPIOB, MIOS32_IIC0_SDA_PIN);
-    MIOS32_DELAY_Wait_uS(1000);
+  switch( iic_port ) {
+#if defined(MIOS32_IIC0_ENABLED) && MIOS32_IIC0_ENABLED > 0
+    case 0:
+      MIOS32_IIC_Deblock(iicx, MIOS32_IIC0_SCL_PORT, MIOS32_IIC0_SCL_PIN, MIOS32_IIC0_SDA_PORT, MIOS32_IIC0_SDA_PIN);
+      break;
+#endif
+#if defined(MIOS32_IIC1_ENABLED) && MIOS32_IIC1_ENABLED > 0
+    case 1:
+      MIOS32_IIC_Deblock(iicx, MIOS32_IIC1_SCL_PORT, MIOS32_IIC1_SCL_PIN, MIOS32_IIC1_SDA_PORT, MIOS32_IIC1_SDA_PIN);
+      break;
+#endif
   }
-
-  GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
-
-  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SCL_PIN;
-  GPIO_Init(MIOS32_IIC0_SCL_PORT, &GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SDA_PIN;
-  GPIO_Init(MIOS32_IIC0_SDA_PORT, &GPIO_InitStructure);
-
-  I2C_Cmd(I2C2, ENABLE); 
 #endif
 
   // re-initialize peripheral
@@ -493,11 +587,17 @@ s32 MIOS32_IIC_TransferWait(u8 iic_port)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_IIC_Transfer(u8 iic_port, mios32_iic_transfer_t transfer, u8 address, u8 *buffer, u16 len)
 {
-  iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
-  s32 error;
-
+#if !defined(MIOS32_IIC0_ENABLED) || MIOS32_IIC0_ENABLED == 0
+  if (iic_port == 0) return MIOS32_IIC_ERROR_INVALID_PORT;
+#endif
+#if !defined(MIOS32_IIC1_ENABLED) || MIOS32_IIC1_ENABLED == 0
+  if (iic_port == 1) return MIOS32_IIC_ERROR_INVALID_PORT;
+#endif
   if( iic_port >= MIOS32_IIC_NUM )
     return MIOS32_IIC_ERROR_INVALID_PORT;
+
+  iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
+  s32 error;
 
   // wait until previous transfer finished
   if( (error = MIOS32_IIC_TransferWait(iic_port)) ) { // transmission error during previous transfer
@@ -739,7 +839,7 @@ static void ER_IRQHandler(iic_rec_t *iicx)
 /////////////////////////////////////////////////////////////////////////////
 // interrupt vectors
 /////////////////////////////////////////////////////////////////////////////
-
+#if defined(MIOS32_IIC0_ENABLED) && MIOS32_IIC0_ENABLED > 0
 void I2C2_EV_IRQHandler(void)
 {
   EV_IRQHandler((iic_rec_t *)&iic_rec[0]);
@@ -749,9 +849,9 @@ void I2C2_ER_IRQHandler(void)
 {
   ER_IRQHandler((iic_rec_t *)&iic_rec[0]);
 }
+#endif
 
-
-#if MIOS32_IIC_NUM >= 2
+#if defined(MIOS32_IIC1_ENABLED) && MIOS32_IIC1_ENABLED > 0
 void I2C1_EV_IRQHandler(void)
 {
   EV_IRQHandler((iic_rec_t *)&iic_rec[1]);

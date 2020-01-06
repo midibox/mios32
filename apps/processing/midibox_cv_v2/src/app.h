@@ -69,6 +69,8 @@ extern s32 APP_SelectMainLCD(void);
 
 extern s32 APP_CvUpdateRateFactorSet(u8 factor);
 extern s32 APP_CvUpdateRateFactorGet(void);
+extern s32 APP_CvBipolarOutputDisplaySet(u8 value);
+extern s32 APP_CvBipolarOutputDisplayGet(void);
 extern s32 APP_CvUpdateOverloadStatusGet(void);
 
 

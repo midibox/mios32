@@ -65,6 +65,17 @@ MIDIboxSEQ V4.096
      This especially allows to record CC changes (configure MENU->MIDI->Port accordingly
      so that it listens to the bus in Jam mode)
 
+   o New parameter layer "Ctrl" allows to change track parameters as documented in
+     the doc/mbseqv4_cc_implementation.txt table (previously this was only possible
+     from a dedicated loopback track).
+
+   o Recording function considers "Ctrl" layers as well if the assigned parameters
+     are changed on the UI
+
+   o CV Calibration in CV page: special handling for Hz/V curve
+
+   o CV Calibration in CV page: press GP7 button to switch between bipolar/unipolar display
+
    o fixed "lost button mapping" issue if SD Card is removed
 
    o MBSEQV4+: fixed MIDI export crash

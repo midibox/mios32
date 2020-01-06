@@ -60,22 +60,25 @@
 #define ITEM_LIST3             2
 #define ITEM_LIST4             3
 
-
 #define NUM_LIST_DISPLAYED_ITEMS NUM_OF_ITEMS
-#define NUM_LIST_ITEMS         12
-#define LIST_ITEM_SYSTEM       0
-#define LIST_ITEM_GLOBALS      1
-#define LIST_ITEM_CONFIG       2
-#define LIST_ITEM_TRACKS       3
-#define LIST_ITEM_TRACK_INFO   4
-#define LIST_ITEM_MIXER_MAP    5
-#define LIST_ITEM_SONG         6
-#define LIST_ITEM_GROOVES      7
-#define LIST_ITEM_BOOKMARKS    8
-#define LIST_ITEM_SD_CARD      9
-#define LIST_ITEM_NETWORK      10
-#define LIST_ITEM_RESET        11
 
+typedef enum {
+    LIST_ITEM_SYSTEM,
+    LIST_ITEM_GLOBALS,
+    LIST_ITEM_CONFIG,
+    LIST_ITEM_TRACKS,
+    LIST_ITEM_TRACK_INFO,
+    LIST_ITEM_MIXER_MAP,
+    LIST_ITEM_SONG,
+    LIST_ITEM_GROOVES,
+    LIST_ITEM_BOOKMARKS,
+    LIST_ITEM_SD_CARD,
+#if !defined(MIOS32_DONT_USE_OSC)
+    LIST_ITEM_NETWORK,
+#endif
+    LIST_ITEM_RESET,
+    NUM_LIST_ITEMS,
+} seq_ui_info_list_item_t;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -222,12 +225,14 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	SEQ_TERMINAL_PrintSdCardInfo(DEBUG_MSG);
 	break;
 
+#if !defined(MIOS32_DONT_USE_OSC)
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_NETWORK:
 #if !defined(MIOS32_FAMILY_EMULATION)
 	UIP_TERMINAL_PrintNetwork(DEBUG_MSG);
 #endif
 	break;
+#endif
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_RESET:

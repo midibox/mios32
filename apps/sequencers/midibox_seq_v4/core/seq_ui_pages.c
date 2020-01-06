@@ -95,9 +95,13 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "MIDI",         "MIDI ", "MIDI Configuration", 45, (void *)&SEQ_UI_MIDI_Init },
   { "MIDIMON",      "MMon ", "MIDI Monitor      ", 46, (void *)&SEQ_UI_MIDIMON_Init },
   { "SYSEX",        "SysEx", "SysEx             ", 47, (void *)&SEQ_UI_SYSEX_Init },
+#if !defined(MIOS32_DONT_USE_AOUT)
   { "CVCFG",        "CVCfg", "CV Configuration  ", 48, (void *)&SEQ_UI_CV_Init },
+#endif
   { "DISK",         "Disk ", "Disk (SD Card)    ", 49, (void *)&SEQ_UI_DISK_Init },
+#if !defined(MIOS32_DONT_USE_OSC)
   { "ETH_OSC",      "Eth. ", "Ethernet (OSC)    ", 50, (void *)&SEQ_UI_ETH_Init },
+#endif
   { "LIVE",         "Live ", "Live Play         ", 53, (void *)&SEQ_UI_TRKLIVE_Init },
   { "REMIX",        "Remix", "Pattern Remix     ", 54, (void *)&SEQ_UI_PATTERN_RMX_Init },
   { "BOOKMARKS",    "BookM", "Bookmarks         ", 51, (void *)&SEQ_UI_BOOKMARKS_Init },

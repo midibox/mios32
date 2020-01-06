@@ -205,6 +205,7 @@ typedef union {
     u16 GP_LED_DONT_XOR_POS:1;
     u16 INVERT_MUTE_LEDS:1;
     u16 ALL_FOR_STEP_VIEW_ONLY:1;
+    u16 CV_DISPLAY_BIPOLAR:1;
   };
 } seq_ui_options_t;
 
@@ -385,7 +386,9 @@ extern s32 SEQ_UI_MIDI_Init(u32 mode);
 extern s32 SEQ_UI_MIDPLY_Init(u32 mode);
 extern s32 SEQ_UI_MIDIMON_Init(u32 mode);
 extern s32 SEQ_UI_SYSEX_Init(u32 mode);
+#if !defined(MIOS32_DONT_USE_AOUT)
 extern s32 SEQ_UI_CV_Init(u32 mode);
+#endif
 extern s32 SEQ_UI_DISK_Init(u32 mode);
 extern s32 SEQ_UI_ETH_Init(u32 mode);
 extern s32 SEQ_UI_BOOKMARKS_Init(u32 mode);

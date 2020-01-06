@@ -8,6 +8,9 @@
 
 #define NO_ERRNO 1
 
+#define _DEFUN(name, arglist, args)	name(args)
+#define _CONST const
+#define _AND ,
 
 /*
 FUNCTION

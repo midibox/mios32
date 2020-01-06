@@ -52,6 +52,8 @@ extern const char* MBCV_MAP_IfNameGet(aout_if_t if_type);
 extern s32 MBCV_MAP_CaliModeSet(u8 cv, aout_cali_mode_t mode);
 extern aout_cali_mode_t MBCV_MAP_CaliModeGet(void);
 extern const char* MBCV_MAP_CaliNameGet(void);
+extern "C" u16 MBCV_MAP_CaliPointGet(u8 cv);
+extern "C" s32 MBCV_MAP_CaliPointSet(u32 cv, u16 value);
 
 extern s32 MBCV_MAP_Update(void);
 

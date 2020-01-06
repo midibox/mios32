@@ -148,7 +148,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     value = SEQ_CORE_Echo_MapInternalToUser(value);
     if( SEQ_UI_Var8_Inc(&value, 0, 21, incrementer) ) {
       value = SEQ_CORE_Echo_MapUserToInternal(value);
-      SEQ_CC_Set(visible_track, SEQ_CC_ECHO_DELAY, value);
+      SEQ_UI_CC_Set(SEQ_CC_ECHO_DELAY, value);
       return 1;
     }
     return 0;

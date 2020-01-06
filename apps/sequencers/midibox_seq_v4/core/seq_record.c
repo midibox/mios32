@@ -842,3 +842,73 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Called from SEQ_UI_* to record CC value changes in Ctrl Layers
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_RECORD_CtrlCC(u8 track, u8 cc_internal, u8 value)
+{
+  if( !seq_record_state.ENABLED ) {
+    return 0; // no error
+  }
+  
+  // exit if track number too high
+  if( track >= SEQ_CORE_NUM_TRACKS )
+    return -1; // unsupported track
+
+  // step recording mode?
+  // Note: if sequencer is not running, "Live Recording" will be handled like "Step Recording"
+  u8 step_record_mode = seq_record_options.STEP_RECORD || !SEQ_BPM_IsRunning();
+  
+  int cc = cc_internal - 0x20; // map to external CC number
+  if( cc < 0 ) {
+    cc = 0;
+  }
+  
+  seq_core_trk_t *t = &seq_core_trk[track];
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+  u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
+  u8 *cc_number_ptr = (u8 *)&tcc->lay_const[1*16];
+  u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+  int par_layer;
+  for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr, ++cc_number_ptr) {
+    if( *layer_type_ptr == SEQ_PAR_Type_Ctrl && *cc_number_ptr == cc ) {
+      DEBUG_MSG("Track %d Record CC=%d Value=%d\n", track, cc, value);
+
+      // start sequencer if not running and auto start enabled
+      if( !SEQ_BPM_IsRunning() && seq_record_options.AUTO_START ) {
+	// if in auto mode and BPM generator is clocked in slave mode:
+	// change to master mode
+	SEQ_BPM_CheckAutoMaster();
+	// start generator
+	SEQ_BPM_Start();
+      }
+
+      if( !step_record_mode ) {
+	u8 new_step = t->step;
+	ui_selected_step = new_step;
+      }
+
+      // Live Record mode: write into the next 4*resolution steps (till end of track)
+      int i;
+      u16 num_p_steps = SEQ_PAR_NumStepsGet(track);
+      int num_steps = 1;
+
+      if( !step_record_mode ) {
+	num_steps = 4;
+	if( tcc->clkdiv.value <= 0x03 )
+	  num_steps = 16;
+	else if( tcc->clkdiv.value <= 0x07 )
+	  num_steps = 8;
+      }
+
+      for(i=0; i<num_steps && (ui_selected_step+i) < num_p_steps; ++i) {
+	SEQ_PAR_Set(track, ui_selected_step+i, par_layer, ui_selected_instrument, value);
+      }
+    }
+  }
+  
+  return 0; // no error
+}
+

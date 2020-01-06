@@ -63,6 +63,7 @@ s32 SEQ_LED_PinSet(u32 pin, u32 value)
     return MIOS32_DOUT_PinSet(pin, value);
 #endif
 
+#if !defined(SEQ_DONT_USE_BLM8X8)
   u8 sr = (pin-256) / 8;
 
   if( sr >= (SEQ_BLM8X8_NUM*8) )
@@ -76,6 +77,9 @@ s32 SEQ_LED_PinSet(u32 pin, u32 value)
   }
 
   return SEQ_BLM8X8_LEDSet(sr / 8, pin % 64, value);
+#else
+  return -1;
+#endif
 }
 
 
@@ -105,6 +109,9 @@ s32 SEQ_LED_SRSet(u32 sr, u8 value)
     return MIOS32_DOUT_SRSet(sr, value);
 #endif
 
+
+
+#if !defined(SEQ_DONT_USE_BLM8X8)
   sr -= 32;
 
   if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 && sr >= 4 && sr <= 7 ) {
@@ -113,6 +120,9 @@ s32 SEQ_LED_SRSet(u32 sr, u8 value)
   }
 
   return SEQ_BLM8X8_LEDSRSet(sr / 8, sr % 8, value);
+#else
+    return -1; // SR disabled
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -132,6 +142,7 @@ s32 SEQ_LED_SRGet(u32 sr)
     return MIOS32_DOUT_SRGet(sr);
 #endif
 
+#if !defined(SEQ_DONT_USE_BLM8X8)
   sr -= 32;
 
   u8 value = SEQ_BLM8X8_LEDSRGet(sr / 8, sr % 8);
@@ -142,6 +153,9 @@ s32 SEQ_LED_SRGet(u32 sr)
   }
 
   return value;
+#else
+  return 0; // SR not available... return 0
+#endif
 }
 
 

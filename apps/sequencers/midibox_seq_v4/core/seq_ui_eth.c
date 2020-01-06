@@ -18,6 +18,8 @@
 #include <mios32.h>
 #include <string.h>
 
+#if !defined(MIOS32_DONT_USE_OSC)
+
 #include "tasks.h"
 
 #include "seq_lcd.h"
@@ -681,3 +683,5 @@ static s32 SEQ_UI_ETH_StoreOCfg(void)
 
   return 0; // no error
 }
+
+#endif

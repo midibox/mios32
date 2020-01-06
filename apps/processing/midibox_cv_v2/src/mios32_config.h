@@ -94,6 +94,12 @@
 // support direct send command
 #define ESP8266_TERMINAL_DIRECT_SEND_CMD 1
 
+// AOUT interface: enable calibration for up to 12 octaves
+#if !defined(MIOS32_FAMILY_STM32F10x) && !defined(MIOS32_FAMILY_LPC17xx)
+#define AOUT_NUM_CALI_POINTS_X 12
+#define AOUT_NUM_CALI_POINTS_Y_INTERVAL (12*0x200)
+#endif
+
 // Mutex assignments
 //#define ESP8266_MUTEX_MIDIOUT_TAKE { TASKS_MUTEX_MIDIOUT_Take(); }
 //#define ESP8266_MUTEX_MIDIOUT_GIVE { TASKS_MUTEX_MIDIOUT_Give(); }

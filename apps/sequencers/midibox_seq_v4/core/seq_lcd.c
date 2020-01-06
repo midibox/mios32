@@ -770,7 +770,8 @@ s32 SEQ_LCD_PrintLayerValue(u8 track, u8 par_layer, u8 par_value)
   case SEQ_PAR_Type_CC:
   case SEQ_PAR_Type_ProgramChange:
   case SEQ_PAR_Type_PitchBend:
-  case SEQ_PAR_Type_Aftertouch: {
+  case SEQ_PAR_Type_Aftertouch:
+  case SEQ_PAR_Type_Ctrl: {
     if( par_value >= 0x80 ) {
       SEQ_LCD_PrintFormattedString("----");
     } else {
@@ -936,7 +937,8 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
   case SEQ_PAR_Type_CC:
   case SEQ_PAR_Type_ProgramChange:
   case SEQ_PAR_Type_PitchBend:
-  case SEQ_PAR_Type_Aftertouch: {
+  case SEQ_PAR_Type_Aftertouch:
+  case SEQ_PAR_Type_Ctrl: {
     if( !print_without_gate && event_mode == SEQ_EVENT_MODE_CC && !SEQ_TRG_GateGet(track, step, instrument) ) {
       SEQ_LCD_PrintString("----");
     } else {

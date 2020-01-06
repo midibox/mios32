@@ -269,6 +269,7 @@ s32 SEQ_UI_InitEncSpeed(u32 auto_config)
       case SEQ_PAR_Type_Velocity:
       case SEQ_PAR_Type_Length:
       case SEQ_PAR_Type_CC:
+      case SEQ_PAR_Type_Ctrl:
       case SEQ_PAR_Type_PitchBend:
       case SEQ_PAR_Type_Probability:
       case SEQ_PAR_Type_Delay:
@@ -3449,23 +3450,31 @@ s32 SEQ_UI_LED_Handler_Periodic()
     SEQ_LED_PinSet(seq_hwcfg_led.beat, beat_led_on);
   }
 
+#if !defined(MIOS32_DONT_USE_BOARD_LED)
   // mirror to green status LED (inverted, so that LED is normaly on)
   MIOS32_BOARD_LED_Set(0x00000001, sequencer_running ? (beat_led_on ? 1 : 0) : 1);
+#endif
 
   // measure LED
   SEQ_LED_PinSet(seq_hwcfg_led.measure, measure_led_on);
 
+#if !defined(MIOS32_DONT_USE_BOARD_LED)
   // mirror to red status LED
   //MIOS32_BOARD_LED_Set(0x00000002, measure_led_on ? 2 : 0);
   // now used for SD Card indicator
   MIOS32_BOARD_LED_Set(0x00000002, FILE_SDCardAvailable() ? 2 : 0);
+#endif
 
 
   // MIDI IN/OUT LEDs
   SEQ_LED_PinSet(seq_hwcfg_led.midi_in_combined, seq_midi_port_in_combined_ctr);
+#if !defined(MIOS32_DONT_USE_BOARD_LED)
   MIOS32_BOARD_LED_Set(0x00000004, seq_midi_port_in_combined_ctr ? 4 : 0);
-  SEQ_LED_PinSet(seq_hwcfg_led.midi_out_combined, seq_midi_port_out_combined_ctr);  
+#endif
+  SEQ_LED_PinSet(seq_hwcfg_led.midi_out_combined, seq_midi_port_out_combined_ctr);
+#if !defined(MIOS32_DONT_USE_BOARD_LED)
   MIOS32_BOARD_LED_Set(0x00000008, seq_midi_port_out_combined_ctr ? 8 : 0);
+#endif
 
   // don't continue if no new step has been generated and GP LEDs haven't changed
   if( !seq_core_step_update_req && prev_ui_gp_leds == ui_gp_leds && sequencer_running ) // sequencer running check: workaround - as long as sequencer not running, we won't get an step update request!
@@ -4163,6 +4172,8 @@ s32 SEQ_UI_CC_Set(u8 cc, u8 value)
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
     if( SEQ_UI_IsSelectedTrack(track) ) {
+      SEQ_RECORD_CtrlCC(track, cc, value);
+      
       int prev_value = SEQ_CC_Get(track, cc);
       if( value == prev_value )
 	continue; // no change
@@ -4214,6 +4225,8 @@ s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value)
       int prev_value = new_value;
       new_value = (new_value & ~flag_mask) | value;
 
+      SEQ_RECORD_CtrlCC(track, cc, new_value);
+      
       if( new_value == prev_value )
 	continue; // no change
 

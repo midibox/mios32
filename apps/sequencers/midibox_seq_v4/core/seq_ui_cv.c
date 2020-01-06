@@ -16,6 +16,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+
+#if !defined(MIOS32_DONT_USE_AOUT)
+
 #include <aout.h>
 #include "tasks.h"
 
@@ -130,6 +133,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP7:
       ui_selected_item = ITEM_CALIBRATION_1;
+
+      // extra: switch unipolar/bipolar display
+      if( incrementer == 0 ) {
+        seq_ui_options.CV_DISPLAY_BIPOLAR ^= 1;
+        ui_store_file_required = 1;
+
+	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Calibration Values:", seq_ui_options.CV_DISPLAY_BIPOLAR ? "Bipolar" : "Unipolar");
+      }      
       break;
 
     case SEQ_UI_ENCODER_GP8:
@@ -486,7 +497,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(10);
   } else {
     char str[11];
-    SEQ_CV_CaliNameGet(str, selected_cv);
+    SEQ_CV_CaliNameGet(str, selected_cv, seq_ui_options.CV_DISPLAY_BIPOLAR);
     SEQ_LCD_PrintString(str);
   }
 
@@ -591,3 +602,4 @@ s32 SEQ_UI_CV_Init(u32 mode)
 
   return 0; // no error
 }
+#endif

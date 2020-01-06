@@ -533,7 +533,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 		SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please confirm new type", "with GP button!");
 	      } else {
 		if( edit_layer_type != SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer) ) {
-		  // TODO: has to be done for all selected tracks
 		  SEQ_CC_Set(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer, edit_layer_type);
 		  SEQ_LAYER_CopyParLayerPreset(visible_track, ui_selected_par_layer);
 		  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Layer Type", "has been changed.");
@@ -553,7 +552,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	      if( ui_selected_item == ITEM_LAYER_CONTROL )
 		assignment = edit_layer_type;
 
-	      if( assignment == SEQ_PAR_Type_CC ) {
+	      if( assignment == SEQ_PAR_Type_CC || assignment == SEQ_PAR_Type_Ctrl ) {
 		// CC number selection now has to be confirmed with GP button
 		if( incrementer ) {
 		  if( ui_selected_item != ITEM_LAYER_PAR ) {
@@ -1246,7 +1245,7 @@ static s32 LCD_Handler(u8 high_prio)
 #ifdef MBSEQV4P
 	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
 #else
-	    if( asg == SEQ_PAR_Type_CC ) {
+	    if( asg == SEQ_PAR_Type_CC || asg == SEQ_PAR_Type_Ctrl ) {
 	      SEQ_LCD_PrintString("NoV4+"); // CC not supported for drum tracks
 	    } else {
 	      SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
@@ -1266,7 +1265,7 @@ static s32 LCD_Handler(u8 high_prio)
 #ifdef MBSEQV4P
 	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
 #else
-	    if( asg == SEQ_PAR_Type_CC ) {
+	    if( asg == SEQ_PAR_Type_CC || asg == SEQ_PAR_Type_Ctrl ) {
 	      SEQ_LCD_PrintString("NoV4+"); // CC not supported for drum tracks
 	    } else {
 	      SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
@@ -1282,7 +1281,7 @@ static s32 LCD_Handler(u8 high_prio)
 #ifdef MBSEQV4P
 	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
 #else
-	      if( asg == SEQ_PAR_Type_CC ) {
+	      if( asg == SEQ_PAR_Type_CC || asg == SEQ_PAR_Type_Ctrl ) {
 		SEQ_LCD_PrintString("NoV4+"); // CC not supported for drum tracks
 	      } else {
 		SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
@@ -1370,17 +1369,18 @@ static s32 LCD_Handler(u8 high_prio)
 	    assignment = edit_layer_type;
 
 	  switch( assignment ) {
-            case SEQ_PAR_Type_CC: {
+            case SEQ_PAR_Type_CC:
+            case SEQ_PAR_Type_Ctrl: {
 	      mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
 	      u8 current_value = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
 	      u8 edit_value = ui_selected_item == ITEM_LAYER_PAR ? edit_cc_number : current_value;
 
 	      if( edit_value >= 0x80 ) {
-		SEQ_LCD_PrintFormattedString("off%c(no CC   ) ", (current_value != edit_value) ? '!' : ' ');
+		SEQ_LCD_PrintFormattedString("off%c(TurnLeft!)", (current_value != edit_value) ? '!' : ' ');
 	      } else {
 		SEQ_LCD_PrintFormattedString("%03d%c(%s) ", edit_value,
 					     (current_value != edit_value) ? '!' : ' ',
-					     SEQ_CC_LABELS_Get(port, edit_value));
+					     SEQ_CC_LABELS_Get(port, edit_value, assignment == SEQ_PAR_Type_Ctrl));
 	      }
 	    } break;
 

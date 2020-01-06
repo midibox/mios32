@@ -148,6 +148,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#if !defined(MIOS32_DONT_USE_AOUT)
 #include <string.h>
 
 #include "aout.h"
@@ -650,6 +651,8 @@ u8 AOUT_CaliPinGet(void)
 s32 AOUT_CaliCfgValueSet(u16 value)
 {
   cali_cfg_value = value;
+  DEBUG_MSG("Cali_cfg: 0x%04x\n", value);
+  
   return 0; // no error
 }
 
@@ -711,6 +714,13 @@ static u16 caliValue(u8 pin)
   case AOUT_CALI_MODE_8V: return hz_v ? hz_v_table[0x48] : (0x60 << 9);
   }
 
+#if AOUT_NUM_CALI_POINTS_X > 0
+  if( aout_config.chn_hz_v & (1 << pin) ) {
+    u8 ix = (cali_cfg_value >> 9) / 12; // 0..11
+    return cali_hz_v_table[ix];
+  }
+#endif
+  
   return cali_cfg_value; // in case UI want's to configure calibration values
 }
 
@@ -837,11 +847,19 @@ static s32 currentValueGet(u8 pin)
       int i;
       u16 *cali_value = &c->cali_point[0];
       for(i=0; i<(AOUT_NUM_CALI_POINTS_X-1); ++i) {
-	s32 x0 = i * AOUT_NUM_CALI_POINTS_Y_INTERVAL;
+	s32 x0, x1;
+	
+	if( aout_config.chn_hz_v & (1 << pin) ) {
+	  x0 = cali_hz_v_table[i];
+	  x1 = cali_hz_v_table[i+1];
+	} else {
+	  x0 = i * AOUT_NUM_CALI_POINTS_Y_INTERVAL;
+	  x1 = (i+1) * AOUT_NUM_CALI_POINTS_Y_INTERVAL;
+	}
+	
 	if( x0 > 0xffff )
 	  x0 = 0xffff;
 
-	s32 x1 = (i+1) * AOUT_NUM_CALI_POINTS_Y_INTERVAL;
 	if( x1 > 0xffff )
 	  x1 = 0xffff;
 
@@ -849,7 +867,11 @@ static s32 currentValueGet(u8 pin)
 	  s32 y0 = cali_value[i];
 	  s32 y1 = cali_value[i+1];
 	  s32 n = value - y0;
-	  u16 result = y0 + ((y1 - y0) * n) / (x1 - x0);
+	  u32 result = y0 + ((y1 - y0) * n) / (x1 - x0);
+	  if( result > 0xffff ) {
+	    result = 0xffff;
+	  }
+	    
 	  if( debug ) {
 #ifdef DEBUG_MSG
 	    DEBUG_MSG("value=%04x (with x0=%04x x1=%04x y0=%04x y1=%04x) -> result=%04x\n", value, x0, x1, y0, x1, result);
@@ -1672,3 +1694,4 @@ s32 AOUT_TerminalPrintConfig(void *_output_function)
 
 
 //! \}
+#endif

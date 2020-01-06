@@ -464,6 +464,23 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  }
 	} break;
 
+	case SEQ_PAR_Type_Ctrl: {
+	  u8 cc_number = seq_layer_drum_cc[drum][par_layer];
+	  u8 value = SEQ_PAR_Get(track, step, par_layer, drum);
+
+	  if( !insert_empty_notes ) {
+	    // new: don't send CC if assigned to invalid CC number
+	    if( cc_number >= 0x80 ) {
+	      break;
+	    }
+	  }
+
+	  if( insert_empty_notes || !(layer_muted & (1 << drum)) ) {
+	    // Quick&Dirty: forward immediately to SEQ CC (TODO: we could do this in seq_core, maybe cleaner)
+	    SEQ_CC_MIDI_Set(track, cc_number, value);
+	  }
+	} break;
+
         case SEQ_PAR_Type_PitchBend: {
 	  if( pb_sent ) // send only once!
 	    break;
@@ -800,6 +817,31 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 
 	    if( handle_vu_meter )
 	      seq_layer_vu_meter[par_layer] = ((p->value > 8) ? p->value : 8) | 0x80;
+	  }
+
+	} break;
+
+        case SEQ_PAR_Type_Ctrl: {
+	  u8 cc_number = tcc->lay_const[1*16 + par_layer];
+	  u8 value = SEQ_PAR_Get(track, step, par_layer, instrument);
+
+	  if( !insert_empty_notes ) {
+	    // new: don't send CC if assigned to invalid CC number
+	    if( cc_number >= 0x80 ) {
+	      break;
+	    }
+	  }
+
+	  if(
+#ifndef MBSEQV4L
+	     (tcc->event_mode != SEQ_EVENT_MODE_CC || gate) &&
+#endif
+	     (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
+	    // Quick&Dirty: forward immediately to SEQ CC (TODO: we could do this in seq_core, maybe cleaner)
+	    SEQ_CC_MIDI_Set(track, cc_number, value);
+	    
+	    if( handle_vu_meter )
+	      seq_layer_vu_meter[par_layer] = ((value > 8) ? value : 8) | 0x80;
 	  }
 
 	} break;

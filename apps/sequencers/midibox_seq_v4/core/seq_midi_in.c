@@ -1009,7 +1009,9 @@ static s32 SEQ_MIDI_IN_Receive_ExtCtrlCC(u8 cc, u8 value)
       case SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF: {
 	if( value == 0 ) {
 	  SEQ_MIDI_IN_ResetAllStacks();
+#if !defined(MIOS32_DONT_USE_AOUT)
 	  SEQ_CV_ResetAllChannels();
+#endif
 	}
       } break;
 

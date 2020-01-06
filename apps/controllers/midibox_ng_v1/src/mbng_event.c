@@ -4789,6 +4789,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	u8 *stream = ((u8 *)&pool_item->data_begin) + pool_item->sysex_runtime_var.match_ctr;
 	u8 again = 0;
 	do {
+	  again = 0;
 	  if( *stream == 0xff ) { // SysEx variable
 	    u8 match = 0;
 	    switch( *++stream ) {
@@ -4797,7 +4798,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	    case MBNG_EVENT_SYSEX_VAR_BNK:        match = midi_in == mbng_patch_cfg.sysex_bnk; break;
 	    case MBNG_EVENT_SYSEX_VAR_INS:        match = midi_in == mbng_patch_cfg.sysex_ins; break;
 	    case MBNG_EVENT_SYSEX_VAR_CHN:        match = midi_in == mbng_patch_cfg.sysex_chn; break;
-	    case MBNG_EVENT_SYSEX_VAR_CHK_START:  match = 1; again = 1; break;
+	    case MBNG_EVENT_SYSEX_VAR_CHK_START:  match = 1; again = 1; ++stream; break;
 	    case MBNG_EVENT_SYSEX_VAR_CHK:        match = 1; break; // ignore checksum
 	    case MBNG_EVENT_SYSEX_VAR_CHK_INV:    match = 1; break; // ignore checksum
 	    case MBNG_EVENT_SYSEX_VAR_CHK_ROLAND: match = 1; break; // ignore checksum
@@ -4908,7 +4909,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	  } else if( *stream == midi_in ) { // matching byte
 	    // begin of stream?
 	    if( midi_in == 0xf0 ) {
-	      pool_item->value = 0;
+	      //pool_item->value = 0; // TK: why did I clear the value here? This overwrites all values of events which are listening to SysEx streams!
 	      pool_item->sysex_runtime_var.ALL = 0;
 	    }
 
@@ -4929,8 +4930,6 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 
 	  // end of parse stream reached?
 	  if( pool_item->sysex_runtime_var.match_ctr == pool_item->len_stream ) {
-	    again = 0;
-
 	    pool_item->sysex_runtime_var.ALL = 0;
 
 	    // all values matching!
@@ -4938,6 +4937,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	    MBNG_EVENT_ItemCopy2User(pool_item, &item);
 	    MBNG_EVENT_ItemReceive(&item, pool_item->value, 1, 1);
 	  }
+	  //DEBUG_MSG("id=%d IN=0x%02x ctr=%d\n", pool_item->id, midi_in, pool_item->sysex_runtime_var.match_ctr);
 	} while( again );
       }
     }
