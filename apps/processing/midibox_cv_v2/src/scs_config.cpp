@@ -22,6 +22,7 @@
 #include <scs.h>
 #include "scs_config.h"
 
+#include <aout.h>
 #include <file.h>
 
 #include <app.h>
@@ -207,7 +208,73 @@ static void stringCvPortamentoMode(u32 ix, u16 value, char *label)
 }
 
 static void stringCvCurve(u32 ix, u16 value, char *label) { memcpy(label, env->mbCv[selectedCv].mbCvVoice.getAoutCurveName(), 5); label[5] = 0; }
-static void stringCvCaliMode(u32 ix, u16 value, char *label) { memcpy(label, MBCV_MAP_CaliNameGet(), 5); label[5] = 0; }
+
+static void stringCvCaliMode(u32 ix, u16 value, char *label)
+{
+  if( value < AOUT_NUM_CALI_MODES ) {
+    if( APP_CvBipolarOutputDisplayGet() ) {
+      switch( value ) {
+      case AOUT_CALI_MODE_1V:
+        sprintf(label, " -4.0");
+        break;
+      case AOUT_CALI_MODE_2V:
+        sprintf(label, " -3.0");
+        break;
+      case AOUT_CALI_MODE_4V:
+        sprintf(label, " -1.0");
+        break;
+      case AOUT_CALI_MODE_8V:
+        sprintf(label, "  3.0");
+        break;
+      default:
+        memcpy(label, MBCV_MAP_CaliNameGet(), 5);
+        label[5] = 0;
+      }
+    } else {
+      memcpy(label, MBCV_MAP_CaliNameGet(), 5);
+      label[5] = 0;
+    }
+  } else {
+    s32 x = value - AOUT_NUM_CALI_MODES;
+    if( x >= AOUT_NUM_CALI_POINTS_X )
+      x = AOUT_NUM_CALI_POINTS_X-1;
+
+    if( x >= (AOUT_NUM_CALI_POINTS_X-1) ) {
+      sprintf(label, " Max:");
+    } else {
+      sprintf(label, " %2dV", APP_CvBipolarOutputDisplayGet() ? (x - 5) : x);
+    }
+  }
+}
+
+static void stringCvCaliPoint(u32 ix, u16 value, char *label)
+{
+  u8 mode = MBCV_MAP_CaliModeGet();
+  if( mode < AOUT_NUM_CALI_MODES ) {
+    sprintf(label, "     ");
+  } else {
+    // calibration values
+    u16 *cali_points = AOUT_CaliPointsPtrGet(selectedCv);
+    if( cali_points == NULL ) {
+      sprintf(label, "ERR!");
+    } else {
+      s32 x = AOUT_CaliModeGet() - AOUT_NUM_CALI_MODES;
+      if( x >= AOUT_NUM_CALI_POINTS_X )
+        x = AOUT_NUM_CALI_POINTS_X-1;
+
+      s32 cali_point = cali_points[x] >> 4; // 16bit -> 12bit
+      s32 cali_ref = AOUT_CaliCfgValueGet() >> 4; // 16bit -> 12bit
+
+      s32 cali_diff = cali_point - cali_ref;
+      sprintf(label, "%5d", cali_diff);
+    }
+  }
+}
+
+static void stringCvBipolarDisplay(u32 ix, u16 value, char *label)
+{
+  strcpy(label, APP_CvBipolarOutputDisplayGet() ? " Bip." : " Unip");
+}
 
 static void stringArpDir(u32 ix, u16 value, char *label)
 {
@@ -368,6 +435,11 @@ static u16  selectSaveGlobals(u32 ix, u16 value)
 {
   char buffer[10];
   sprintf(buffer, "%-8s", mbcv_file_p_patch_name);
+
+  // remove trailing spaces
+  size_t len = strlen(buffer);
+  while( len > 0 && buffer[len-1] == ' ' ) { buffer[len-1] = 0; --len; }
+
   return SCS_InstallEditStringCallback(selectSaveGlobals_Callback, "SAVE", buffer, MBCV_FILE_P_FILENAME_LEN);
 }
 
@@ -777,6 +849,12 @@ static void cvSlewRateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.s
 static u16  cvCaliModeGet(u32 ix)            { return MBCV_MAP_CaliModeGet(); }
 static void cvCaliModeSet(u32 ix, u16 value) { MBCV_MAP_CaliModeSet(selectedCv, (aout_cali_mode_t)value); }
 
+static u16  cvCaliPointGet(u32 ix)            { return MBCV_MAP_CaliPointGet(selectedCv); }
+static void cvCaliPointSet(u32 ix, u16 value) { MBCV_MAP_CaliPointSet(selectedCv, value); }
+
+static u16  cvBipolarDisplayGet(u32 ix)       { return APP_CvBipolarOutputDisplayGet(); }
+static void cvBipolarDisplaySet(u32 ix, u16 value) { APP_CvBipolarOutputDisplaySet(value); }
+
 static u16  aoutIfGet(u32 ix)              { return MBCV_MAP_IfGet(); }
 static void aoutIfSet(u32 ix, u16 value)   { MBCV_MAP_IfSet((aout_if_t)value); }
 
@@ -1001,7 +1079,13 @@ const scs_menu_item_t pageAOUT[] = {
   SCS_ITEM(" CV  ", 0, CV_SE_NUM-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
   SCS_ITEM("Curve", 0, MBCV_MAP_NUM_CURVES-1, cvCurveGet, cvCurveSet, selectNOP, stringCvCurve, NULL),
   SCS_ITEM(" Slew", 0, 255,   cvSlewRateGet, cvSlewRateSet, selectNOP, stringDec4, NULL),
+#if AOUT_NUM_CALI_POINTS_X > 0
+  SCS_ITEM(" Cali", 0, MBCV_MAP_NUM_CALI_MODES+AOUT_NUM_CALI_POINTS_X-1, cvCaliModeGet, cvCaliModeSet, selectNOP, stringCvCaliMode, NULL),
+  SCS_ITEM(" Offs", 0, 0xffff, cvCaliPointGet, cvCaliPointSet, selectNOP, stringCvCaliPoint, NULL),
+  SCS_ITEM(" Disp", 0, 1, cvBipolarDisplayGet, cvBipolarDisplaySet, selectNOP, stringCvBipolarDisplay, NULL),
+#else
   SCS_ITEM(" Cali", 0, MBCV_MAP_NUM_CALI_MODES-1, cvCaliModeGet, cvCaliModeSet, selectNOP, stringCvCaliMode, NULL),
+#endif
   SCS_ITEM(" Modu", 0, AOUT_NUM_IF-1, aoutIfGet, aoutIfSet, selectNOP, stringAoutIf, NULL),
   SCS_ITEM("le   ", 1, AOUT_NUM_IF-1, aoutIfGet, aoutIfSet, selectNOP, stringAoutIf, NULL),
   SCS_ITEM("UpdR",  0, APP_CV_UPDATE_RATE_FACTOR_MAX-1, cvUpdateRateGet, cvUpdateRateSet, selectNOP, stringCvUpdateRate, NULL),

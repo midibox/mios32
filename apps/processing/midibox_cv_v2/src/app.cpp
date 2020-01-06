@@ -75,10 +75,10 @@ static u32 stopwatch_value_accumulated;
 static u32 stopwatch_value_accumulated_ctr;
 
 static u8  cv_se_speed_factor;
+static u8 cv_bipolar_output_display = 0;
 static u8  cv_se_overloaded;
 static u32 cv_se_overload_check_ctr = 0;
 static u32 cv_se_last_mios32_timestamp = 0;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // C++ objects
@@ -666,6 +666,21 @@ s32 APP_CvUpdateRateFactorSet(u8 factor)
 s32 APP_CvUpdateRateFactorGet(void)
 {
   return cv_se_speed_factor;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Speed Factor (engine will be updated at factor * 500 Hz)
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_CvBipolarOutputDisplaySet(u8 value)
+{
+  cv_bipolar_output_display = value;
+  return 0; // no error
+}
+
+s32 APP_CvBipolarOutputDisplayGet(void)
+{
+  return cv_bipolar_output_display;
 }
 
 /////////////////////////////////////////////////////////////////////////////
