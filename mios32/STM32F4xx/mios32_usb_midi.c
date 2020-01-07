@@ -183,10 +183,12 @@ s32 MIOS32_USB_MIDI_PackageSend_NonBlocking(mios32_midi_package_t package)
 
   // buffer full?
   if( tx_buffer_size >= (MIOS32_USB_MIDI_TX_BUFFER_SIZE-1) ) {
-    // call USB handler, so that we are able to get the buffer free again on next execution
-    // (this call simplifies polling loops!)
-    MIOS32_USB_MIDI_TxBufferHandler();
-
+    if( USB_OTG_IsDeviceMode(&USB_OTG_dev) ) {
+      // call USB handler, so that we are able to get the buffer free again on next execution
+      // (this call simplifies polling loops!)
+      // Note: Only in Device mode!
+      MIOS32_USB_MIDI_TxBufferHandler();
+    }
     // device still available?
     // (ensures that polling loop terminates if cable has been disconnected)
     if( !transfer_possible )
