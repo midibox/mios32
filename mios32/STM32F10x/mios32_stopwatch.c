@@ -29,10 +29,13 @@
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
-
+#if defined(MIOS32_BOARD_BLUE_PILL)
+#define STOPWATCH_TIMER_BASE                 TIM1
+#define STOPWATCH_TIMER_RCC   RCC_APB2Periph_TIM1
+#else
 #define STOPWATCH_TIMER_BASE                 TIM6
 #define STOPWATCH_TIMER_RCC   RCC_APB1Periph_TIM6
-
+#endif
 // timers clocked at CPU clock
 #define TIM_PERIPHERAL_FRQ MIOS32_SYS_CPU_FREQUENCY
 

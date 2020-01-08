@@ -28,7 +28,11 @@ THUMB_SOURCE += \
 		$(FREE_RTOS)/Source/portable/MemMang/heap_4.c
 
 ifeq ($(FAMILY),STM32F10x)
+ifeq ($(PROCESSOR),STM32F103CB)
+THUMB_SOURCE += $(MIOS32_PATH)/programming_models/traditional/startup_stm32f10x_md.c
+else
 THUMB_SOURCE += $(MIOS32_PATH)/programming_models/traditional/startup_stm32f10x_hd.c
+endif
 endif
 ifeq ($(FAMILY),STM32F4xx)
 THUMB_SOURCE += $(MIOS32_PATH)/programming_models/traditional/startup_stm32f4xx.c
