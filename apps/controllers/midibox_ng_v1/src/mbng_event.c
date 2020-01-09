@@ -1492,11 +1492,11 @@ s32 MBNG_EVENT_ItemModify(mbng_event_item_t *item)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! Search an item in event pool based on ID
+//! Search an item in event pool based on ID (optional within a range if id_end_range!= 0)
 //! \returns 0 and copies item into *item if found
 //! \returns -1 if item not found
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item, u32 *continue_ix)
+s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_id_t id_end_range, mbng_event_item_t *item, u32 *continue_ix)
 {
   u8 *pool_ptr = (u8 *)&event_pool[0];
   u32 i = 0;
@@ -1510,7 +1510,8 @@ s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item, 
 
   for(; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
-    if( pool_item->id == id ) {
+    if( (!id_end_range && pool_item->id == id) ||
+        (id_end_range && pool_item->id >= id && pool_item->id <= id_end_range) ) {
       MBNG_EVENT_ItemCopy2User(pool_item, item);
 
       // pass pointer offset to pool item + index of pool item in continue_ix for continued search
@@ -1532,12 +1533,12 @@ s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item, 
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Search an item in event pool based on the HW ID
+//! Search an item in event pool based on the HW ID (optional within a range if hw_id_end!= 0)
 //! Takes the selected bank into account (means: only an active item will be returned)
 //! \returns 0 and copies item into *item if found
 //! \returns -1 if item not found
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *item, u32 *continue_ix)
+s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_id_t hw_id_end_range, mbng_event_item_t *item, u32 *continue_ix)
 {
   u8 *pool_ptr = (u8 *)&event_pool[0];
   u32 i = 0;
@@ -1552,7 +1553,9 @@ s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *i
   for(; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
-    if( pool_item->flags.active && pool_item->hw_id == hw_id ) {
+    if( pool_item->flags.active &&
+        ((!hw_id_end_range && pool_item->hw_id == hw_id) ||
+         (hw_id_end_range && pool_item->hw_id >= hw_id && pool_item->hw_id <= hw_id_end_range)) ) {
       MBNG_EVENT_ItemCopy2User(pool_item, item);
 
       // pass pointer offset to pool item + index of pool item in continue_ix for continued search
@@ -1723,7 +1726,7 @@ s32 MBNG_EVENT_ItemCheckMatchingCondition(mbng_event_item_t *item)
   if( item->cond.hw_id ) {
     mbng_event_item_t tmp_item;
     u32 continue_ix = 0;
-    if( MBNG_EVENT_ItemSearchById(item->cond.hw_id, &tmp_item, &continue_ix) < 0 ) {
+    if( MBNG_EVENT_ItemSearchById(item->cond.hw_id, 0, &tmp_item, &continue_ix) < 0 ) {
       return 0; // id doesn't exist -> no match
     }
     cmp_value = tmp_item.value;
@@ -2238,7 +2241,7 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
   mbng_event_item_t item;
   // note: currently only assigned to first found item
   u32 continue_ix = 0;
-  if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item, &continue_ix) < 0 ) {
+  if( MBNG_EVENT_ItemSearchByHwId(hw_id, 0, &item, &continue_ix) < 0 ) {
     new_item = 1;
 
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
@@ -2247,7 +2250,7 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
 
     mbng_event_item_t tmp_item;
     u32 continue_id_ix = 0;
-    while( MBNG_EVENT_ItemSearchById(id, &tmp_item, &continue_id_ix) >= 0 ) {
+    while( MBNG_EVENT_ItemSearchById(id, 0, &tmp_item, &continue_id_ix) >= 0 ) {
       if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
 	DEBUG_MSG("[MIDI_LEARN] id=%s:%d already allocated, trying next one...\n", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
       }
@@ -2470,7 +2473,7 @@ s32 MBNG_EVENT_EventLearnIt(mbng_event_item_t *item, u16 prev_value)
     // search for ID
     mbng_event_item_t meta_item;
     u32 continue_ix = 0;
-    if( MBNG_EVENT_ItemSearchById(event_learn_id, &meta_item, &continue_ix) < 0 ) {
+    if( MBNG_EVENT_ItemSearchById(event_learn_id, 0, &meta_item, &continue_ix) < 0 ) {
       if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
 	DEBUG_MSG("[EVENT_LEARN] ERROR: meta item id=%s:%d doesn't exist.\n", MBNG_EVENT_ItemControllerStrGet(event_learn_id), event_learn_id & 0xfff);
       }
@@ -3523,7 +3526,7 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
       // search for items with matching ID
       mbng_event_item_t remote_item;
       u32 continue_ix = 0;
-      while( MBNG_EVENT_ItemSearchById(remote_id, &remote_item, &continue_ix) >= 0 ) {
+      while( MBNG_EVENT_ItemSearchById(remote_id, 0, &remote_item, &continue_ix) >= 0 ) {
 
 	// scale value between min/max
 	// TODO: handle mapped values properly
@@ -4118,7 +4121,7 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
   u32 continue_ix = 0;
   u32 num_forwarded = 0;
   do {
-    if( MBNG_EVENT_ItemSearchByHwId(item->fwd_id, &fwd_item, &continue_ix) < 0 ) {
+    if( MBNG_EVENT_ItemSearchByHwId(item->fwd_id, 0, &fwd_item, &continue_ix) < 0 ) {
       break;
     } else {
       ++num_forwarded;

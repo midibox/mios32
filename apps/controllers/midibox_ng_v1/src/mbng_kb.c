@@ -127,7 +127,7 @@ s32 MBNG_KB_NotifyToggle(u8 kb, u8 note_number, u8 velocity)
   mbng_event_item_t item;
   u32 continue_ix = 0;
   do {
-    if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item, &continue_ix) < 0 ) {
+    if( MBNG_EVENT_ItemSearchByHwId(hw_id, 0, &item, &continue_ix) < 0 ) {
       if( continue_ix )
 	return 0; // ok: at least one event was assigned
       if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {

@@ -106,7 +106,7 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	  mbng_event_item_t item;
 	  u32 continue_ix = 0;
 	  do {
-	    if( MBNG_EVENT_ItemSearchByHwId(button_id, &item, &continue_ix) < 0 ) {
+	    if( MBNG_EVENT_ItemSearchByHwId(button_id, 0, &item, &continue_ix) < 0 ) {
 	      if( continue_ix )
 		return 0; // ok: at least one event was assigned
 	      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
@@ -143,7 +143,7 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	mbng_event_item_t item;
 	u32 continue_ix = 0;
 	do {
-	  if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item, &continue_ix) < 0 ) {
+	  if( MBNG_EVENT_ItemSearchByHwId(hw_id, 0, &item, &continue_ix) < 0 ) {
 	    if( continue_ix )
 	      return 0; // ok: at least one event was assigned
 	    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
