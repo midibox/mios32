@@ -1806,6 +1806,16 @@ static s32 execSET_RGB(mbng_event_item_t *item, s32 value)
   return 0; // no error
 }
 
+static s32 execSET_RGB_Virtual(mbng_event_item_id_t id, s32 value)
+{
+  // hw_id: send to dummy item
+  mbng_event_item_t item;
+  MBNG_EVENT_ItemInit(&item, id);
+  item.flags.active = 1;
+  item.rgb.ALL = value;
+  return MBNG_EVENT_ItemSendVirtual(&item, item.id);
+}
+
 static s32 execSET_HSV(mbng_event_item_t *item, s32 value)
 {
   item->hsv.ALL = (u32)value;
@@ -1816,6 +1826,16 @@ static s32 execSET_HSV(mbng_event_item_t *item, s32 value)
     return 2; // stop has been requested
 
   return 0; // no error
+}
+
+static s32 execSET_HSV_Virtual(mbng_event_item_id_t id, s32 value)
+{
+  // hw_id: send to dummy item
+  mbng_event_item_t item;
+  MBNG_EVENT_ItemInit(&item, id);
+  item.flags.active = 1;
+  item.hsv.ALL = value;
+  return MBNG_EVENT_ItemSendVirtual(&item, item.id);
 }
 
 static s32 execSET_LOCK(mbng_event_item_t *item, s32 value)
@@ -2544,9 +2564,9 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
       } else if( strcasecmp(parameter, "CHANGE") == 0 ) {
 	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_CHANGE, execCHANGE, execCHANGE_Virtual);
       } else if( strcasecmp(parameter, "SET_RGB") == 0 ) {
-	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_RGB, execSET_RGB, NULL);
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_RGB, execSET_RGB, execSET_RGB_Virtual);
       } else if( strcasecmp(parameter, "SET_HSV") == 0 ) {
-	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_HSV, execSET_HSV, NULL);
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_HSV, execSET_HSV, execSET_HSV_Virtual);
       } else if( strcasecmp(parameter, "SET_LOCK") == 0 ) {
 	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_LOCK, execSET_LOCK, NULL);
       } else if( strcasecmp(parameter, "SET_ACTIVE") == 0 ) {
@@ -2860,8 +2880,8 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
     case TOKEN_SET:         execToken(command_token, if_condition_matching, execSET, execCHANGE_Virtual); break;
     case TOKEN_CHANGE:      execToken(command_token, if_condition_matching, execCHANGE, execCHANGE_Virtual); break;
     case TOKEN_TRIGGER:     execToken(command_token, if_condition_matching, execTRIGGER, NULL); break;
-    case TOKEN_SET_RGB:     execToken(command_token, if_condition_matching, execSET_RGB, NULL); break;
-    case TOKEN_SET_HSV:     execToken(command_token, if_condition_matching, execSET_HSV, NULL); break;
+    case TOKEN_SET_RGB:     execToken(command_token, if_condition_matching, execSET_RGB, execSET_RGB_Virtual); break;
+    case TOKEN_SET_HSV:     execToken(command_token, if_condition_matching, execSET_HSV, execSET_HSV_Virtual); break;
     case TOKEN_SET_LOCK:    execToken(command_token, if_condition_matching, execSET_LOCK, NULL); break;
     case TOKEN_SET_ACTIVE:  execToken(command_token, if_condition_matching, execSET_ACTIVE, NULL); break;
     case TOKEN_SET_NO_DUMP: execToken(command_token, if_condition_matching, execSET_NO_DUMP, NULL); break;

@@ -246,7 +246,7 @@ void WS2812_DMA_IRQHandler_SetPWM(u16 *buffer)
     u8 mask;
 
     for(i=0; i<3; ++i, ++rgb_values) {
-      u8 value = *(rgb_values++);
+      u8 value = *(rgb_values);
       for(j=0, mask=0x80; j<8; ++j, mask >>= 1) {
 	*(buffer++) = (value & mask) ? WS2812_TIM_CC_HIGH : WS2812_TIM_CC_LOW;
       }
@@ -298,17 +298,16 @@ s32 WS2812_LED_SetRGB(u16 led, u8 colour, u8 value)
 
   u8 colour_ix = 0;
   if( colour == 0 )
-    colour_ix = 2;
+    colour_ix = 1;
   else if( colour == 1 )
     colour_ix = 0;
   else if( colour == 2 )
-    colour_ix = 1;
+    colour_ix = 2;
   else
     return -2; // unsupported colour
 
   u8 *rgb_values = &ws2812_rgb_values[led][0];
   rgb_values[colour_ix] = value;
-
   return value;
 #endif
 }
@@ -330,11 +329,11 @@ s32 WS2812_LED_GetRGB(u16 led, u8 colour)
 
   u8 colour_ix = 0;
   if( colour == 0 )
-    colour_ix = 2;
+    colour_ix = 1;
   else if( colour == 1 )
     colour_ix = 0;
   else if( colour == 2 )
-    colour_ix = 1;
+    colour_ix = 2;
   else
     return -2; // unsupported colour
 
