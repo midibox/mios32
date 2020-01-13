@@ -5,17 +5,9 @@
 
 
 ##################################################
-# AOUT interface
-# Following interfaces are supported:
-#   o none
-#   o AOUT
-#   o AOUT_LC
-#   o AOUT_NG
-#   o MCP_Gx1
-#   o MCP_Gx2
-##################################################
+# AOUT interface now configured in app itself
 
-AOUT_IF AOUT_NG
+##################################################
 
 
 ##################################################
