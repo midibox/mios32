@@ -152,7 +152,7 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
                 mod += (lfo1Value * (s32)mbCvLfo[0].lfoDepthPitch) / 128;
                 mod += (lfo2Value * (s32)mbCvLfo[1].lfoDepthPitch) / 128;
                 mod += (env1Value * (s32)mbCvEnv1[0].envDepthPitch) / 128;
-                mod += (env1Value * (s32)mbCvEnv2[0].envDepthPitch) / 128;
+                mod += (env2Value * (s32)mbCvEnv2[0].envDepthPitch) / 128;
                 mbCvMod.modDst[MBCV_MOD_DST_CV] = mod;
             }
 
