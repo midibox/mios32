@@ -3700,6 +3700,7 @@ s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
       MBNG_MF_Init(0);
       MBNG_CV_Init(0);
       MBNG_KB_Init(0);
+      MBNG_RGBLED_Init(0);
       MBNG_FILE_R_TokenizedNgrSet(1);
     } else if( strcasecmp(parameter, "LCD") == 0 ) {
       char *str = brkt;
