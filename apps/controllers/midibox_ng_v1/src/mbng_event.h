@@ -257,6 +257,7 @@ typedef union {
   struct {
     u32 type:4;
     u32 led_matrix_pattern:4; // mbng_event_led_matrix_pattern_t
+    u32 rgbled_pattern:4;
     u32 fwd_to_lcd:1;
     u32 update_lcd:1;
     u32 value_from_midi:1;
@@ -487,6 +488,8 @@ extern const char *MBNG_EVENT_ItemEncSpeedModeStrGet(mbng_event_item_t *item);
 extern mbng_event_enc_speed_mode_t MBNG_EVENT_ItemEncSpeedModeFromStrGet(char *enc_speed_mode);
 extern const char *MBNG_EVENT_ItemLedMatrixPatternStrGet(mbng_event_item_t *item);
 extern mbng_event_led_matrix_pattern_t MBNG_EVENT_ItemLedMatrixPatternFromStrGet(char *led_matrix_pattern);
+extern const char *MBNG_EVENT_ItemRgbLedPatternStrGet(mbng_event_item_t *item);
+extern u8 MBNG_EVENT_ItemRgbLedPatternFromStrGet(char *rgbled_pattern);
 extern const char *MBNG_EVENT_ItemNrpnFormatStrGet(mbng_event_item_t *item);
 extern mbng_event_nrpn_format_t MBNG_EVENT_ItemNrpnFormatFromStrGet(char *nrpn_format);
 extern const char *MBNG_EVENT_ItemSysExVarStrGet(mbng_event_item_t *item, u8 stream_pos);

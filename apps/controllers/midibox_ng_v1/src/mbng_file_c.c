@@ -50,6 +50,7 @@
 #include "mbng_cv.h"
 #include "mbng_kb.h"
 #include "mbng_matrix.h"
+#include "mbng_rgbled.h"
 #include "mbng_lcd.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
@@ -1461,6 +1462,11 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
       } else {
 	item.flags.led_matrix_pattern = led_matrix_pattern;
       }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      } else if( strcasecmp(parameter, "rgbled_pattern") == 0 ) {
+        u8 rgbled_pattern = MBNG_EVENT_ItemRgbLedPatternFromStrGet(value_str);
+        item.flags.rgbled_pattern = rgbled_pattern;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "offset") == 0 ) {
@@ -4377,6 +4383,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  item.flags.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
 	sprintf(line_buffer, "  led_matrix_pattern=%s", MBNG_EVENT_ItemLedMatrixPatternStrGet(&item));
 	FLUSH_BUFFER;
+      }
+
+      if( item.flags.rgbled_pattern > 0 ) {
+        sprintf(line_buffer, "  rgbled_pattern=%s", MBNG_EVENT_ItemRgbLedPatternStrGet(&item));
+        FLUSH_BUFFER;
       }
 
       if( item.flags.colour ) {

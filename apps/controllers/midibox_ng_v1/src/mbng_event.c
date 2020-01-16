@@ -979,6 +979,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->fwd_id = 0;
   item->fwd_value = 0xffff;
   item->flags.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_1;
+  item->flags.rgbled_pattern = 0;
   item->hw_id  = id;
   item->cond.ALL = 0;
   item->value  = 0;
@@ -1972,6 +1973,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     }
 
     DEBUG_MSG("  - led_matrix_pattern=%s", MBNG_EVENT_ItemLedMatrixPatternStrGet(item));
+    DEBUG_MSG("  - rgbled_pattern=%s", MBNG_EVENT_ItemRgbLedPatternStrGet(item));
     DEBUG_MSG("  - colour=%d", item->flags.colour);
     DEBUG_MSG("  - lcd_pos=%d:%d:%d", item->lcd+1, item->lcd_x+1, item->lcd_y+1);
 
@@ -2871,6 +2873,28 @@ mbng_event_led_matrix_pattern_t MBNG_EVENT_ItemLedMatrixPatternFromStrGet(char *
   if( strcasecmp(led_matrix_pattern, "LcAuto") == 0 )    return MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO;
 
   return MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! for RGBLED Patterns
+/////////////////////////////////////////////////////////////////////////////
+static const char *rgbled_pattern_name[16] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15" };
+const char *MBNG_EVENT_ItemRgbLedPatternStrGet(mbng_event_item_t *item)
+{
+  return rgbled_pattern_name[item->flags.rgbled_pattern];
+}
+
+u8 MBNG_EVENT_ItemRgbLedPatternFromStrGet(char *rgbled_pattern)
+{
+  int i;
+
+  for(i=0; i<16; ++i) {
+    if( strcasecmp(rgbled_pattern, rgbled_pattern_name[i]) == 0 )
+      return i;
+  }
+
+  return 0;
 }
 
 
