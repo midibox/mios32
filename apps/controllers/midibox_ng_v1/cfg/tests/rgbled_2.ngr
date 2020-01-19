@@ -1,0 +1,206 @@
+# this cumbersome code has been generated with following python script:
+
+# for i in range(1, 32 + 1):
+#     print("  if ^value >= %d" % (i*4 - 2))
+#     print("    set_hsv RGBLED:%d %d:100:10" % (i, 256-i*8))
+#     print("  else")
+#     print("    set_hsv RGBLED:%d %d:100:0" % (i, 256-i*8))
+#     print("  endif")
+#     print("")
+
+
+if ^section == 1
+
+  if ^value >= 2
+    set_hsv RGBLED:1 248:100:10
+  else
+    set_hsv RGBLED:1 248:100:0
+  endif
+
+  if ^value >= 6
+    set_hsv RGBLED:2 240:100:10
+  else
+    set_hsv RGBLED:2 240:100:0
+  endif
+
+  if ^value >= 10
+    set_hsv RGBLED:3 232:100:10
+  else
+    set_hsv RGBLED:3 232:100:0
+  endif
+
+  if ^value >= 14
+    set_hsv RGBLED:4 224:100:10
+  else
+    set_hsv RGBLED:4 224:100:0
+  endif
+
+  if ^value >= 18
+    set_hsv RGBLED:5 216:100:10
+  else
+    set_hsv RGBLED:5 216:100:0
+  endif
+
+  if ^value >= 22
+    set_hsv RGBLED:6 208:100:10
+  else
+    set_hsv RGBLED:6 208:100:0
+  endif
+
+  if ^value >= 26
+    set_hsv RGBLED:7 200:100:10
+  else
+    set_hsv RGBLED:7 200:100:0
+  endif
+
+  if ^value >= 30
+    set_hsv RGBLED:8 192:100:10
+  else
+    set_hsv RGBLED:8 192:100:0
+  endif
+
+  if ^value >= 34
+    set_hsv RGBLED:9 184:100:10
+  else
+    set_hsv RGBLED:9 184:100:0
+  endif
+
+  if ^value >= 38
+    set_hsv RGBLED:10 176:100:10
+  else
+    set_hsv RGBLED:10 176:100:0
+  endif
+
+  if ^value >= 42
+    set_hsv RGBLED:11 168:100:10
+  else
+    set_hsv RGBLED:11 168:100:0
+  endif
+
+  if ^value >= 46
+    set_hsv RGBLED:12 160:100:10
+  else
+    set_hsv RGBLED:12 160:100:0
+  endif
+
+  if ^value >= 50
+    set_hsv RGBLED:13 152:100:10
+  else
+    set_hsv RGBLED:13 152:100:0
+  endif
+
+  if ^value >= 54
+    set_hsv RGBLED:14 144:100:10
+  else
+    set_hsv RGBLED:14 144:100:0
+  endif
+
+  if ^value >= 58
+    set_hsv RGBLED:15 136:100:10
+  else
+    set_hsv RGBLED:15 136:100:0
+  endif
+
+  if ^value >= 62
+    set_hsv RGBLED:16 128:100:10
+  else
+    set_hsv RGBLED:16 128:100:0
+  endif
+
+  if ^value >= 66
+    set_hsv RGBLED:17 120:100:10
+  else
+    set_hsv RGBLED:17 120:100:0
+  endif
+
+  if ^value >= 70
+    set_hsv RGBLED:18 112:100:10
+  else
+    set_hsv RGBLED:18 112:100:0
+  endif
+
+  if ^value >= 74
+    set_hsv RGBLED:19 104:100:10
+  else
+    set_hsv RGBLED:19 104:100:0
+  endif
+
+  if ^value >= 78
+    set_hsv RGBLED:20 96:100:10
+  else
+    set_hsv RGBLED:20 96:100:0
+  endif
+
+  if ^value >= 82
+    set_hsv RGBLED:21 88:100:10
+  else
+    set_hsv RGBLED:21 88:100:0
+  endif
+
+  if ^value >= 86
+    set_hsv RGBLED:22 80:100:10
+  else
+    set_hsv RGBLED:22 80:100:0
+  endif
+
+  if ^value >= 90
+    set_hsv RGBLED:23 72:100:10
+  else
+    set_hsv RGBLED:23 72:100:0
+  endif
+
+  if ^value >= 94
+    set_hsv RGBLED:24 64:100:10
+  else
+    set_hsv RGBLED:24 64:100:0
+  endif
+
+  if ^value >= 98
+    set_hsv RGBLED:25 56:100:10
+  else
+    set_hsv RGBLED:25 56:100:0
+  endif
+
+  if ^value >= 102
+    set_hsv RGBLED:26 48:100:10
+  else
+    set_hsv RGBLED:26 48:100:0
+  endif
+
+  if ^value >= 106
+    set_hsv RGBLED:27 40:100:10
+  else
+    set_hsv RGBLED:27 40:100:0
+  endif
+
+  if ^value >= 110
+    set_hsv RGBLED:28 32:100:10
+  else
+    set_hsv RGBLED:28 32:100:0
+  endif
+
+  if ^value >= 114
+    set_hsv RGBLED:29 24:100:10
+  else
+    set_hsv RGBLED:29 24:100:0
+  endif
+
+  if ^value >= 118
+    set_hsv RGBLED:30 16:100:10
+  else
+    set_hsv RGBLED:30 16:100:0
+  endif
+
+  if ^value >= 122
+    set_hsv RGBLED:31 8:100:10
+  else
+    set_hsv RGBLED:31 8:100:0
+  endif
+
+  if ^value >= 126
+    set_hsv RGBLED:32 0:100:10
+  else
+    set_hsv RGBLED:32 0:100:0
+  endif
+
+endif

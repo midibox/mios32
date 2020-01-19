@@ -86,7 +86,7 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value, u8 no_midi)
   mbng_event_item_t item;
   u32 continue_ix = 0;
   do {
-    if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item, &continue_ix) < 0 ) {
+    if( MBNG_EVENT_ItemSearchByHwId(hw_id, 0, &item, &continue_ix) < 0 ) {
       if( continue_ix )
 	return 0; // ok: at least one event was assigned
       if( !no_midi && debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {

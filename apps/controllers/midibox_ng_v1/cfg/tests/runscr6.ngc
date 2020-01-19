@@ -1,0 +1,74 @@
+# Example for following use case:
+# A DAW sends track strings with individual SysEx messages
+# We want to store these strings, and display them based on a track selection
+
+# in order to test this example, send following SysEx strings to MBNG (e.g. with the MIOS Studio SysEx tool):
+# f0 11 22 33 00 4f 4b 31 20 20 20 20 20 f7
+# f0 11 22 33 01 4f 4b 32 20 20 20 20 20 f7
+# f0 11 22 33 02 4f 4b 33 20 20 20 20 20 f7
+# f0 11 22 33 03 4f 4b 34 20 20 20 20 20 f7
+
+# and then push SCS button #1 to switch between the tracks
+
+
+RESET_HW
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+
+# this button switches between track 1/2/3/4
+MAP1  1 2 3 4
+EVENT_BUTTON id=2000  button_mode=Toggle  range=map1 radio_group=1 value=1  type=Meta meta=RunSection:0  fwd_to_lcd=1 lcd_pos=1:1:1 label="Track #%d"
+
+
+# this sender is called by receiver 100/110/120/130 to trigger the NGR script
+# the NGR script will trigger receiver 101..108, 111..118, 121..128, 131..138 depending on BUTTON:2000
+# so that string which corresponds to the current track selection will be print on screen
+EVENT_SENDER   id=1 type=Meta meta=RunSection:0
+
+# we collect incoming ASCII characters here
+EVENT_RECEIVER id=100  type=SysEx stream="0xf0 0x11 0x22 0x33 0x00 ^dump"  fwd_id=SENDER:1
+EVENT_RECEIVER id=101  syxdump_pos=100:0  value=0x3f  fwd_to_lcd=0 lcd_pos=1:1:2 label="%c"
+EVENT_RECEIVER id=102  syxdump_pos=100:1  value=0x3f  fwd_to_lcd=0 lcd_pos=1:2:2 label="%c"
+EVENT_RECEIVER id=103  syxdump_pos=100:2  value=0x3f  fwd_to_lcd=0 lcd_pos=1:3:2 label="%c"
+EVENT_RECEIVER id=104  syxdump_pos=100:3  value=0x3f  fwd_to_lcd=0 lcd_pos=1:4:2 label="%c"
+EVENT_RECEIVER id=105  syxdump_pos=100:4  value=0x3f  fwd_to_lcd=0 lcd_pos=1:5:2 label="%c"
+EVENT_RECEIVER id=106  syxdump_pos=100:5  value=0x3f  fwd_to_lcd=0 lcd_pos=1:6:2 label="%c"
+EVENT_RECEIVER id=107  syxdump_pos=100:6  value=0x3f  fwd_to_lcd=0 lcd_pos=1:7:2 label="%c"
+EVENT_RECEIVER id=108  syxdump_pos=100:7  value=0x3f  fwd_to_lcd=0 lcd_pos=1:8:2 label="%c"
+
+EVENT_RECEIVER id=110  type=SysEx stream="0xf0 0x11 0x22 0x33 0x01 ^dump"  fwd_id=SENDER:1
+EVENT_RECEIVER id=111  syxdump_pos=110:0  value=0x3f  fwd_to_lcd=0 lcd_pos=1:1:2 label="%c"
+EVENT_RECEIVER id=112  syxdump_pos=110:1  value=0x3f  fwd_to_lcd=0 lcd_pos=1:2:2 label="%c"
+EVENT_RECEIVER id=113  syxdump_pos=110:2  value=0x3f  fwd_to_lcd=0 lcd_pos=1:3:2 label="%c"
+EVENT_RECEIVER id=114  syxdump_pos=110:3  value=0x3f  fwd_to_lcd=0 lcd_pos=1:4:2 label="%c"
+EVENT_RECEIVER id=115  syxdump_pos=110:4  value=0x3f  fwd_to_lcd=0 lcd_pos=1:5:2 label="%c"
+EVENT_RECEIVER id=116  syxdump_pos=110:5  value=0x3f  fwd_to_lcd=0 lcd_pos=1:6:2 label="%c"
+EVENT_RECEIVER id=117  syxdump_pos=110:6  value=0x3f  fwd_to_lcd=0 lcd_pos=1:7:2 label="%c"
+EVENT_RECEIVER id=118  syxdump_pos=110:7  value=0x3f  fwd_to_lcd=0 lcd_pos=1:8:2 label="%c"
+
+EVENT_RECEIVER id=120  type=SysEx stream="0xf0 0x11 0x22 0x33 0x02 ^dump"  fwd_id=SENDER:1
+EVENT_RECEIVER id=121  syxdump_pos=120:0  value=0x3f  fwd_to_lcd=0 lcd_pos=1:1:2 label="%c"
+EVENT_RECEIVER id=122  syxdump_pos=120:1  value=0x3f  fwd_to_lcd=0 lcd_pos=1:2:2 label="%c"
+EVENT_RECEIVER id=123  syxdump_pos=120:2  value=0x3f  fwd_to_lcd=0 lcd_pos=1:3:2 label="%c"
+EVENT_RECEIVER id=124  syxdump_pos=120:3  value=0x3f  fwd_to_lcd=0 lcd_pos=1:4:2 label="%c"
+EVENT_RECEIVER id=125  syxdump_pos=120:4  value=0x3f  fwd_to_lcd=0 lcd_pos=1:5:2 label="%c"
+EVENT_RECEIVER id=126  syxdump_pos=120:5  value=0x3f  fwd_to_lcd=0 lcd_pos=1:6:2 label="%c"
+EVENT_RECEIVER id=127  syxdump_pos=120:6  value=0x3f  fwd_to_lcd=0 lcd_pos=1:7:2 label="%c"
+EVENT_RECEIVER id=128  syxdump_pos=120:7  value=0x3f  fwd_to_lcd=0 lcd_pos=1:8:2 label="%c"
+
+EVENT_RECEIVER id=130  type=SysEx stream="0xf0 0x11 0x22 0x33 0x03 ^dump"  fwd_id=SENDER:1
+EVENT_RECEIVER id=131  syxdump_pos=130:0  value=0x3f  fwd_to_lcd=0 lcd_pos=1:1:2 label="%c"
+EVENT_RECEIVER id=132  syxdump_pos=130:1  value=0x3f  fwd_to_lcd=0 lcd_pos=1:2:2 label="%c"
+EVENT_RECEIVER id=133  syxdump_pos=130:2  value=0x3f  fwd_to_lcd=0 lcd_pos=1:3:2 label="%c"
+EVENT_RECEIVER id=134  syxdump_pos=130:3  value=0x3f  fwd_to_lcd=0 lcd_pos=1:4:2 label="%c"
+EVENT_RECEIVER id=135  syxdump_pos=130:4  value=0x3f  fwd_to_lcd=0 lcd_pos=1:5:2 label="%c"
+EVENT_RECEIVER id=136  syxdump_pos=130:5  value=0x3f  fwd_to_lcd=0 lcd_pos=1:6:2 label="%c"
+EVENT_RECEIVER id=137  syxdump_pos=130:6  value=0x3f  fwd_to_lcd=0 lcd_pos=1:7:2 label="%c"
+EVENT_RECEIVER id=138  syxdump_pos=130:7  value=0x3f  fwd_to_lcd=0 lcd_pos=1:8:2 label="%c"

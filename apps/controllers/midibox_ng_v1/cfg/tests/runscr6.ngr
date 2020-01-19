@@ -1,0 +1,14 @@
+
+if ^section == 0
+
+  if    BUTTON:2000 == 1
+    trigger RECEIVER:101..108
+  elsif BUTTON:2000 == 2
+    trigger RECEIVER:111..118
+  elsif BUTTON:2000 == 3
+    trigger RECEIVER:121..128
+  elsif BUTTON:2000 == 4
+    trigger RECEIVER:131..138
+  endif
+
+endif

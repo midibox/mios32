@@ -115,6 +115,7 @@
 									<listOptionValue builtIn="false" value="MIOS32_FAMILY_STR=&quot;xxx&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;MIOS32_BOARD_${MIOS32_BOARD}&quot;"/>
 									<listOptionValue builtIn="false" value="MIOS32_BOARD_STR=&quot;xxx&quot;"/>
+									<listOptionValue builtIn="false" value="MIOS32_FAMILY_STM32F4xx"/>
 								</option>
 								<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.104847778" languageId="org.eclipse.cdt.core.gcc" languageName="GNU C" sourceContentType="org.eclipse.cdt.core.cSource,org.eclipse.cdt.core.cHeader" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
 							</tool>

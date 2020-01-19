@@ -16,7 +16,15 @@ MIDIbox NG V1.037
      Transformation of values to ASCII isn't supported yet.
      If it's a single digit, you could try ..."lcd Value: " [0x30 + ^value]
 
+   o .NGR: support for controller ranges.
+     E.g. with:
+        set_active (id)ENC:1..4095 0
+     all encoders can be de-activated
+
    o WS2812: revised version now supports 1024 RGB LEDs by default
+
+   o RGBLED: support for "rgbled_pattern"
+     See also cfg/tests/rgbled_3.ngc for usage examples
 
    o DIO configuration now allows to mix inputs and outputs for a single port by providing
      an "output_mask"

@@ -109,6 +109,73 @@ s32 MBNG_RGBLED_RainbowBrightnessGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Internal function to set a pattern
+/////////////////////////////////////////////////////////////////////////////
+static s32 MBNG_RGBLED_PatternSet(u32 start_led, u8 pattern, u8 is_hsv, float led_value_normalized, float v1, float v2, float v3)
+{
+  u32 num_leds = 32; // TODO: we could make this configurable!
+  u32 pos = num_leds * led_value_normalized; // goes from 0..num_leds-1
+
+  int led;
+  for(led=0; led<num_leds; ++led) {
+    float local_v1 = v1;
+    float local_v2 = v2;
+    float local_v3 = v3;
+
+    switch( pattern ) {
+
+    /////////////////////////////////////////////////////////////////////////
+    case 1: { // Classical Thermometer Pattern, colour specified via hsv= or rgb=
+      if( led > pos ) {
+        if( is_hsv ) { local_v3 = 0.0; } else { local_v1 = local_v2 = local_v3 = 0; }
+      }
+    } break;
+
+    /////////////////////////////////////////////////////////////////////////
+    case 2: { // Moving Dot
+      if( led != pos ) {
+        if( is_hsv ) { local_v3 = 0.0; } else { local_v1 = local_v2 = local_v3 = 0; }
+      }
+    } break;
+
+    /////////////////////////////////////////////////////////////////////////
+    case 3: { // Thermometer Pattern with Rainbow colour scheme (predefined H will be ignored)
+      float h_max = 200.0; // starting with blue looks better than violet
+      local_v1 = h_max - ((h_max / num_leds) * led);
+      if( !is_hsv ) { // RGB setting will be ignored...
+        v2 = local_v2 = 1.0;
+        v3 = local_v3 = 0.1;
+        is_hsv = 1;
+      }
+
+      if( led > pos ) {
+        local_v3 = 0.0;
+      }
+    } break;
+
+    /////////////////////////////////////////////////////////////////////////
+    default: {
+      // nothing to change...
+    }
+
+    }
+
+    if( is_hsv ) {
+      WS2812_LED_SetHSV(start_led + led, local_v1, local_v2, local_v3);
+    } else {
+      WS2812_LED_SetRGB(start_led + led, 0, (u8)local_v1);
+      WS2812_LED_SetRGB(start_led + led, 1, (u8)local_v2);
+      WS2812_LED_SetRGB(start_led + led, 2, (u8)local_v3);
+    }
+
+    if( pattern == 0 )
+      break; // only a single LED will be modified
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function is called by MBNG_EVENT_ItemReceive when a matching value
 //! has been received
 /////////////////////////////////////////////////////////////////////////////
@@ -150,6 +217,9 @@ s32 MBNG_RGBLED_NotifyReceivedValue(mbng_event_item_t *item)
     }
   }
 
+  float led_value_range = (item->max >= item->min) ? (float)(item->max - item->min + 1) : (float)(item->min - item->max + 1);
+  float led_value_normalized = led_value / led_value_range;
+
   // set LED
   int led = (hw_id & 0xfff) - 1;
   if( item->rgb.ALL ) {
@@ -171,9 +241,7 @@ s32 MBNG_RGBLED_NotifyReceivedValue(mbng_event_item_t *item)
 
     //DEBUG_MSG("RGBLED:%d %d:%d:%d\n", led+1, r, g, b);
 
-    WS2812_LED_SetRGB(led, 0, r);
-    WS2812_LED_SetRGB(led, 1, g);
-    WS2812_LED_SetRGB(led, 2, b);
+    MBNG_RGBLED_PatternSet(led, item->flags.rgbled_pattern, 0, led_value_normalized, r, g, b);
   } else {
     float hue = 0.0;
     float saturation = 0.0;
@@ -184,12 +252,16 @@ s32 MBNG_RGBLED_NotifyReceivedValue(mbng_event_item_t *item)
       hue = item->hsv.h;
       brightness = (float)((led_value > 100) ? 100 : led_value) / 100.0;
     } else {
-      hue = led_value + (float)item->hsv.h;
+      if( item->flags.rgbled_pattern == 0 ) {
+        hue = led_value + (float)item->hsv.h;
+      } else {
+        hue = (float)item->hsv.h;
+      }
       brightness = (float)item->hsv.v / 100.0;
     }
 
     //DEBUG_MSG("RGBLED:%d H=%d S=%d V=%d\n", led+1, (int)hue, (int)(saturation*100.0), (int)(brightness*100.0));
-    WS2812_LED_SetHSV(led, hue, saturation, brightness);
+    MBNG_RGBLED_PatternSet(led, item->flags.rgbled_pattern, 1, led_value_normalized, hue, saturation, brightness);
   }
 
   return 0; // no error

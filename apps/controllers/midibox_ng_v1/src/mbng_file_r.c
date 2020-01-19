@@ -134,15 +134,17 @@ typedef enum {
   TOKEN_VALUE_CONST16   = 0xb1, // +1 byte for the constant value
   TOKEN_VALUE_ID        = 0xb2, // +2 bytes for ID
   TOKEN_VALUE_HW_ID     = 0xb3, // +2 bytes for ID
+  TOKEN_VALUE_ID_RANGE  = 0xb4, // +2*2 bytes for IDs
+  TOKEN_VALUE_HW_ID_RANGE = 0xb5, // +2*2 bytes for IDs
 
-  TOKEN_VALUE_SECTION   = 0xb4,
-  TOKEN_VALUE_VALUE     = 0xb5,
-  TOKEN_VALUE_BANK      = 0xb6,
-  TOKEN_VALUE_SYSEX_DEV = 0xb7,
-  TOKEN_VALUE_SYSEX_PAT = 0xb8,
-  TOKEN_VALUE_SYSEX_BNK = 0xb9,
-  TOKEN_VALUE_SYSEX_INS = 0xba,
-  TOKEN_VALUE_SYSEX_CHN = 0xbb,
+  TOKEN_VALUE_SECTION   = 0xb6,
+  TOKEN_VALUE_VALUE     = 0xb7,
+  TOKEN_VALUE_BANK      = 0xb8,
+  TOKEN_VALUE_SYSEX_DEV = 0xb9,
+  TOKEN_VALUE_SYSEX_PAT = 0xba,
+  TOKEN_VALUE_SYSEX_BNK = 0xbb,
+  TOKEN_VALUE_SYSEX_INS = 0xbc,
+  TOKEN_VALUE_SYSEX_CHN = 0xbd,
 
 } ngr_token_t;
 
@@ -193,10 +195,11 @@ typedef struct {
 
 // script items
 typedef union {
-  u32 ALL;
+  unsigned long long ALL;
 
   struct {
     mbng_event_item_id_t id:16;
+    mbng_event_item_id_t range:16;
     u32 valid:1;
     u32 is_hw_id:1;
   };
@@ -618,6 +621,15 @@ static mbng_file_r_item_id_t parseId(char *parameter)
 
   id.valid = 1;
 
+  {
+    int id_range_end = -1;
+    char *id_range_str;
+    if( (id_range_str=strstr(value_str, "..")) != NULL &&
+        (id_range_end=get_dec(id_range_str + 2)) > 0 && id_range_end <= 0xfff ) {
+      id.range = (id.id & 0xf000) | id_range_end;
+    }
+  }
+
   return id;
 }
 
@@ -803,6 +815,10 @@ static s32 parseValue(u32 line, char *command, char *value_str, u8 tokenize_req)
   if( id.valid ) {
 #if NGR_TOKENIZED
     if( tokenize_req ) { // store token
+      if( id.range > 0 ) { // ranges not supported for value part!
+        return -1000000000; // exit due to error
+      }
+
       if( MBNG_FILE_R_PushToken(id.is_hw_id ? TOKEN_VALUE_HW_ID : TOKEN_VALUE_ID, line) < 0 ||
 	  MBNG_FILE_R_PushToken((id.id >> 0) & 0xff, line) < 0 ||
 	  MBNG_FILE_R_PushToken((id.id >> 8) & 0xff, line) < 0 )
@@ -813,8 +829,8 @@ static s32 parseValue(u32 line, char *command, char *value_str, u8 tokenize_req)
     // search for items with matching ID
     mbng_event_item_t item;
     u32 continue_ix = 0;
-    if( (id.is_hw_id && MBNG_EVENT_ItemSearchByHwId(id.id, &item, &continue_ix) >= 0) ||
-	(!id.is_hw_id && MBNG_EVENT_ItemSearchById(id.id, &item, &continue_ix) >= 0) ) {
+    if( (id.is_hw_id && MBNG_EVENT_ItemSearchByHwId(id.id, id.range, &item, &continue_ix) >= 0) ||
+	(!id.is_hw_id && MBNG_EVENT_ItemSearchById(id.id, id.range, &item, &continue_ix) >= 0) ) {
       return item.value;
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -928,12 +944,24 @@ static s32 parseTokenizedValue(void)
     id |= ((u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8);
     mbng_event_item_t item;
     u32 continue_ix = 0;
-    if( (is_hw_id && MBNG_EVENT_ItemSearchByHwId(id, &item, &continue_ix) >= 0) ||
-	(!is_hw_id && MBNG_EVENT_ItemSearchById(id, &item, &continue_ix) >= 0) ) {
+    if( (is_hw_id && MBNG_EVENT_ItemSearchByHwId(id, 0, &item, &continue_ix) >= 0) ||
+	(!is_hw_id && MBNG_EVENT_ItemSearchById(id, 0, &item, &continue_ix) >= 0) ) {
       return (s16)item.value;
     }
     DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: (%s)%s:%d not found in event pool at mem pos 0x%x!", 
 	      is_hw_id ? "hw_id" : "id", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, init_ngr_token_mem_run_pos);
+    return -1000000000;
+  } break;
+  case TOKEN_VALUE_ID_RANGE:
+  case TOKEN_VALUE_HW_ID_RANGE: {
+    // unsupported for value parts -- failsave:
+    u8 is_hw_id = token == TOKEN_VALUE_HW_ID_RANGE;
+    u16 id = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
+    id |= ((u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8);
+    u16 range = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
+    range |= ((u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8);
+    DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: Range (%s)%s:%d..%d not supported for values in event pool at mem pos 0x%x!",
+              is_hw_id ? "hw_id" : "id", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, range & 0xfff, init_ngr_token_mem_run_pos);
     return -1000000000;
   } break;
   }
@@ -1778,6 +1806,16 @@ static s32 execSET_RGB(mbng_event_item_t *item, s32 value)
   return 0; // no error
 }
 
+static s32 execSET_RGB_Virtual(mbng_event_item_id_t id, s32 value)
+{
+  // hw_id: send to dummy item
+  mbng_event_item_t item;
+  MBNG_EVENT_ItemInit(&item, id);
+  item.flags.active = 1;
+  item.rgb.ALL = value;
+  return MBNG_EVENT_ItemSendVirtual(&item, item.id);
+}
+
 static s32 execSET_HSV(mbng_event_item_t *item, s32 value)
 {
   item->hsv.ALL = (u32)value;
@@ -1788,6 +1826,16 @@ static s32 execSET_HSV(mbng_event_item_t *item, s32 value)
     return 2; // stop has been requested
 
   return 0; // no error
+}
+
+static s32 execSET_HSV_Virtual(mbng_event_item_id_t id, s32 value)
+{
+  // hw_id: send to dummy item
+  mbng_event_item_t item;
+  MBNG_EVENT_ItemInit(&item, id);
+  item.flags.active = 1;
+  item.hsv.ALL = value;
+  return MBNG_EVENT_ItemSendVirtual(&item, item.id);
 }
 
 static s32 execSET_LOCK(mbng_event_item_t *item, s32 value)
@@ -1834,7 +1882,7 @@ static s32 execSET_KB_VELOCITY_MAP(mbng_event_item_t *item, s32 value)
 //! help function which SETs a value based on a token
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 setTokenizedValue(ngr_token_t token, u16 id, s32 value, s32 (*exec_function)(mbng_event_item_t *item, s32 value), s32 (*exec_virtual_function)(mbng_event_item_id_t id, s32 value))
+s32 setTokenizedValue(ngr_token_t token, u16 id, u16 range, s32 value, s32 (*exec_function)(mbng_event_item_t *item, s32 value), s32 (*exec_virtual_function)(mbng_event_item_id_t id, s32 value))
 {
   switch( token ) {
   case TOKEN_VALUE_SECTION:   vars.section = value; break;
@@ -1847,16 +1895,19 @@ s32 setTokenizedValue(ngr_token_t token, u16 id, s32 value, s32 (*exec_function)
   case TOKEN_VALUE_SYSEX_CHN: mbng_patch_cfg.sysex_chn = value; break;
 
   case TOKEN_VALUE_ID:
-  case TOKEN_VALUE_HW_ID: {
-    u8 is_hw_id = token == TOKEN_VALUE_HW_ID;
+  case TOKEN_VALUE_HW_ID:
+  case TOKEN_VALUE_ID_RANGE:
+  case TOKEN_VALUE_HW_ID_RANGE: {
+    u8 is_hw_id = token == TOKEN_VALUE_HW_ID || token == TOKEN_VALUE_HW_ID_RANGE;
+    u8 is_range = token == TOKEN_VALUE_ID_RANGE || token == TOKEN_VALUE_HW_ID_RANGE;
 
     // search for items with matching ID
     mbng_event_item_t item;
     u32 continue_ix = 0;
     u32 num_exec_items = 0;
     do {
-      if( (is_hw_id && MBNG_EVENT_ItemSearchByHwId(id, &item, &continue_ix) < 0) ||
-	  (!is_hw_id && MBNG_EVENT_ItemSearchById(id, &item, &continue_ix) < 0) ) {
+      if( (is_hw_id && MBNG_EVENT_ItemSearchByHwId(id, range, &item, &continue_ix) < 0) ||
+	  (!is_hw_id && MBNG_EVENT_ItemSearchById(id, range, &item, &continue_ix) < 0) ) {
 	break;
       } else {
 	++num_exec_items;
@@ -1898,9 +1949,14 @@ s32 execToken(ngr_token_t command_token, u8 if_condition_matching, s32 (*exec_fu
   ngr_token_t value_token = ngr_token_mem[ngr_token_mem_run_pos++];
 
   u16 id = 0;
-  if( value_token == TOKEN_VALUE_ID || value_token == TOKEN_VALUE_HW_ID ) {
+  u16 range = 0;
+  if( value_token == TOKEN_VALUE_ID || value_token == TOKEN_VALUE_HW_ID || value_token == TOKEN_VALUE_ID_RANGE || value_token == TOKEN_VALUE_HW_ID_RANGE ) {
     id = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
     id |= (u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8;
+    if( value_token == TOKEN_VALUE_ID_RANGE || value_token == TOKEN_VALUE_HW_ID_RANGE ) {
+      range = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
+      range |= (u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8;
+    }
   }
 	
   s32 value = 0;
@@ -1926,7 +1982,7 @@ s32 execToken(ngr_token_t command_token, u8 if_condition_matching, s32 (*exec_fu
   }
 
   if( if_condition_matching && value >= -16384 ) {
-    setTokenizedValue(value_token, id, value, exec_function, exec_virtual_function);
+    setTokenizedValue(value_token, id, range, value, exec_function, exec_virtual_function);
   }
 
   return 0; // no error
@@ -1935,7 +1991,7 @@ s32 execToken(ngr_token_t command_token, u8 if_condition_matching, s32 (*exec_fu
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! help function which parses a SET command
+//! help function which parses a command
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
 s32 parseCommand(u32 line, char *command, char **brkt, u8 tokenize_req, ngr_token_t command_token, s32 (*exec_function)(mbng_event_item_t *item, s32 value), s32 (*exec_virtual_function)(mbng_event_item_id_t id, s32 value))
@@ -1995,7 +2051,11 @@ s32 parseCommand(u32 line, char *command, char **brkt, u8 tokenize_req, ngr_toke
       return -1;
     }
   } else {
-    value_token = id.is_hw_id ? TOKEN_VALUE_HW_ID : TOKEN_VALUE_ID;
+    if( id.range > 0 ) {
+      value_token = id.is_hw_id ? TOKEN_VALUE_HW_ID_RANGE : TOKEN_VALUE_ID_RANGE;
+    } else {
+      value_token = id.is_hw_id ? TOKEN_VALUE_HW_ID : TOKEN_VALUE_ID;
+    }
   }
 
 #if NGR_TOKENIZED
@@ -2004,10 +2064,16 @@ s32 parseCommand(u32 line, char *command, char **brkt, u8 tokenize_req, ngr_toke
 	MBNG_FILE_R_PushToken(value_token, line) < 0 )
       return -1;
 
-    if( value_token == TOKEN_VALUE_ID || value_token == TOKEN_VALUE_HW_ID ) {
+    if( value_token == TOKEN_VALUE_ID || value_token == TOKEN_VALUE_HW_ID || value_token == TOKEN_VALUE_ID_RANGE || value_token == TOKEN_VALUE_HW_ID_RANGE ) {
       if( MBNG_FILE_R_PushToken((id.id >> 0) & 0xff, line) < 0 ||
 	  MBNG_FILE_R_PushToken((id.id >> 8) & 0xff, line) < 0 )
 	return -1;
+    }
+
+    if( value_token == TOKEN_VALUE_ID_RANGE || value_token == TOKEN_VALUE_HW_ID_RANGE ) {
+      if( MBNG_FILE_R_PushToken((id.range >> 0) & 0xff, line) < 0 ||
+          MBNG_FILE_R_PushToken((id.range >> 8) & 0xff, line) < 0 )
+        return -1;
     }
   }
 #endif
@@ -2151,7 +2217,7 @@ s32 parseCommand(u32 line, char *command, char **brkt, u8 tokenize_req, ngr_toke
   if( !tokenize_req )
 #endif
   {
-    setTokenizedValue(value_token, id.id, value, exec_function, exec_virtual_function);
+    setTokenizedValue(value_token, id.id, id.range, value, exec_function, exec_virtual_function);
   }
 
   return 0; // no error
@@ -2498,9 +2564,9 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
       } else if( strcasecmp(parameter, "CHANGE") == 0 ) {
 	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_CHANGE, execCHANGE, execCHANGE_Virtual);
       } else if( strcasecmp(parameter, "SET_RGB") == 0 ) {
-	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_RGB, execSET_RGB, NULL);
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_RGB, execSET_RGB, execSET_RGB_Virtual);
       } else if( strcasecmp(parameter, "SET_HSV") == 0 ) {
-	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_HSV, execSET_HSV, NULL);
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_HSV, execSET_HSV, execSET_HSV_Virtual);
       } else if( strcasecmp(parameter, "SET_LOCK") == 0 ) {
 	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_LOCK, execSET_LOCK, NULL);
       } else if( strcasecmp(parameter, "SET_ACTIVE") == 0 ) {
@@ -2814,8 +2880,8 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
     case TOKEN_SET:         execToken(command_token, if_condition_matching, execSET, execCHANGE_Virtual); break;
     case TOKEN_CHANGE:      execToken(command_token, if_condition_matching, execCHANGE, execCHANGE_Virtual); break;
     case TOKEN_TRIGGER:     execToken(command_token, if_condition_matching, execTRIGGER, NULL); break;
-    case TOKEN_SET_RGB:     execToken(command_token, if_condition_matching, execSET_RGB, NULL); break;
-    case TOKEN_SET_HSV:     execToken(command_token, if_condition_matching, execSET_HSV, NULL); break;
+    case TOKEN_SET_RGB:     execToken(command_token, if_condition_matching, execSET_RGB, execSET_RGB_Virtual); break;
+    case TOKEN_SET_HSV:     execToken(command_token, if_condition_matching, execSET_HSV, execSET_HSV_Virtual); break;
     case TOKEN_SET_LOCK:    execToken(command_token, if_condition_matching, execSET_LOCK, NULL); break;
     case TOKEN_SET_ACTIVE:  execToken(command_token, if_condition_matching, execSET_ACTIVE, NULL); break;
     case TOKEN_SET_NO_DUMP: execToken(command_token, if_condition_matching, execSET_NO_DUMP, NULL); break;
