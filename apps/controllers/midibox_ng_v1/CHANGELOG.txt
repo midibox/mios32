@@ -23,6 +23,9 @@ MIDIbox NG V1.037
 
    o WS2812: revised version now supports 1024 RGB LEDs by default
 
+   o RGBLED: support for "rgbled_pattern"
+     See also cfg/tests/rgbled_3.ngc for usage examples
+
    o DIO configuration now allows to mix inputs and outputs for a single port by providing
      an "output_mask"
      An example can be found under cfg/tests/diocfg_3.ngc

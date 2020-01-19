@@ -3361,6 +3361,15 @@ s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, mbng_event_item_t *item)
       default: {}
       }
     } else {
+      if( (*stream & 0xf0) == 0xb0 ) {
+        // invalidate NRPN optimizer to ensure that it doesn't conflict...
+        u8 chn = *stream & 0x0f;
+        int i;
+        for(i=0; i<MBNG_EVENT_NRPN_SEND_PORTS; ++i) {
+          nrpn_sent_address[i][chn] = 0xffff; // invalidate
+          nrpn_sent_value[i][chn] = 0xffff; // invalidate
+        }
+      }
       MBNG_EVENT_ADD_STREAM(*stream_in++);
     }
   }

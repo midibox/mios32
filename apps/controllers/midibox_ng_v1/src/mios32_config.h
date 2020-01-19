@@ -107,7 +107,11 @@ extern char mbng_patch_max72xx_spi_rc_pin;
 #define WS2812_NUM_LEDS 1024
 
 // reserved memory for FreeRTOS pvPortMalloc function
+#if defined(MIOS32_FAMILY_LPC17xx)
 #define MIOS32_HEAP_SIZE 10*1024
+#else
+#define MIOS32_HEAP_SIZE 12*1024
+#endif
 // UMM heap located in default section (means for LPC17: not in AHB memory, because we are using it for the event pool)
 #if defined(MIOS32_FAMILY_STM32F4xx)
 # define MIOS32_FREERTOS_HEAP_SECTION __attribute__ ((section (".bss_ccm")))
@@ -116,8 +120,11 @@ extern char mbng_patch_max72xx_spi_rc_pin;
 #endif
 
 // stack sizes which are used by various tasks (see APP_Init() in app.c)
+#if defined(MIOS32_FAMILY_LPC17xx)
 #define APP_BIG_STACK_SIZE     (2048)
-#define APP_REDUCED_STACK_SIZE (1024)
+#else
+#define APP_BIG_STACK_SIZE     (2400)
+#endif
 // for the MIOS32 hooks in main.c
 #define MIOS32_MINIMAL_STACK_SIZE APP_BIG_STACK_SIZE
 // for the UIP task

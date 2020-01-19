@@ -519,7 +519,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
   item.stream = stream;
   item.stream_size = 0;
 
-#define LABEL_MAX_SIZE 41
+#define LABEL_MAX_SIZE 128
   char label[LABEL_MAX_SIZE];
   item.label = label;
   label[0] = 0;
@@ -1646,7 +1646,8 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "label") == 0 ) {
       if( strlen(value_str) >= LABEL_MAX_SIZE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: string to long in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
+        value_str[(LABEL_MAX_SIZE > 40) ? 40 : (LABEL_MAX_SIZE-1)] = 0; // ensure that DEBUG_MSG doesn't exceed 100 chars
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: string to long in EVENT_%s ... %s=\"%s\"...\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
