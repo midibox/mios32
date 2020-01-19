@@ -289,7 +289,7 @@ s32 MBNG_FILE_S_Read(char *filename, int snapshot)
 	  u32 found_items = 0;
 	  mbng_event_item_t item;
 	  u32 continue_id_ix = 0;
-	  while( MBNG_EVENT_ItemSearchById(id, &item, &continue_id_ix) >= 0 ) {
+	  while( MBNG_EVENT_ItemSearchById(id, 0, &item, &continue_id_ix) >= 0 ) {
 	    ++found_items;
 
 	    if( !item.flags.no_dump ) {

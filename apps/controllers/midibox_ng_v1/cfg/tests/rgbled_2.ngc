@@ -1,0 +1,29 @@
+# this example shows how to create individual LED Ring patterns for Weasels LED Ring/encoder board:
+# http://midibox.org/forums/topic/21095-lre-4x1-breakable-rgb-led-ringrotary-encoder-pcb-bulk-order
+
+# the encoder of the SCS is used to control the value which is then displayed by the first RGB LED Ring
+# the pattern itself is defined in the NGR file
+
+# note: this approach is not suitable for multiple LED Rings!
+# and the definition of patterns can be very cumbersome (see RGBLED_2.NGR file)
+# therefore MBNG supports some patterns natively, and if you want to propose new ones,
+# just demonstrate with this setup and pass to TK (or integrate into mbng_rgbled.c by yourself)
+
+# see RGBLED_3.NGC for the usage of predefined patterns
+
+RESET_HW
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+# Bank 1
+EVENT_ENC    id=  1  hw_id =2000 fwd_id=SENDER:1    fwd_to_lcd=1  type=CC     chn= 1 cc= 16   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:1:2)%B"
+
+
+# following senders will call a NGR script to output patterns on the LED rings
+EVENT_SENDER id= 1  type=Meta meta=RunSection:1

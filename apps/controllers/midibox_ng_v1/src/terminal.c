@@ -300,6 +300,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  set autoload <on|off>:            enables autoload after filebrowser upload (current: %s)", autoload_enabled ? "on" : "off");
       out("  save <name>:                      stores current config on SD Card");
       out("  load <name>:                      restores config from SD Card");
+      out("  save_ngk <name>:                  only store keyboard calibration data");
       out("  show file:                        shows the current configuration file");
       out("  show pool:                        shows the items of the event pool");
       out("  show poolbin:                     shows the event pool in binary format");
@@ -481,6 +482,23 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    out("ERROR: failed to store patch '%s' on SD Card (status %d)!", parameter, status);
 	  }
 	}
+      }
+    } else if( strcmp(parameter, "save_ngk") == 0 ) {
+      if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+        out("ERROR: please specify filename for patch (up to 8 characters)!");
+      } else {
+        if( strlen(parameter) > 8 ) {
+          out("ERROR: 8 characters maximum!");
+        } else {
+          MUTEX_SDCARD_TAKE;
+          s32 status = MBNG_FILE_K_Write(parameter);
+          MUTEX_SDCARD_GIVE;
+          if( status >= 0 ) {
+            out("Calibration data '%s' stored on SD Card!", parameter);
+          } else {
+            out("ERROR: failed to store calibration data '%s' on SD Card (status %d)!", parameter, status);
+          }
+        }
       }
     } else if( strcmp(parameter, "load") == 0 ) {
       if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {

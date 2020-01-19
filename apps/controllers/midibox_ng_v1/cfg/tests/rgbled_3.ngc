@@ -1,0 +1,61 @@
+# this example shows how to use predefined LED Ring patterns for Weasels LED Ring/encoder board:
+# http://midibox.org/forums/topic/21095-lre-4x1-breakable-rgb-led-ringrotary-encoder-pcb-bulk-order
+
+RESET_HW
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+# Classical Thermometer Pattern, Red
+EVENT_ENC    id=  1  hw_id =  1  bank=1  fwd_id=RGBLED:1    rgbled_pattern=1   hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 16   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:1:2)%B"
+
+# Classical Thermometer Pattern, Green
+EVENT_ENC    id=  2  hw_id =  2  bank=1  fwd_id=RGBLED:33   rgbled_pattern=1   hsv=100:100:10  fwd_to_lcd=1  type=CC     chn= 1 cc= 17   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:2:2)%B"
+
+# Classical Thermometer Pattern, Blue
+EVENT_ENC    id=  3  hw_id =  3  bank=1  fwd_id=RGBLED:65   rgbled_pattern=1   hsv=200:100:10  fwd_to_lcd=1  type=CC     chn= 1 cc= 18   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:3:2)%B"
+
+# Moving Dot
+EVENT_ENC    id=  4  hw_id =  4  bank=1  fwd_id=RGBLED:97   rgbled_pattern=2   hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 19   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:4:2)%B"
+
+# Thermometer Pattern with Rainbow colour scheme (predefined H will be ignored)
+EVENT_ENC    id=  5  hw_id =  5  bank=1  fwd_id=RGBLED:129  rgbled_pattern=3   hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 20   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:5:2)%B"
+
+# Spares
+# Feel free to contribute with your pattern code in mbng_rgbled.c, MBNG_RGBLED_PatternSet() function
+EVENT_ENC    id=  6  hw_id =  6  bank=1  fwd_id=RGBLED:161  rgbled_pattern=4   hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 21   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:6:2)%B"
+EVENT_ENC    id=  7  hw_id =  7  bank=1  fwd_id=RGBLED:193  rgbled_pattern=5   hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 22   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:7:2)%B"
+EVENT_ENC    id=  8  hw_id =  8  bank=1  fwd_id=RGBLED:225  rgbled_pattern=6   hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 23   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:8:2)%B"
+EVENT_ENC    id=  9  hw_id =  9  bank=1  fwd_id=RGBLED:257  rgbled_pattern=7   hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 24   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:9:2)%B"
+EVENT_ENC    id= 10  hw_id = 10  bank=1  fwd_id=RGBLED:289  rgbled_pattern=8   hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 25   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:10:2)%B"
+EVENT_ENC    id= 11  hw_id = 11  bank=1  fwd_id=RGBLED:321  rgbled_pattern=9   hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 26   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:11:2)%B"
+EVENT_ENC    id= 12  hw_id = 12  bank=1  fwd_id=RGBLED:353  rgbled_pattern=10  hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 27   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:12:2)%B"
+EVENT_ENC    id= 13  hw_id = 13  bank=1  fwd_id=RGBLED:385  rgbled_pattern=11  hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 28   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:13:2)%B"
+EVENT_ENC    id= 14  hw_id = 14  bank=1  fwd_id=RGBLED:417  rgbled_pattern=12  hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 29   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:14:2)%B"
+EVENT_ENC    id= 15  hw_id = 15  bank=1  fwd_id=RGBLED:449  rgbled_pattern=13  hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 30   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:15:2)%B"
+EVENT_ENC    id= 16  hw_id = 16  bank=1  fwd_id=RGBLED:481  rgbled_pattern=14  hsv=0:100:10    fwd_to_lcd=1  type=CC     chn= 1 cc= 31   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:16:2)%B"
+
+
+
+# encoder hardware configuration
+ENC n=  1   sr= 1  pins=0:1   type=non_detented
+ENC n=  2   sr= 1  pins=2:3   type=non_detented
+ENC n=  3   sr= 1  pins=4:5   type=non_detented
+ENC n=  4   sr= 1  pins=6:7   type=non_detented
+ENC n=  5   sr= 2  pins=0:1   type=non_detented
+ENC n=  6   sr= 2  pins=2:3   type=non_detented
+ENC n=  7   sr= 2  pins=4:5   type=non_detented
+ENC n=  8   sr= 2  pins=6:7   type=non_detented
+ENC n=  9   sr= 3  pins=0:1   type=non_detented
+ENC n= 10   sr= 3  pins=2:3   type=non_detented
+ENC n= 11   sr= 3  pins=4:5   type=non_detented
+ENC n= 12   sr= 3  pins=6:7   type=non_detented
+ENC n= 13   sr= 4  pins=0:1   type=non_detented
+ENC n= 14   sr= 4  pins=2:3   type=non_detented
+ENC n= 15   sr= 4  pins=4:5   type=non_detented
+ENC n= 16   sr= 4  pins=6:7   type=non_detented
