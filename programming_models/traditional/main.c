@@ -283,7 +283,7 @@ static void TASK_Hooks(void *pvParameters)
     if( xLastExecutionTime < (xCurrentTickCount-5) )
       xLastExecutionTime = xCurrentTickCount;
 
-#if !defined(MIOS32_DONT_USE_USB_HOST)
+#if !defined(MIOS32_DONT_USE_USB_HOST) && !defined(MIOS32_DONT_PROCESS_USB_HOST)
     // process USB Host, only others than USB MIDI
     MIOS32_USB_HOST_Process();
 #endif

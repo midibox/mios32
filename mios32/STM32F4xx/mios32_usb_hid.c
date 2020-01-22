@@ -196,14 +196,6 @@ typedef enum
 }
 HID_CtlState;
 
-typedef enum
-{
-  HID_REPORT_ITEM_In      = 0,
-  HID_REPORT_ITEM_Out     = 1,
-  HID_REPORT_ITEM_Feature = 2,
-}
-HID_ReportItemTypes_t;
-
 typedef struct HID_cb
 {
   void  (*Init)   (USB_OTG_CORE_HANDLE *pdev , void  *phost);

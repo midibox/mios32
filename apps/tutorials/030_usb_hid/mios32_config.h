@@ -18,10 +18,18 @@
 #define MIOS32_LCD_BOOT_MSG_LINE1 "Tutorial #030"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2020 TK/Antichambre"
 
+//#define MIOS32_DONT_USE_USB_HOST
+
 // Keyboard is AZERTY by default, uncomment this line for QWERTY
 //#define QWERTY_KEYBOARD
 
-//#define MIOS32_DONT_USE_USB_HOST
+// to disable HID features
 //#define MIOS32_DONT_USE_USB_HID
+
+// if you need to process the USB Host in your own task,
+// just uncomment this define,
+// then add MIOS32_USB_HOST_Process() in your task.
+//#define MIOS32_DONT_PROCESS_USB_HOST
+
 
 #endif /* _MIOS32_CONFIG_H */
