@@ -341,8 +341,8 @@ typedef union {
 
   struct {
     u32 condition:4;
-    u32 hw_id:14;
-    u32 value:14;
+    u32 hw_id:16;
+    u32 value:12; // TODO: find way to define a 14bit value
   };
 } mbng_event_cond_t;
 
