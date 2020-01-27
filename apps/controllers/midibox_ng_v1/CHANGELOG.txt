@@ -37,6 +37,8 @@ MIDIbox NG V1.037
    o SysEx streams: added ^chk_roland
 
    o Fixed wrong NRPN number issue
+   
+   o LED Digits: leading zeros replaced by spaces & support for negative numbers
 
 
 MIDIbox NG V1.036
