@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.097
+~~~~~~~~~~~~~~~~~
+
+   o fixed "hanging gates" issue on CV_GATE_SR2..4
+   
+
 MIDIboxSEQ V4.096
 ~~~~~~~~~~~~~~~~~
 
@@ -2632,7 +2638,6 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findCo
 I may have discovered a small bug in FW 096-pre4 (hope this is the right place to post). Assume I got a normal notes track. When I first enter notes into layer PE (note layer) then these notes are also entered in PA (note layer) which was empty before. When PA is populated with at least one note then this does not occur.
 
 
-
 Wishlist for MIDIbox SEQ V4 Plus
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2680,3 +2685,7 @@ This would help tremendously, if people remap synthesizers to other out ports, i
 
 
 - record 16 channels simultaneously: http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=179441
+
+- Fx Duplicate: make port/channel fully assignable
+  Dependency: will require to store CCs >=128
+  

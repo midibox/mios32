@@ -557,7 +557,7 @@ s32 SEQ_CV_DOUT_GateSet(u8 dout, u8 value)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CV_Update(void)
 {
-  static u8 last_gates = 0xff; // to force an update
+  static u32 last_gates = 0xffffffff; // to force an update
   static u8 last_start_stop = 0xff; // to force an update
 
   u8 start_stop = SEQ_BPM_IsRunning();

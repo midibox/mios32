@@ -4142,7 +4142,7 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
   if( !item->fwd_id )
     return -1; // no forwarding enabled
 
-  if( item->fwd_id == item->id )
+  if( item->fwd_id == item->hw_id )
     return -2; // avoid feedback
 
   if( recursion_ctr >= MBNG_EVENT_MAX_FWD_RECURSION )

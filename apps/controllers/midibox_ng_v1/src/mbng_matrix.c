@@ -1034,16 +1034,38 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 
     } else if( item->flags.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT1 &&
 	       item->flags.led_matrix_pattern <= MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT5 ) {
-      int value = item->value;
-      switch( item->flags.led_matrix_pattern ) {
-      //case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT1: // nothing to do
-      case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT2: value = value / 10; break;
-      case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT3: value = value / 100; break;
-      case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT4: value = value / 1000; break;
-      case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT5: value = value / 10000; break;
+      int value = (s16)item->value;
+      u8 print_minus = 0;
+      if( value < 0 ) {
+        value *= -1;
+             if( value >= 10000 ) print_minus = 0; // not available: item->flags.led_matrix_pattern == MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT6;
+        else if( value >=  1000 ) print_minus = item->flags.led_matrix_pattern == MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT5;
+        else if( value >=   100 ) print_minus = item->flags.led_matrix_pattern == MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT4;
+        else if( value >=    10 ) print_minus = item->flags.led_matrix_pattern == MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT3;
+        else if( value >=     1 ) print_minus = item->flags.led_matrix_pattern == MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT2;
       }
-      value %= 10;
-      value += 0x30; // numbers
+
+      if( print_minus ) {
+        value = '-';
+      } else {
+        u8 print_space = 0;
+        u8 print_leading_zeros = 0; // TODO: make this configurable?
+
+        switch( item->flags.led_matrix_pattern ) {
+        //case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT1: // nothing to do
+        case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT2: print_space = value <    10; value = value / 10; break;
+        case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT3: print_space = value <   100; value = value / 100; break;
+        case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT4: print_space = value <  1000; value = value / 1000; break;
+        case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT5: print_space = value < 10000; value = value / 10000; break;
+        }
+
+        if( !print_leading_zeros && print_space ) {
+          value = ' ';
+        } else {
+          value %= 10;
+          value += 0x30; // numbers
+        }
+      }
       u8 dot = 0;
 
       if( item->rgb.ALL ) {
