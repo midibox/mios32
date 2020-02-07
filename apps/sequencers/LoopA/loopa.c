@@ -546,6 +546,7 @@ void loadSession(u16 sessionNumber)
    MUTEX_SDCARD_GIVE;
 
    setActiveScene(activeScene_);
+   screenSetClipSelected(activeTrack_);
    updateLiveLEDs();
 }
 // -------------------------------------------------------------------------------------------------

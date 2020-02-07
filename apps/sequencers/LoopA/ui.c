@@ -359,6 +359,11 @@ void updateSwitchLEDs()
          led_gp5 |= LED_RED;
       if (isShiftTrackMuteToggleKeyPressed(5))
          led_gp6 |= LED_RED;
+
+      if (showShiftAbout_)
+         led_runstop |= LED_RED;
+      if (showShiftHelp_)
+         led_arm |= LED_RED;
    }
    else
    {
@@ -419,10 +424,10 @@ void updateSwitchLEDs()
 
          case PAGE_SETUP:
             led_gp1 |= command_ == COMMAND_SETUP_SELECT ? LED_RED : LED_OFF;
-            led_gp2 |= command_ == COMMAND_SETUP_PAR1 ? LED_RED : LED_OFF;
-            led_gp3 |= command_ == COMMAND_SETUP_PAR2 ? LED_RED : LED_OFF;
-            led_gp4 |= command_ == COMMAND_SETUP_PAR3 ? LED_RED : LED_OFF;
-            led_gp5 |= command_ == COMMAND_SETUP_PAR4 ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_SETUP_PAR1 ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_SETUP_PAR2 ? LED_RED : LED_OFF;
+            led_gp5 |= command_ == COMMAND_SETUP_PAR3 ? LED_RED : LED_OFF;
+            led_gp6 |= command_ == COMMAND_SETUP_PAR4 ? LED_RED : LED_OFF;
             break;
 
          case PAGE_ROUTER:
@@ -1919,8 +1924,8 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
             if (clipSteps_[activeTrack_][activeScene_] < 4)
                clipSteps_[activeTrack_][activeScene_] = 4;
 
-            if (clipSteps_[activeTrack_][activeScene_] > 128)
-               clipSteps_[activeTrack_][activeScene_] = 128;
+            if (clipSteps_[activeTrack_][activeScene_] > 1024)
+               clipSteps_[activeTrack_][activeScene_] = 1024;
          } else if (command_ == COMMAND_CLIP_TRANSPOSE)
          {
             clipTranspose_[activeTrack_][activeScene_] += incrementer;
