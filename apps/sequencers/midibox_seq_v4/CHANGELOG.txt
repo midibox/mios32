@@ -2636,6 +2636,15 @@ Let's say you press GP3 button (fill start) for two seconds, that would invoke F
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=183098
 (Minor) issue:
 I may have discovered a small bug in FW 096-pre4 (hope this is the right place to post). Assume I got a normal notes track. When I first enter notes into layer PE (note layer) then these notes are also entered in PA (note layer) which was empty before. When PA is populated with at least one note then this does not occur.
+----------------------------------------------------------
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=185912
+I was wondering if it would be possible to add additional clock dividers to the analog clock out. Having PPQN is nice, but being able to divide it down further would be really useful for me. In a modular a lot of time I will take 1 PPQN out and send to a clock divider module to create longer intervals. This can be worked around using the trigger out or a gate out but then you loose a track.
+----------------------------------------------------------
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=185925
+Auto-Channel selection during recording.
+Done if "Auto" is selected to Jam Mode MIDI routing config
+The mentioned wait time will be important (e.g. switch only if the last second no event from another MIDI channel has been received)
+
 
 
 Wishlist for MIDIbox SEQ V4 Plus
