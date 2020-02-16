@@ -161,6 +161,9 @@ static u8 remote_active;
 // for automatic note-stack reset
 static u8 last_bus_received_from_loopback;
 
+static u8 last_record_chn;
+static u32 last_record_timestamp;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -218,6 +221,9 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
 
   remote_active = 0;
   last_bus_received_from_loopback = 0x00;
+
+  last_record_chn = 0;
+  last_record_timestamp = 0;
 
   return 0; // no error
 }
@@ -426,7 +432,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
     mios32_midi_port_t check_port = seq_midi_in_port[bus];
     u8 check_chn = seq_midi_in_channel[bus];
 
-    if( (!check_port || port == check_port) && (check_chn == 17 || midi_package.chn == (check_chn-1)) ) {
+    if( (!check_port || port == check_port) && (check_chn >= 17 || midi_package.chn == (check_chn-1)) ) {
       if( seq_midi_in_options[bus].MODE_PLAY ) {
 	is_record_port = 1;
       }
@@ -484,9 +490,34 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
     mios32_midi_port_t check_port = seq_midi_in_port[bus];
     u8 check_chn = seq_midi_in_channel[bus];
-    // filter MIDI port (if 0: no filter, listen to all ports)
+    // filter MIDI port (if >=17: no filter, listen to all ports)
 
-    if( (!check_port || port == check_port) && (check_chn == 17 || midi_package.chn == (check_chn-1)) ) {
+    if( (!check_port || port == check_port) && (check_chn >= 17 || midi_package.chn == (check_chn-1)) ) {
+
+#ifndef MBSEQV4L
+      if( should_be_recorded && check_chn == 18 ) { // Auto Selection
+        if( midi_package.chn == last_record_chn ) {
+          last_record_timestamp = MIOS32_TIMESTAMP_Get();
+        } else {
+          u16 duration_ms = MIOS32_TIMESTAMP_Get() - last_record_timestamp;
+
+          if( duration_ms < 1000 ) {
+            continue;
+          }
+
+          last_record_chn = midi_package.chn;
+          last_record_timestamp = MIOS32_TIMESTAMP_Get();
+          u8 track = midi_package.chn;
+          if( track != SEQ_UI_VisibleTrackGet() ) {
+            SEQ_RECORD_Enable(0, 1);
+            ui_selected_tracks = (1 << track);
+            seq_record_state.ARMED_TRACKS = ui_selected_tracks;
+            seq_ui_display_update_req = 1;
+            SEQ_RECORD_Enable(1, 1);
+          }
+        }
+      }
+#endif
 
       switch( midi_package.event ) {
       case NoteOff:

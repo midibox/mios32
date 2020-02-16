@@ -11,6 +11,14 @@ MIDIboxSEQ V4.097
 
    o fixed "hanging gates" issue on CV_GATE_SR2..4
    
+   o Morph Page, GP Button #6 now allows to store the current morphed values into the original track
+     position (it takes over what you hear)
+     
+   o Recording: Auto Track selection based on incoming channel can now be enabled by assigning
+     Jam MIDI Channel to "Auto" in MIDI Configuration Page.
+     Track will be switched if a MIDI event has been received on a new channel, and in the last second
+     no MIDI message has been received for the current selected track.
+     
 
 MIDIboxSEQ V4.096
 ~~~~~~~~~~~~~~~~~

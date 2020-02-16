@@ -42,6 +42,7 @@ extern s32 SEQ_MORPH_EventPitchBend(u8 track, u8 step, seq_layer_evnt_t *e, u8 i
 extern s32 SEQ_MORPH_EventProgramChange(u8 track, u8 step, seq_layer_evnt_t *e, u8 instrument, s8 par_layer);
 extern s32 SEQ_MORPH_EventAftertouch(u8 track, u8 step, seq_layer_evnt_t *e, u8 instrument, s8 par_layer);
 
+extern s32 SEQ_MORPH_Store(u8 track);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

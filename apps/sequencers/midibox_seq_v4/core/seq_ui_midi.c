@@ -407,7 +407,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     } break;
 
     case ITEM_IN_CHN:
-      if( SEQ_UI_Var8_Inc(&seq_midi_in_channel[selected_bus], 0, 17, incrementer) >= 0 ) {
+      if( SEQ_UI_Var8_Inc(&seq_midi_in_channel[selected_bus], 0, 18, incrementer) >= 0 ) {
 	ui_store_file_required = 1;
 	return 1; // value changed
       }
@@ -781,16 +781,18 @@ static s32 LCD_Handler(u8 high_prio)
 
       ///////////////////////////////////////////////////////////////////////
       if( ui_selected_item == ITEM_IN_CHN && ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(3);
+	SEQ_LCD_PrintSpaces(4);
       } else {
 	if( seq_midi_in_channel[selected_bus] == 17 )
-	  SEQ_LCD_PrintString("All");
+	  SEQ_LCD_PrintString("All ");
+	else if( seq_midi_in_channel[selected_bus] == 18 )
+          SEQ_LCD_PrintString("Auto");
 	else if( seq_midi_in_channel[selected_bus] )
-	  SEQ_LCD_PrintFormattedString("#%2d", seq_midi_in_channel[selected_bus]);
+	  SEQ_LCD_PrintFormattedString("#%2d ", seq_midi_in_channel[selected_bus]);
 	else
-	  SEQ_LCD_PrintString("---");
+	  SEQ_LCD_PrintString("--- ");
       }
-      SEQ_LCD_PrintSpaces(3);
+      SEQ_LCD_PrintSpaces(2);
 
 
       ///////////////////////////////////////////////////////////////////////
