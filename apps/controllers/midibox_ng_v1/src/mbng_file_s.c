@@ -295,7 +295,11 @@ s32 MBNG_FILE_S_Read(char *filename, int snapshot)
 	    if( !item.flags.no_dump ) {
 	      item.secondary_value = secondary_value;
 	      u8 from_midi = 1;
+#if 1
 	      u8 fwd_enabled = 1;
+#else
+              u8 fwd_enabled = 0; // for macsaif - could become a soft-option in future to give all users control over this behaviour
+#endif
 	      MBNG_EVENT_ItemReceive(&item, value, from_midi, fwd_enabled);
 	    }
 
