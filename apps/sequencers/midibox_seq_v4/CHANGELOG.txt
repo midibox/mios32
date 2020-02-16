@@ -2644,7 +2644,15 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findCo
 Auto-Channel selection during recording.
 Done if "Auto" is selected to Jam Mode MIDI routing config
 The mentioned wait time will be important (e.g. switch only if the last second no event from another MIDI channel has been received)
-
+----------------------------------------------------------
+From talk with Menzman: preset browser with auto-play
+----------------------------------------------------------
+From talk with Menzman: bulk import of MIDI files to Presets
+----------------------------------------------------------
+From talk with Menzman: guide track for synchronized pattern changes
+----------------------------------------------------------
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=186032
+Store currentl morphed pattern into track
 
 
 Wishlist for MIDIbox SEQ V4 Plus
