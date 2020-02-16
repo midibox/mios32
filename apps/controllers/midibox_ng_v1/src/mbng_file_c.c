@@ -1697,7 +1697,7 @@ s32 parseMap(u32 line, char *cmd, char *brkt)
 {
   int map;
 
-#define MAP_VALUE_MAX_SIZE 128
+#define MAP_VALUE_MAX_SIZE 256
   u8 map_values[MAP_VALUE_MAX_SIZE];
 
   if( (map=get_dec((char *)&cmd[3])) < 1 || map >= 256 ) {
@@ -1740,11 +1740,12 @@ s32 parseMap(u32 line, char *cmd, char *brkt)
   char *value_str;
   while( pos < MAP_VALUE_MAX_SIZE && (value_str = strtok_r(NULL, separators_map, &brkt)) ) {
     int value;
-    u16 max = read_hword ? 0xffff : 0xff;
+    s16 min = read_hword ? -0x8000 : 0x00;
+    s16 max = read_hword ? 0x7fff : 0xff;
 
-    if( (value=get_dec(value_str)) < 0 || value > max ) {
+    if( (value=get_dec(value_str)) < min || value > max ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map value '%s' in %s, expecting 0..%d (0x00..%x)\n", line, value_str, cmd, max, max);
+      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map value '%s' in %s, expecting %d..%d (0x%x..%x)\n", line, value_str, cmd, min, max, min, max);
 #endif
       return -1;
     } else {

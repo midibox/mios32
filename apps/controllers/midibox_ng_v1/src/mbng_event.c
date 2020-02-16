@@ -98,10 +98,10 @@ typedef struct { // should be dividable by u16
 } mbng_event_pool_item_t;
 
 typedef struct {
-  u8 len;
+  u16 len;
   u8 num;
   mbng_event_map_type_t map_type;
-  u8 data[128]; // data section for value map starts here, it can have up to 128 bytes
+  u8 data[256]; // data section for value map starts here, it can have up to 256 bytes
 } mbng_event_pool_map_t;
 
 
@@ -470,7 +470,7 @@ s32 MBNG_EVENT_PoolMapsPrint(void)
       u8 max_values = 32;
       u8 *map_values = (u8 *)&pool_map->data;
       int j;
-      int len = pool_map->len - 3;
+      int len = pool_map->len - 4;
       if( pool_map->map_type == MBNG_EVENT_MAP_TYPE_HWORD || pool_map->map_type == MBNG_EVENT_MAP_TYPE_HWORDI ) {
 	for(j=0; j<len && j < max_values; j+=2) {
 	  u16 value = *(map_values++);
@@ -533,7 +533,7 @@ s32 MBNG_EVENT_PoolMaxSizeGet(void)
 /////////////////////////////////////////////////////////////////////////////
 //! Adds a map to event pool
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_MapAdd(u8 map, mbng_event_map_type_t map_type, u8 *map_values, u8 len)
+s32 MBNG_EVENT_MapAdd(u8 map, mbng_event_map_type_t map_type, u8 *map_values, u16 len)
 {
   if( (event_pool_size+len+3) > MBNG_EVENT_POOL_MAX_SIZE )
     return -2; // out of storage 
@@ -542,12 +542,13 @@ s32 MBNG_EVENT_MapAdd(u8 map, mbng_event_map_type_t map_type, u8 *map_values, u8
 
   ++event_pool_num_maps;
   u8 *pool_ptr = (u8 *)&event_pool[event_pool_map_start];
-  *pool_ptr++ = len+3;
+  *pool_ptr++ = (len+4) & 0xff;
+  *pool_ptr++ = (len+4) >> 8;
   *pool_ptr++ = map;
   *pool_ptr++ = map_type;
   memcpy(pool_ptr, (u8 *)map_values, len);
 
-  event_pool_size += len + 3;
+  event_pool_size += len + 4;
 
   return 0; // no error
 }
@@ -565,7 +566,7 @@ s32 MBNG_EVENT_MapGet(u8 map, mbng_event_map_type_t *map_type, u8 **map_values)
       if( pool_map->num == map ) {
 	*map_type = pool_map->map_type;
 	*map_values = (u8 *)&pool_map->data;
-	return pool_map->len - 3;
+	return pool_map->len - 4;
       }
 
       pool_ptr += pool_map->len;

@@ -426,7 +426,7 @@ extern s32 MBNG_EVENT_PoolNumMapsGet(void);
 extern s32 MBNG_EVENT_PoolSizeGet(void);
 extern s32 MBNG_EVENT_PoolMaxSizeGet(void);
 
-extern s32 MBNG_EVENT_MapAdd(u8 map, mbng_event_map_type_t map_type, u8 *map_values, u8 len);
+extern s32 MBNG_EVENT_MapAdd(u8 map, mbng_event_map_type_t map_type, u8 *map_values, u16 len);
 extern s32 MBNG_EVENT_MapGet(u8 map, mbng_event_map_type_t *map_type, u8 **map_values);
 extern s32 MBNG_EVENT_MapValue(u8 map, u16 value, u16 range, u8 reverse_interpolation);
 extern s32 MBNG_EVENT_MapItemValueInc(u8 map, mbng_event_item_t *item, s32 incrementer, u8 auto_wrap);
