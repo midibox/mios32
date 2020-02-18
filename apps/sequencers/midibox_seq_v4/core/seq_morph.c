@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include "tasks.h"
 
 #include "seq_core.h"
 #include "seq_morph.h"
@@ -218,3 +219,45 @@ static u8 SEQ_MORPH_ScaleValue(u8 value, u8 min, u8 max)
   }
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// Stores morphed values in track
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MORPH_Store(u8 track)
+{
+  int instrument;
+  int par_layer;
+  int step;
+
+  int num_par_instruments = SEQ_PAR_NumInstrumentsGet(track);
+  int num_par_layers = SEQ_PAR_NumLayersGet(track);
+  int num_par_steps = SEQ_PAR_NumStepsGet(track);
+  int num_trg_instruments = SEQ_TRG_NumInstrumentsGet(track);
+  int num_trg_layers = SEQ_TRG_NumLayersGet(track);
+  int num_trg_steps = SEQ_TRG_NumStepsGet(track);
+
+  int track_length = (int)SEQ_CC_Get(track, SEQ_CC_LENGTH) + 1;
+  int morph_step_offset = (int)SEQ_CC_Get(track, SEQ_CC_MORPH_DST);
+
+  portENTER_CRITICAL();
+
+  for(instrument=0; instrument<num_par_instruments; ++instrument) {
+    for(par_layer=0; par_layer<num_par_layers; ++par_layer) {
+      for(step=0; step<track_length; ++step) {
+        int morph_step = step + morph_step_offset;
+        if( morph_step > 255 )
+          morph_step = 255; // aligned with display
+
+        u8 min = SEQ_PAR_Get(track, step, par_layer, instrument);
+        u8 max = SEQ_PAR_Get(track, morph_step, par_layer, instrument);
+
+        SEQ_PAR_Set(track, step, par_layer, instrument, SEQ_MORPH_ScaleValue(morph_value, min, max));
+      }
+    }
+  }
+
+  SEQ_MORPH_ValueSet(0);
+
+  portEXIT_CRITICAL();
+
+  return 0; // no error
+}

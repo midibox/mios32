@@ -395,6 +395,8 @@ void displayClipPosition(u8 clipNumber)
    {
       if (stepLength == 0)
          sprintf((char *)buffer, "       ");
+      else if (stepLength > 999)
+         sprintf((char *)buffer, "%04d>1=", stepPos);
       else if (stepLength > 99)
          sprintf((char *)buffer, "%03d>%3d", stepPos, stepLength);
       else if (stepLength > 9)
@@ -629,14 +631,15 @@ void displayClip(u8 track)
    u16 x;
    u8 y;
    u16 i;
-   u16 mult = 128/clipSteps_[track][activeScene_];  // horizontal multiplier to make clips as wide as the screen
+   u16 octmult = 1024/clipSteps_[track][activeScene_];  // factor-8 multiplied horizontal multiplier to make clips as wide as the screen,
+                                                        // final calculations need downshifting by 3 bits (divide by 8 in the end)
 
-   u16 curStep = ((u32)boundTickToClipSteps(tick_, track) * mult) / TICKS_PER_STEP;
+   u16 curStep = (((u32)boundTickToClipSteps(tick_, track) * octmult) >> 3U) / TICKS_PER_STEP;
 
    // Render vertical 1/4th note indicators
    for (i=0; i<clipSteps_[track][activeScene_] / 4; i++)
    {
-      x = i * 4 * mult;
+      x = (u16)(i * 4 * octmult) >> 3U;
       if (x < 128)
          for (y=12; y<52; y++)
                screen[y][x] = i % 4 == 0 ? 0x60 : 0x50;
@@ -652,7 +655,7 @@ void displayClip(u8 track)
    // Render note data
    for (i=0; i < clipNotesSize_[track][activeScene_]; i++)
    {
-      s32 transformedTick = (s32)quantizeTransform(track, i) * mult;
+      s32 transformedTick = (u32)((s32)quantizeTransform(track, i) * octmult) >> 3U;
 
       if (transformedTick >= 0) // if note starts within (potentially reconfigured) track length
       {
@@ -665,7 +668,7 @@ void displayClip(u8 track)
 
          if (y < 64)
          {
-            u16 len = noteLengthPixels(clipNotes_[track][activeScene_][i].length * mult);
+            u16 len = noteLengthPixels(clipNotes_[track][activeScene_][i].length * octmult) >> 3U;
 
             if (clipNotes_[track][activeScene_][i].length == 0 && curStep > step)
             {
@@ -673,37 +676,40 @@ void displayClip(u8 track)
                len = curStep - step;
             }
 
-            for (x = step; x <= step + len; x++)
+            if (step < 128) // Note screen boundary check (notes behind clip length may be present)
             {
-               if (clipNotes_[track][activeScene_][i].velocity > 0)
+               for (x = step; x <= step + len; x++)
                {
-                  u8 color;
-                  if (!trackMute_[track])
-                     color = x == step ? 0xFF
-                                       : 0x99;  // The modulo only works if we are not scrolling and screen width = track length
-                  else
-                     color = x == step ? 0x88
-                                       : 0x66;  // The modulo only works if we are not scrolling and screen width = track length
-
-                  screen[y][x % 128] = color;
-
-                  if (page_ == PAGE_NOTES && i == clipActiveNote_[track][activeScene_])
+                  if (clipNotes_[track][activeScene_][i].velocity > 0)
                   {
-                     // render cursor for selected note
-                     u8 cursorX = x % 128;
-                     u8 cursorY = y;
+                     u8 color;
+                     if (!trackMute_[track])
+                        color = x == step ? 0xFF
+                                          : 0x99;  // The modulo only works if we are not scrolling and screen width = track length
+                     else
+                        color = x == step ? 0x88
+                                          : 0x66;  // The modulo only works if we are not scrolling and screen width = track length
 
-                     if (cursorY > 2 && cursorX < 126)
-                        screen[cursorY - 2][cursorX + 2] = 0x0F;
+                     screen[y][x % 128] = color;
 
-                     if (cursorY > 2 && cursorX > 2)
-                        screen[cursorY - 2][cursorX - 2] = 0xF0;
+                     if (page_ == PAGE_NOTES && i == clipActiveNote_[track][activeScene_])
+                     {
+                        // render cursor for selected note
+                        u8 cursorX = x % 128;
+                        u8 cursorY = y;
 
-                     if (cursorY < 62 && cursorX < 126)
-                        screen[cursorY + 2][cursorX + 2] = 0x0F;
+                        if (cursorY > 2 && cursorX < 126)
+                           screen[cursorY - 2][cursorX + 2] = 0x0F;
 
-                     if (cursorY < 62 && cursorX > 2)
-                        screen[cursorY + 2][cursorX - 2] = 0xF0;
+                        if (cursorY > 2 && cursorX > 2)
+                           screen[cursorY - 2][cursorX - 2] = 0xF0;
+
+                        if (cursorY < 62 && cursorX < 126)
+                           screen[cursorY + 2][cursorX + 2] = 0x0F;
+
+                        if (cursorY < 62 && cursorX > 2)
+                           screen[cursorY + 2][cursorX - 2] = 0xF0;
+                     }
                   }
                }
             }
@@ -876,8 +882,10 @@ void displayPageClip(void)
    command_ == COMMAND_CLIP_LEN ? setFontInverted() : setFontNonInverted();
    if (clipSteps_[activeTrack_][activeScene_] < 100)
       printFormattedString(0, 53, "Len %d", clipSteps_[activeTrack_][activeScene_]);
-   else
+   else if (clipSteps_[activeTrack_][activeScene_] < 1000)
       printFormattedString(0, 53, "Le %d", clipSteps_[activeTrack_][activeScene_]);
+   else
+      printFormattedString(0, 53, "L %d", clipSteps_[activeTrack_][activeScene_]);
 
    command_ == COMMAND_CLIP_TRANSPOSE ? setFontInverted() : setFontNonInverted();
    printFormattedString(84, 53, "Trn %d", clipTranspose_[activeTrack_][activeScene_]);
@@ -1707,10 +1715,10 @@ void display()
          printFormattedString(52, 2, " ");
 
          setFontBold();  // width per letter: 10px (for center calculation)
-         printFormattedString(146, 2, "V2.05");
+         printFormattedString(146, 2, "V2.06-pre1");
 
          setFontSmall(); // width per letter: 6px
-         printFormattedString(28, 20, "(C) Hawkeye, latigid on, TK. 2019");
+         printFormattedString(28, 20, "(C) Hawkeye, latigid on, TK. 2020");
          printFormattedString(52, 32, "MIDIbox hardware platform");
 
          setFontBold(); // width per letter: 10px;

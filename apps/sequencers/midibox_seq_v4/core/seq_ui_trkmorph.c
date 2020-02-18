@@ -150,7 +150,16 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       break;
 
     case SEQ_UI_BUTTON_GP5:
-    case SEQ_UI_BUTTON_GP6:
+      return -1; // not used (yet)
+
+    case SEQ_UI_BUTTON_GP6: {
+      u8 visible_track = SEQ_UI_VisibleTrackGet();
+      SEQ_MORPH_Store(visible_track);
+      char buffer[40];
+      sprintf(buffer, "in Step %d..%d", 1, (int)SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1);
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Morph stored", buffer);
+    } break;
+
     case SEQ_UI_BUTTON_GP7:
       return -1; // not used (yet)
 
@@ -208,8 +217,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Mode  Dst.Range               ValueMorphing controlled by All /Chn 1 CC#  1
-  // G1T1  on    17..32                  100    <######################          >
+  // Trk. Mode  Dst.Range     Store     ValueMorphing controlled by All /Chn 1 CC#  1
+  // G1T1  on    17..32       Morph      100    <######################          >
 
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -217,7 +226,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
 
-  SEQ_LCD_PrintString("Trk. Mode  Dst.Range               Value");
+  SEQ_LCD_PrintString("Trk. Mode  Dst.Range     Store     Value");
 
   if( !seq_midi_in_ext_ctrl_channel || seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MORPH] >= 0x80 ) {
     SEQ_LCD_PrintString("Please enable Ext. Ctrl in the MIDI page");
@@ -258,7 +267,9 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintFormattedString("%3d..%d  ", dst_begin, dst_end);
   }
   SEQ_LCD_CursorSet(19, 1); // set back cursor
-  SEQ_LCD_PrintSpaces(17);
+  SEQ_LCD_PrintSpaces(6);
+  SEQ_LCD_PrintString("Morph");
+  SEQ_LCD_PrintSpaces(6);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_MORPH_VALUE && ui_cursor_flash ) {
