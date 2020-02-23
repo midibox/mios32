@@ -510,6 +510,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
           u8 track = midi_package.chn;
           if( track != SEQ_UI_VisibleTrackGet() ) {
             SEQ_RECORD_Enable(0, 1);
+            ui_selected_group = track >> 2;
             ui_selected_tracks = (1 << track);
             seq_record_state.ARMED_TRACKS = ui_selected_tracks;
             seq_ui_display_update_req = 1;
