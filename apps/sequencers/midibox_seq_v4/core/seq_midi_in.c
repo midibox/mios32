@@ -474,7 +474,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
       }
     }
   }
-  u8 should_be_recorded = seq_record_state.ENABLED && is_record_port;
+  u8 should_be_recorded = midi_package.event >= 0x8 && midi_package.event < 0xf && seq_record_state.ENABLED && is_record_port;
 
 #ifndef MBSEQV4L
   if( is_record_port ) {
