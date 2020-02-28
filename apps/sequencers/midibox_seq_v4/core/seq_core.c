@@ -1123,6 +1123,23 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  }
 	}
 	
+	// Loopback Port: propagate root&scale if assigned to parameter layer
+	if( loopback_port ) {
+	  if( tcc->link_par_layer_scale >= 0 ) {
+	    u8 scale = SEQ_PAR_Get(track, t->step, tcc->link_par_layer_scale, 0);
+	    if( scale > 0 ) {
+	      seq_core_global_scale = scale - 1;
+	    }
+	  }
+
+	  if( tcc->link_par_layer_root > 0 ) {
+	    u8 root = SEQ_PAR_Get(track, t->step, tcc->link_par_layer_root, 0) % 13;
+	    if( root > 0 ) {
+	      seq_core_global_scale_root_selection = root - 1;
+	    }
+	  }
+	}
+
 #ifdef MBSEQV4P
         seq_layer_evnt_t layer_events[83];
         s32 number_of_events = 0;
@@ -1885,6 +1902,8 @@ s32 SEQ_CORE_Transpose(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t 
     }
   } else {
     // neither transpose nor arpeggiator mode: transpose based on root note if specified in parameter layer
+    // TK: I think that this was a wrong assumption - we don't want to transpose, but we want to define the root note via SEQ_CORE_GetScaleAndRoot
+#if 0
     if( !is_cc && tcc->link_par_layer_root >= 0 ) {
       u8 root = SEQ_PAR_Get(track, t->step, tcc->link_par_layer_root, instrument);
       if( !root ) {
@@ -1904,6 +1923,7 @@ s32 SEQ_CORE_Transpose(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t 
 	inc_semi += tr_note - 0x3c; // C-3 is the base note
       }
     }
+#endif
   }
 
   // apply transpose octave/semitones parameter
@@ -1952,7 +1972,7 @@ s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 track, u8 step, u8 instrument, seq_cc_trk_t 
 
   *root_selection = seq_core_global_scale_root_selection;
   if( tcc && tcc->link_par_layer_root >= 0 ) {
-    *root = SEQ_PAR_Get(track, step, tcc->link_par_layer_root, instrument);
+    *root = SEQ_PAR_Get(track, step, tcc->link_par_layer_root, instrument) % 13;
     if( *root ) {
       *root -= 1;
     } else {
