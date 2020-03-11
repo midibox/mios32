@@ -18,8 +18,8 @@
 // global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// maximum recursion on forwarded events (max 4 can be chained)
-#define MBNG_EVENT_MAX_FWD_RECURSION 3
+// maximum recursion on forwarded events (max 6 can be chained)
+#define MBNG_EVENT_MAX_FWD_RECURSION 5
 
 
 // event pool assignments (upper part of ID)

@@ -19,6 +19,12 @@ MIDIboxSEQ V4.097
      Track will be switched if a MIDI event has been received on a new channel, and in the last second
      no MIDI message has been received for the current selected track.
      
+   o Edit Page: if parameter layer assigned to Root or Scale: print it at the right upper quarter
+
+   o loopback tracks assigned to Bus1..4: parameter layers assigned to Root or Scale will control
+     the global Root/Scale - this allows you to properly control *all* tracks which enabled
+     FTS (Force-to-Scale)
+     
 
 MIDIboxSEQ V4.096
 ~~~~~~~~~~~~~~~~~

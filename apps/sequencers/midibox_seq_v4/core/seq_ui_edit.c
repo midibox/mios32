@@ -30,6 +30,7 @@
 #include "seq_par.h"
 #include "seq_trg.h"
 #include "seq_chord.h"
+#include "seq_scale.h"
 #include "seq_record.h"
 #include "seq_hwcfg.h"
 
@@ -1074,70 +1075,96 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
   SEQ_LCD_PrintFormattedString("Step%3d ", ui_selected_step+1);
 
-  if( layer_event.midi_package.event == CC ) {
-    mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
-    u8 loopback = (port & 0xf0) == 0xf0;
+  // we've 23 characters in the right upper quarter to print step information
+  switch( layer_type ) {
+  case SEQ_PAR_Type_Root:
+  case SEQ_PAR_Type_Scale: {
+    u8 scale, root_selection, root;
+    seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
+    SEQ_CORE_FTS_GetScaleAndRoot(visible_track, ui_selected_step, ui_selected_instrument, tcc, &scale, &root_selection, &root);
 
-    if( loopback )
-      SEQ_LCD_PrintString((char *)SEQ_CC_LABELS_Get(port, layer_event.midi_package.cc_number, 1));
-    else {
-      if( layer_event.midi_package.cc_number >= 0x80 ) {
-	SEQ_LCD_PrintFormattedString("  CC#off");
+    SEQ_LCD_PrintSpaces(1);
+    if( tcc->link_par_layer_root >= 0 ) {
+      SEQ_LCD_PrintRootValue(root+1);
+    } else {
+      if( !root_selection ) {
+        SEQ_LCD_PrintString("Keyb");
       } else {
-	SEQ_LCD_PrintFormattedString("  CC#%3d", layer_event.midi_package.cc_number);
+        SEQ_LCD_PrintRootValue(root_selection);
       }
     }
-    SEQ_LCD_PrintFormattedString(" %3d ", layer_event.midi_package.value);
-    SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
-  } else {
-    SEQ_LCD_PrintSpaces(2);
 
-    if( layer_event.midi_package.note && layer_event.midi_package.velocity && (layer_event.len >= 0) ) {
-      if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator ) {
-	u8 par_value = PassiveEditValid() ? edit_passive_value : layer_event.midi_package.note;
-	SEQ_LCD_PrintArp(par_value);
-      } else if( layer_type == SEQ_PAR_Type_Chord1 || layer_type == SEQ_PAR_Type_Chord2 || layer_type == SEQ_PAR_Type_Chord3 ||
-		 (layer_type == SEQ_PAR_Type_Velocity && (master_layer_type == SEQ_PAR_Type_Chord1 || master_layer_type == SEQ_PAR_Type_Chord2 || master_layer_type == SEQ_PAR_Type_Chord3)) ) {
-	u8 par_value;
-	u8 chord_set;
+    SEQ_LCD_PrintSpaces(1);
+    SEQ_LCD_PrintStringPadded(SEQ_SCALE_NameGet(scale), 16);
+    SEQ_LCD_PrintSpaces(1);
+  } break;
 
-	if( layer_type != SEQ_PAR_Type_Velocity ) {
-	  par_value = PassiveEditValid()
-	    ? edit_passive_value
-	    : SEQ_PAR_Get(visible_track, ui_selected_step, ui_selected_par_layer, ui_selected_instrument);
+  default:
+    if( layer_event.midi_package.event == CC ) {
+      mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
+      u8 loopback = (port & 0xf0) == 0xf0;
 
-	  chord_set = (layer_type == SEQ_PAR_Type_Chord2) ? 1 : ((layer_type == SEQ_PAR_Type_Chord3) ? 2 : 0);
-	} else {
-	  par_value = PassiveEditValid()
-	    ? edit_passive_value
-	    : SEQ_PAR_Get(visible_track, ui_selected_step, 0, ui_selected_instrument);
-
-	  chord_set = (master_layer_type == SEQ_PAR_Type_Chord2) ? 1 : ((master_layer_type == SEQ_PAR_Type_Chord3) ? 2 : 0);
-	}
-
-	if( layer_type == SEQ_PAR_Type_Chord3 ) {
-	  SEQ_LCD_PrintString(SEQ_CHORD_NameGet(chord_set, par_value));
-	  SEQ_LCD_PrintSpaces(2);
-	} else {
-	  u8 chord_ix = par_value & 0x1f;
-	  u8 chord_oct = par_value >> 5;
-	  SEQ_LCD_PrintString(SEQ_CHORD_NameGet(chord_set, chord_ix));
-	  SEQ_LCD_PrintFormattedString("/%d", chord_oct);
-	}
-      } else {
-	u8 par_value = PassiveEditValid() ? edit_passive_value : layer_event.midi_package.note;
-	SEQ_LCD_PrintNote(par_value);
+      if( loopback )
+        SEQ_LCD_PrintString((char *)SEQ_CC_LABELS_Get(port, layer_event.midi_package.cc_number, 1));
+      else {
+        if( layer_event.midi_package.cc_number >= 0x80 ) {
+          SEQ_LCD_PrintFormattedString("  CC#off");
+        } else {
+          SEQ_LCD_PrintFormattedString("  CC#%3d", layer_event.midi_package.cc_number);
+        }
       }
-      SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
+      SEQ_LCD_PrintFormattedString(" %3d ", layer_event.midi_package.value);
+      SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
+    } else {
+      SEQ_LCD_PrintSpaces(2);
+
+      if( layer_event.midi_package.note && layer_event.midi_package.velocity && (layer_event.len >= 0) ) {
+        if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator ) {
+          u8 par_value = PassiveEditValid() ? edit_passive_value : layer_event.midi_package.note;
+          SEQ_LCD_PrintArp(par_value);
+        } else if( layer_type == SEQ_PAR_Type_Chord1 || layer_type == SEQ_PAR_Type_Chord2 || layer_type == SEQ_PAR_Type_Chord3 ||
+                  (layer_type == SEQ_PAR_Type_Velocity && (master_layer_type == SEQ_PAR_Type_Chord1 || master_layer_type == SEQ_PAR_Type_Chord2 || master_layer_type == SEQ_PAR_Type_Chord3)) ) {
+          u8 par_value;
+          u8 chord_set;
+
+          if( layer_type != SEQ_PAR_Type_Velocity ) {
+            par_value = PassiveEditValid()
+	      ? edit_passive_value
+	      : SEQ_PAR_Get(visible_track, ui_selected_step, ui_selected_par_layer, ui_selected_instrument);
+
+            chord_set = (layer_type == SEQ_PAR_Type_Chord2) ? 1 : ((layer_type == SEQ_PAR_Type_Chord3) ? 2 : 0);
+          } else {
+            par_value = PassiveEditValid()
+	      ? edit_passive_value
+	      : SEQ_PAR_Get(visible_track, ui_selected_step, 0, ui_selected_instrument);
+
+            chord_set = (master_layer_type == SEQ_PAR_Type_Chord2) ? 1 : ((master_layer_type == SEQ_PAR_Type_Chord3) ? 2 : 0);
+          }
+
+          if( layer_type == SEQ_PAR_Type_Chord3 ) {
+            SEQ_LCD_PrintString(SEQ_CHORD_NameGet(chord_set, par_value));
+            SEQ_LCD_PrintSpaces(2);
+          } else {
+            u8 chord_ix = par_value & 0x1f;
+            u8 chord_oct = par_value >> 5;
+            SEQ_LCD_PrintString(SEQ_CHORD_NameGet(chord_set, chord_ix));
+            SEQ_LCD_PrintFormattedString("/%d", chord_oct);
+          }
+        } else {
+          u8 par_value = PassiveEditValid() ? edit_passive_value : layer_event.midi_package.note;
+          SEQ_LCD_PrintNote(par_value);
+        }
+        SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
+      }
+      else {
+        SEQ_LCD_PrintString("....");
+      }
+      SEQ_LCD_PrintFormattedString(" Vel:%3d", layer_event.midi_package.velocity);
     }
-    else {
-      SEQ_LCD_PrintString("....");
-    }
-    SEQ_LCD_PrintFormattedString(" Vel:%3d", layer_event.midi_package.velocity);
+
+    SEQ_LCD_PrintString(" Len:");
+    SEQ_LCD_PrintGatelength(layer_event.len);
   }
-
-  SEQ_LCD_PrintString(" Len:");
-  SEQ_LCD_PrintGatelength(layer_event.len);
 
 
   // print flashing *LOOPED* at right corner if loop mode activated to remind that steps will be played differntly
@@ -1321,8 +1348,8 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
       // copy matching par layers into remaining steps
       u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
       u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
-
       seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
+
       seq_par_layer_type_t rec_layer_type = tcc->lay_const[ui_selected_par_layer];
 
       {
