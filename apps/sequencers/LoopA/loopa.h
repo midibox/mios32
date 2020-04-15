@@ -56,6 +56,9 @@ extern u8 sessionExistsOnDisk_;              // is the currently selected sessio
 extern enum LoopAPage page_;                 // currently active page/view
 extern enum Command command_;                // currently active command
 extern s8 tempoFade_;                        // 0: no tempo change ongoing | +1: increase tempo button pressed | -1: decrease tempo button pressed (ongoing event)
+extern u8 cursorEraseActive_;                // 0: (default): do not erase notes under cursor | 1: (footswitch activated): erase notes under cursor (re-record clip)
+extern s8 trackLEDNoteFrame[TRACKS];         // frame countdown - if == 0 don't visualize note played, otherwise decrement and illuminate red track LED.
+
 
 // --- Basic session data (saved to session on disk) ---
 extern char sessionName_[16];                // 15 characters max (plus trailing string delimiter zero)
@@ -173,3 +176,8 @@ void loopaSDCardAvailable();
 // Record midi event
 void loopaRecord(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 
+// Footswitch pressed
+void footswitchPressed(u8 footswitchNumber);
+
+// Footswitch released
+void footswitchReleased(u8 footswitchNumber);

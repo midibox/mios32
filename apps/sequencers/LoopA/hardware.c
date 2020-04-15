@@ -91,6 +91,9 @@ const u8 sw_enc_select = 2;
 const u8 sw_enc_live = 26;
 const u8 sw_enc_value = 16;
 
+const u8 sw_footswitch1 = 1;
+const u8 sw_footswitch2 = 0;
+
 // --- Encoders ----
 
 const u8 enc_scene_id = 0;

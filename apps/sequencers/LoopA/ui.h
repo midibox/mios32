@@ -79,14 +79,29 @@ extern u8 setupActiveItem_;
 extern u8 scrubModeActive_;
 extern s8 showShiftAbout_;
 extern s8 showShiftHelp_;
+extern u32 trackswitchKeydownTime_; // timestamp of last "mute" key down if trackswitching via mute keys is enabled. 0 if no mute key is held.
+extern s8 trackswitchKeydownTrack_; // if trackswitching via mute keys is enabled, track that will be switched to if held long enough. 0 if no key is held.
+
 
 // --- UI State Changes ---
 
 // Set a different active track
 void setActiveTrack(u8 trackNumber);
 
+// Switch to previous active track
+void switchToPreviousTrack();
+
+// Switch to next active track
+void switchToNextTrack();
+
 // Set a new active scene number
 void setActiveScene(u8 sceneNumber);
+
+// Jump to previous Scene
+void jumpToPreviousScene();
+
+// Jump to next scene
+void jumpToNextScene();
 
 // Set a new active page
 void setActivePage(enum LoopAPage page);
@@ -107,6 +122,14 @@ void updateBeatLEDsAndClipPositions(u32 bpm_tick);
 // Update live LEDs (upper right encoder section)
 void updateLiveLEDs();
 
+// --- Exported Commands (triggered externally, e.g. via footswitch) ---
+
+// Clear active clip
+void clipClear();
+
+// Check mute key track switching (called from app 1ms low priority scheduluer)
+void checkMuteKeyTrackswitch();
+
 // --- UI human interaction ---
 
 // A buttonpress has occured
@@ -123,9 +146,3 @@ s32 seqPlayStopButton(void);
 
 // Control the arm button function
 s32 seqArmButton(void);
-
-// Fast forward is put on depressed LL encoder as "scrub"
-s32 seqFFwdButton(void);
-
-// Rewind is put on depressed LL encoder as "scrub"
-s32 seqFRewButton(void);

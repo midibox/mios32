@@ -30,10 +30,16 @@ u16 copiedClipNotesSize_;
 u8 shiftTrackMutePressed_[TRACKS] = { 0, 0, 0, 0, 0, 0};
 s8 showShiftAbout_ = 0;
 s8 showShiftHelp_ = 0;
+s8 pressedCopy_ = 0;
+s8 pressedPaste_ = 0;
+s8 pressedDelete_ = 0;
 
 u8 routerActiveRoute_ = 0;
 u8 setupActiveItem_ = 0;
 u8 scrubModeActive_= 0;
+
+u32 trackswitchKeydownTime_ = 0; // timestamp of last "mute" key down if trackswitching via mute keys is enabled. 0 if no mute key is held.
+s8 trackswitchKeydownTrack_ = -1; // if trackswitching via mute keys is enabled, track that will be switched to if held long enough. -1 if no key is held.
 
 // ---------------------------------------------------------------------------------------------------------------------
 // --- UI STATE CHANGES
@@ -50,6 +56,29 @@ void setActiveTrack(u8 trackNumber)
 // -------------------------------------------------------------------------------------------------
 
 /**
+ * Switch to previous active track
+ */
+void switchToPreviousTrack()
+{
+   s8 newTrack = (s8) (activeTrack_ - 1);
+   newTrack = (s8) (newTrack < 0 ? 0 : newTrack);
+   setActiveTrack((u8) (newTrack >= TRACKS ? TRACKS - 1 : newTrack));
+}
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * Switch to next active track
+ */
+void switchToNextTrack()
+{
+   s8 newTrack = (s8) (activeTrack_ + 1);
+   newTrack = (s8) (newTrack < 0 ? 0 : newTrack);
+   setActiveTrack((u8) (newTrack >= TRACKS ? TRACKS - 1 : newTrack));
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
  * Set a new active scene number
  */
 void setActiveScene(u8 sceneNumber)
@@ -64,6 +93,40 @@ void setActiveScene(u8 sceneNumber)
    MIOS32_DOUT_PinSet(HW_LED_SCENE_5, activeScene_ == 4);
    MIOS32_DOUT_PinSet(HW_LED_SCENE_6, activeScene_ == 5);
    MUTEX_DIGITALOUT_GIVE;
+}
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * Jump to previous Scene
+ */
+void jumpToPreviousScene()
+{
+   s8 newScene = sceneChangeRequested_ - 1;
+   if (newScene < 0)
+      newScene = 0;
+
+   sceneChangeRequested_ = (u8) newScene;
+
+   if (sceneChangeRequested_ == activeScene_ ||
+       !SEQ_BPM_IsRunning()) // if (after changing) now no change requested or not playing, switch at once
+      setActiveScene((u8) newScene);
+}
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * Jump to next scene
+ */
+void jumpToNextScene()
+{
+   s8 newScene = sceneChangeRequested_ + 1;
+   if (newScene >= SCENES)
+      newScene = SCENES - 1;
+
+   sceneChangeRequested_ = (u8) newScene;
+
+   if (sceneChangeRequested_ == activeScene_ ||
+       !SEQ_BPM_IsRunning()) // if (after changing) now no change requested or not playing, switch at once
+      setActiveScene((u8) newScene);
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -266,7 +329,7 @@ void updateSwitchLED(u8 number, u8 newState)
 
 
 /**
- * Update the LED states of the general purpose switches (called every 20ms from app.c timer)
+ * Update the LED states of the general purpose switches (called every ~20ms from app.c timer)
  *
  */
 static u32 ledUpdateCounter_ = 0;
@@ -279,6 +342,9 @@ void updateSwitchLEDs()
    u8 led_copy = LED_OFF, led_paste = LED_OFF, led_delete = LED_OFF;
    u8 led_runstop = ledstate[LED_RUNSTOP];
    s8 flashMuteToggle = (ledUpdateCounter_ % 2) == 0; // When SEQ is running, flash active synced mute/unmute toggles until performed
+
+   enum LEDStateEnum trackLedMuted = gcInvertMuteLEDs_ ? LED_GREEN : LED_OFF;
+   enum LEDStateEnum trackLedUnmuted = gcInvertMuteLEDs_ ? LED_OFF : LED_GREEN;
 
    if (!SEQ_BPM_IsRunning())
    {
@@ -293,6 +359,7 @@ void updateSwitchLEDs()
    // --- Menu LEDs ---
    if (screenIsInMenu())
    {
+      led_runstop = LED_OFF;
       led_menu = LED_RED;
 
       switch (page_)
@@ -340,12 +407,12 @@ void updateSwitchLEDs()
       led_shift = LED_RED;
 
       // --- Within shift, indicate unmuted tracks (green) and keys currently pressed (red)
-      led_gp1 |= (trackMuteToggleRequested_[0] && flashMuteToggle) ? (trackMute_[0] ? LED_GREEN : LED_OFF) : (trackMute_[0] ? LED_OFF : LED_GREEN);
-      led_gp2 |= (trackMuteToggleRequested_[1] && flashMuteToggle) ? (trackMute_[1] ? LED_GREEN : LED_OFF) : (trackMute_[1] ? LED_OFF : LED_GREEN);
-      led_gp3 |= (trackMuteToggleRequested_[2] && flashMuteToggle) ? (trackMute_[2] ? LED_GREEN : LED_OFF) : (trackMute_[2] ? LED_OFF : LED_GREEN);
-      led_gp4 |= (trackMuteToggleRequested_[3] && flashMuteToggle) ? (trackMute_[3] ? LED_GREEN : LED_OFF) : (trackMute_[3] ? LED_OFF : LED_GREEN);
-      led_gp5 |= (trackMuteToggleRequested_[4] && flashMuteToggle) ? (trackMute_[4] ? LED_GREEN : LED_OFF) : (trackMute_[4] ? LED_OFF : LED_GREEN);
-      led_gp6 |= (trackMuteToggleRequested_[5] && flashMuteToggle) ? (trackMute_[5] ? LED_GREEN : LED_OFF) : (trackMute_[5] ? LED_OFF : LED_GREEN);
+      led_gp1 |= (trackMuteToggleRequested_[0] && flashMuteToggle) ? (trackMute_[0] ? trackLedUnmuted : trackLedMuted) : (trackMute_[0] ? trackLedMuted : trackLedUnmuted);
+      led_gp2 |= (trackMuteToggleRequested_[1] && flashMuteToggle) ? (trackMute_[1] ? trackLedUnmuted : trackLedMuted) : (trackMute_[1] ? trackLedMuted : trackLedUnmuted);
+      led_gp3 |= (trackMuteToggleRequested_[2] && flashMuteToggle) ? (trackMute_[2] ? trackLedUnmuted : trackLedMuted) : (trackMute_[2] ? trackLedMuted : trackLedUnmuted);
+      led_gp4 |= (trackMuteToggleRequested_[3] && flashMuteToggle) ? (trackMute_[3] ? trackLedUnmuted : trackLedMuted) : (trackMute_[3] ? trackLedMuted : trackLedUnmuted);
+      led_gp5 |= (trackMuteToggleRequested_[4] && flashMuteToggle) ? (trackMute_[4] ? trackLedUnmuted : trackLedMuted) : (trackMute_[4] ? trackLedMuted : trackLedUnmuted);
+      led_gp6 |= (trackMuteToggleRequested_[5] && flashMuteToggle) ? (trackMute_[5] ? trackLedUnmuted : trackLedMuted) : (trackMute_[5] ? trackLedMuted : trackLedUnmuted);
 
       if (isShiftTrackMuteToggleKeyPressed(0))
          led_gp1 |= LED_RED;
@@ -378,6 +445,9 @@ void updateSwitchLEDs()
       led_gp6 = activeTrack_ == 5 ? LED_BLUE : LED_OFF;
 
       led_arm = isRecording_ ? LED_RED : LED_OFF;
+      led_copy = pressedCopy_ ? LED_RED: LED_OFF;
+      led_paste = pressedPaste_ ? LED_RED : LED_OFF;
+      led_delete = pressedDelete_ ? LED_RED : LED_OFF;
 
       // Page-specific additonal lighting
       switch (page_)
@@ -398,12 +468,52 @@ void updateSwitchLEDs()
             break;
 
          case PAGE_MUTE:
-            led_gp1 |= (trackMuteToggleRequested_[0] && flashMuteToggle) ? (trackMute_[0] ? LED_GREEN : LED_OFF) : (trackMute_[0] ? LED_OFF : LED_GREEN);
-            led_gp2 |= (trackMuteToggleRequested_[1] && flashMuteToggle) ? (trackMute_[1] ? LED_GREEN : LED_OFF) : (trackMute_[1] ? LED_OFF : LED_GREEN);
-            led_gp3 |= (trackMuteToggleRequested_[2] && flashMuteToggle) ? (trackMute_[2] ? LED_GREEN : LED_OFF) : (trackMute_[2] ? LED_OFF : LED_GREEN);
-            led_gp4 |= (trackMuteToggleRequested_[3] && flashMuteToggle) ? (trackMute_[3] ? LED_GREEN : LED_OFF) : (trackMute_[3] ? LED_OFF : LED_GREEN);
-            led_gp5 |= (trackMuteToggleRequested_[4] && flashMuteToggle) ? (trackMute_[4] ? LED_GREEN : LED_OFF) : (trackMute_[4] ? LED_OFF : LED_GREEN);
-            led_gp6 |= (trackMuteToggleRequested_[5] && flashMuteToggle) ? (trackMute_[5] ? LED_GREEN : LED_OFF) : (trackMute_[5] ? LED_OFF : LED_GREEN);
+            led_gp1 |= (trackMuteToggleRequested_[0] && flashMuteToggle) ? (trackMute_[0] ? trackLedUnmuted : trackLedMuted) : (trackMute_[0] ? trackLedMuted : trackLedUnmuted);
+            led_gp2 |= (trackMuteToggleRequested_[1] && flashMuteToggle) ? (trackMute_[1] ? trackLedUnmuted : trackLedMuted) : (trackMute_[1] ? trackLedMuted : trackLedUnmuted);
+            led_gp3 |= (trackMuteToggleRequested_[2] && flashMuteToggle) ? (trackMute_[2] ? trackLedUnmuted : trackLedMuted) : (trackMute_[2] ? trackLedMuted : trackLedUnmuted);
+            led_gp4 |= (trackMuteToggleRequested_[3] && flashMuteToggle) ? (trackMute_[3] ? trackLedUnmuted : trackLedMuted) : (trackMute_[3] ? trackLedMuted : trackLedUnmuted);
+            led_gp5 |= (trackMuteToggleRequested_[4] && flashMuteToggle) ? (trackMute_[4] ? trackLedUnmuted : trackLedMuted) : (trackMute_[4] ? trackLedMuted : trackLedUnmuted);
+            led_gp6 |= (trackMuteToggleRequested_[5] && flashMuteToggle) ? (trackMute_[5] ? trackLedUnmuted : trackLedMuted) : (trackMute_[5] ? trackLedMuted : trackLedUnmuted);
+
+            // If configured "flash note outputs"
+            if (gcLEDNotes_)
+            {
+               if (trackLEDNoteFrame[0] > 0)
+               {
+                  trackLEDNoteFrame[0]--;
+                  led_gp1 |= LED_RED;
+               }
+
+               if (trackLEDNoteFrame[1] > 0)
+               {
+                  trackLEDNoteFrame[1]--;
+                  led_gp2 |= LED_RED;
+               }
+
+               if (trackLEDNoteFrame[2] > 0)
+               {
+                  trackLEDNoteFrame[2]--;
+                  led_gp3 |= LED_RED;
+               }
+
+               if (trackLEDNoteFrame[3] > 0)
+               {
+                  trackLEDNoteFrame[3]--;
+                  led_gp4 |= LED_RED;
+               }
+
+               if (trackLEDNoteFrame[4] > 0)
+               {
+                  trackLEDNoteFrame[4]--;
+                  led_gp5 |= LED_RED;
+               }
+
+               if (trackLEDNoteFrame[5] > 0)
+               {
+                  trackLEDNoteFrame[5]--;
+                  led_gp6 |= LED_RED;
+               }
+            }
             break;
 
          case PAGE_NOTES:
@@ -447,9 +557,9 @@ void updateSwitchLEDs()
 
          case PAGE_CLIP:
             led_gp1 |= command_ == COMMAND_CLIP_LEN ? LED_RED : LED_OFF;
-            led_gp2 |= command_ == COMMAND_CLIP_TRANSPOSE ? LED_RED : LED_OFF;
-            led_gp3 |= command_ == COMMAND_CLIP_SCROLL ? LED_RED : LED_OFF;
-            led_gp4 |= command_ == COMMAND_CLIP_STRETCH ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_CLIP_TRANSPOSE ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_CLIP_SCROLL ? LED_RED : LED_OFF;
+            led_gp5 |= command_ == COMMAND_CLIP_STRETCH ? LED_RED : LED_OFF;
             led_gp6 |= command_ == COMMAND_CLIP_FREEZE ? LED_RED : LED_OFF;
             break;
 
@@ -519,7 +629,11 @@ void updateBeatLEDsAndClipPositions(u32 bpm_tick)
             case 0:
                oledBeatFlashState_ = (bpm_tick / (ticksPerStep * 4) % 4 == 0) ? 2 : 1; // flash background (strong/normal)
 
-               updateSwitchLED(LED_RUNSTOP, LED_GREEN);
+               if (((bpm_tick / ticksPerStep) % 16 == 0) && !gcBeatLEDsEnabled_)
+                  updateSwitchLED(LED_RUNSTOP, LED_RED);
+               else
+                  updateSwitchLED(LED_RUNSTOP, LED_GREEN);
+
                if (gcBeatLEDsEnabled_)
                {
                   updateSwitchLED(LED_MENU, LED_GREEN);
@@ -743,7 +857,7 @@ void clipZoom()
 
 
 /**
- * Clear clip
+ * Clear active clip
  *
  */
 void clipClear()
@@ -1227,6 +1341,91 @@ void liveFxProbability()
 // -------------------------------------------------------------------------------------------------
 
 /**
+ * Handle a track key down event on the mute screen
+ * @param track u8
+ */
+void muteScreenTrackButtonPressed(u8 track)
+{
+   if (gcTrackswitchType_ == TRACKSWITCH_NORMAL)
+   {
+      // Default behaviour: key down = instant mute toggle
+      toggleMute(track);
+   }
+   else
+   {
+      // "Hold to switch track behaviour"
+
+      // If another key is already held down, instantly toggle this and the other mute, as the user is rapidly pressing multiple keys "at once"
+      if (trackswitchKeydownTrack_ != -1)
+      {
+         toggleMute((u8) trackswitchKeydownTrack_);
+         toggleMute(track);
+         trackswitchKeydownTime_ = 0;
+         trackswitchKeydownTrack_ = -1;
+      }
+      else
+      {
+         // Else register track number and keydown time
+         trackswitchKeydownTime_ = millisecondsSinceStartup_;
+         trackswitchKeydownTrack_ = track;
+      }
+   }
+}
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * Check mute key track switching (called from app 1ms low priority scheduluer)
+ *
+ */
+void checkMuteKeyTrackswitch()
+{
+   // Query time between keydown and keyup
+
+   if (  trackswitchKeydownTime_ > 0 &&
+         trackswitchKeydownTrack_ != -1 &&
+         (
+                 ( gcTrackswitchType_ == TRACKSWITCH_HOLD_MUTE_KEY_FAST && (millisecondsSinceStartup_ - trackswitchKeydownTime_ > 200 )) ||
+                 ( gcTrackswitchType_ == TRACKSWITCH_HOLD_MUTE_KEY && (millisecondsSinceStartup_ - trackswitchKeydownTime_ > 400))
+         )
+       )
+   {
+      // Special trackswitch mode is active and key has been held down long enough => switch active track
+      setActiveTrack((u8)trackswitchKeydownTrack_);
+      trackswitchKeydownTrack_ = -1;
+   }
+}
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * Handle a track key up event on the mute screen
+ * @param track u8
+ */
+void muteScreenTrackButtonReleased(u8 track)
+{
+   if (gcTrackswitchType_ == TRACKSWITCH_NORMAL)
+   {
+      // Default behaviour: do nothing
+   }
+   else
+   {
+      // "Hold to switch track behaviour" - if key was quickly released, toggle mute on key up
+      if (trackswitchKeydownTrack_ != -1)
+      {
+         // If this key is the one being released (multi key presses are possible), reset the info that it is held down
+         if (trackswitchKeydownTrack_ == track)
+         {
+            toggleMute(track);
+            trackswitchKeydownTime_ = 0;
+            trackswitchKeydownTrack_ = -1;
+         }
+      }
+
+      // otherwise, the track has already been switched in checkMuteKeyTrackSwitch(), don't change mutes
+   }
+}
+// -------------------------------------------------------------------------------------------------
+
+/**
  * Handle switch/button press event
  *
  */
@@ -1307,6 +1506,7 @@ void loopaButtonPressed(s32 pin)
          else
          {
             // normal mode "copy"
+            pressedCopy_ = 1;
             copiedClipSteps_ = clipSteps_[activeTrack_][activeScene_];
             copiedClipQuantize_ = clipFxQuantize_[activeTrack_][activeScene_];
             copiedClipTranspose_ = clipTranspose_[activeTrack_][activeScene_];
@@ -1325,6 +1525,7 @@ void loopaButtonPressed(s32 pin)
          }
          else
          {
+            pressedPaste_ = 1;
             // paste only, if we have a clip in memory
             if (copiedClipSteps_ > 0)
             {
@@ -1349,6 +1550,7 @@ void loopaButtonPressed(s32 pin)
          }
          else
          {
+            pressedDelete_ = 1;
             clipClear();
             command_ = COMMAND_NONE;
          }
@@ -1368,7 +1570,7 @@ void loopaButtonPressed(s32 pin)
             switch (page_)
             {
                case PAGE_MUTE:
-                  toggleMute(0);
+                  muteScreenTrackButtonPressed(0);
                   break;
                case PAGE_CLIP:
                   editLen();
@@ -1412,7 +1614,7 @@ void loopaButtonPressed(s32 pin)
             switch (page_)
             {
                case PAGE_MUTE:
-                  toggleMute(1);
+                  muteScreenTrackButtonPressed(1);
                   break;
                case PAGE_CLIP:
                   /* TODO: clip type (note/cc) */
@@ -1455,7 +1657,7 @@ void loopaButtonPressed(s32 pin)
             switch (page_)
             {
                case PAGE_MUTE:
-                  toggleMute(2);
+                  muteScreenTrackButtonPressed(2);
                   break;
                case PAGE_CLIP:
                   clipTranspose();
@@ -1499,7 +1701,7 @@ void loopaButtonPressed(s32 pin)
             switch (page_)
             {
                case PAGE_MUTE:
-                  toggleMute(3);
+                  muteScreenTrackButtonPressed(3);
                   break;
                case PAGE_CLIP:
                   clipScroll();
@@ -1540,7 +1742,7 @@ void loopaButtonPressed(s32 pin)
             switch (page_)
             {
                case PAGE_MUTE:
-                  toggleMute(4);
+                  muteScreenTrackButtonPressed(4);
                   break;
                case PAGE_CLIP:
                   clipZoom();
@@ -1572,7 +1774,7 @@ void loopaButtonPressed(s32 pin)
             switch (page_)
             {
                case PAGE_MUTE:
-                  toggleMute(5);
+                  muteScreenTrackButtonPressed(5);
                   break;
                case PAGE_CLIP:
                   clipFreeze();
@@ -1645,6 +1847,20 @@ void loopaButtonPressed(s32 pin)
       {
          valueEncoderAccel_ = 1;
       }
+      else if (pin == sw_footswitch1)
+      {
+         if ((gcFootswitchesInversionmask_ & 0x1U) == 0)
+            footswitchPressed(1); // no footswitch inversion - footswitch 1 pressed
+         else
+            footswitchReleased(1);
+      }
+      else if (pin == sw_footswitch2)
+      {
+         if ((gcFootswitchesInversionmask_ & 0x2U) == 0)
+            footswitchPressed(2); // no footswitch inversion - footswitch 2 pressed
+         else
+            footswitchReleased(2);
+      }
    }
 }
 // -------------------------------------------------------------------------------------------------
@@ -1712,12 +1928,30 @@ void loopaButtonReleased(s32 pin)
          {
             shiftTrackMuteToggleReleased(0); // Released toggling mute/unmute in shift menu
          }
+         else
+         {
+            switch (page_)
+            {
+               case PAGE_MUTE:
+                  muteScreenTrackButtonReleased(0);
+                  break;
+            }
+         }
       }
       else if (pin == sw_gp2)
       {
          if (screenIsInShift())
          {
             shiftTrackMuteToggleReleased(1); // Released toggling mute/unmute in shift menu
+         }
+         else
+         {
+            switch (page_)
+            {
+               case PAGE_MUTE:
+                  muteScreenTrackButtonReleased(1);
+                  break;
+            }
          }
       }
       else if (pin == sw_gp3)
@@ -1726,12 +1960,30 @@ void loopaButtonReleased(s32 pin)
          {
             shiftTrackMuteToggleReleased(2); // Released toggling mute/unmute in shift menu
          }
+         else
+         {
+            switch (page_)
+            {
+               case PAGE_MUTE:
+                  muteScreenTrackButtonReleased(2);
+                  break;
+            }
+         }
       }
       else if (pin == sw_gp4)
       {
          if (screenIsInShift())
          {
             shiftTrackMuteToggleReleased(3); // Released toggling mute/unmute in shift menu
+         }
+         else
+         {
+            switch (page_)
+            {
+               case PAGE_MUTE:
+                  muteScreenTrackButtonReleased(3);
+                  break;
+            }
          }
       }
       else if (pin == sw_gp5)
@@ -1740,6 +1992,15 @@ void loopaButtonReleased(s32 pin)
          {
             shiftTrackMuteToggleReleased(4); // Released toggling mute/unmute in shift menu
          }
+         else
+         {
+            switch (page_)
+            {
+               case PAGE_MUTE:
+                  muteScreenTrackButtonReleased(4);
+                  break;
+            }
+         }
       }
       else if (pin == sw_gp6)
       {
@@ -1747,11 +2008,54 @@ void loopaButtonReleased(s32 pin)
          {
             shiftTrackMuteToggleReleased(5); // Released toggling mute/unmute in shift menu
          }
+         else
+         {
+            switch (page_)
+            {
+               case PAGE_MUTE:
+                  muteScreenTrackButtonReleased(5);
+                  break;
+            }
+         }
+      }
+      else if (pin == sw_copy)
+      {
+         if (!screenIsInMenu())
+         {
+            pressedCopy_ = 0;
+         }
+      }
+      else if (pin == sw_paste)
+      {
+         if (!screenIsInMenu())
+         {
+            pressedPaste_ = 0;
+         }
+      }
+      else if (pin == sw_delete)
+      {
+         if (!screenIsInMenu())
+         {
+            pressedDelete_ = 0;
+         }
+      }
+      else if (pin == sw_footswitch1)
+      {
+         if ((gcFootswitchesInversionmask_ & 0x1U) == 0x1U)
+            footswitchPressed(1); // footswitch inversion - footswitch 1 pressed
+         else
+            footswitchReleased(1);
+      }
+      else if (pin == sw_footswitch2)
+      {
+         if ((gcFootswitchesInversionmask_ & 0x2U) == 0x2U)
+            footswitchPressed(2); // footswitch inversion - footswitch 2 pressed
+         else
+            footswitchReleased(2);
       }
    }
 }
 // -------------------------------------------------------------------------------------------------
-
 
 /**
  * An encoder has been turned
@@ -1801,31 +2105,12 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
       if (encoder == enc_scene_id)
       {
          if (incrementer < 0)
-         {
-            s8 newScene = sceneChangeRequested_ - 1;
-            if (newScene < 0)
-               newScene = 0;
-
-            sceneChangeRequested_ = (u8) newScene;
-
-            if (sceneChangeRequested_ == activeScene_ ||
-                !SEQ_BPM_IsRunning()) // if (after changing) now no change requested or not playing, switch at once
-               setActiveScene((u8) newScene);
-         } else
-         {
-            s8 newScene = sceneChangeRequested_ + 1;
-            if (newScene >= SCENES)
-               newScene = SCENES - 1;
-
-            sceneChangeRequested_ = (u8) newScene;
-
-            if (sceneChangeRequested_ == activeScene_ ||
-                !SEQ_BPM_IsRunning()) // if (after changing) now no change requested or not playing, switch at once
-               setActiveScene((u8) newScene);
-         }
+            jumpToPreviousScene();
+         else
+            jumpToNextScene();
       }
 
-         // Lower-left Select/Track encoder
+      // Lower-left Select/Track encoder
       else if (encoder == enc_select_id)
       {
          if (!scrubModeActive_)
@@ -1871,7 +2156,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
          }
       }
 
-         // Upper-right "Live" encoder
+      // Upper-right "Live" encoder
       else if (encoder == enc_live_id)
       {
          if (liveMode_ == LIVEMODE_TRANSPOSE)
@@ -1894,7 +2179,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
             updateLiveLEDs();
       }
 
-         // Lower-right "Value" encoder
+      // Lower-right "Value" encoder
       else if (encoder == enc_value_id)
       {
          if (command_ == COMMAND_DISK_SELECT_SESSION) // Disk page - left encoder changes selected session number

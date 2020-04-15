@@ -1,6 +1,7 @@
 // LoopA 256x64px screen routines
 
 #include <mios32.h>
+#include "mios32_config.h"
 #include "commonIncludes.h"
 
 #include "app.h"
@@ -1109,10 +1110,10 @@ void displayPageTempo(void)
    if (tempoFade_ != 0)
    {
       if (tempoFade_ == 1)
-         bpm_ += 0.1;
+         bpm_ += tempodeltaDescriptions_[gcTempodeltaType_].speed;
 
       if (tempoFade_ == -1)
-         bpm_ -= 0.1;
+         bpm_ -= tempodeltaDescriptions_[gcTempodeltaType_].speed;
 
       if (bpm_ < 30)
          bpm_ = 30;
@@ -1277,6 +1278,10 @@ void displayPageSetup(void)
                   printFormattedString(84, y, "%s", getPortOrInstrumentNameFromLoopAPortNumber(gcMetronomePort_));
                   break;
 
+               case SETUP_TEMPODELTA:
+                  printFormattedString(84, y, "%s", tempodeltaDescriptions_[gcTempodeltaType_].name);
+                  break;
+
                case SETUP_SCREENSAVER_MINUTES:
                   printFormattedString(84, y, "%d Min", gcScreensaverAfterMinutes_);
                   break;
@@ -1284,6 +1289,35 @@ void displayPageSetup(void)
                case SETUP_INVERT_OLED:
                   printFormattedString(84, y, gcInvertOLED_ ? "On" : "Off");
                   break;
+
+               case SETUP_INVERT_FOOTSWITCHES:
+                  printFormattedString(84, y, (gcFootswitchesInversionmask_ & 0x01) ? "S1 Inv" : "S1 Nor");
+                  break;
+
+               case SETUP_FOOTSWITCH1_ACTION:
+                  printFormattedString(84, y, "%s", footswitchActionDescriptions_[gcFootswitch1Action_].name);
+                  break;
+
+               case SETUP_FOOTSWITCH2_ACTION:
+                  printFormattedString(84, y, "%s", footswitchActionDescriptions_[gcFootswitch2Action_].name);
+                  break;
+
+               case SETUP_INVERT_MUTE_LEDS:
+                  printFormattedString(84, y, gcInvertMuteLEDs_ ? "On" : "Off");
+                  break;
+
+               case SETUP_TRACK_SWITCH_TYPE:
+                  printFormattedString(84, y, "%s", trackswitchDescriptions_[gcTrackswitchType_].name);
+                  break;
+
+               case SETUP_FOLLOW_TRACK_TYPE:
+                  printFormattedString(84, y, "%s", followtrackDescriptions_[gcFollowtrackType_].name);
+                  break;
+
+               case SETUP_LED_NOTES:
+                  printFormattedString(84, y, gcLEDNotes_ ? "On (shown in MUTE screen)" : "Off");
+                  break;
+
 
             }
             setFontNonInverted();
@@ -1323,6 +1357,10 @@ void displayPageSetup(void)
                      // Print metronome MIDI channel, if we are not showing a metronome user instrument
                      printFormattedString(126, y, "Chn %d", gcMetronomeChannel_ + 1);
                   }
+                  break;
+
+               case SETUP_INVERT_FOOTSWITCHES:
+                  printFormattedString(126, y, (gcFootswitchesInversionmask_ & 0x02) ? "S2 Inv" : "S2 Nor");
                   break;
             }
             setFontNonInverted();
@@ -1715,10 +1753,10 @@ void display()
          printFormattedString(52, 2, " ");
 
          setFontBold();  // width per letter: 10px (for center calculation)
-         printFormattedString(146, 2, "V2.06-pre1");
+         printFormattedString(146, 2, VERSION);
 
          setFontSmall(); // width per letter: 6px
-         printFormattedString(28, 20, "(C) Hawkeye, latigid on, TK. 2020");
+         printFormattedString(28, 20, MIOS32_LCD_BOOT_MSG_LINE2);
          printFormattedString(52, 32, "MIDIbox hardware platform");
 
          setFontBold(); // width per letter: 10px;
