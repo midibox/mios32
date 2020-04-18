@@ -12,44 +12,48 @@ char line_buffer_[128];  // single global line buffer for reading/writing from/t
 
 // --- Global config variables ---
 s16 gcLastUsedSessionNumber_ = -1;
+s8 gcNumberOfActiveUserInstruments_ = 0;
+
 s8 gcFontType_ = 'a';
 s8 gcInvertOLED_ = 0;
 s8 gcBeatLEDsEnabled_ = 0;
 s8 gcBeatDisplayEnabled_ = 0;
-s8 gcNumberOfActiveUserInstruments_ = 0;
-
+u8 gcScreensaverAfterMinutes_ = 1;
 mios32_midi_port_t gcMetronomePort_ = 0;
 u8 gcMetronomeChannel_ = 0;
 u8 gcMetronomeNoteM_ = 0x25; // C#1
 u8 gcMetronomeNoteB_ = 0x25; // C#1
-u8 gcScreensaverAfterMinutes_ = 1;
+enum TempodeltaTypeEnum gcTempodeltaType_ = TEMPODELTA_NORMAL;
+u8 gcFootswitchesInversionmask_ = 0x00; // binary encoded: fsw1 = rightmost bit, fsw2 = second bit, ...
+enum FootswitchActionEnum gcFootswitch1Action_ = FOOTSWITCH_CURSORERASE;
+enum FootswitchActionEnum gcFootswitch2Action_ = FOOTSWITCH_JUMPTOPRECOUNT;
+s8 gcInvertMuteLEDs_ = 0;
+enum TrackswitchTypeEnum gcTrackswitchType_ = TRACKSWITCH_NORMAL;
+enum FollowtrackTypeEnum gcFollowtrackType_ = FOLLOWTRACK_ON_UNMUTE;
+s8 gcLEDNotes_ = 1;
 
 // --- Global config settings ---
 SetupParameter setupParameters_[SETUP_NUM_ITEMS] =
         {
-                {"System Font", "Type", "", "", ""},
-                {"Beat LEDs", "Toggle", "", "", ""},
-                {"Beat Display", "Toggle", "", "", ""},
-                // {"Command Help", "Toggle", "", "", ""}, TODO Later
-                {"Screensaver", "Minutes", "", "", ""},
-                {"Invert OLED", "Toggle", "", "", ""},
-                {"Metronome", "Port", "Chn", "Meas.", "Beat"},
-                // {"Tempo Up/Dn", "BPM/Sec", "", "", ""}, TODO Later
+                { "System Font", "Type", "", "", "" },
+                { "Beat LEDs", "Toggle", "", "", "" },
+                { "Beat Display", "Toggle", "", "", "" },
+                { "Screensaver", "Minutes", "", "", "" },
+                { "Invert OLED", "Toggle", "", "", "" },
+                { "Metronome", "Port", "Chn", "Meas.", "Beat" },
+                { "Tempo Up/Dn", "Type", "", "", "" },
+                { "Inv. Footsw.", "Toggle",  "Toggle", "", "" },
+                { "Footsw. 1", "Action", "", "", "" },
+                { "Footsw. 2", "Action", "", "", "" },
+                { "Inv. MuteLED", "Toggle", "", "", "" },
+                { "Track Switch", "Type", "", "", "" },
+                { "Follow Track", "Type", "", "", "" },
+                { "LED Notes", "Toggle", "", "", "" },
 
-                {"MCLK DIN IN",  "Toggle",  "Toggle",  "Toggle", "Toggle"},
-                {"MCLK DIN OUT", "Toggle", "Toggle", "Toggle", "Toggle"},
-                {"MCLK USB IN",  "Toggle", "Toggle", "Toggle", "Toggle"},
-                {"MCLK USB OUT", "Toggle", "Toggle", "Toggle", "Toggle"},
-
-                /* {"Default Tr.1", "Port", "Chn", "Length", "Forward"}, TODO later
-                {"Default Tr.2", "Port", "Chn", "Length", "Forward"},
-                {"Default Tr.3", "Port", "Chn", "Length", "Forward"},
-                {"Default Tr.4", "Port", "Chn", "Length", "Forward"},
-                {"Default Tr.5", "Port", "Chn", "Length", "Forward"},
-                {"Default Tr.6", "Port", "Chn", "Length", "Forward"} */
-
-                //{"Instrument 1", "Name", Port", "Chn", ""}, TODO later, when we have a keyboard/string entry editor
-                //{"Instrument 2", "name", "Port", "Chn", ""},
+                { "MCLK DIN IN",  "Toggle",  "Toggle",  "Toggle", "Toggle" },
+                { "MCLK DIN OUT", "Toggle", "Toggle", "Toggle", "Toggle" },
+                { "MCLK USB IN",  "Toggle", "Toggle", "Toggle", "Toggle" },
+                { "MCLK USB OUT", "Toggle", "Toggle", "Toggle", "Toggle" },
         };
 
 
@@ -90,6 +94,50 @@ UserInstrument userInstruments_[SETUP_NUM_USERINSTRUMENTS] =
                 { "Synth_AF", UART0, 0},
         };
 
+// --- Tempodelta types ---
+TempodeltaDescription tempodeltaDescriptions_[SETUP_NUM_TEMPODELTATYPES] =
+        {
+                { "Slower", "very slow tempo change", 0.00625 },
+                { "Slow", "slow tempo change", 0.025 },
+                { "Normal", "normal tempo change", 0.1 },
+                { "Fast", "fast tempo change", 0.4 },
+                { "Faster", "very fast tempo change", 1.6 },
+        };
+
+
+// --- Footswitch actions ---
+FootswitchActionDescription footswitchActionDescriptions_[SETUP_NUM_FOOTSWITCHACTIONS] =
+        {
+                { "CursorErase", "Erase under cursor" },
+                { "RunStop", "RunStop the sequencer" },
+                { "Arm", "Arm (toggle)" },
+                { "ClearClip", "Clear the current Clip" },
+                { "JumpToStart", "Jump to Start" },
+                { "JumpToPrecount", "Jump to Precount" },
+                { "Metronome", "Metronome (toggle)" },
+                { "PreviousScene", "Previous Scene" },
+                { "NextScene", "Next Scene" },
+                { "PreviousTrack", "Previous Track" },
+                { "NextTrack", "Next Track" },
+        };
+
+// --- Trackswitch types ---
+TrackswitchDescription trackswitchDescriptions_[SETUP_NUM_TRACKSWITCHTYPES] =
+        {
+                { "Normal", "via SELECT encoder" },
+                { "HoldMuteKeyFast", "hold mute key (0.2s)" },
+                { "HoldMuteKey", "hold mute key (0.4s)" },
+        };
+
+// --- Followtrack types ---
+FollowtrackDescription followtrackDescriptions_[SETUP_NUM_FOLLOWTRACKTYPES] =
+        {
+                { "Disabled", "disabled" },
+                { "FollowOnUnmute", "when unmuting" },
+                { "FollowOnMuteOrUnmute", "when muting or unmuting" },
+        };
+
+// ----------------------------------------------------------------------------------------
 
 /**
  * Help function which parses a decimal or hex value
@@ -295,6 +343,40 @@ void writeSetup()
    sprintf(line_buffer_, "SETUP_Invert_OLED_Enabled %d\n", (s8) gcInvertOLED_);
    FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
 
+   // write oled inversion config
+   sprintf(line_buffer_, "SETUP_Invert_OLED_Enabled %d\n", (s8) gcInvertOLED_);
+   FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
+   // write footswitch inversion config
+   sprintf(line_buffer_, "SETUP_Footswitches_Inversionmask 0x%08x\n", (s8) gcFootswitchesInversionmask_);
+   FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
+   // write footswitch actions config
+   sprintf(line_buffer_, "SETUP_Footswitch1_Action %s\n", footswitchActionDescriptions_[gcFootswitch1Action_].configname);
+   FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+   sprintf(line_buffer_, "SETUP_Footswitch2_Action %s\n", footswitchActionDescriptions_[gcFootswitch2Action_].configname);
+   FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
+   // write mute leds inversion config
+   sprintf(line_buffer_, "SETUP_Invert_MUTE_LEDs %d\n", (s8) gcInvertMuteLEDs_);
+   FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
+   // write track switch config
+   sprintf(line_buffer_, "SETUP_Trackswitch_Type %s\n", trackswitchDescriptions_[gcTrackswitchType_].configname);
+   FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
+   // write tempodelta config
+   sprintf(line_buffer_, "SETUP_Tempodelta_Type %s\n", tempodeltaDescriptions_[gcTempodeltaType_].configname);
+   FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
+   // write followtrack config
+   sprintf(line_buffer_, "SETUP_Followtrack_Type %s\n", followtrackDescriptions_[gcFollowtrackType_].configname);
+   FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
+   // write LEDnotes config
+   sprintf(line_buffer_, "SETUP_LED_Notes %d\n", (s8) gcLEDNotes_);
+   FILE_WriteBuffer((u8 *)line_buffer_, strlen(line_buffer_));
+
    // close file
    FILE_WriteClose();
 
@@ -324,7 +406,7 @@ void readSetup()
    do
    {
       status = FILE_ReadLine((u8 *) line_buffer_, 128);
-      DEBUG_MSG("readSetup() read: %s", line_buffer_);
+      /// DEBUG_MSG("readSetup() read: %s", line_buffer_);
 
       if (status > 1)
       {
@@ -361,7 +443,7 @@ void readSetup()
                   if (userInstruments_[instrumentNumber].channel > 0)
                      gcNumberOfActiveUserInstruments_++;
 
-                  DEBUG_MSG("readSetup() number of userInstruments now: %d", gcNumberOfActiveUserInstruments_);
+                  /// DEBUG_MSG("readSetup() number of userInstruments now: %d", gcNumberOfActiveUserInstruments_);
                }
                else if (strcmp(parameter, "MIDI_RouterNode") == 0)
                {
@@ -469,6 +551,82 @@ void readSetup()
                   value = get_dec_range(word, parameter, 0, 0x7fffffff);
                   gcInvertOLED_ = value;
                }
+               else if (strcmp(parameter, "SETUP_Footswitches_Inversionmask") == 0)
+               {
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  gcFootswitchesInversionmask_ = value;
+               }
+               else if (strcmp(parameter, "SETUP_Footswitch1_Action") == 0)
+               {
+                  u8 i;
+
+                  for (i = 0; i < SETUP_NUM_FOOTSWITCHACTIONS; i++)
+                  {
+                     if (strcasecmp(word, footswitchActionDescriptions_[i].configname) == 0)
+                     {
+                        gcFootswitch1Action_ = (enum FootswitchActionEnum)i;
+                     }
+                  }
+               }
+               else if (strcmp(parameter, "SETUP_Footswitch2_Action") == 0)
+               {
+                  u8 i;
+
+                  for (i = 0; i < SETUP_NUM_FOOTSWITCHACTIONS; i++)
+                  {
+                     if (strcasecmp(word, footswitchActionDescriptions_[i].configname) == 0)
+                     {
+                        gcFootswitch2Action_ = (enum FootswitchActionEnum)i;
+                     }
+                  }
+               }
+               else if (strcmp(parameter, "SETUP_Invert_MUTE_LEDs") == 0)
+               {
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  gcInvertMuteLEDs_ = value;
+               }
+               else if (strcmp(parameter, "SETUP_Trackswitch_Type") == 0)
+               {
+                  u8 i;
+
+                  for (i = 0; i < SETUP_NUM_TRACKSWITCHTYPES; i++)
+                  {
+                     if (strcasecmp(word, trackswitchDescriptions_[i].configname) == 0)
+                     {
+                        gcTrackswitchType_ = (enum TrackswitchTypeEnum)i;
+                     }
+                  }
+               }
+               else if (strcmp(parameter, "SETUP_Tempodelta_Type") == 0)
+               {
+                  u8 i;
+
+                  for (i = 0; i < SETUP_NUM_TEMPODELTATYPES; i++)
+                  {
+                     if (strcasecmp(word, tempodeltaDescriptions_[i].configname) == 0)
+                     {
+                        gcTempodeltaType_ = (enum TempodeltaTypeEnum)i;
+                     }
+                  }
+               }
+               else if (strcmp(parameter, "SETUP_Followtrack_Type") == 0)
+               {
+                  u8 i;
+
+                  for (i = 0; i < SETUP_NUM_FOLLOWTRACKTYPES; i++)
+                  {
+                     if (strcasecmp(word, followtrackDescriptions_[i].configname) == 0)
+                     {
+                        gcFollowtrackType_ = (enum FollowtrackTypeEnum)i;
+                     }
+                  }
+               }
+               else if (strcmp(parameter, "SETUP_LED_Notes") == 0)
+               {
+                  value = get_dec_range(word, parameter, 0, 0x7fffffff);
+                  gcLEDNotes_ = value;
+               }
+
             }
          }
       }
@@ -534,6 +692,23 @@ void setupParameterDepressed(u8 parameterNumber)
 
       case SETUP_INVERT_OLED:
          gcInvertOLED_ = !gcInvertOLED_;
+         command_ = COMMAND_SETUP_SELECT;
+         break;
+
+      case SETUP_INVERT_FOOTSWITCHES:
+         if (parameterNumber == 1)
+            gcFootswitchesInversionmask_ ^= 0x1;
+         if (parameterNumber == 2)
+            gcFootswitchesInversionmask_ ^= 0x2;
+         break;
+
+      case SETUP_INVERT_MUTE_LEDS:
+         gcInvertMuteLEDs_ = !gcInvertMuteLEDs_;
+         command_ = COMMAND_SETUP_SELECT;
+         break;
+
+      case SETUP_LED_NOTES:
+         gcLEDNotes_ = !gcLEDNotes_;
          command_ = COMMAND_SETUP_SELECT;
          break;
    }
@@ -603,6 +778,16 @@ void setupParameterEncoderTurned(u8 parameterNumber, s32 incrementer)
          }
          break;
 
+      case SETUP_TEMPODELTA:
+         if (command_ == COMMAND_SETUP_PAR1)
+         {
+            s8 newTempodeltaType = gcTempodeltaType_ += incrementer;
+            newTempodeltaType = newTempodeltaType >= SETUP_NUM_TEMPODELTATYPES ? SETUP_NUM_TEMPODELTATYPES - 1 : newTempodeltaType;
+            newTempodeltaType = newTempodeltaType < 0 ? 0 : newTempodeltaType;
+            gcTempodeltaType_ = (enum TempodeltaTypeEnum)newTempodeltaType;
+         }
+         break;
+
       case SETUP_SCREENSAVER_MINUTES:
          if (command_ == COMMAND_SETUP_PAR1)
          {
@@ -621,6 +806,62 @@ void setupParameterEncoderTurned(u8 parameterNumber, s32 incrementer)
       case SETUP_INVERT_OLED:
          gcInvertOLED_ = !gcInvertOLED_;
          break;
+
+      case SETUP_INVERT_FOOTSWITCHES:
+         if (command_ == COMMAND_SETUP_PAR1)
+            gcFootswitchesInversionmask_ ^= 0x1;
+         else if (command_ == COMMAND_SETUP_PAR2)
+            gcFootswitchesInversionmask_ ^= 0x2;
+         break;
+
+      case SETUP_FOOTSWITCH1_ACTION:
+         if (command_ == COMMAND_SETUP_PAR1)
+         {
+            s8 newAction = gcFootswitch1Action_ += incrementer;
+            newAction = newAction >= SETUP_NUM_FOOTSWITCHACTIONS ? SETUP_NUM_FOOTSWITCHACTIONS - 1 : newAction;
+            newAction = newAction < 0 ? 0 : newAction;
+            gcFootswitch1Action_ = (enum FootswitchActionEnum)newAction;
+         }
+         break;
+
+      case SETUP_FOOTSWITCH2_ACTION:
+         if (command_ == COMMAND_SETUP_PAR1)
+         {
+            s8 newAction = gcFootswitch2Action_ += incrementer;
+            newAction = newAction >= SETUP_NUM_FOOTSWITCHACTIONS ? SETUP_NUM_FOOTSWITCHACTIONS - 1 : newAction;
+            newAction = newAction < 0 ? 0 : newAction;
+            gcFootswitch2Action_ = (enum FootswitchActionEnum)newAction;
+         }
+         break;
+
+      case SETUP_INVERT_MUTE_LEDS:
+         gcInvertMuteLEDs_ = !gcInvertMuteLEDs_;
+         break;
+
+      case SETUP_TRACK_SWITCH_TYPE:
+         if (command_ == COMMAND_SETUP_PAR1)
+         {
+            s8 newTrackswitchType = gcTrackswitchType_ += incrementer;
+            newTrackswitchType = newTrackswitchType >= SETUP_NUM_TRACKSWITCHTYPES ? SETUP_NUM_TRACKSWITCHTYPES - 1 : newTrackswitchType;
+            newTrackswitchType = newTrackswitchType < 0 ? 0 : newTrackswitchType;
+            gcTrackswitchType_ = (enum TrackswitchTypeEnum)newTrackswitchType;
+         }
+         break;
+
+      case SETUP_FOLLOW_TRACK_TYPE:
+         if (command_ == COMMAND_SETUP_PAR1)
+         {
+            s8 newFollowtrackType = gcFollowtrackType_ += incrementer;
+            newFollowtrackType = newFollowtrackType >= SETUP_NUM_FOLLOWTRACKTYPES ? SETUP_NUM_FOLLOWTRACKTYPES - 1 : newFollowtrackType;
+            newFollowtrackType = newFollowtrackType < 0 ? 0 : newFollowtrackType;
+            gcFollowtrackType_ = (enum FollowtrackTypeEnum)newFollowtrackType;
+         }
+         break;
+
+      case SETUP_LED_NOTES:
+         gcLEDNotes_ = !gcLEDNotes_;
+         break;
+
    }
 
    configChangesToBeWritten_ = 1;

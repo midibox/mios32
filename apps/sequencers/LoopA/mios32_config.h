@@ -13,7 +13,8 @@
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
 #define MIOS32_LCD_BOOT_MSG_LINE1 "LoopA"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2019 Hawkeye, latigid on, TK."
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2020 Hawkeye, latigid on, TK."
+#define VERSION "V2.06"
 
 // define a unique VID/PID for this application
 #define MIOS32_USB_PRODUCT_STR  "LoopA"

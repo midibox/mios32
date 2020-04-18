@@ -30,7 +30,6 @@ extern void vPortExitCritical(void);
 #include <app_lcd.h>
 #include <seq_bpm.h>
 #include "midi_out.h"
-//#include <seq_midi_out.h>
 #include <midi_port.h>
 #include <midi_router.h>
 

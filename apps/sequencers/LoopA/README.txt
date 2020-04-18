@@ -1,4 +1,4 @@
-LoopA by Hawkeye in the years 2015-2019, many code fragments adapted prior written and copyrighted by:
+LoopA (C) by Hawkeye/Peter Knoblach in the years 2015-2020, many code fragments adapted prior written and copyrighted by:
 
 Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.

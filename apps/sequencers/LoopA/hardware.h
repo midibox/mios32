@@ -5,13 +5,13 @@
 // --- LEDs ---
 
 // logical LED states
-typedef enum
+enum LEDStateEnum
 {
    LED_OFF = 0,
    LED_RED = 1,
    LED_GREEN = 2,
    LED_BLUE = 4
-} LEDStates;
+};
 
 // physical hardware LEDs (three colors per LED)
 extern const u8 HW_LED_RED_GP1;
@@ -105,6 +105,9 @@ extern const u8 sw_enc_scene;
 extern const u8 sw_enc_select;
 extern const u8 sw_enc_live;
 extern const u8 sw_enc_value;
+
+extern const u8 sw_footswitch1;
+extern const u8 sw_footswitch2;
 
 // --- Encoders ---
 
