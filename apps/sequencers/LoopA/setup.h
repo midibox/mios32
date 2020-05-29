@@ -11,52 +11,59 @@ extern char line_buffer_[128];  // single global line buffer for reading/writing
 
 // --- Global config variables ---
 extern s16 gcLastUsedSessionNumber_;
+extern s8 gcNumberOfActiveUserInstruments_;
+
 extern s8 gcFontType_;
 extern s8 gcInvertOLED_;
 extern s8 gcBeatLEDsEnabled_;
 extern s8 gcBeatDisplayEnabled_;
-extern s8 gcNumberOfActiveUserInstruments_;
-
+extern u8 gcScreensaverAfterMinutes_;
 extern mios32_midi_port_t gcMetronomePort_;
 extern u8 gcMetronomeChannel_;
 extern u8 gcMetronomeNoteM_;
 extern u8 gcMetronomeNoteB_;
-extern u8 gcScreensaverAfterMinutes_;
+extern enum TempodeltaTypeEnum gcTempodeltaType_;
+extern u8 gcFootswitchesInversionmask_; // binary encoded: fsw1 = rightmost bit, fsw2 = second bit, ...
+extern enum FootswitchActionEnum gcFootswitch1Action_;
+extern enum FootswitchActionEnum gcFootswitch2Action_;
+extern s8 gcInvertMuteLEDs_;
+extern enum TrackswitchTypeEnum gcTrackswitchType_;
+extern enum FollowtrackTypeEnum gcFollowtrackType_;
+extern s8 gcLEDNotes_;
 
 // --- Global config settings ---
 typedef struct
 {
-   char name[16];
-   char par1Name[8];
-   char par2Name[8];
-   char par3Name[8];
-   char par4Name[8];
+   const char* name;
+   const char* par1Name;
+   const char* par2Name;
+   const char* par3Name;
+   const char* par4Name;
 } SetupParameter;
 
-#define SETUP_NUM_ITEMS 10
+#define SETUP_NUM_ITEMS 18
 
 enum SetupParameterEnum
 {
    SETUP_FONT_TYPE,
    SETUP_BEAT_LEDS_ENABLED,
    SETUP_BEAT_DISPLAY_ENABLED,
-   // SETUP_COMMAND_HELP_ENABLED,
    SETUP_SCREENSAVER_MINUTES,
    SETUP_INVERT_OLED,
    SETUP_METRONOME,
-   // SETUP_TEMPO_UP_DOWN_BPM_SEC,
+   SETUP_TEMPODELTA,
+   SETUP_INVERT_FOOTSWITCHES,
+   SETUP_FOOTSWITCH1_ACTION,
+   SETUP_FOOTSWITCH2_ACTION,
+   SETUP_INVERT_MUTE_LEDS,
+   SETUP_TRACK_SWITCH_TYPE,
+   SETUP_FOLLOW_TRACK_TYPE,
+   SETUP_LED_NOTES,
 
    SETUP_MCLK_DIN_IN,
    SETUP_MCLK_DIN_OUT,
    SETUP_MCLK_USB_IN,
    SETUP_MCLK_USB_OUT,
-
-   /* SETUP_DEFAULT_TRACK_1_PORT_CHN_LEN_FWD,
-   SETUP_DEFAULT_TRACK_2_PORT_CHN_LEN_FWD,
-   SETUP_DEFAULT_TRACK_3_PORT_CHN_LEN_FWD,
-   SETUP_DEFAULT_TRACK_4_PORT_CHN_LEN_FWD,
-   SETUP_DEFAULT_TRACK_5_PORT_CHN_LEN_FWD,
-   SETUP_DEFAULT_TRACK_6_PORT_CHN_LEN_FWD */
 };
 
 extern SetupParameter setupParameters_[SETUP_NUM_ITEMS];
@@ -73,6 +80,88 @@ typedef struct
 
 extern UserInstrument userInstruments_[SETUP_NUM_USERINSTRUMENTS];
 
+// --- Tempodelta type ---
+
+typedef struct
+{
+   const char* configname;
+   const char* name;
+   float speed;
+} TempodeltaDescription;
+
+#define SETUP_NUM_TEMPODELTATYPES 5
+extern TempodeltaDescription tempodeltaDescriptions_[SETUP_NUM_TEMPODELTATYPES];
+
+enum TempodeltaTypeEnum
+{
+   TEMPODELTA_SLOWER,
+   TEMPODELTA_SLOW,
+   TEMPODELTA_NORMAL,
+   TEMPODELTA_FAST,
+   TEMPODELTA_FASTER
+};
+
+// --- Footswitch actions ---
+
+typedef struct
+{
+   const char* configname;
+   const char* name;
+} FootswitchActionDescription;
+
+#define SETUP_NUM_FOOTSWITCHACTIONS 11
+extern FootswitchActionDescription footswitchActionDescriptions_[SETUP_NUM_FOOTSWITCHACTIONS];
+
+enum FootswitchActionEnum
+{
+   FOOTSWITCH_CURSORERASE,
+   FOOTSWITCH_RUNSTOP,
+   FOOTSWITCH_ARM,
+   FOOTSWITCH_CLEARCLIP,
+   FOOTSWITCH_JUMPTOSTART,
+   FOOTSWITCH_JUMPTOPRECOUNT,
+   FOOTSWITCH_METRONOME,
+   FOOTSWITCH_PREVSCENE,
+   FOOTSWITCH_NEXTSCENE,
+   FOOTSWITCH_PREVTRACK,
+   FOOTSWITCH_NEXTTRACK
+};
+
+// --- Track switch type ---
+
+typedef struct
+{
+   const char* configname;
+   const char* name;
+} TrackswitchDescription;
+
+#define SETUP_NUM_TRACKSWITCHTYPES 3
+extern TrackswitchDescription trackswitchDescriptions_[SETUP_NUM_TRACKSWITCHTYPES];
+
+enum TrackswitchTypeEnum
+{
+   TRACKSWITCH_NORMAL,              // Track switching only with the select encoder
+   TRACKSWITCH_HOLD_MUTE_KEY_FAST,  // Track switching by pushing and holding a mute key in the mute screen (keep pressed for at least 0.2 sec and release afterwards)
+   TRACKSWITCH_HOLD_MUTE_KEY,       // Track switching by pushing and holding a top-row key in the mute screen (keep pressed for at least 0.4 sec and release afterwards)
+};
+
+// --- Follow Track type ---
+
+typedef struct
+{
+   const char* configname;
+   const char* name;
+} FollowtrackDescription;
+
+#define SETUP_NUM_FOLLOWTRACKTYPES 3
+extern FollowtrackDescription followtrackDescriptions_[SETUP_NUM_FOLLOWTRACKTYPES];
+
+enum FollowtrackTypeEnum
+{
+   FOLLOWTRACK_DISABLED,              // No automatic track switching/following
+   FOLLOWTRACK_ON_UNMUTE,             // When a track is unmuted, active track follows this action
+   FOLLOWTRACK_ON_MUTE_AND_UNMUTE     // When a track is muted or unmuted, active track follows this action
+};
 
 
 // --- functions ---

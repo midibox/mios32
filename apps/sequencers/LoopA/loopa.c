@@ -1,5 +1,5 @@
 // LoopA Core Logic
-// (c) Hawkeye 2015-2019
+// (c) Hawkeye 2015-2020
 //
 // This file provides the LoopA core data structures and logic
 // =================================================================================================
@@ -14,12 +14,10 @@
 #include "voxelspace.h"
 #include "setup.h"
 
-// --  Local types ---
-
 // --- Tables ---
 s8 liveTransposeSemitones_[15] = { -36, -24, -19, -17, -12,  -7,  -5,   0,   5,   7,  12,  17,  19,  24,  36};
 
-// Todo: need to store interpret beatloop at/jump step tables relative to (configurable!) measure length, so
+// Todo: need to store beatloop at/jump step tables relative to (configurable!) measure length, so
 // that it sounds better e.g. for a measure length of 12 steps (3/4 beat instead of 4/4 beat)
 static s8 liveBeatLoopAtStep1_[15] =    {  16,   8,   4,   2,   4,   8,  16,   0,  16,   8,   4,   2,   4,   8,  16};
 static s8 liveBeatLoopJumpStep1_[15] =  { -16,  -8,  -4,  -2,  -4,  -8, -16,   0,  16,   8,   4,   2,   4,   8,  16};
@@ -29,6 +27,7 @@ static s8 liveBeatLoopJumpStep2_[15] =  {  16,   8,   4,   0,   0,   0,   0,   0
 // --- Global vars ---
 char filename_[20];                   // global, for filename operations
 
+u8 loopaStarted_ = 0;                 // set to 1 after successful loopaStartup()
 u32 millisecondsSinceStartup_ = 0;    // global "uptime" timer
 u16 inactivitySeconds_ = 0;           // screensaver timer
 u32 tick_ = 0xFFFFFFFF;               // global seq tick (initialize to non-zero value to avoid skipping first tick)
@@ -38,6 +37,8 @@ u8 sessionExistsOnDisk_ = 0;          // is the currently selected session numbe
 enum LoopAPage page_ = PAGE_MUTE;     // currently active page/view
 enum Command command_ = COMMAND_NONE; // currently active command
 s8 tempoFade_ = 0;                    // 0: no tempo change ongoing | +1: increase tempo button pressed | -1: decrease tempo button pressed (ongoing event)
+u8 cursorEraseActive_ = 0;            // 0: (default): do not erase notes under cursor | 1: (footswitch activated): erase notes under cursor (re-record clip)
+s8 trackLEDNoteFrame[TRACKS];         // frame countdown - if == 0 don't visualize note played, otherwise decrement and illuminate red track LED.
 
 // --- Basic session data (saved to session on disk) ---
 char sessionName_[16];                // 15 characters max (plus trailing string delimiter zero)
@@ -235,8 +236,23 @@ u32 getClipLengthInTicks(u8 clip)
  */
 void toggleMute(u8 clipNumber)
 {
-   if (trackMute_[clipNumber])
-      setActiveTrack(clipNumber); // if track was unmuted, set it as active track
+   switch (gcFollowtrackType_)
+   {
+      case FOLLOWTRACK_DISABLED:
+         // do nothing, don't follow muted or unmuted track
+         break;
+
+      case FOLLOWTRACK_ON_UNMUTE:
+         // follow track, if an unmute occured:
+         if (trackMute_[clipNumber])
+            setActiveTrack(clipNumber); // if track was unmuted, set it as active track
+         break;
+
+      case FOLLOWTRACK_ON_MUTE_AND_UNMUTE:
+         // always follow track (for mutes and unmutes)
+         setActiveTrack(clipNumber); // if track was unmuted, set it as active track
+         break;
+   }
 
    if (SEQ_BPM_IsRunning())
       trackMuteToggleRequested_[clipNumber] = !trackMuteToggleRequested_[clipNumber];
@@ -533,6 +549,8 @@ void loadSession(u16 sessionNumber)
          status |= FILE_ReadBuffer((u8*)clipFxFTSNote_, sizeof(clipFxFTSNote_));
          status |= FILE_ReadBuffer((u8*)&liveAlternatingTranspose_, sizeof(liveAlternatingTranspose_));
          status |= FILE_ReadBuffer((u8*)&liveAlternatingBeatLoop_, sizeof(liveAlternatingBeatLoop_));
+
+         SEQ_BPM_Set(bpm_);
       }
 
       status |= FILE_ReadClose(&file);
@@ -560,6 +578,7 @@ void loopaStartup()
 {
    calcField();
    screenShowLoopaLogo(1);
+   loopaStarted_ = 1;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -589,8 +608,10 @@ s32 loopaSeqHandler(void)
    if (SEQ_BPM_ChkReqStart())
    {
       MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
-      seqReset(1);
-      seqSongPos(0);
+
+      // New: not needed
+      // seqReset(1);
+      // seqSongPos(0);
    }
 
    u16 new_song_pos;
@@ -604,12 +625,14 @@ s32 loopaSeqHandler(void)
    {
       updateBeatLEDsAndClipPositions(bpm_tick);
 
+      // New: not needed
       // set initial BPM
-      if (bpm_tick == 0)
+      /*if (bpm_tick == 0)
          SEQ_BPM_Set(bpm_);
 
       if (bpm_tick == 0) // send start (again) to synchronize with new MIDI songs
          MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
+      */
 
       loopaSeqTick(bpm_tick);
    }
@@ -749,34 +772,68 @@ s32 loopaSeqTick(u32 bpmTick)
             u32 clipNoteTime = boundTickToClipSteps(bpmTick, track);
             u16 i;
 
-            for (i = 0; i < clipNotesSize_[track][activeScene_]; i++)
+            for (i = 0; i < clipNotesSize_[track][activeScene_]; i++) // i: clip notes iterator
             {
                if (clipNotes_[track][activeScene_][i].length > 0) // not still being held/recorded!
                {
                   if (quantizeTransform(track, i) == clipNoteTime)
                   {
-                     s16 note = clipNotes_[track][activeScene_][i].note + clipTranspose_[track][activeScene_] +
-                                liveTransposeSemi;
-                     note = note < 0 ? 0 : note;
-                     note = note > 127 ? 127 : note;
+                     // If cursor erase is activated on the active track, set velocity of this note to zero, erase it, don't play it
+                     if (cursorEraseActive_ && track == activeTrack_)
+                     {
+                        clipNotes_[track][activeScene_][i].velocity = 0;
+                     }
+                     else
+                     {
+                        if (clipNotes_[track][activeScene_][i].velocity > 0)
+                        {
+                           s16 note = clipNotes_[track][activeScene_][i].note + clipTranspose_[track][activeScene_] +
+                                      liveTransposeSemi;
+                           note = note < 0 ? 0 : note;
+                           note = note > 127 ? 127 : note;
 
-                     mios32_midi_package_t package;
-                     package.type = NoteOn;
-                     package.event = NoteOn;
-                     package.chn = isInstrument(trackMidiOutPort_[track])
-                                   ? getInstrumentChannelNumberFromLoopAPortNumber(trackMidiOutPort_[track])
-                                   : trackMidiOutChannel_[track];
-                     package.note = note;
-                     package.velocity = clipNotes_[track][activeScene_][i].velocity;
+                           mios32_midi_package_t package;
+                           package.type = NoteOn;
+                           package.event = NoteOn;
+                           package.chn = isInstrument(trackMidiOutPort_[track])
+                                         ? getInstrumentChannelNumberFromLoopAPortNumber(trackMidiOutPort_[track])
+                                         : trackMidiOutChannel_[track];
+                           package.note = note;
+                           package.velocity = clipNotes_[track][activeScene_][i].velocity;
 
-                     hookMIDISendPackage(getMIOSPortNumberFromLoopAPortNumber(trackMidiOutPort_[track]), package); // play NOW
-                     // LoopA_MIDI_OUT_Send(track, package, LOOPA_MIDI_OUT_OnOffEvent, 0, clipNotes_[track][activeScene_][i].length + 1, 1);
+                           hookMIDISendPackage(getMIOSPortNumberFromLoopAPortNumber(trackMidiOutPort_[track]),
+                                               package); // play NOW
+                           // LoopA_MIDI_OUT_Send(track, package, LOOPA_MIDI_OUT_OnOffEvent, 0, clipNotes_[track][activeScene_][i].length + 1, 1);
+                           trackLEDNoteFrame[track] = 2;
 
-                     package.type = NoteOff;
-                     package.event = NoteOff;
-                     package.velocity = 0;
-                     // seqPlayEvent(track, package, bpmTick + clipNotes_[track][activeScene_][i].length); // always play off event (schedule later)
-                     LoopA_MIDI_OUT_Send(getMIOSPortNumberFromLoopAPortNumber(trackMidiOutPort_[track]), package, LOOPA_MIDI_OUT_OffEvent, clipNotes_[track][activeScene_][i].length + 1, 1);
+                           package.type = NoteOff;
+                           package.event = NoteOff;
+                           package.velocity = 0;
+                           // seqPlayEvent(track, package, bpmTick + clipNotes_[track][activeScene_][i].length); // always play off event (schedule later)
+                           LoopA_MIDI_OUT_Send(getMIOSPortNumberFromLoopAPortNumber(trackMidiOutPort_[track]), package,
+                                               LOOPA_MIDI_OUT_OffEvent, clipNotes_[track][activeScene_][i].length + 1,
+                                               1);
+                        }
+                     }
+                  }
+               }
+            }
+         }
+         else // Track is muted, don't play notes, but handle potentially active "cursor erase" function...
+         {
+            if (cursorEraseActive_)
+            {
+               u32 clipNoteTime = boundTickToClipSteps(bpmTick, track);
+               u16 i;
+
+               for (i = 0; i < clipNotesSize_[track][activeScene_]; i++) // i: clip notes iterator
+               {
+                  if (clipNotes_[track][activeScene_][i].length > 0) // not still being held/recorded!
+                  {
+                     if (quantizeTransform(track, i) == clipNoteTime)
+                     {
+                        clipNotes_[track][activeScene_][i].velocity = 0;
+                     }
                   }
                }
             }
@@ -890,11 +947,13 @@ s32 seqInit()
 {
    // init BPM generator
    SEQ_BPM_Init(0);
-   bpm_ = 120.0;
-   SEQ_BPM_Set(bpm_);
 
    // reset sequencer
    seqReset(0);
+
+   // set initial BPM
+   bpm_ = 120.0;
+   SEQ_BPM_Set(bpm_);
 
    // scheduler should send packages to private hook
    LoopA_MIDI_OUT_Callback_MIDI_SendPackage_Set(hookMIDISendPackage);
@@ -1000,6 +1059,24 @@ void loopaRecord(mios32_midi_port_t port, mios32_midi_package_t midi_package)
             u16 clipNoteNumber = clipNotesSize_[activeTrack_][activeScene_];
             u32 clipNoteTime = boundTickToClipSteps(tick_, activeTrack_);
 
+            u8 reusedDeletedNote = 0;
+            // if our clip note store is half full, try to find a deleted note to reuse, this makes continuous recording via cursor erase possible
+            if (clipNoteNumber > (MAXNOTES >> 1))
+            {
+               u16 deletedClipNoteNumber;
+
+               for (deletedClipNoteNumber = 0; deletedClipNoteNumber < clipNoteNumber; deletedClipNoteNumber++)
+               {
+                  if (clipNotes_[activeTrack_][activeScene_][deletedClipNoteNumber].velocity == 0)
+                  {
+                     // Found a deleted note, that can be reused:
+                     clipNoteNumber = deletedClipNoteNumber;
+                     reusedDeletedNote = 1;
+                     break;
+                  }
+               }
+            }
+
             if (clipNoteNumber < MAXNOTES && midi_package.type == NoteOn && midi_package.velocity > 0)
             {
                clipNotes_[activeTrack_][activeScene_][clipNoteNumber].tick = clipNoteTime;
@@ -1013,7 +1090,8 @@ void loopaRecord(mios32_midi_port_t port, mios32_midi_package_t midi_package)
                notePtrsOn_[midi_package.note] = clipNoteNumber;
 
                // screenFormattedFlashMessage("Note %d on - ptr %d", midi_package.note, clipNoteNumber);
-               clipNotesSize_[activeTrack_][activeScene_]++;
+               if (!reusedDeletedNote)
+                  clipNotesSize_[activeTrack_][activeScene_]++;
             }
             else if (midi_package.type == NoteOff || (midi_package.type == NoteOn && midi_package.velocity == 0))
             {
@@ -1046,6 +1124,105 @@ void loopaRecord(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 
             hookMIDISendPackage(activeTrack_, midi_package);
          }
+      }
+   }
+}
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * Footswitch pressed
+ * @param footswitchNumber which footswitch number was pressed
+ */
+void footswitchPressed(u8 footswitchNumber)
+{
+   // Only consider footswitch presses, after setup has been read, to avoid false switch press detects during startup
+   if (loopaStarted_)
+   {
+      // If we are in the setup screen, create some debug output which makes configuring the inversion easier
+      if (page_ == PAGE_SETUP)
+         screenFormattedFlashMessage("Pressed footswitch %d", footswitchNumber);
+
+      switch(footswitchNumber == 1 ? gcFootswitch1Action_ : gcFootswitch2Action_)
+      {
+         case FOOTSWITCH_ARM:
+            seqArmButton();
+            break;
+
+         case FOOTSWITCH_CLEARCLIP:
+            clipClear();
+            break;
+
+         case FOOTSWITCH_CURSORERASE:
+            if (SEQ_BPM_IsRunning())
+            {
+               screenFormattedFlashMessage("Cursor Erase");
+               cursorEraseActive_ = 1;
+            }
+            break;
+
+         case FOOTSWITCH_JUMPTOPRECOUNT:
+            {
+               screenFormattedFlashMessage("Jump to Precount");
+               s16 step = clipSteps_[activeTrack_][activeScene_] - stepsPerMeasure_;
+               if (step < 0) step = 0;
+               SEQ_BPM_TickSet(stepToTick((u16)step));
+            }
+            break;
+
+         case FOOTSWITCH_JUMPTOSTART:
+            screenFormattedFlashMessage("Jump to Start");
+            SEQ_BPM_TickSet(0);
+            break;
+
+         case FOOTSWITCH_METRONOME:
+            screenFormattedFlashMessage("Toggled Metronome");
+            metronomeEnabled_ = metronomeEnabled_ > 0 ? 0 : 1;
+            break;
+
+         case FOOTSWITCH_NEXTSCENE:
+            jumpToNextScene();
+            break;
+
+         case FOOTSWITCH_NEXTTRACK:
+            switchToNextTrack();
+            break;
+
+         case FOOTSWITCH_PREVSCENE:
+            jumpToPreviousScene();
+            break;
+
+         case FOOTSWITCH_PREVTRACK:
+            switchToPreviousTrack();
+            break;
+
+         case FOOTSWITCH_RUNSTOP:
+            seqPlayStopButton();
+            break;
+
+      }
+   }
+}
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * Footswitch released
+ * @param footswitchNumber which footswitch number was released
+ */
+void footswitchReleased(u8 footswitchNumber)
+{
+   // Only consider footswitch presses, after setup has been read, to avoid false switch press detects during startup
+   if (loopaStarted_)
+   {
+      // If we are in the setup screen, create some debug output which makes configuring the inversion easier
+      if (page_ == PAGE_SETUP)
+         screenFormattedFlashMessage("Released footswitch %d", footswitchNumber);
+
+      switch(footswitchNumber == 1 ? gcFootswitch1Action_ : gcFootswitch2Action_)
+      {
+         case FOOTSWITCH_CURSORERASE:
+            cursorEraseActive_ = 0;
+            break;
+
       }
    }
 }

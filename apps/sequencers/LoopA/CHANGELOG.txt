@@ -1,0 +1,21 @@
+LoopA V2.06 (released on 2020/04/15):
+-------------------------------------
+* Now supporting 256, 512 and 1024 step-equivalent clip lengths (previous limit was 128)
+* Fixed settings (e.g. metronome config) mattias key illumination bug (thanks, Eugene!)
+* Illuminate SHIFT-ABOUT and SHIFT-HELP keys in red when they are pressed
+* Fixed a bug with "hanging" illuminated matias setup-screen LEDs, when navigating away from the setup screen in the menu (Thanks, Eugene!)
+* Enabled respective button highlighting, when copy/paste/delete keys are pressed
+* Enabled run/stop beat LED flashing to flash red on full measure, green on beat
+* Fixed 0xFA MIDI clock start command, that was sent twice on run/stop sequencer start (Thanks, Eugene!)
+* Improved display responsiveness/refresh rate, if the LoopA core is not under load
+* Improved initial BPM/timing stability, just a after a sequence was started (Thanks Michael!)
+* Enabled frontpanel LED outputs for MIDI activity on IN1/IN2/BLM ports
+* New option "Inv. Footsw": software footswitch inversion support to support both types of normal/inverted footswitches.
+* Added customizable footswitch functions: choose any two of "CursorErase", "RunStop", "Arm", "ClearClip", "JumpToStart", "JumpToPrecount", "Metronome", "PreviousScene", "NextScene", "PreviousTrack", "NextTrack"
+* Holding down the footswitch for CursorErase allows "overwriting"clip notes under the time cursor, this allows for live re-recording of new notes while the sequencer is running. JumpToPrecount allows jumping to a count-in point of a sequence, pushing the footswitch thus simplifies re-recording of a clip.
+* New option "Inv. MuteLED" to invert mute LEDs (Thanks, Michael!)
+* New option "Track Switch": when enabled, "long-pressing" a mute key switches to that track. With configurable key hold time in the setup screen. (Thanks, Eugene!)
+* New Option "Tempo Up/Dn": Configurable BPM delta speed (faster/slower buttons) 
+* New Option "Follow Track": automatic track following when muting/unmuting, can be set to "disabled"/"when unmuting"/"when muting or unmuting" (Thanks, Eugene!)
+* New Option "LED Notes": visualizes played notes via temporarily red illuminated track buttons in the MUTE screen - when the sequencer is running, this indicates which track is actively playing notes.
+

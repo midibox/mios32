@@ -36,6 +36,7 @@
 #include "ui.h"
 #include "screen.h"
 #include "midi_out.h"
+#include "setup.h"
 
 // #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
@@ -187,12 +188,9 @@ void APP_Init(void)
    MIOS32_ENC_ConfigSet(enc_value_id, enc_config);
 
    // start tasks
-   xTaskCreate(TASK_Period_1mS, (const char *const) "1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS,
-               NULL);
-   xTaskCreate(TASK_Period_1mS_LP, (const char *const) "1mS_LP", 2 * configMINIMAL_STACK_SIZE, NULL,
-               PRIORITY_TASK_PERIOD_1mS_LP, NULL);
-   xTaskCreate(TASK_Period_1mS_SD, (const char *const) "1mS_SD", 2 * configMINIMAL_STACK_SIZE, NULL,
-               PRIORITY_TASK_PERIOD_1mS_SD, NULL);
+   xTaskCreate(TASK_Period_1mS, (const char *const) "1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
+   xTaskCreate(TASK_Period_1mS_LP, (const char *const) "1mS_LP", 2 * configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
+   xTaskCreate(TASK_Period_1mS_SD, (const char *const) "1mS_SD", 2 * configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_SD, NULL);
 
    loopaStartup();
 }
@@ -241,6 +239,21 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
    // (the SysEx stream would interfere with monitor messages)
    u8 filter_sysex_message = (port == USB0) || (port == UART0);
    MIDIMON_Receive(port, midi_package, filter_sysex_message);
+
+   /* Output MIDI IN activity on the frontpanel LEDs */
+
+   switch (port)
+   {
+      case UART0:
+         MIOS32_BOARD_LED_Set(0x0002, ~MIOS32_BOARD_LED_Get());
+         break;
+      case UART1:
+         MIOS32_BOARD_LED_Set(0x0004, ~MIOS32_BOARD_LED_Get());
+         break;
+      case UART2:
+         MIOS32_BOARD_LED_Set(0x0008, ~MIOS32_BOARD_LED_Get());
+         break;
+   }
 
    /*
   // Draw notes to voxel space
@@ -332,14 +345,19 @@ static void TASK_Period_1mS_LP(void *pvParameters)
       // MIDI In/Out monitor
       MIDI_PORT_Period1mS();
 
-      if (taskCtr % 20 == 0)
+
+      //if (taskCtr % 20 == 0) // note: it's a low-priority scheduler task, we can use up all remaining cpu power for more screen updates...
       {
+         if (gcTrackswitchType_ != TRACKSWITCH_NORMAL && trackswitchKeydownTrack_ != -1)
+            checkMuteKeyTrackswitch();
+
          display();
          if (hw_enabled == HARDWARE_LOOPA_OPERATIONAL)
          {
             updateSwitchLEDs();
          }
       }
+
    }
 }
 
