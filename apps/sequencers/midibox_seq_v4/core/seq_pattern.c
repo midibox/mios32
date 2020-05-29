@@ -179,7 +179,11 @@ s32 SEQ_PATTERN_Handler(void)
 
   MUTEX_SDCARD_TAKE; // take SD Card Mutex before entering critical section, because within the section we won't get it anymore -> hangup
   portENTER_CRITICAL();
-  MIOS32_STOPWATCH_Reset(); // note: conflicts with SEQ_STATISTICS_Stopwatch, but can be accepted if executed in critical section
+
+  if( seq_pattern_log_load_time ) {
+    MIOS32_STOPWATCH_Reset(); // note: conflicts with SEQ_STATISTICS_Stopwatch, but can be accepted if executed in critical section
+  }
+
   for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
     if( seq_pattern_req[group].REQ ) {
       seq_pattern_req[group].REQ = 0;
