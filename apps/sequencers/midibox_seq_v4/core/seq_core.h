@@ -276,6 +276,8 @@ extern seq_core_options_t seq_core_options;
 extern u8 seq_core_steps_per_measure;
 extern u8 seq_core_steps_per_pattern;
 
+extern u8 seq_core_pattern_switch_margin_ms;
+
 extern u16 seq_core_trk_muted;
 extern u16 seq_core_trk_synched_mute;
 extern u16 seq_core_trk_synched_unmute;

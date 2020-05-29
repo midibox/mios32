@@ -25,6 +25,11 @@ MIDIboxSEQ V4.097
      the global Root/Scale - this allows you to properly control *all* tracks which enabled
      FTS (Force-to-Scale)
      
+   o Optimized synchronized/song pattern switches: now closer to next measure.
+     In case of problems, please report log output after entering
+        "set seq_pattern_log_load_time on"
+     in MIOS Terminal, and playing a song (the pattern switch time will be shown)
+
 
 MIDIboxSEQ V4.096
 ~~~~~~~~~~~~~~~~~
