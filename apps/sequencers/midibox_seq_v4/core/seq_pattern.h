@@ -73,5 +73,6 @@ extern char seq_pattern_name[SEQ_CORE_NUM_GROUPS][21];
 
 extern mios32_sys_time_t seq_pattern_start_time;
 extern u16 seq_pattern_remix_map;
+extern u8 seq_pattern_log_load_time;
 
 #endif /* _SEQ_PATTERN_H */

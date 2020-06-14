@@ -82,6 +82,9 @@ seq_core_options_t seq_core_options;
 u8 seq_core_steps_per_measure;
 u8 seq_core_steps_per_pattern;
 
+u8 seq_core_pattern_switch_margin_ms;
+u8 seq_core_pattern_switch_measured_ms;
+
 u16 seq_core_trk_muted;
 u16 seq_core_trk_synched_mute;
 u16 seq_core_trk_synched_unmute;
@@ -151,6 +154,8 @@ s32 SEQ_CORE_Init(u32 mode)
   }
   seq_core_steps_per_measure = 16-1;
   seq_core_steps_per_pattern = 16-1;
+  seq_core_pattern_switch_margin_ms = 50; // default
+  seq_core_pattern_switch_measured_ms = 0; // no measurement yet
   seq_core_global_scale = 0;
   seq_core_global_scale_root_selection = 0; // from keyboard
   seq_core_keyb_scale_root = 0; // taken if enabled in OPT menu
@@ -539,7 +544,10 @@ s32 SEQ_CORE_Handler(void)
 
 	// load new pattern/song step if reference step reached measure
 	// (this code is outside SEQ_CORE_Tick() to save stack space!)
-	if( (bpm_tick % 96) == 20 ) {
+	u8 pre_ticks = SEQ_BPM_TicksFor_mS(seq_core_pattern_switch_margin_ms); // pattern switch depends on tempo and preconfigured margin
+	if( pre_ticks >= 95 )
+	  pre_ticks = 95;
+	if( (bpm_tick % 96) == (96-pre_ticks) ) {
 	  if( SEQ_SONG_ActiveGet() ) {
 	    // to handle the case as described under http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/
 	    // seq_core_steps_per_measure was lower than seq_core_steps_per_pattern
@@ -836,7 +844,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
   }
 
   // process all tracks
-  // first the loopback port Bus1, thereafter parameters sent to common MIDI ports
+  // first the loopback port Bus1-4, thereafter parameters sent to common MIDI ports
   int round;
   for(round=0; round<2; ++round) {
     seq_core_trk_t *t = &seq_core_trk[0];
@@ -847,7 +855,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       seq_robotize_flags_t robotize_flags;
       robotize_flags.ALL = 0;
 
-      // round 0: loopback port Bus1, round 1: remaining ports
+      // round 0: loopback port Bus1-4, round 1: remaining ports
       u8 loopback_port = (tcc->midi_port & 0xf0) == 0xf0;
       if( (!round && !loopback_port) || (round && loopback_port) )
 	continue;

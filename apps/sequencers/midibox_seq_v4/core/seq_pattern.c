@@ -40,14 +40,6 @@
 // (LED toggling in APP_Background() has to be disabled!)
 #define LED_PERFORMANCE_MEASURING 0
 
-// same for measuring with the stopwatch
-// value is visible in INFO->System page (-> press exit button, go to last item)
-#define STOPWATCH_PERFORMANCE_MEASURING 0
-
-
-// debug messages on pattern req/load for time measurements
-#define CHECK_PATTERN_REQ_LOAD_TIMINGS 0
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -58,6 +50,7 @@ seq_pattern_t seq_pattern_req[SEQ_CORE_NUM_GROUPS];
 char seq_pattern_name[SEQ_CORE_NUM_GROUPS][21];
 
 mios32_sys_time_t seq_pattern_start_time;
+u8 seq_pattern_log_load_time; // can be changed in terminal with "set seq_pattern_log_load_time on"
 u8 seq_pattern_mixer_num;
 u16 seq_pattern_remix_map;
 
@@ -69,6 +62,7 @@ s32 SEQ_PATTERN_Init(u32 mode)
   seq_pattern_start_time.seconds = 0;
   seq_pattern_mixer_num = 0;
   seq_pattern_remix_map = 0;
+  seq_pattern_log_load_time = 0;
 	
   // pre-init pattern numbers
   u8 group;
@@ -95,10 +89,6 @@ s32 SEQ_PATTERN_Init(u32 mode)
 #endif
 
   }
-
-#if STOPWATCH_PERFORMANCE_MEASURING
-  SEQ_STATISTICS_StopwatchInit();
-#endif
 
   return 0; // no error
 }
@@ -154,17 +144,17 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern, u8 force_immediate_chang
     if( seq_core_options.SYNCHED_PATTERN_CHANGE && !SEQ_SONG_ActiveGet() ) {
       // done in SEQ_CORE_Tick() when last step reached
     } else {
-#if CHECK_PATTERN_REQ_LOAD_TIMINGS
-      DEBUG_MSG("[%d] Req G%d %c%d", SEQ_BPM_TickGet(), group+1, 'A'+pattern.group, pattern.num+1);
-#endif
+      if( seq_pattern_log_load_time ) {
+	DEBUG_MSG("[SEQ_PATTERN:%d] Req G%d %c%d", SEQ_BPM_TickGet(), group+1, 'A'+pattern.group, pattern.num+1);
+      }
       // pregenerate bpm ticks
       // (won't be generated again if there is already an ongoing request)
       MUTEX_MIDIOUT_TAKE;
-      s32 delay_ticks = SEQ_CORE_AddForwardDelay(50);
+      s32 delay_ticks = SEQ_CORE_AddForwardDelay(seq_core_pattern_switch_margin_ms);
       if( delay_ticks >= 0 ) {
-#if CHECK_PATTERN_REQ_LOAD_TIMINGS
-	DEBUG_MSG("[%d] Forward Delay %d", SEQ_BPM_TickGet(), delay_ticks);
-#endif
+      if( seq_pattern_log_load_time ) {
+	DEBUG_MSG("[SEQ_PATTERN:%d] Forward Delay %d ticks based on %d mS margin", SEQ_BPM_TickGet(), delay_ticks, seq_core_pattern_switch_margin_ms);
+      }
       }
       MUTEX_MIDIOUT_GIVE;
     }
@@ -181,6 +171,7 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern, u8 force_immediate_chang
 s32 SEQ_PATTERN_Handler(void)
 {
   u8 group;
+  u8 any_pattern_loaded = 0;
 
 #if LED_PERFORMANCE_MEASURING
   MIOS32_BOARD_LED_Set(0x00000001, 1);
@@ -188,6 +179,11 @@ s32 SEQ_PATTERN_Handler(void)
 
   MUTEX_SDCARD_TAKE; // take SD Card Mutex before entering critical section, because within the section we won't get it anymore -> hangup
   portENTER_CRITICAL();
+
+  if( seq_pattern_log_load_time ) {
+    MIOS32_STOPWATCH_Reset(); // note: conflicts with SEQ_STATISTICS_Stopwatch, but can be accepted if executed in critical section
+  }
+
   for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
     if( seq_pattern_req[group].REQ ) {
       seq_pattern_req[group].REQ = 0;
@@ -218,13 +214,14 @@ s32 SEQ_PATTERN_Handler(void)
 	}
       }
 
-#if CHECK_PATTERN_REQ_LOAD_TIMINGS
-      DEBUG_MSG("[%d] Load begin G%d %c%d", SEQ_BPM_TickGet(), group+1, 'A'+seq_pattern_req[group].group, seq_pattern_req[group].num+1);
-#endif
+      if( seq_pattern_log_load_time ) {
+	DEBUG_MSG("[SEQ_PATTERN:%d] Load begin G%d %c%d", SEQ_BPM_TickGet(), group+1, 'A'+seq_pattern_req[group].group, seq_pattern_req[group].num+1);
+      }
       SEQ_PATTERN_Load(group, seq_pattern_req[group]);
-#if CHECK_PATTERN_REQ_LOAD_TIMINGS
-      DEBUG_MSG("[%d] Load end G%d %c%d", SEQ_BPM_TickGet(), group+1, 'A'+seq_pattern_req[group].group, seq_pattern_req[group].num+1);
-#endif
+      if( seq_pattern_log_load_time ) {
+	DEBUG_MSG("[SEQ_PATTERN:%d] Load end G%d %c%d", SEQ_BPM_TickGet(), group+1, 'A'+seq_pattern_req[group].group, seq_pattern_req[group].num+1);
+      }
+      any_pattern_loaded = 1;
 
       // restart *all* patterns?
       if( seq_core_options.RATOPC ) {
@@ -234,13 +231,26 @@ s32 SEQ_PATTERN_Handler(void)
       }
     }
   }
+  u32 stopwatch_delta = MIOS32_STOPWATCH_ValueGet();
   portEXIT_CRITICAL();
   MUTEX_SDCARD_GIVE;
-
+  
 #if LED_PERFORMANCE_MEASURING
   MIOS32_BOARD_LED_Set(0x00000001, 0);
 #endif
 
+  if( any_pattern_loaded ) {
+    if( stopwatch_delta == 0xffffffff ) {
+      if( seq_pattern_log_load_time ) {
+	DEBUG_MSG("[SEQ_PATTERN:%d] All patterns loaded in more than 65 mS!", SEQ_BPM_TickGet());
+      }
+    } else {
+      if( seq_pattern_log_load_time ) {
+	DEBUG_MSG("[SEQ_PATTERN:%d] All patterns loaded within %d.%03d mS", SEQ_BPM_TickGet(), stopwatch_delta / 1000, stopwatch_delta % 1000);
+      }
+    }
+  }
+  
   return 0; // no error
 }
 
@@ -256,16 +266,10 @@ s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern)
 
   MUTEX_SDCARD_TAKE;
 
-#if STOPWATCH_PERFORMANCE_MEASURING == 1
-  SEQ_STATISTICS_StopwatchReset();
-#endif
   if( (status=SEQ_FILE_B_PatternRead(pattern.bank, pattern.pattern, group, seq_pattern_remix_map)) < 0 )
     SEQ_UI_SDCardErrMsg(2000, status);
 	
   seq_pattern_start_time = MIOS32_SYS_TimeGet();
-#if STOPWATCH_PERFORMANCE_MEASURING == 1
-  SEQ_STATISTICS_StopwatchCapture();
-#endif
 
   MUTEX_SDCARD_GIVE;
 
@@ -313,17 +317,7 @@ s32 SEQ_PATTERN_Save(u8 group, seq_pattern_t pattern)
   s32 status;
 
   MUTEX_SDCARD_TAKE;
-
-#if STOPWATCH_PERFORMANCE_MEASURING == 1
-  SEQ_STATISTICS_StopwatchReset();
-#endif
-
   status = SEQ_FILE_B_PatternWrite(seq_file_session_name, pattern.bank, pattern.pattern, group, 1);
-
-#if STOPWATCH_PERFORMANCE_MEASURING == 1
-  SEQ_STATISTICS_StopwatchCapture();
-#endif
-
   MUTEX_SDCARD_GIVE;
 
   return status;
