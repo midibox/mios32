@@ -759,14 +759,14 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
 	gate_pin_normal = package.chn + 8*cv_port;
 	gate_pin_velocity_gt100 = -1; // not relevant
       } else if( package.chn <= Chn12 ) {
-	aout_chn_note = ((package.chn & 3) << 1) + 8*cv_port;
+	aout_chn_note = (package.chn & 3) + 8*cv_port;
 	aout_chn_vel = aout_chn_note + 1;
-	gate_pin_normal = ((package.chn & 3) << 1) + 8*cv_port;
+	gate_pin_normal = (package.chn & 3) + 8*cv_port;
 	gate_pin_velocity_gt100 = gate_pin_normal + 1;
       } else { // Chn <= 15
-	aout_chn_vel = ((package.chn & 3) << 1) + 8*cv_port;
+	aout_chn_vel = (package.chn & 3) + 8*cv_port;
 	aout_chn_note = aout_chn_vel + 1;
-	gate_pin_normal = ((package.chn & 3) << 1) + 8*cv_port;
+	gate_pin_normal = (package.chn & 3) + 8*cv_port;
 	gate_pin_velocity_gt100 = gate_pin_normal + 1;
       }
 
@@ -801,7 +801,7 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
 	  if( package.velocity > 100 )
 	    gates |= (1 << gate_pin_velocity_gt100);
 	  else
-	    gates |= (1 << gate_pin_velocity_gt100);
+	    gates &= ~(1 << gate_pin_velocity_gt100);
 	}
       } else {
 	// clear gate pins
