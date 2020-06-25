@@ -74,8 +74,9 @@
 #define ITEM_MIXER_CC1234                 30
 #define ITEM_MENU_SHORTCUTS               31
 #define ITEM_SCREEN_SAVER                 32
+#define ITEM_LAYER_MUTE_PG_DIR_TRK        33
 
-#define NUM_OF_ITEMS                      33
+#define NUM_OF_ITEMS                      34
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -243,6 +244,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
   {//<-------------------------------------->
     "Screen Saver:",
     ""
+  },
+  
+  {//<-------------------------------------->
+    "For Layers Mute Page Direct tracks butt",
+    "are: " // Track Selection/Track Mute
   },
 };
 
@@ -839,7 +845,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
       return 1;
     } break;
-
+      case ITEM_LAYER_MUTE_PG_DIR_TRK:
+        if( incrementer )
+    seq_ui_options.LAYER_MUTE_PG_DIR_TRK = (incrementer > 0) ? 1 : 0;
+        else
+    seq_ui_options.LAYER_MUTE_PG_DIR_TRK ^= 1;
+        ui_store_file_required = 1;
+        return 1;
+      break;
   }
 
   return -1; // invalid or unsupported encoder
@@ -1388,6 +1401,17 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintSpaces(40-6-delay_len-8);
     }
   } break;
+
+      ///////////////////////////////////////////////////////////////////////////
+    case ITEM_LAYER_MUTE_PG_DIR_TRK: {
+      SEQ_LCD_PrintString(str);
+
+      if( ui_cursor_flash ) {
+        SEQ_LCD_PrintSpaces(40-len);
+      } else {
+        SEQ_LCD_PrintStringPadded(seq_ui_options.LAYER_MUTE_PG_DIR_TRK  ? "Track Mute" : "Track Selection", 40-len);
+      }
+    } break;
 
   ///////////////////////////////////////////////////////////////////////////
   default:

@@ -427,9 +427,13 @@ s32 SEQ_FILE_GC_Read(void)
 #ifndef MBSEQV4L
 	    seq_ui_options.ALL_FOR_STEP_VIEW_ONLY = value;
 #endif
-          } else if( strcmp(parameter, "UiCvDisplayBipolar") == 0 ) {
+    } else if( strcmp(parameter, "UiCvDisplayBipolar") == 0 ) {
 #ifndef MBSEQV4L
-            seq_ui_options.CV_DISPLAY_BIPOLAR = value;
+      seq_ui_options.CV_DISPLAY_BIPOLAR = value;
+#endif
+    } else if( strcmp(parameter, "UiLayerMutePgDirTrkButt") == 0 ) {
+#ifndef MBSEQV4L
+      seq_ui_options.LAYER_MUTE_PG_DIR_TRK = value;
 #endif
 	  } else if( strcmp(parameter, "RemoteMode") == 0 ) {
 	    seq_midi_sysex_remote_mode = (value > 2) ? 0 : value;
@@ -788,6 +792,11 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 #endif
 
+#ifndef MBSEQV4L
+  sprintf(line_buffer, "UiLayerMutePgDirTrkButt %d\n", seq_ui_options.LAYER_MUTE_PG_DIR_TRK);
+  FLUSH_BUFFER;
+#endif
+  
   sprintf(line_buffer, "RemoteMode %d\n", (u8)seq_midi_sysex_remote_mode);
   FLUSH_BUFFER;
 
