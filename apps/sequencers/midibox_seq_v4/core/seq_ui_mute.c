@@ -88,7 +88,7 @@ static s32 LED_Handler(u16 *gp_leds)
   } else if( !ui_cursor_flash && seq_ui_button_state.SELECT_PRESSED ) {
     *gp_leds = latched_mute;
   } else {
-    if( seq_ui_button_state.MUTE_PRESSED ) {
+    if( seq_ui_sel_view == SEQ_UI_SEL_VIEW_LAYER_MUTE ) {
       track = SEQ_UI_VisibleTrackGet();
       *gp_leds = seq_core_trk[track].layer_muted | seq_core_trk[track].layer_muted_from_midi;
     } else {
@@ -190,7 +190,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	}
       } else {
 	u8 par_layer_mute = 0;
-	if( seq_ui_button_state.MUTE_PRESSED ) {
+	if( seq_ui_sel_view == SEQ_UI_SEL_VIEW_LAYER_MUTE ) {
 	  par_layer_mute = 1;
 	  muted = (u16 *)&seq_core_trk[visible_track].layer_muted;
 	} else if( SEQ_BPM_IsRunning() ) { // Synched Mutes only when sequencer is running
@@ -250,6 +250,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
+DEBUG_MSG("Button_Handler %d", seq_ui_sel_view);
 #if 0
   // leads to: comparison is always true due to limited range of data type
   if( button >= SEQ_UI_BUTTON_GP1 && button <= SEQ_UI_BUTTON_GP16 ) {
@@ -267,7 +268,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       portENTER_CRITICAL();
       if( depressed ) {
 	// select button released: take over latched mutes
-	if( seq_ui_button_state.MUTE_PRESSED ) {
+	if( seq_ui_sel_view == SEQ_UI_SEL_VIEW_LAYER_MUTE ) {
 	  u8 visible_track = SEQ_UI_VisibleTrackGet();
 	  seq_core_trk[visible_track].layer_muted = latched_mute;
 	} else {
@@ -285,7 +286,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	}
       } else {
 	// select pressed: init latched mutes which will be taken over once SELECT button released
-	if( seq_ui_button_state.MUTE_PRESSED ) {
+	if( seq_ui_sel_view == SEQ_UI_SEL_VIEW_LAYER_MUTE ) {
 	  u8 visible_track = SEQ_UI_VisibleTrackGet();
 	  latched_mute = seq_core_trk[visible_track].layer_muted;
 	} else {
@@ -349,7 +350,7 @@ static s32 LCD_Handler(u8 high_prio)
     if( !ui_cursor_flash && seq_ui_button_state.SELECT_PRESSED ) {
       mute_flags = latched_mute;
     } else {
-      if( seq_ui_button_state.MUTE_PRESSED ) {
+      if( seq_ui_sel_view == SEQ_UI_SEL_VIEW_LAYER_MUTE ) {
 	u8 visible_track = SEQ_UI_VisibleTrackGet();
 	mute_flags = seq_core_trk[visible_track].layer_muted;
 	mute_flags_from_midi = seq_core_trk[visible_track].layer_muted_from_midi;
@@ -358,7 +359,7 @@ static s32 LCD_Handler(u8 high_prio)
       }
     }
 
-    if( seq_ui_button_state.MUTE_PRESSED ) {
+    if( seq_ui_sel_view == SEQ_UI_SEL_VIEW_LAYER_MUTE ) {
       u8 layer;
       u16 mask = (1 << 0);
       for(layer=0; layer<16; ++layer, mask <<= 1)
@@ -401,7 +402,7 @@ static s32 LCD_Handler(u8 high_prio)
       if( ui_cursor_flash && seq_ui_button_state.SELECT_PRESSED )
 	SEQ_LCD_PrintSpaces(5);
       else {
-	if( seq_ui_button_state.MUTE_PRESSED ) {
+	if( seq_ui_sel_view == SEQ_UI_SEL_VIEW_LAYER_MUTE ) {
 	  if( track >= num_layers )
 	    SEQ_LCD_PrintSpaces(5);
 	  else {

@@ -1445,7 +1445,9 @@ static s32 SEQ_UI_Button_Mute(s32 depressed)
 
   if( !depressed ) {
     prev_sel_view = seq_ui_sel_view;
-    seq_ui_sel_view = SEQ_UI_SEL_VIEW_MUTE;
+    if(seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRACK_MUTE)
+    seq_ui_sel_view = SEQ_UI_SEL_VIEW_LAYER_MUTE;
+    else seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRACK_MUTE;
     seq_ui_button_state.TAKE_OVER_SEL_VIEW = 1;
   } else {
     if( !seq_ui_button_state.TAKE_OVER_SEL_VIEW )
@@ -1704,11 +1706,13 @@ static s32 SEQ_UI_Button_StepViewDec(s32 depressed)
 static s32 SEQ_UI_Button_TrackSel(s32 depressed)
 {
   static seq_ui_sel_view_t prev_sel_view = SEQ_UI_SEL_VIEW_NONE;
-
+  
   if( !depressed ) {
     prev_sel_view = seq_ui_sel_view;
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRACKS;
     seq_ui_button_state.TAKE_OVER_SEL_VIEW = 1;
+    
+    if( ui_page == SEQ_UI_PAGE_MUTE)SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT); // switch to EDIT page if we are in MUTE page
   } else {
     if( !seq_ui_button_state.TAKE_OVER_SEL_VIEW )
       seq_ui_sel_view = prev_sel_view;
@@ -1724,6 +1728,7 @@ static s32 SEQ_UI_Button_TrackSel(s32 depressed)
   }
 
   if( seq_ui_button_state.TRACK_SEL ) {
+    
     ui_tracksel_prev_page = ui_page;
     SEQ_UI_PageSet(SEQ_UI_PAGE_TRACKSEL);
   } else {
@@ -1799,7 +1804,6 @@ static s32 SEQ_UI_Button_Track(s32 depressed, u32 track_button)
 static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
 {
   static u16 button_state = 0xffff; // all 16 buttons depressed
-
   if( sel_button >= 16 ) return -2; // max. 16 direct track buttons
 
   u8 selbuttons_available = seq_hwcfg_blm8x8.dout_gp_mapping == 3;
@@ -1848,29 +1852,53 @@ static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
       case SEQ_UI_SEL_VIEW_INS:
 	SEQ_UI_INSSEL_Button_Handler((seq_ui_button_t)sel_button, depressed);
 	break;
-      case SEQ_UI_SEL_VIEW_MUTE: {
-	if( depressed )
-	  return 0; // no error
+      case SEQ_UI_SEL_VIEW_TRACK_MUTE: {
+       if( depressed )
+         return 0; // no error
 
-	u16 mask = 1 << sel_button;
-	u16 *mute_flags = seq_ui_button_state.MUTE_PRESSED ? &seq_core_trk[visible_track].layer_muted : &seq_core_trk_muted;
-	portENTER_CRITICAL();
-	if( *mute_flags & mask ) {
-	  *mute_flags &= ~mask;
+       if( button_state == (~(1 << sel_button) & 0xffff) ) {
+         // if only one select button pressed: radio-button function (1 of 16)
+         ui_selected_tracks = 1 << sel_button;
+         ui_selected_group = sel_button / 4;
+       } else {
+         // if more than one select button pressed: toggle function (16 of 16)
+         ui_selected_tracks ^= 1 << sel_button;
+       }
+           } break;
+           
+//           {
+//                 if( depressed )
+//                   return 0; // no error
+//
+//                 u16 mask = 1 << sel_button;
+//                 u16 *mute_flags = &seq_core_trk_muted;
+//                 portENTER_CRITICAL();
+//                 if( *mute_flags & mask ) {
+//                   *mute_flags &= ~mask;
+//
+//                     // simplified usage: select the track
+//                     ui_selected_tracks = 1 << sel_button;
+//                     ui_selected_group = sel_button/4;
+//                 } else {
+//                   *mute_flags |= mask;
+//                 }
+//                 portEXIT_CRITICAL();
+//                     }
+                     
+                     
+      case SEQ_UI_SEL_VIEW_LAYER_MUTE: {
+       if( depressed )
+         return 0; // no error
 
-	  if( seq_ui_button_state.MUTE_PRESSED ) {
-	    // simplified usage: select the par layer
-	    ui_selected_par_layer = sel_button;
-	  } else {
-	    // simplified usage: select the track
-	    ui_selected_tracks = 1 << sel_button;
-	    ui_selected_group = sel_button/4;
-	  }
-	} else {
-	  *mute_flags |= mask;
-	}
-	portEXIT_CRITICAL();
-      } break;
+       if( button_state == (~(1 << sel_button) & 0xffff) ) {
+         // if only one select button pressed: radio-button function (1 of 16)
+         ui_selected_tracks = 1 << sel_button;
+         ui_selected_group = sel_button / 4;
+       } else {
+         // if more than one select button pressed: toggle function (16 of 16)
+         ui_selected_tracks ^= 1 << sel_button;
+       }
+           } break;
       case SEQ_UI_SEL_VIEW_PHRASE: {
 	if( depressed )
 	  return 0; // no error
@@ -3236,7 +3264,7 @@ s32 SEQ_UI_LED_Handler(void)
     SEQ_LED_PinSet(seq_hwcfg_led.track[3], (selected_tracks & (1 << 3)));
   }
 
-  SEQ_LED_PinSet(seq_hwcfg_led.track_sel, ui_page == SEQ_UI_PAGE_TRACKSEL || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRACKS));
+  SEQ_LED_PinSet(seq_hwcfg_led.track_sel, ui_page == SEQ_UI_PAGE_TRACKSEL || (selbuttons_available && (seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRACKS || seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRACK_MUTE)));
   
   // parameter layer LEDs
   // in song page: layer buttons are used to select the cursor position
@@ -3249,7 +3277,8 @@ s32 SEQ_UI_LED_Handler(void)
     SEQ_LED_PinSet(seq_hwcfg_led.par_layer[1], (ui_selected_par_layer == 1));
     SEQ_LED_PinSet(seq_hwcfg_led.par_layer[2], (ui_selected_par_layer >= 2) || seq_ui_button_state.PAR_LAYER_SEL);
   }
-  SEQ_LED_PinSet(seq_hwcfg_led.par_layer_sel, ui_page == SEQ_UI_PAGE_PARSEL || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_PAR));
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+  SEQ_LED_PinSet(seq_hwcfg_led.par_layer_sel, ui_page == SEQ_UI_PAGE_PARSEL || (selbuttons_available && (seq_ui_sel_view == SEQ_UI_SEL_VIEW_PAR || (seq_ui_sel_view == SEQ_UI_SEL_VIEW_LAYER_MUTE && event_mode != SEQ_EVENT_MODE_Drum))));
   
   // group LEDs
   // in song page: track and group buttons are used to select the cursor position
@@ -3272,11 +3301,11 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer_sel, ui_page == SEQ_UI_PAGE_TRGSEL || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRG));
 
   // instrument layer LEDs
-  SEQ_LED_PinSet(seq_hwcfg_led.ins_sel, ui_page == SEQ_UI_PAGE_INSSEL || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_INS));
+  SEQ_LED_PinSet(seq_hwcfg_led.ins_sel, ui_page == SEQ_UI_PAGE_INSSEL || (selbuttons_available && (seq_ui_sel_view == SEQ_UI_SEL_VIEW_INS || (seq_ui_sel_view == SEQ_UI_SEL_VIEW_LAYER_MUTE && event_mode == SEQ_EVENT_MODE_Drum))));
   
   // remaining LEDs
   SEQ_LED_PinSet(seq_hwcfg_led.edit, ui_page == SEQ_UI_PAGE_EDIT);
-  SEQ_LED_PinSet(seq_hwcfg_led.mute, ui_page == SEQ_UI_PAGE_MUTE || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_MUTE));
+  SEQ_LED_PinSet(seq_hwcfg_led.mute, ui_page == SEQ_UI_PAGE_MUTE || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRACK_MUTE));
   SEQ_LED_PinSet(seq_hwcfg_led.pattern, ui_page == SEQ_UI_PAGE_PATTERN);
   if( SEQ_SONG_ActiveGet() )
     SEQ_LED_PinSet(seq_hwcfg_led.song, 1);
@@ -3765,15 +3794,14 @@ s32 SEQ_UI_LED_Handler_Periodic()
       case SEQ_UI_SEL_VIEW_INS:
 	select_leds_green = 1 << ui_selected_instrument;
 	break;
-      case SEQ_UI_SEL_VIEW_MUTE:
-	if( seq_ui_button_state.MUTE_PRESSED ) {
-	  select_leds_green = seq_core_trk[visible_track].layer_muted | seq_core_trk[visible_track].layer_muted_from_midi;
-	} else {
-	  select_leds_green = seq_core_trk_muted;
-	}
-
-	if( seq_ui_options.INVERT_MUTE_LEDS )
-	  select_leds_green ^= 0xffff;
+      case SEQ_UI_SEL_VIEW_TRACK_MUTE:
+      select_leds_green = 0xf << (4*ui_selected_group);
+      select_leds_red = ui_selected_tracks;
+  break;
+      case SEQ_UI_SEL_VIEW_LAYER_MUTE:
+      // TODO: Options between TRACK SEL/MUTE
+      select_leds_green = 0xf << (4*ui_selected_group);
+      select_leds_red = ui_selected_tracks;
 	break;
       case SEQ_UI_SEL_VIEW_PHRASE:
 	select_leds_green = 1 << ui_selected_phrase;
