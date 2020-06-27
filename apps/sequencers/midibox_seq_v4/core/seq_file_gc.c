@@ -431,6 +431,10 @@ s32 SEQ_FILE_GC_Read(void)
 #ifndef MBSEQV4L
       seq_ui_options.CV_DISPLAY_BIPOLAR = value;
 #endif
+    } else if( strcmp(parameter, "UiLayerMuteAccess") == 0 ) {
+#ifndef MBSEQV4L
+      seq_ui_options.LAYER_MUTE_ACCESS = value;
+#endif
     } else if( strcmp(parameter, "UiLayerMutePgDirTrkButt") == 0 ) {
 #ifndef MBSEQV4L
       seq_ui_options.LAYER_MUTE_PG_DIR_TRK = value;
@@ -789,6 +793,11 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
 
 #ifndef MBSEQV4L
   sprintf(line_buffer, "UiCvDisplayBipolar %d\n", seq_ui_options.CV_DISPLAY_BIPOLAR);
+  FLUSH_BUFFER;
+#endif
+
+#ifndef MBSEQV4L
+  sprintf(line_buffer, "UiLayerMuteAccess %d\n", seq_ui_options.LAYER_MUTE_ACCESS);
   FLUSH_BUFFER;
 #endif
 

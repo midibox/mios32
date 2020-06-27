@@ -1445,13 +1445,20 @@ static s32 SEQ_UI_Button_Mute(s32 depressed)
 
   if( !depressed ) {
     prev_sel_view = seq_ui_sel_view;
-    if(seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRACK_MUTE)
-    seq_ui_sel_view = SEQ_UI_SEL_VIEW_LAYER_MUTE;
-    else seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRACK_MUTE;
+    if(seq_ui_options.LAYER_MUTE_ACCESS){
+      if(seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRACK_MUTE)
+      seq_ui_sel_view = SEQ_UI_SEL_VIEW_LAYER_MUTE;
+      else seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRACK_MUTE;
+    }else{
+      seq_ui_sel_view = SEQ_UI_SEL_VIEW_LAYER_MUTE;
+    }
+
     seq_ui_button_state.TAKE_OVER_SEL_VIEW = 1;
   } else {
     if( !seq_ui_button_state.TAKE_OVER_SEL_VIEW )
       seq_ui_sel_view = prev_sel_view;
+    else if(!seq_ui_options.LAYER_MUTE_ACCESS)
+      seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRACK_MUTE;
   }
 
   seq_ui_button_state.MUTE_PRESSED = depressed ? 0 : 1;
@@ -3263,7 +3270,7 @@ s32 SEQ_UI_LED_Handler(void)
   
   // parameter layer LEDs
   // in song page: layer buttons are used to select the cursor position
-  if( ui_page == SEQ_UI_PAGE_SONG ) {
+    if( ui_page == SEQ_UI_PAGE_SONG ) {
     SEQ_LED_PinSet(seq_hwcfg_led.par_layer[0], ui_selected_item == 0);
     SEQ_LED_PinSet(seq_hwcfg_led.par_layer[1], ui_selected_item == 1);
     SEQ_LED_PinSet(seq_hwcfg_led.par_layer[2], ui_selected_item == 2);
