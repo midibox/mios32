@@ -1874,10 +1874,11 @@ static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
           portENTER_CRITICAL();
           if( *mute_flags & mask ) {
             *mute_flags &= ~mask;
-            
-            // simplified usage: select the track
-            ui_selected_tracks = 1 << sel_button;
-            ui_selected_group = sel_button/4;
+            if(seq_ui_options.SELECT_UNMUTED_TRACK){
+              // simplified usage: select the track
+              ui_selected_tracks = 1 << sel_button;
+              ui_selected_group = sel_button/4;
+            }
           } else {
             *mute_flags |= mask;
           }
