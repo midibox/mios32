@@ -3803,11 +3803,12 @@ s32 SEQ_UI_LED_Handler_Periodic()
       case SEQ_UI_SEL_VIEW_LAYER_MUTE:
   if(seq_ui_options.LAYER_MUTE_PG_DIR_TRK){
     select_leds_green = seq_core_trk_muted;
+    if( seq_ui_options.INVERT_MUTE_LEDS )
+      select_leds_green ^= 0xffff;
   }else{
     select_leds_green = 0xf << (4*ui_selected_group);
     select_leds_red = ui_selected_tracks;
-    if( seq_ui_options.INVERT_MUTE_LEDS )
-      select_leds_red ^= 0xffff;
+
   }
 	break;
       case SEQ_UI_SEL_VIEW_PHRASE:
