@@ -40,7 +40,11 @@ extern u32 mios32_sys_isr_vector;
 #define MEM8(addr)  (*((volatile u8  *)(addr)))
 
 
-#define EXT_CRYSTAL_FRQ 12000000  // used for MBHP_CORE_STM32, should we define this somewhere else or select via MIOS32_BOARD?
+#if defined(MIOS32_BOARD_BLUE_PILL)
+#define EXT_CRYSTAL_FRQ 8000000
+#else
+#define EXT_CRYSTAL_FRQ 12000000  // used for MBHP_CORE_STM32, should we define this somewhere else?
+#endif
 #define RTC_PREDIVIDER  (EXT_CRYSTAL_FRQ/128)
 
 
@@ -147,8 +151,15 @@ s32 MIOS32_SYS_Init(u32 mode)
       RCC_PREDIV1Config(RCC_PREDIV1_Source_PLL2, RCC_PREDIV1_Div5);
       RCC_PLLConfig(RCC_PLLSource_PREDIV1, RCC_PLLMul_9);
 #else
+
+#if defined(MIOS32_BOARD_BLUE_PILL)
+      // PLLCLK = 8MHz * 9 = 72 MHz
+      RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_9);
+#else
       // PLLCLK = 12MHz * 6 = 72 MHz
       RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_6);
+#endif
+
 #endif
 
       // Enable PLL

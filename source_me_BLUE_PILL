@@ -1,0 +1,17 @@
+# source this file to set MIOS32 variables for the PLUE_PILL module
+# it can be sourced from any location - the $basedir variable will automatically determine where this file is located:
+basedir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# example usage:
+#    cd mios32
+#    source source_me_BLUE_PILL
+#    cd apps/templates/app_skeleton
+#    make
+
+export MIOS32_PATH=${basedir}
+export MIOS32_BIN_PATH=$MIOS32_PATH/bin
+export MIOS32_FAMILY=STM32F10x
+export MIOS32_PROCESSOR=STM32F103CB
+export MIOS32_BOARD=BLUE_PILL
+export MIOS32_LCD=universal
+export MIOS32_GCC_PREFIX=arm-none-eabi
