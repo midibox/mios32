@@ -308,7 +308,7 @@ s32 SEQ_CORE_ScheduleEvent(u8 track, seq_core_trk_t *t, seq_cc_trk_t *tcc, mios3
 	  midi_port = tcc->midi_port;
 	} else {
 	  midi_port = fx_midi_port;
-	  midi_package.chn = (( tcc->fx_midi_num_chn & 0x3f ) + (t->fx_midi_ctr-1)) % 16;
+	  midi_package.chn = (( tcc->fx_midi_chn & 0x3f ) + (t->fx_midi_ctr-1)) % 16;
 	}
 
 	status |= SEQ_MIDI_OUT_Send(midi_port, midi_package, event_type, timestamp, len);
@@ -327,7 +327,7 @@ s32 SEQ_CORE_ScheduleEvent(u8 track, seq_core_trk_t *t, seq_cc_trk_t *tcc, mios3
 	  midi_port = tcc->midi_port;
 	} else {
 	  midi_port = fx_midi_port;
-	  midi_package.chn = (( tcc->fx_midi_num_chn & 0x3f ) + ix-1) % 16;
+	  midi_package.chn = (( tcc->fx_midi_chn & 0x3f ) + ix-1) % 16;
 	}
 
 	status |= SEQ_MIDI_OUT_Send(midi_port, midi_package, event_type, timestamp, len);
