@@ -58,8 +58,8 @@ static u8 selected_cv;
 static u8 selected_clkout;
 
 const u16 din_sync_div_presets[] =
-  // 1    2    3    4   6   8  12  16  24  32  48  96  192  384 ppqn, StartStop(=0)
-  { 384, 192, 128, 96, 64, 48, 32, 24, 16, 12,  8,  4,   2,  1, 0 };
+  // 0.063 0.125, 0.25  0.5   1    2    3    4   6   8  12  16  24  32  48  96  192  384 ppqn, StartStop(=0), StopStart, Start Pulse, Stop Pulse
+  {  6144, 3072,  1536, 768, 384, 192, 128, 96, 64, 48, 32, 24, 16, 12,  8,  4,   2,  1, 0, 0xffff, 0xfffe, 0xfffd };
 
 
 
@@ -514,9 +514,16 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(9);
   } else {
     u16 divider = SEQ_CV_ClkDividerGet(selected_clkout);
-    if( !divider ) {
-      SEQ_LCD_PrintFormattedString("StartStop", 384 / divider);
-    } else {
+    switch( divider ) {
+    case 0x0000: SEQ_LCD_PrintFormattedString("StartStop"); break;
+    case 0xffff: SEQ_LCD_PrintFormattedString("StopStart"); break;
+    case 0xfffe: SEQ_LCD_PrintFormattedString("StrtPulse"); break;
+    case 0xfffd: SEQ_LCD_PrintFormattedString("StopPulse"); break;
+    case   6144: SEQ_LCD_PrintFormattedString("0.063PPQN"); break;
+    case   3072: SEQ_LCD_PrintFormattedString("0.125PPQN"); break;
+    case   1536: SEQ_LCD_PrintFormattedString("0.25 PPQN"); break;
+    case    768: SEQ_LCD_PrintFormattedString("0.5 PPQN "); break;
+    default:
       SEQ_LCD_PrintFormattedString("%3d PPQN ", 384 / divider);
     }
   }

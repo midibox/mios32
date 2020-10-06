@@ -800,7 +800,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
       u16 *clk_divider = (u16 *)&seq_cv_clkout_divider[0];
       for(clkout=0; clkout<SEQ_CV_NUM_CLKOUT; ++clkout, ++clk_divider) {
-	if( *clk_divider && (bpm_tick % *clk_divider) == 0 ) {
+	if( *clk_divider && *clk_divider < 16000 && (bpm_tick % *clk_divider) == 0 ) { // TODO: dirty code, we should handle this in SEQ_CV, because only there it's known that clk_divider 0 and 0xfffd/e/f are used for special functions
 	  p.evnt1 = clkout; // Transfers the Clock Output
 	  SEQ_MIDI_OUT_Send(0xff, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);
 	}

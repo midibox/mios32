@@ -563,20 +563,47 @@ s32 SEQ_CV_Update(void)
   u8 start_stop = SEQ_BPM_IsRunning();
 
   // Clock outputs
-  // Note: a clock output acts as start/stop if clock divider set to 0
   u8 clk_sr_value = 0;
   {
     int clkout;
     u16 *clk_divider = (u16 *)&seq_cv_clkout_divider[0];
     u8 *pulse_ctr = (u8 *)&seq_cv_clkout_pulse_ctr[0];
     for(clkout=0; clkout<SEQ_CV_NUM_CLKOUT; ++clkout, ++clk_divider, ++pulse_ctr) {
-      if( !*clk_divider && start_stop ) {
-	clk_sr_value |= (1 << clkout);
+
+      switch( *clk_divider ) {
+
+      case 0x0000: { // Start/Stop Function
+        if( start_stop ) {
+          clk_sr_value |= (1 << clkout);
+        }
+      } break;
+
+      case 0xffff: { // Stop/Start Function
+        if( !start_stop ) {
+          clk_sr_value |= (1 << clkout);
+        }
+      } break;
+
+      case 0xfffe: { // Start Pulse
+        if( start_stop != last_start_stop && start_stop ) {
+          *pulse_ctr = seq_cv_clkout_pulsewidth[clkout] + 1;
+        }
+      } break;
+
+      case 0xfffd: { // Stop Pulse
+        if( start_stop != last_start_stop && !start_stop ) {
+          *pulse_ctr = seq_cv_clkout_pulsewidth[clkout] + 1;
+        }
+      } break;
+
+      default: { // Common Clock Output
+        // no overruling
+      }
       }
 
       if( *pulse_ctr ) {
-	*pulse_ctr -= 1;
-	clk_sr_value |= (1 << clkout);
+        *pulse_ctr -= 1;
+        clk_sr_value |= (1 << clkout);
       }
     }
   }
