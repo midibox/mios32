@@ -220,6 +220,32 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
       item.value = event_incrementer > 0 ? 0x01 : 0x7f;
       break;
 
+      //Mackie C4 special case - maps differing rotation accelerations of C4 encoders to varying in-/decrement step-lengths
+    case MBNG_EVENT_ENC_MODE_C4ENC:
+      if(event_incrementer > 0){
+    	  switch(event_incrementer){
+    	  case 1: item.value = 0x01; break;
+    	  case 2: item.value = 0x04; break;
+    	  case 4: item.value = 0x08; break;
+    	  case 8: item.value = 0x0c; break;
+    	  case 12: item.value = 0x0f; break;
+    	  default: MIOS32_MIDI_SendDebugMessage("event incrementer > 0 default case");
+    	  	  	  item.value = 0x01; break;
+    	  }
+      }
+      else{
+    	  switch(event_incrementer){
+    	  case 1: item.value = 0x41; break;
+    	  case 2: item.value = 0x44; break;
+    	  case 4: item.value = 0x48; break;
+    	  case 8: item.value = 0x4c; break;
+    	  case 12: item.value = 0x4f; break;
+    	  default: MIOS32_MIDI_SendDebugMessage("event incrementer < 0 default case");
+    	      	  item.value = 0x41; break;
+    	  }
+      }
+      break;
+
     case MBNG_EVENT_ENC_MODE_INC01_DEC41:
       item.value = event_incrementer > 0 ? 0x01 : 0x41;
       break;
