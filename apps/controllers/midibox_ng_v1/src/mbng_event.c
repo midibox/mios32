@@ -1909,6 +1909,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
 
     switch( item->id & 0xf000 ) {
     case MBNG_EVENT_CONTROLLER_SENDER: {
+    	//MIOS32
     } break;
 
     case MBNG_EVENT_CONTROLLER_RECEIVER: {
@@ -2791,6 +2792,7 @@ const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_enc_mode_t enc_mode)
   case MBNG_EVENT_ENC_MODE_INC41_DEC3F:           return "Inc41_Dec3F";
   case MBNG_EVENT_ENC_MODE_INC01_DEC7F:           return "Inc01_Dec7F";
   case MBNG_EVENT_ENC_MODE_INC01_DEC41:           return "Inc01_Dec41";
+  case MBNG_EVENT_ENC_MODE_C4ENC:				  return "C4Enc";
   }
   return "Undefined";
 }
@@ -2804,6 +2806,7 @@ mbng_event_enc_mode_t MBNG_EVENT_ItemEncModeFromStrGet(char *enc_mode)
   if( strcasecmp(enc_mode, "Inc41_Dec3F") == 0 )            return MBNG_EVENT_ENC_MODE_INC41_DEC3F;
   if( strcasecmp(enc_mode, "Inc01_Dec7F") == 0 )            return MBNG_EVENT_ENC_MODE_INC01_DEC7F;
   if( strcasecmp(enc_mode, "Inc01_Dec41") == 0 )            return MBNG_EVENT_ENC_MODE_INC01_DEC41;
+  if( strcasecmp(enc_mode, "C4Enc") == 0 )            		return MBNG_EVENT_ENC_MODE_C4ENC;
 
   return MBNG_EVENT_ENC_MODE_UNDEFINED;
 }
@@ -2939,17 +2942,28 @@ const char *MBNG_EVENT_ItemSysExVarStrGet(mbng_event_item_t *item, u8 stream_pos
   case MBNG_EVENT_SYSEX_VAR_CHK_INV:    return "chk_inv";
   case MBNG_EVENT_SYSEX_VAR_CHK_ROLAND: return "chk_roland";
   case MBNG_EVENT_SYSEX_VAR_VAL:        return "val";
+  case MBNG_EVENT_SYSEX_VAR_VAL_F:        return "val_f";
   case MBNG_EVENT_SYSEX_VAR_VAL_H:      return "val_h";
   case MBNG_EVENT_SYSEX_VAR_VAL_N1:     return "val_n1";
   case MBNG_EVENT_SYSEX_VAR_VAL_N2:     return "val_n2";
   case MBNG_EVENT_SYSEX_VAR_VAL_N3:     return "val_n3";
   case MBNG_EVENT_SYSEX_VAR_VAL_N4:     return "val_n4";
+  case MBNG_EVENT_SYSEX_VAR_VAL_B0:     return "val_b0";
+  case MBNG_EVENT_SYSEX_VAR_VAL_B1:     return "val_b1";
+  case MBNG_EVENT_SYSEX_VAR_VAL_B2:     return "val_b2";
+  case MBNG_EVENT_SYSEX_VAR_VAL_B3:     return "val_b3";
+  case MBNG_EVENT_SYSEX_VAR_VAL_B4:     return "val_b4";
+  case MBNG_EVENT_SYSEX_VAR_VAL_B5:     return "val_b5";
+  case MBNG_EVENT_SYSEX_VAR_VAL_B6:     return "val_b6";
+  case MBNG_EVENT_SYSEX_VAR_VAL_B7:     return "val_b7";
+  case MBNG_EVENT_SYSEX_VAR_VAL_B10:    return "val_b10"; //considers bits 1 AND 0
   case MBNG_EVENT_SYSEX_VAR_IGNORE:     return "ignore";
   case MBNG_EVENT_SYSEX_VAR_DUMP:       return "dump";
   case MBNG_EVENT_SYSEX_VAR_CURSOR:     return "cursor";
   case MBNG_EVENT_SYSEX_VAR_TXT:        return "txt";
   case MBNG_EVENT_SYSEX_VAR_TXT56:      return "txt56";
   case MBNG_EVENT_SYSEX_VAR_LABEL:      return "label";
+  case MBNG_EVENT_SYSEX_VAR_MACDIS:		return "macdis";
   }
   return "undef";
 }
@@ -2966,17 +2980,28 @@ mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
   if( strcasecmp(sysex_var, "chk_inv") == 0 )    return MBNG_EVENT_SYSEX_VAR_CHK_INV;
   if( strcasecmp(sysex_var, "chk_roland") == 0 ) return MBNG_EVENT_SYSEX_VAR_CHK_ROLAND;
   if( strcasecmp(sysex_var, "val") == 0 || strcasecmp(sysex_var, "value") == 0 ) return MBNG_EVENT_SYSEX_VAR_VAL;
+  if( strcasecmp(sysex_var, "val_f") == 0 )      return MBNG_EVENT_SYSEX_VAR_VAL_F;
   if( strcasecmp(sysex_var, "val_h") == 0 )      return MBNG_EVENT_SYSEX_VAR_VAL_H;
   if( strcasecmp(sysex_var, "val_n1") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N1;
   if( strcasecmp(sysex_var, "val_n2") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N2;
   if( strcasecmp(sysex_var, "val_n3") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N3;
   if( strcasecmp(sysex_var, "val_n4") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N4;
+  if( strcasecmp(sysex_var, "val_b0") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_B0;
+  if( strcasecmp(sysex_var, "val_b1") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_B1;
+  if( strcasecmp(sysex_var, "val_b2") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_B2;
+  if( strcasecmp(sysex_var, "val_b3") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_B3;
+  if( strcasecmp(sysex_var, "val_b4") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_B4;
+  if( strcasecmp(sysex_var, "val_b5") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_B5;
+  if( strcasecmp(sysex_var, "val_b6") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_B6;
+  if( strcasecmp(sysex_var, "val_b7") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_B7;
+  if( strcasecmp(sysex_var, "val_b10") == 0 )    return MBNG_EVENT_SYSEX_VAR_VAL_B10; //considers bits 1 AND 0
   if( strcasecmp(sysex_var, "ignore") == 0 )     return MBNG_EVENT_SYSEX_VAR_IGNORE;
   if( strcasecmp(sysex_var, "dump") == 0 )       return MBNG_EVENT_SYSEX_VAR_DUMP;
   if( strcasecmp(sysex_var, "cursor") == 0 )     return MBNG_EVENT_SYSEX_VAR_CURSOR;
   if( strcasecmp(sysex_var, "txt") == 0 )        return MBNG_EVENT_SYSEX_VAR_TXT;
   if( strcasecmp(sysex_var, "txt56") == 0 )      return MBNG_EVENT_SYSEX_VAR_TXT56;
   if( strcasecmp(sysex_var, "label") == 0 )      return MBNG_EVENT_SYSEX_VAR_LABEL;
+  if( strcasecmp(sysex_var, "macdis") == 0 )      return MBNG_EVENT_SYSEX_VAR_MACDIS;
   return MBNG_EVENT_SYSEX_VAR_UNDEFINED;
 }
 
@@ -3314,8 +3339,15 @@ s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, mbng_event_item_t *item)
   u8 *stream_in = item->stream;
   u32 stream_size = item->stream_size;
   s16 item_value = item->value;
+  //initialize array for the 6-field Display values
+  u8 macdis_array[6];
 
-#define STREAM_MAX_SIZE 128
+  //prefill last two fields with blank spaces
+  macdis_array[4] = 0x20;
+  macdis_array[5] = 0x20;
+
+
+#define STREAM_MAX_SIZE 256
   u8 stream[STREAM_MAX_SIZE];
   u8 *stream_out = stream;
   u8 *stream_in_end = (u8 *)(stream_in + stream_size - 1);
@@ -3339,11 +3371,21 @@ s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, mbng_event_item_t *item)
       case MBNG_EVENT_SYSEX_VAR_CHK_INV:    MBNG_EVENT_ADD_STREAM((chk ^ 0x7f) & 0x7f); break;
       case MBNG_EVENT_SYSEX_VAR_CHK_ROLAND: MBNG_EVENT_ADD_STREAM((128 - (chk & 0x7f)) & 0x7f); break;
       case MBNG_EVENT_SYSEX_VAR_VAL:        MBNG_EVENT_ADD_STREAM(item_value & 0x7f); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_F:      MBNG_EVENT_ADD_STREAM(item_value & 0xffff); break;
       case MBNG_EVENT_SYSEX_VAR_VAL_H:      MBNG_EVENT_ADD_STREAM((item_value >>  7) & 0x7f); break;
       case MBNG_EVENT_SYSEX_VAR_VAL_N1:     MBNG_EVENT_ADD_STREAM((item_value >>  0) & 0xf); break;
       case MBNG_EVENT_SYSEX_VAR_VAL_N2:     MBNG_EVENT_ADD_STREAM((item_value >>  4) & 0xf); break;
       case MBNG_EVENT_SYSEX_VAR_VAL_N3:     MBNG_EVENT_ADD_STREAM((item_value >>  8) & 0xf); break;
       case MBNG_EVENT_SYSEX_VAR_VAL_N4:     MBNG_EVENT_ADD_STREAM((item_value >> 12) & 0xf); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_B0:     MBNG_EVENT_ADD_STREAM((item_value >> 0) & 0x1); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_B1:     MBNG_EVENT_ADD_STREAM((item_value >> 0) & 0x2); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_B2:     MBNG_EVENT_ADD_STREAM((item_value >> 0) & 0x4); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_B3:     MBNG_EVENT_ADD_STREAM((item_value >> 0) & 0x8); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_B4:     MBNG_EVENT_ADD_STREAM((item_value >> 0) & 0x10); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_B5:     MBNG_EVENT_ADD_STREAM((item_value >> 0) & 0x20); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_B6:     MBNG_EVENT_ADD_STREAM((item_value >> 0) & 0x40); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_B7:     MBNG_EVENT_ADD_STREAM((item_value >> 0) & 0x80); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_B10:    MBNG_EVENT_ADD_STREAM((item_value >> 0) & 0x3); break; //considers bits 1 AND 0
       case MBNG_EVENT_SYSEX_VAR_IGNORE:     break;
       case MBNG_EVENT_SYSEX_VAR_DUMP:       break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
       case MBNG_EVENT_SYSEX_VAR_CURSOR:     break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
@@ -3358,6 +3400,90 @@ s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, mbng_event_item_t *item)
 	    stream_out += status;
 	  }
 	}
+      } break;
+      case MBNG_EVENT_SYSEX_VAR_MACDIS: {
+    	  //analyze incoming value for positivity/negativity and number of decimal fields
+    	  int i, j, rest;
+    	  short fields;
+    	  u32 num = item_value;
+
+    	  //print single "0" in 4th display field
+    	  if(item_value == 0){
+    		  macdis_array[0] = 0x20;
+    		  macdis_array[1] = 0x20;
+    		  macdis_array[2] = 0x20;
+    		  macdis_array[3] = 0x30;
+    	  }
+    	  else{
+
+    		  if(item_value > 0){					//positive value
+    		  macdis_array[0] = 0x20;
+    		  if(item_value < 100){
+    			  macdis_array[1] = 0x20;
+    			  if(item_value > 9){
+    				  fields = 2;
+    			  }
+    			  else{
+    				  fields = 1;
+    				  macdis_array[2] = 0x20;
+    			  }
+    		  }
+    		  else{
+    			  fields = 3;
+    		  }
+    	  }
+    	  else{										//negative value
+    		  if(item_value > -100){
+    			  macdis_array[0] = 0x20;
+    			  if(item_value > -10){
+    				  macdis_array[1] = 0x20;
+    				  macdis_array[2] = 0x2d;
+    				  fields = 1;
+    			  }
+    			  else{
+    				  macdis_array[1] = 0x2d;
+    				  fields = 2;
+    			  }
+    		  }
+    		  else{
+    			  macdis_array[0] = 0x2d;
+    			  fields = 3;
+    		  }
+    		  num *= -1;
+    	  }
+
+    	fields = 3 - fields;
+
+    	  //number of loops equals number of decimal fields of incoming value
+    	  //ASCII value for each decimal field is added to the array
+    	  for(i=3;i>=fields;i--){
+
+    			  if(num != 0){
+    			      		  rest = num%10;
+    			      		  num /= 10;
+
+    			      		  switch(rest){
+    			      		  case 0: macdis_array[i] = 0x30; break;
+    			      		  case 1: macdis_array[i] = 0x31; break;
+    			      		  case 2: macdis_array[i] = 0x32; break;
+    			      		  case 3: macdis_array[i] = 0x33; break;
+    			      		  case 4: macdis_array[i] = 0x34; break;
+    			      		  case 5: macdis_array[i] = 0x35; break;
+    			      		  case 6: macdis_array[i] = 0x36; break;
+    			      		  case 7: macdis_array[i] = 0x37; break;
+    			      		  case 8: macdis_array[i] = 0x38; break;
+    			      		  case 9: macdis_array[i] = 0x39; break;
+    			      		  default: macdis_array[i] = 0x2d;break;
+    			      		  }
+    			      	  }
+    	  }
+     }
+
+    	  for(j=0;j<6;j++){
+
+    		  MBNG_EVENT_ADD_STREAM(macdis_array[j]);
+    	  }
+
       } break;
       default: {}
       }
@@ -3377,6 +3503,7 @@ s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, mbng_event_item_t *item)
 
   return MIOS32_MIDI_SendSysEx(port, stream, len);
 }
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -4015,6 +4142,9 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
       DEBUG_MSG("MBNG_EVENT_ItemReceive(SENDER:%d, %d)\n", sender_ix, item->value);
     }
 
+    //MICHA
+    //MIOS32_MIDI_SendDebugMessage("Sender Id = %d", item->id & 0xfff);
+
     // map?
     {
       s32 mapped_value;
@@ -4035,6 +4165,9 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
 
   case MBNG_EVENT_CONTROLLER_RECEIVER: {
     int receiver_ix = item->id & 0xfff;
+
+    //MICHA
+       // MIOS32_MIDI_SendDebugMessage("MBNG_EVENT_ItemReceive(RECEIVER:%d, %d)\n", receiver_ix, item->value);
 
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
       DEBUG_MSG("MBNG_EVENT_ItemReceive(RECEIVER:%d, %d)\n", receiver_ix, item->value);
@@ -4088,6 +4221,33 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
 	  incrementer = (item->value < 0x40) ? 1 : -1;
 	}
 	break;
+
+	  //Mackie C4 Control special case
+	  //considers different encoder rotation accelerations
+      case MBNG_EVENT_ENC_MODE_C4ENC:
+    	  if( item->value != 0x00 ) {
+    		  if(item->value < 0x40){
+    			  switch(item->value){
+    			  case 0x01: incrementer = 1; break;
+    			  case 0x04: incrementer = 2; break;
+    			  case 0x08: incrementer = 4; break;
+    			  case 0x0c: incrementer = 8; break;
+    			  case 0x0f: incrementer = 12; break;
+    			  default:   incrementer = 1; break;
+    			  }
+    		  }
+    		  else{
+    			  switch(item->value){
+    			  case 0x41: incrementer = -1; break;
+    			  case 0x44: incrementer = -2; break;
+    			  case 0x48: incrementer = -4; break;
+    			  case 0x4c: incrementer = -8; break;
+    			  case 0x4f: incrementer = -12; break;
+    			  default:   incrementer = -1; break;
+    			  }
+    		  }
+    	  	}
+    	  	break;
 
       case MBNG_EVENT_ENC_MODE_INC01_DEC41:
 	if( item->value != 0x00 && item->value != 0x40 ) {
@@ -4386,10 +4546,88 @@ static s32 MBNG_EVENT_NotifySyxDump(u16 from_receiver, u16 dump_pos, u8 value)
   // search in pool for events which listen to this receiver and dump_pos
   u8 *pool_ptr = (u8 *)&event_pool[0];
   u32 i;
+  //u8 offset;
+  //static u8 arr[7];
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
     if( pool_item->syxdump_pos.pos == dump_pos &&
 	pool_item->syxdump_pos.receiver == from_receiver ) {
+
+    	//Dump Format Handler
+    	/*
+    			offset = dump_pos % 8;
+    	    	if(offset == 0){
+    	    		arr[0] = 0;
+    	    		arr[1] = 0;
+    	    		arr[2] = 0;
+    	    		arr[3] = 0;
+    	    		arr[4] = 0;
+    	    		arr[5] = 0;
+    	    		arr[6] = 0;
+    	    		if(value != 0){
+    	    			MIOS32_MIDI_SendDebugMessage("sign carrying byte on syxdumppos: %d - value: %d", dump_pos, value);
+    	    			if((value & 1) != 0){
+    	    				arr[0] = 1;
+    	    				MIOS32_MIDI_SendDebugMessage("arr [0] set high");}
+    	    			if((value & 2) != 0){
+    	    				arr[1] = 1;
+    	    				MIOS32_MIDI_SendDebugMessage("arr [1] set high");}
+    	    			if((value & 4) != 0){
+    	    				arr[2] = 1;
+    	    				MIOS32_MIDI_SendDebugMessage("arr [2] set high");}
+    	    			if((value & 8) != 0){
+    	    				arr[3] = 1;
+    	    				MIOS32_MIDI_SendDebugMessage("arr [3] set high");}
+    	    			if((value & 16) != 0){
+    	    				arr[4] = 1;
+    	    				MIOS32_MIDI_SendDebugMessage("arr [4] set high");}
+    	    			if((value & 32) != 0){
+    	    				arr[5] = 1;
+    	    				MIOS32_MIDI_SendDebugMessage("arr [5] set high");}
+    	    			if((value & 64) != 0){
+    	    				arr[6] = 1;
+    	    				MIOS32_MIDI_SendDebugMessage("arr [6] set high");}
+    	    		}
+    	    	}
+    	    	else if(offset == 1 && arr[0] == 1){
+    	    	    		MIOS32_MIDI_SendDebugMessage("Set high Bit on syxdumppos: %d - value: %d", dump_pos, value);
+    	    	    		value += 128;
+    	    	    		arr[0] = 0;
+    	    	    		MIOS32_MIDI_SendDebugMessage("New value: %d", value);}
+    	    	    	else if(offset == 2 && arr[1] == 1){
+    	    	    		MIOS32_MIDI_SendDebugMessage("Set high Bit on syxdumppos: %d - value: %d", dump_pos, value);
+    	    	    		value += 128;
+    	    	    		arr[1] = 0;
+    	    	    		MIOS32_MIDI_SendDebugMessage("New value: %d", value);}
+    	    	    	else if(offset == 3 && arr[2] == 1){
+    	    	    		MIOS32_MIDI_SendDebugMessage("Set high Bit on syxdumppos: %d - value: %d", dump_pos, value);
+    	    	    		value += 128;
+    	    	    		arr[2] = 0;
+    	    	    		MIOS32_MIDI_SendDebugMessage("New value: %d", value);}
+    	    	    	else if(offset == 4 && arr[3] == 1){
+    	    	    		MIOS32_MIDI_SendDebugMessage("Set high Bit on syxdumppos: %d - value: %d", dump_pos, value);
+    	    	    		value += 128;
+    	    	    		arr[3] = 0;
+    	    	    		MIOS32_MIDI_SendDebugMessage("New value: %d", value);}
+    	    	    	else if(offset == 5 && arr[4] == 1){
+    	    	    		MIOS32_MIDI_SendDebugMessage("Set high Bit on syxdumppos: %d - value: %d", dump_pos, value);
+    	    	    		value += 128;
+    	    	    		arr[4] = 0;
+    	    	    		MIOS32_MIDI_SendDebugMessage("New value: %d", value);}
+    	    	    	else if(offset == 6 && arr[5] == 1){
+    	    	    		MIOS32_MIDI_SendDebugMessage("Set high Bit on syxdumppos: %d - value: %d", dump_pos, value);
+    	    	    		value += 128;
+    	    	    		arr[5] = 0;
+    	    	    		MIOS32_MIDI_SendDebugMessage("New value: %d", value);}
+    	    	    	else if(offset == 7 && arr[6] == 1){
+    	    	    		MIOS32_MIDI_SendDebugMessage("Set high Bit on syxdumppos: %d - value: %d", dump_pos, value);
+    	    	    		value += 128;
+    	    	    		arr[6] = 0;
+    	    	    		MIOS32_MIDI_SendDebugMessage("New value: %d", value);}
+    	    	    	else{
+    	    	    		//MIOS32_MIDI_SendDebugMessage("else condition in notifysyx function");
+    	    	    	}
+    	   */
 
       mbng_event_item_t item;
       MBNG_EVENT_ItemCopy2User(pool_item, &item);
@@ -4533,6 +4771,7 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	  nrpn_value = nrpn_received_value[port_ix][midi_package.chn]; // pass to parser
 	  nrpn_address = nrpn_received_address[port_ix][midi_package.chn];
 	  nrpn_msb_only = 1; // for the MsbOnly format
+	  //MIOS32_MIDI_SendDebugMessage("NRPN MSB on CC 6 = %d",nrpn_value);
 #if 0
 	  // MEMO: it's better to update only when LSB has been received
 	  if( port != midi_learn_nrpn_port || midi_package.chn != (midi_learn_nrpn_chn-1) ) {
@@ -4551,6 +4790,7 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	  nrpn_received_value[port_ix][midi_package.chn] |= (midi_package.value & 0x007f);
 	  nrpn_value = nrpn_received_value[port_ix][midi_package.chn]; // pass to parser
 	  nrpn_address = nrpn_received_address[port_ix][midi_package.chn];
+	 // MIOS32_MIDI_SendDebugMessage("NRPN LSB on CC 38 = %d",nrpn_value);
 
 	  if( port != midi_learn_nrpn_port || midi_package.chn != (midi_learn_nrpn_chn-1) ) {
 	    midi_learn_nrpn_port = port;
@@ -4674,6 +4914,8 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
       // first byte is matching - now we've a bit more time for checking
       
       if( (pool_item->hw_id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) { // a sender doesn't receive
+    	  //Micha
+    	  //MIOS32_MIDI_SendDebugMessage("SENDER Nr: %d", pool_item->hw_id & 0xf000);
 	pool_ptr += pool_item->len;
 	continue;
       }
@@ -4791,11 +5033,15 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
     if( event_type == MBNG_EVENT_TYPE_SYSEX ) {
       u8 parse_sysex = 1;
 
-      if( (pool_item->hw_id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) // a sender doesn't receive
-	parse_sysex = 0;
+      if( (pool_item->hw_id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ){ // a sender doesn't receive
+    	 // MIOS32_MIDI_SendDebugMessage("Sysex not parsed because of SENDER:%d - midi_in dec = %d",pool_item->hw_id & 0xf000,midi_in);
+    	  parse_sysex = 0;
+      }
 
-      if( !(pool_item->enabled_ports & port_mask) ) // port not enabled
-	parse_sysex = 0;
+      if( !(pool_item->enabled_ports & port_mask) ){ // port not enabled
+    	  //MIOS32_MIDI_SendDebugMessage("Sysex not parsed because Port:%X is not enabled",port_mask);
+    	  parse_sysex = 0;
+      }
 
       // receiving a SysEx dump?
       if( pool_item->sysex_runtime_var.dump ) {
@@ -4840,12 +5086,27 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	    case MBNG_EVENT_SYSEX_VAR_CHK_INV:    match = 1; break; // ignore checksum
 	    case MBNG_EVENT_SYSEX_VAR_CHK_ROLAND: match = 1; break; // ignore checksum
 	    case MBNG_EVENT_SYSEX_VAR_VAL:        match = 1; pool_item->value = (pool_item->value & 0xff80) | (midi_in & 0x7f); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_F:        match = 1; pool_item->value = (pool_item->value) | (midi_in); break;
 	    case MBNG_EVENT_SYSEX_VAR_VAL_H:      match = 1; pool_item->value = (pool_item->value & 0xf07f) | (((u16)midi_in & 0x7f) << 7); break;
 	    case MBNG_EVENT_SYSEX_VAR_VAL_N1:     match = 1; pool_item->value = (pool_item->value & 0xfff0) | (((u16)midi_in <<  0) & 0x000f); break;
 	    case MBNG_EVENT_SYSEX_VAR_VAL_N2:     match = 1; pool_item->value = (pool_item->value & 0xff0f) | (((u16)midi_in <<  4) & 0x00f0); break;
 	    case MBNG_EVENT_SYSEX_VAR_VAL_N3:     match = 1; pool_item->value = (pool_item->value & 0xf0ff) | (((u16)midi_in <<  8) & 0x0f00); break;
 	    case MBNG_EVENT_SYSEX_VAR_VAL_N4:     match = 1; pool_item->value = (pool_item->value & 0x0fff) | (((u16)midi_in << 12) & 0xf000); break;
+	 //SINGLE BIT READERS
+	    case MBNG_EVENT_SYSEX_VAR_VAL_B0:     match = 1; pool_item->value = (pool_item->value & 0xfffe) | (((u16)midi_in <<  0) & 0x0001); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_B1:     match = 1; pool_item->value = (pool_item->value & 0xfffd) | (((u16)midi_in <<  0) & 0x0002); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_B2:     match = 1; pool_item->value = (pool_item->value & 0xfffb) | (((u16)midi_in <<  0) & 0x0004); break;
+	 //The f7 in VAL_B3 might cause problems..
+	    case MBNG_EVENT_SYSEX_VAR_VAL_B3:     match = 1; pool_item->value = (pool_item->value & 0xfff7) | (((u16)midi_in <<  0) & 0x0008); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_B4:     match = 1; pool_item->value = (pool_item->value & 0xffef) | (((u16)midi_in <<  0) & 0x0010); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_B5:     match = 1; pool_item->value = (pool_item->value & 0xffdf) | (((u16)midi_in <<  0) & 0x0020); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_B6:     match = 1; pool_item->value = (pool_item->value & 0xffbf) | (((u16)midi_in <<  0) & 0x0040); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_B7:     match = 1; pool_item->value = (pool_item->value & 0xff7f) | (((u16)midi_in <<  0) & 0x0080); break;
+	 //This one considers bits 1 AND 0
+	    case MBNG_EVENT_SYSEX_VAR_VAL_B10:     match = 1; pool_item->value = (pool_item->value & 0xfffc) | (((u16)midi_in <<  0) & 0x0003); break;
+
 	    case MBNG_EVENT_SYSEX_VAR_IGNORE:     match = 1; break;
+	    case MBNG_EVENT_SYSEX_VAR_MACDIS:	  match = 1; break;
 
 	    case MBNG_EVENT_SYSEX_VAR_DUMP:
 	      match = 1; 
@@ -4983,6 +5244,8 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 
   return 0; // no error
 }
+
+
 
 
 //! \}
