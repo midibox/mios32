@@ -3347,7 +3347,7 @@ s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, mbng_event_item_t *item)
   macdis_array[5] = 0x20;
 
 
-#define STREAM_MAX_SIZE 256
+#define STREAM_MAX_SIZE 128
   u8 stream[STREAM_MAX_SIZE];
   u8 *stream_out = stream;
   u8 *stream_in_end = (u8 *)(stream_in + stream_size - 1);
