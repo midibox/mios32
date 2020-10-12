@@ -216,6 +216,22 @@ s32 MIOS32_BOARD_LED_Init(u32 leds)
     return -2; // LED doesn't exist
 
   return 0; // no error
+#elif defined(MIOS32_BOARD_BLUE_PILL)
+  GPIO_InitTypeDef GPIO_InitStructure;
+  GPIO_StructInit(&GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+
+  // only one LED, connected to PC13
+  if( leds & 1 ) {
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
+    GPIO_Init(GPIOC, &GPIO_InitStructure);
+  }
+
+  if( leds & 0xfffffffe)
+    return -2; // LED doesn't exist
+
+  return 0; // no error
 #elif defined(MIOS32_BOARD_STM32_PRIMER)
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
@@ -262,6 +278,16 @@ s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value)
     return -2; // LED doesn't exist
 
   return 0; // no error
+#elif defined(MIOS32_BOARD_BLUE_PILL)
+  // only one LED, connected to PC13
+  if( leds & 1 ) {
+    MIOS32_SYS_STM_PINSET(GPIOC, GPIO_Pin_13, value & 1);
+  }
+
+  if( leds & 0xfffffffe)
+    return -2; // LED doesn't exist
+
+  return 0; // no error
 #elif defined(MIOS32_BOARD_STM32_PRIMER)
   // two LEDs, connected to PB8 (green) and PB9 (red)
   if( leds & 1 ) {
@@ -292,6 +318,10 @@ u32 MIOS32_BOARD_LED_Get(void)
 #if defined(MIOS32_BOARD_MBHP_CORE_STM32)
   // only one LED, connected to PD2
   if( GPIOD->ODR & GPIO_Pin_2 )
+    values |= (1 << 0);
+#elif defined(MIOS32_BOARD_BLUE_PILL)
+  // only one LED, connected to PC13
+  if( GPIOC->ODR & GPIO_Pin_13 )
     values |= (1 << 0);
 #elif defined(MIOS32_BOARD_STM32_PRIMER)
   // two LEDs, connected to PB8 (green) and PB9 (red)

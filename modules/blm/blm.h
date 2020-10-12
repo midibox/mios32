@@ -14,6 +14,8 @@
 #ifndef _BLM_H
 #define _BLM_H
 
+#if !defined(MIOS32_DONT_USE_BLM)
+
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -146,5 +148,6 @@ extern blm_config_t BLM_ConfigGet(void);
 // for direct access (bypasses BLM_DOUT_SR* functions)
 extern u8 blm_led_row[BLM_NUM_COLOURS][BLM_NUM_ROWS];
 
+#endif
 
 #endif /* _BLM_H */

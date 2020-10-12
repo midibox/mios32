@@ -128,17 +128,17 @@ extern s32 BLM_SCALAR_MASTER_Periodic_mS(void);
 
 
 // for direct access
-u16 blm_scalar_master_leds_green[BLM_SCALAR_MASTER_NUM_ROWS];
-u16 blm_scalar_master_leds_red[BLM_SCALAR_MASTER_NUM_ROWS];
+extern u16 blm_scalar_master_leds_green[BLM_SCALAR_MASTER_NUM_ROWS];
+extern u16 blm_scalar_master_leds_red[BLM_SCALAR_MASTER_NUM_ROWS];
 
-u16 blm_scalar_master_leds_extracolumn_green;
-u16 blm_scalar_master_leds_extracolumn_red;
-u16 blm_scalar_master_leds_extracolumn_shift_green;
-u16 blm_scalar_master_leds_extracolumn_shift_red;
-u16 blm_scalar_master_leds_extrarow_green;
-u16 blm_scalar_master_leds_extrarow_red;
-u8  blm_scalar_master_leds_extra_green;
-u8  blm_scalar_master_leds_extra_red;
+extern u16 blm_scalar_master_leds_extracolumn_green;
+extern u16 blm_scalar_master_leds_extracolumn_red;
+extern u16 blm_scalar_master_leds_extracolumn_shift_green;
+extern u16 blm_scalar_master_leds_extracolumn_shift_red;
+extern u16 blm_scalar_master_leds_extrarow_green;
+extern u16 blm_scalar_master_leds_extrarow_red;
+extern u8  blm_scalar_master_leds_extra_green;
+extern u8  blm_scalar_master_leds_extra_red;
 
 
 #endif /* _BLM_SCALAR_MASTER_H */

@@ -3535,6 +3535,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
   if( seq_hwcfg_led.tracks_dout_r_sr )
     SEQ_LED_SRSet(seq_hwcfg_led.tracks_dout_r_sr-1, (ui_selected_tracks >> 8) & 0xff);
 
+#if !defined(MIOS32_DONT_USE_BLM)
   if( seq_hwcfg_blm.enabled ) {
     // Red LEDs (position marker)
     int track_ix;
@@ -3572,6 +3573,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
       BLM_DOUT_SRSet(0, 2*track_ix+1, green_pattern >> 8);
     }
   }
+#endif
 
   if( seq_hwcfg_blm8x8.enabled ) {
     if( seq_hwcfg_blm8x8.dout_gp_mapping == 1 ) {

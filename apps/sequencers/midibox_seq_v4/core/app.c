@@ -120,7 +120,9 @@ void APP_Init(void)
 
   // init BLMs
 #ifndef MBSEQV4L
+#if !defined(MIOS32_DONT_USE_BLM)
   BLM_Init(0);
+#endif
 #else
   BLM_CHEAPO_Init(0);
 #endif
@@ -266,10 +268,12 @@ void APP_SRIO_ServicePrepare(void)
     led_digit_ctr = 0;
 
 #ifndef MBSEQV4L
+#if !defined(MIOS32_DONT_USE_BLM)
   if( seq_hwcfg_blm.enabled ) {
     // prepare DOUT registers of BLM to drive the column
     BLM_PrepareCol();
   }
+#endif
 #else
   BLM_CHEAPO_PrepareCol();
 #endif
@@ -369,10 +373,12 @@ void APP_SRIO_ServicePrepare(void)
 void APP_SRIO_ServiceFinish(void)
 {
 #ifndef MBSEQV4L
+#if !defined(MIOS32_DONT_USE_BLM)
   if( seq_hwcfg_blm.enabled ) {
     // call the BL_GetRow function after scan is finished to capture the read DIN values
     BLM_GetRow();
   }
+#endif
 #else
   BLM_CHEAPO_GetRow();
 #endif
@@ -517,11 +523,13 @@ void SEQ_TASK_Period1mS(void)
   SEQ_CORE_BPM_SweepHandler();
 
 #ifndef MBSEQV4L
+#if !defined(MIOS32_DONT_USE_BLM)
   // Button handlers
   if( seq_hwcfg_blm.enabled ) {
     // check for BLM pin changes, call button handler of sequencer on each toggled pin
     BLM_ButtonHandler(APP_BLM_NotifyToggle);
   }
+#endif
 #else
   // -> BLM_CHEAPO driver
   BLM_CHEAPO_ButtonHandler(APP_BLM_NotifyToggle);

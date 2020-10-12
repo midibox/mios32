@@ -65,7 +65,7 @@ extern seq_blm8x8_config_t SEQ_BLM8X8_ConfigGet(u8 blm);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-u8 seq_blm8x8_led_row[SEQ_BLM8X8_NUM][8];
+extern u8 seq_blm8x8_led_row[SEQ_BLM8X8_NUM][8];
 
 
 #endif /* _SEQ_BLM8X8_H */

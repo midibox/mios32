@@ -14,6 +14,8 @@
 #ifndef _APP_LCD_H
 #define _APP_LCD_H
 
+#if !defined(MIOS32_DONT_USE_LCD)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,6 +60,8 @@ extern u8 APP_LCD_AltPinningGet(void);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif /* _APP_LCD_H */

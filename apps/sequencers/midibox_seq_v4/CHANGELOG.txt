@@ -30,6 +30,16 @@ MIDIboxSEQ V4.097
         "set seq_pattern_log_load_time on"
      in MIOS Terminal, and playing a song (the pattern switch time will be shown)
 
+   o CV Page: added new clock Rates 0.063PPQN (4 Bars), 0.125 PPQN (2 bars), 0.25 (1 bar), 0.5 (1/2 bar),
+     + Stop/Start, Start Pulse and Stop Pulse function (e.g. a stop pulse can be used as a reset signal)
+     
+   o Fixed CV channel assignments when using the 9-12 and 13-15 channel ranges
+
+   o DUPL FX "First Channel" parameter now considered as intended (and documented) in alternate/random modes.
+     Please note that this makes your existing tracks which are using this feature incompatible!
+     Please specify the intended "first channel" under FX->DUPL
+
+
 
 MIDIboxSEQ V4.096
 ~~~~~~~~~~~~~~~~~
@@ -2672,6 +2682,23 @@ From talk with Menzman: guide track for synchronized pattern changes
 ----------------------------------------------------------
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=186032
 Store currentl morphed pattern into track
+----------------------------------------------------------
+From talk with Menzman:
+Umschalten der Notendarstellung (Tonhöhe) zwischen Noten und num. Wert, also:
+
+C3=0
+C4=12
+C2=-12
+
+D3=+2
+Eb3=+3
+F3=+5
+etc.
+
+Am besten innerhalb von OPTIONS
+----------------------------------------------------------
+
+
 
 
 Wishlist for MIDIbox SEQ V4 Plus

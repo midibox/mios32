@@ -27,7 +27,11 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
+#if defined(MIOS32_BOARD_BLUE_PILL)
+#define NUM_TIMERS 2
+#else
 #define NUM_TIMERS 3
+#endif
 
 #define TIMER0_BASE                 TIM2
 #define TIMER0_RCC   RCC_APB1Periph_TIM2
@@ -39,10 +43,14 @@
 #define TIMER1_IRQ                  TIM3_IRQn
 #define TIMER1_IRQ_HANDLER     void TIM3_IRQHandler(void)
 
+#if defined(MIOS32_BOARD_BLUE_PILL)
+#define MIOS32_DONT_ALLOCATE_TIM5_IRQn
+#else
 #define TIMER2_BASE                 TIM5
 #define TIMER2_RCC   RCC_APB1Periph_TIM5
 #define TIMER2_IRQ                  TIM5_IRQn
 #define TIMER2_IRQ_HANDLER     void TIM5_IRQHandler(void)
+#endif
 
 
 // timers clocked at CPU clock
@@ -53,9 +61,16 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+
+#if defined(MIOS32_BOARD_BLUE_PILL)
+static TIM_TypeDef *timer_base[NUM_TIMERS] = { TIMER0_BASE, TIMER1_BASE };
+static u32 rcc[NUM_TIMERS] = { TIMER0_RCC, TIMER1_RCC };
+static const u32 timer_irq_chn[NUM_TIMERS] = { TIMER0_IRQ, TIMER1_IRQ };
+#else
 static TIM_TypeDef *timer_base[NUM_TIMERS] = { TIMER0_BASE, TIMER1_BASE, TIMER2_BASE };
 static u32 rcc[NUM_TIMERS] = { TIMER0_RCC, TIMER1_RCC, TIMER2_RCC };
 static const u32 timer_irq_chn[NUM_TIMERS] = { TIMER0_IRQ, TIMER1_IRQ, TIMER2_IRQ };
+#endif
 static void (*timer_callback[NUM_TIMERS])(void);
 
 

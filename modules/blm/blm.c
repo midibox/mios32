@@ -19,6 +19,8 @@
 
 #include <mios32.h>
 
+#if !defined(MIOS32_DONT_USE_BLM)
+
 #include "blm.h"
 
 
@@ -460,4 +462,5 @@ u8 BLM_DOUT_SRGet(u32 colour, u32 sr)
   return blm_led_row[colour][sr];
 }
 
+#endif
 //! \}

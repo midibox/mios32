@@ -13,6 +13,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+
+#if !defined(MIOS32_DONT_USE_LCD)
+
 #include <glcd_font.h>
 #include <string.h>
 
@@ -1064,3 +1067,5 @@ s32 APP_LCD_TerminalPrintConfig(void *_output_function) {
     out("Unsupported\n");
     return 0; // no error
 }
+
+#endif

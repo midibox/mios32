@@ -563,20 +563,47 @@ s32 SEQ_CV_Update(void)
   u8 start_stop = SEQ_BPM_IsRunning();
 
   // Clock outputs
-  // Note: a clock output acts as start/stop if clock divider set to 0
   u8 clk_sr_value = 0;
   {
     int clkout;
     u16 *clk_divider = (u16 *)&seq_cv_clkout_divider[0];
     u8 *pulse_ctr = (u8 *)&seq_cv_clkout_pulse_ctr[0];
     for(clkout=0; clkout<SEQ_CV_NUM_CLKOUT; ++clkout, ++clk_divider, ++pulse_ctr) {
-      if( !*clk_divider && start_stop ) {
-	clk_sr_value |= (1 << clkout);
+
+      switch( *clk_divider ) {
+
+      case 0x0000: { // Start/Stop Function
+        if( start_stop ) {
+          clk_sr_value |= (1 << clkout);
+        }
+      } break;
+
+      case 0xffff: { // Stop/Start Function
+        if( !start_stop ) {
+          clk_sr_value |= (1 << clkout);
+        }
+      } break;
+
+      case 0xfffe: { // Start Pulse
+        if( start_stop != last_start_stop && start_stop ) {
+          *pulse_ctr = seq_cv_clkout_pulsewidth[clkout] + 1;
+        }
+      } break;
+
+      case 0xfffd: { // Stop Pulse
+        if( start_stop != last_start_stop && !start_stop ) {
+          *pulse_ctr = seq_cv_clkout_pulsewidth[clkout] + 1;
+        }
+      } break;
+
+      default: { // Common Clock Output
+        // no overruling
+      }
       }
 
       if( *pulse_ctr ) {
-	*pulse_ctr -= 1;
-	clk_sr_value |= (1 << clkout);
+        *pulse_ctr -= 1;
+        clk_sr_value |= (1 << clkout);
       }
     }
   }
@@ -759,14 +786,14 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
 	gate_pin_normal = package.chn + 8*cv_port;
 	gate_pin_velocity_gt100 = -1; // not relevant
       } else if( package.chn <= Chn12 ) {
-	aout_chn_note = ((package.chn & 3) << 1) + 8*cv_port;
+	aout_chn_note = (package.chn & 3) + 8*cv_port;
 	aout_chn_vel = aout_chn_note + 1;
-	gate_pin_normal = ((package.chn & 3) << 1) + 8*cv_port;
+	gate_pin_normal = (package.chn & 3) + 8*cv_port;
 	gate_pin_velocity_gt100 = gate_pin_normal + 1;
       } else { // Chn <= 15
-	aout_chn_vel = ((package.chn & 3) << 1) + 8*cv_port;
+	aout_chn_vel = (package.chn & 3) + 8*cv_port;
 	aout_chn_note = aout_chn_vel + 1;
-	gate_pin_normal = ((package.chn & 3) << 1) + 8*cv_port;
+	gate_pin_normal = (package.chn & 3) + 8*cv_port;
 	gate_pin_velocity_gt100 = gate_pin_normal + 1;
       }
 
@@ -801,7 +828,7 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
 	  if( package.velocity > 100 )
 	    gates |= (1 << gate_pin_velocity_gt100);
 	  else
-	    gates |= (1 << gate_pin_velocity_gt100);
+	    gates &= ~(1 << gate_pin_velocity_gt100);
 	}
       } else {
 	// clear gate pins
