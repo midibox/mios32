@@ -797,6 +797,10 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
 	gate_pin_velocity_gt100 = gate_pin_normal + 1;
       }
 
+      if( aout_chn_note >= SEQ_CV_NUM ) {
+	return 0; // event not taken, especially relevant for legacy MBSEQV4 (without +) which supports only 8 CV channels
+      }
+
       // branch depending on Note On/Off event
       if( package.event == NoteOn && package.velocity > 0 ) {
 	// push note into note stack
