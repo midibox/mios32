@@ -4227,25 +4227,18 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
       case MBNG_EVENT_ENC_MODE_C4ENC:
     	  if( item->value != 0x00 ) {
     		  if(item->value < 0x40){
-    			  switch(item->value){
-    			  case 0x01: incrementer = 1; break;
-    			  case 0x04: incrementer = 2; break;
-    			  case 0x08: incrementer = 4; break;
-    			  case 0x0c: incrementer = 8; break;
-    			  case 0x0f: incrementer = 12; break;
-    			  default:   incrementer = 1; break;
-    			  }
+			  if(item->value < 0x04){incrementer = 1;}
+    			  else if(item->value < 0x08){incrementer = 2;}		   
+    			  else if(item->value < 0x0c){incrementer = 4;}			  
+    			  else if(item->value < 0x0f){incrementer = 8;}	
+    			  else{incrementer = 12;}
     		  }
     		  else{
-    			  switch(item->value){
-    			  case 0x41: incrementer = -1; break;
-    			  case 0x44: incrementer = -2; break;
-    			  case 0x48: incrementer = -4; break;
-    			  case 0x4c: incrementer = -8; break;
-    			  case 0x4f: incrementer = -12; break;
-    			  default:   incrementer = -1; break;
-    			  }
-    		  }
+    			  if(item->value < 0x44){incrementer = -1;}
+    				  else if(item->value < 0x48){incrementer = -2;}		   
+    				  else if(item->value < 0x4c){incrementer = -4;}			  
+    				  else if(item->value < 0x4f){incrementer = -8;}	
+    				  else{incrementer = -12;}
     	  	}
     	  	break;
 
