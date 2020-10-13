@@ -31,7 +31,7 @@ MIDIboxSEQ V4.097
      in MIOS Terminal, and playing a song (the pattern switch time will be shown)
 
    o CV Page: added new clock Rates 0.063PPQN (4 Bars), 0.125 PPQN (2 bars), 0.25 (1 bar), 0.5 (1/2 bar),
-     + Stop/Start, Start Pulse and Stop Pulse function (e.g. a stop pulse can be used as a reset signal)
+     + Stop/Start, Start Pulse and Stop Pulse function (e.g. a stop pulse can be used as a reset trigger)
      
    o Fixed CV channel assignments when using the 9-12 and 13-15 channel ranges
 
