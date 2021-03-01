@@ -2752,3 +2752,5 @@ This would help tremendously, if people remap synthesizers to other out ports, i
 - Fx Duplicate: make port/channel fully assignable
   Dependency: will require to store CCs >=128
   
+- Multi Record/Live for all tracks:
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/page/64/?tab=comments#comment-187507
