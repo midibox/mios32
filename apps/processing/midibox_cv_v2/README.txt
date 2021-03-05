@@ -2,13 +2,13 @@ $Id$
 
 MIDIbox CV V2
 ===============================================================================
-Copyright (C) 2020 Thorsten Klose (tk@midibox.org)
+Copyright (C) 2021 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
 All other rights reserved.
 ===============================================================================
 
 Required tools:
-  -> http://www.ucapps.de/mio32_c.html
+  -> http://www.ucapps.de/mios32_c.html
 
 ===============================================================================
 
@@ -26,7 +26,6 @@ Optional hardware:
 
 The MIDIbox CV project is introduced at this webpage:
 http://ucapps.de/midibox_cv_v2.html
-
 
 Please read also CHANGELOG.txt for the last changes.
 
