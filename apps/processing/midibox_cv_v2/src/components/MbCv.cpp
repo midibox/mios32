@@ -152,7 +152,7 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
                 mod += (lfo1Value * (s32)mbCvLfo[0].lfoDepthPitch) / 128;
                 mod += (lfo2Value * (s32)mbCvLfo[1].lfoDepthPitch) / 128;
                 mod += (env1Value * (s32)mbCvEnv1[0].envDepthPitch) / 128;
-                mod += (env1Value * (s32)mbCvEnv2[0].envDepthPitch) / 128;
+                mod += (env2Value * (s32)mbCvEnv2[0].envDepthPitch) / 128;
                 mbCvMod.modDst[MBCV_MOD_DST_CV] = mod;
             }
 
@@ -595,7 +595,7 @@ CREATE_GROUP(Env2, "ENV2");
 CREATE_ACCESS_FUNCTIONS(Env2, Amplitude,               "Amplitude",       *value = (int)cv->mbCvEnv2[arg].envAmplitude + 0x80,          cv->mbCvEnv2[arg].envAmplitude = (int)value - 0x80);
 CREATE_ACCESS_FUNCTIONS(Env2, CurvePos,                "CurvePos",        *value = (int)cv->mbCvEnv2[arg].envCurvePos,                  cv->mbCvEnv2[arg].envCurvePos = (int)value);
 CREATE_ACCESS_FUNCTIONS(Env2, CurveNeg,                "CurveNeg",        *value = (int)cv->mbCvEnv2[arg].envCurveNeg,                  cv->mbCvEnv2[arg].envCurveNeg = (int)value);
-CREATE_ACCESS_FUNCTIONS(Env2, Offset,                  "Offset",          *value = (int)cv->mbCvEnv2[arg].envOffset,                    cv->mbCvEnv2[arg].envOffset = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, Offset,                  "Offset",          *value = (int)cv->mbCvEnv2[arg].envOffset + 0x80,             cv->mbCvEnv2[arg].envOffset = (int)value - 0x80);
 CREATE_ACCESS_FUNCTIONS(Env2, Rate,                    "Rate",            *value = (int)cv->mbCvEnv2[arg].envRate,                      cv->mbCvEnv2[arg].envRate = (int)value);
 CREATE_ACCESS_FUNCTIONS(Env2, LoopAttack,              "Loop Attack",     *value = (int)cv->mbCvEnv2[arg].envLoopAttack,                cv->mbCvEnv2[arg].envLoopAttack = (int)value);
 CREATE_ACCESS_FUNCTIONS(Env2, SustainStep,             "Sustain Step",    *value = (int)cv->mbCvEnv2[arg].envSustainStep,               cv->mbCvEnv2[arg].envSustainStep = (int)value);
