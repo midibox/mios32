@@ -230,10 +230,10 @@ s32 SEQ_MORPH_Store(u8 track)
 
   int num_par_instruments = SEQ_PAR_NumInstrumentsGet(track);
   int num_par_layers = SEQ_PAR_NumLayersGet(track);
-  int num_par_steps = SEQ_PAR_NumStepsGet(track);
-  int num_trg_instruments = SEQ_TRG_NumInstrumentsGet(track);
-  int num_trg_layers = SEQ_TRG_NumLayersGet(track);
-  int num_trg_steps = SEQ_TRG_NumStepsGet(track);
+  //int num_par_steps = SEQ_PAR_NumStepsGet(track);
+  //int num_trg_instruments = SEQ_TRG_NumInstrumentsGet(track);
+  //int num_trg_layers = SEQ_TRG_NumLayersGet(track);
+  //int num_trg_steps = SEQ_TRG_NumStepsGet(track);
 
   int track_length = (int)SEQ_CC_Get(track, SEQ_CC_LENGTH) + 1;
   int morph_step_offset = (int)SEQ_CC_Get(track, SEQ_CC_MORPH_DST);

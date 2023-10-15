@@ -1539,7 +1539,10 @@ static s32 FILE_CreateTarHeader(char *filename, char *src_path, u8 is_dir, u32 f
 # error "We've a problem here!"
 #endif
 
-  memset(header, 0, sizeof(header));
+  {
+    size_t len = sizeof(header);
+    memset(header, 0, len);
+  }
 
   strncpy(header->name, &filename[1], strlen(filename)-5); // remove initial / and .tar
   header->name[strlen(filename)-5] = 0;
@@ -1646,7 +1649,7 @@ static s32 FILE_CreateTarRecursive(char *filename, char *src_path, u8 exclude_ta
 #if DEBUG_VERBOSE_LEVEL >= 1
 	  DEBUG_MSG("[FILE_CreateTar] Skip %s (same file)\n", full_path);
 #endif
-	} else if( exclude_tar_files && strcasestr(de.fname, ".TAR") != 0 ) {
+	} else if( exclude_tar_files && strcasecmp(de.fname, ".TAR") == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	  DEBUG_MSG("[FILE_CreateTar] Skip %s\n", full_path);
 #endif
