@@ -18,9 +18,9 @@
 
 Midio128ToolConfigGlobals::Midio128ToolConfigGlobals()
 {
-    addAndMakeVisible(mergerLabel = new Label(String::empty, T("MIDI Merger:")));
+    addAndMakeVisible(mergerLabel = new Label(String(), T("MIDI Merger:")));
     mergerLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(mergerComboBox = new ComboBox(String::empty));
+    addAndMakeVisible(mergerComboBox = new ComboBox(String()));
     mergerComboBox->setWantsKeyboardFocus(true);
     mergerComboBox->addItem(T("Disabled"), 1);
     mergerComboBox->addItem(T("Enabled (received MIDI events forwarded to MIDI Out)"), 2);
@@ -28,50 +28,50 @@ Midio128ToolConfigGlobals::Midio128ToolConfigGlobals()
     mergerComboBox->addItem(T("MIDIbox Link Forwarding Point (core in a MIDIbox chain)"), 4);
     mergerComboBox->setSelectedId(1, true);
 
-    addAndMakeVisible(debounceLabel = new Label(String::empty, T("DIN Debouncing (mS):")));
+    addAndMakeVisible(debounceLabel = new Label(String(), T("DIN Debouncing (mS):")));
     debounceLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(debounceSlider = new Slider(String::empty));
+    addAndMakeVisible(debounceSlider = new Slider(String()));
     debounceSlider->setWantsKeyboardFocus(true);
     debounceSlider->setSliderStyle(Slider::LinearHorizontal);
     debounceSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 80, 20);
     debounceSlider->setRange(0, 255, 1);
     debounceSlider->setValue(20);
 
-    addAndMakeVisible(altPrgChangesLabel = new Label(String::empty, T("Program Change Mode:")));
+    addAndMakeVisible(altPrgChangesLabel = new Label(String(), T("Program Change Mode:")));
     altPrgChangesLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(altPrgChangesComboBox = new ComboBox(String::empty));
+    addAndMakeVisible(altPrgChangesComboBox = new ComboBox(String()));
     altPrgChangesComboBox->setWantsKeyboardFocus(true);
     altPrgChangesComboBox->addItem(T("DOUT pin will toggle between 0 and 1 whenever PC event is received"), 1);
     altPrgChangesComboBox->addItem(T("Exclusive: assigned DOUT pin will be activated, all others deactivated (channel-wise)"), 2);
     altPrgChangesComboBox->setSelectedId(1, true);
 
-    addAndMakeVisible(forwardInToOutLabel = new Label(String::empty, T("DIN->DOUT Forwarding Mode:")));
+    addAndMakeVisible(forwardInToOutLabel = new Label(String(), T("DIN->DOUT Forwarding Mode:")));
     forwardInToOutLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(forwardInToOutComboBox = new ComboBox(String::empty));
+    addAndMakeVisible(forwardInToOutComboBox = new ComboBox(String()));
     forwardInToOutComboBox->setWantsKeyboardFocus(true);
     forwardInToOutComboBox->addItem(T("Disabled"), 1);
     forwardInToOutComboBox->addItem(T("DIN pin changes will be forwarded to DOUT pins with same number"), 2);
     forwardInToOutComboBox->setSelectedId(2);
 
-    addAndMakeVisible(inverseInputsLabel = new Label(String::empty, T("DIN Input Polarity:")));
+    addAndMakeVisible(inverseInputsLabel = new Label(String(), T("DIN Input Polarity:")));
     inverseInputsLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(inverseInputsComboBox = new ComboBox(String::empty));
+    addAndMakeVisible(inverseInputsComboBox = new ComboBox(String()));
     inverseInputsComboBox->setWantsKeyboardFocus(true);
     inverseInputsComboBox->addItem(T("Inverted (0V = Active/Pressed, 5V = Open/Depressed"), 1);
     inverseInputsComboBox->addItem(T("Normal (0V = Open/Depressed, 5V = Active/Pressed"), 2);
     inverseInputsComboBox->setSelectedId(2);
 
-    addAndMakeVisible(inverseOutputsLabel = new Label(String::empty, T("DOUT Output Polarity:")));
+    addAndMakeVisible(inverseOutputsLabel = new Label(String(), T("DOUT Output Polarity:")));
     inverseOutputsLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(inverseOutputsComboBox = new ComboBox(String::empty));
+    addAndMakeVisible(inverseOutputsComboBox = new ComboBox(String()));
     inverseOutputsComboBox->setWantsKeyboardFocus(true);
     inverseOutputsComboBox->addItem(T("Normal (5V = Active/On, 0V = Not Active/Off"), 1);
     inverseOutputsComboBox->addItem(T("Inverted (0V = Not Active/Off, 5V = Active/On"), 2);
     inverseOutputsComboBox->setSelectedId(1);
 
-    addAndMakeVisible(allNotesOffChannelLabel = new Label(String::empty, T("MIDI Channel for \"All Notes Off\":")));
+    addAndMakeVisible(allNotesOffChannelLabel = new Label(String(), T("MIDI Channel for \"All Notes Off\":")));
     allNotesOffChannelLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(allNotesOffChannelComboBox = new ComboBox(String::empty));
+    addAndMakeVisible(allNotesOffChannelComboBox = new ComboBox(String()));
     allNotesOffChannelComboBox->setWantsKeyboardFocus(true);
     for(int i=1; i<=17; ++i) {
         if( i == 1 )
@@ -81,9 +81,9 @@ Midio128ToolConfigGlobals::Midio128ToolConfigGlobals()
     }
     allNotesOffChannelComboBox->setSelectedId(1);
 
-    addAndMakeVisible(touchsensorSensitivityLabel = new Label(String::empty, T("Touch Sensor Sensitivity:")));
+    addAndMakeVisible(touchsensorSensitivityLabel = new Label(String(), T("Touch Sensor Sensitivity:")));
     touchsensorSensitivityLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(touchsensorSensitivitySlider = new Slider(String::empty));
+    addAndMakeVisible(touchsensorSensitivitySlider = new Slider(String()));
     touchsensorSensitivitySlider->setWantsKeyboardFocus(true);
     touchsensorSensitivitySlider->setSliderStyle(Slider::LinearHorizontal);
     touchsensorSensitivitySlider->setTextBoxStyle(Slider::TextBoxLeft, false, 80, 20);
@@ -737,8 +737,8 @@ Midio128ToolControl::Midio128ToolControl(MiosStudio *_miosStudio, Midio128ToolCo
     PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         deviceIdSlider->setValue(propertiesFile->getIntValue(T("midio128DeviceId"), 0) & 7);
-        String syxFileName(propertiesFile->getValue(T("midio128SyxFile"), String::empty));
-        if( syxFileName != String::empty )
+        String syxFileName(propertiesFile->getValue(T("midio128SyxFile"), String()));
+        if( syxFileName != String() )
             syxFile = File(syxFileName);
     }
 
@@ -850,13 +850,13 @@ void Midio128ToolControl::timerCallback()
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                             T("No response from core."),
                                             T("Check:\n- MIDI In/Out connections\n- Device ID\n- that MIDIO128 firmware has been uploaded"),
-                                            String::empty);
+                                            String());
             } else if( checksumError ) {
                 transferFinished = true;
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                             T("Detected checksum error!"),
                                             T("Check:\n- MIDI In/Out connections\n- your MIDI interface"),
-                                            String::empty);
+                                            String());
             }
         }
 
@@ -952,19 +952,19 @@ void Midio128ToolControl::handleIncomingMidiMessage(const MidiMessage& message, 
 //==============================================================================
 bool Midio128ToolControl::loadSyx(File &syxFile)
 {
-    FileInputStream *inFileStream = syxFile.createInputStream();
+    std::unique_ptr<FileInputStream> inFileStream = syxFile.createInputStream();
 
     if( !inFileStream ) {
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                     T("The file ") + syxFile.getFileName(),
                                     T("doesn't exist!"),
-                                    String::empty);
+                                    String());
         return false;
     } else if( inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                     T("The file ") + syxFile.getFileName(),
                                     T("is empty!"),
-                                    String::empty);
+                                    String());
         return false;
     }
 
@@ -1015,18 +1015,18 @@ bool Midio128ToolControl::loadSyx(File &syxFile)
 
     juce_free(buffer);
 
-    if( errorMessage == String::empty ) {
+    if( errorMessage == String() ) {
         if( !numValidBlocks )
             errorMessage = String(T("doesn't contain valid MIDIO128 data!"));
         else if( numValidBlocks < 6 )
             errorMessage = String::formatted(T("is not complete (expect 6 blocks, only found %d blocks"), numValidBlocks);
     }
 
-    if( errorMessage != String::empty ) {
+    if( errorMessage != String() ) {
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                     T("The file ") + syxFile.getFileName(),
                                     errorMessage,
-                                    String::empty);
+                                    String());
         return false;
     }
 
@@ -1038,13 +1038,13 @@ bool Midio128ToolControl::loadSyx(File &syxFile)
 bool Midio128ToolControl::saveSyx(File &syxFile)
 {
     syxFile.deleteFile();
-    FileOutputStream *outFileStream = syxFile.createOutputStream();
+    std::unique_ptr<FileOutputStream> outFileStream = syxFile.createOutputStream();
             
     if( !outFileStream || outFileStream->failedToOpen() ) {
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
-                                    String::empty,
+                                    String(),
                                     T("File cannot be created!"),
-                                    String::empty);
+                                    String());
         return false;
     }
 
@@ -1058,7 +1058,7 @@ bool Midio128ToolControl::saveSyx(File &syxFile)
         outFileStream->write(&data.getReference(0), data.size());
     }
 
-    delete outFileStream;
+    outFileStream.reset();
 
     return true;
 }

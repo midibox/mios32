@@ -482,7 +482,7 @@ void MiosStudio::closeMidiPorts(void)
     for (int i = allMidiIns.size(); --i >= 0;)
         audioDeviceManager.setMidiInputEnabled(allMidiIns[i], false);
 
-    audioDeviceManager.setDefaultMidiOutput(String::empty);
+    audioDeviceManager.setDefaultMidiOutput(String());
 }
 
 
@@ -519,8 +519,8 @@ void MiosStudio::timerCallback()
                     AlertWindow::showMessageBox(AlertWindow::InfoIcon,
                                                 T("Info"),
                                                 commandLineInfoMessages,
-                                                String::empty);
-                    commandLineInfoMessages = String::empty;
+                                                String());
+                    commandLineInfoMessages = String();
                 }
 
                 // now also check for command line errors
@@ -528,15 +528,15 @@ void MiosStudio::timerCallback()
                     AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                                 T("Command Line Error"),
                                                 commandLineErrorMessages,
-                                                String::empty);
-                    commandLineErrorMessages = String::empty;
+                                                String());
+                    commandLineErrorMessages = String();
                 }
             }
 
             // try to query selected core
-            audioDeviceManager.addMidiInputCallback(String::empty, this);
+            audioDeviceManager.addMidiInputCallback(String(), this);
 
-            if( getMidiOutput() != String::empty )
+            if( getMidiOutput() != String() )
                 uploadWindow->queryCore();
 
             initialMidiScanCounter = 0; // stop scan
@@ -668,7 +668,7 @@ void MiosStudio::timerCallback()
                         AlertWindow::showMessageBox(AlertWindow::InfoIcon,
                                                     T("Info"),
                                                     T("All batch jobs executed."),
-                                                    String::empty);
+                                                    String());
                     }
                 } else {
                     std::cerr << "ERROR: unknown batch job: '" << job << "'!" << std::endl;
@@ -689,11 +689,11 @@ void MiosStudio::setMidiInput(const String &port)
     }
 
     // propagate port change
-    if( uploadWindow && initialMidiScanCounter == 0 && port != String::empty )
+    if( uploadWindow && initialMidiScanCounter == 0 && port != String() )
         uploadWindow->midiPortChanged();
 
     // store setting if MIDI input selected
-    if( port != String::empty ) {
+    if( port != String() ) {
         PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue(T("midiIn"), port);
@@ -704,7 +704,7 @@ String MiosStudio::getMidiInput(void)
 {
     // restore setting
     PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
-    return propertiesFile ? propertiesFile->getValue(T("midiIn"), String::empty) : String::empty;
+    return propertiesFile ? propertiesFile->getValue(T("midiIn"), String()) : String();
 }
 
 void MiosStudio::setMidiOutput(const String &port)
@@ -712,11 +712,11 @@ void MiosStudio::setMidiOutput(const String &port)
     audioDeviceManager.setDefaultMidiOutput(port);
 
     // propagate port change
-    if( uploadWindow && initialMidiScanCounter == 0 && port != String::empty )
+    if( uploadWindow && initialMidiScanCounter == 0 && port != String() )
         uploadWindow->midiPortChanged();
 
     // store setting if MIDI output selected
-    if( port != String::empty ) {
+    if( port != String() ) {
         PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue(T("midiOut"), port);
@@ -727,7 +727,7 @@ String MiosStudio::getMidiOutput(void)
 {
     // restore setting
     PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
-    return propertiesFile ? propertiesFile->getValue(T("midiOut"), String::empty) : String::empty;
+    return propertiesFile ? propertiesFile->getValue(T("midiOut"), String()) : String();
 }
 
 

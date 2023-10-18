@@ -160,24 +160,24 @@ MiosFileBrowser::MiosFileBrowser(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
     , rootItem(NULL)
     , rootFileItem(NULL)
-    , currentDirOpenStates(NULL)
+    , currentDirOpenStates()
     , transferSelectionCtr(0)
     , openTextEditorAfterRead(false)
     , openHexEditorAfterRead(false)
     , currentReadInProgress(false)
     , currentReadFileBrowserItem(NULL)
-    , currentReadFileStream(NULL)
+    , currentReadFileStream()
     , currentReadError(false)
     , currentWriteInProgress(false)
     , currentWriteError(false)
     , writeBlockCtrDefault(32) // send 32 blocks (=two 512 byte SD Card Sectors) at once to speed-up write operations
     , writeBlockSizeDefault(32) // send 32 bytes per block
 {
-    addAndMakeVisible(editLabel = new Label(T("Edit"), String::empty));
+    addAndMakeVisible(editLabel = new Label(T("Edit"), String()));
     editLabel->setJustificationType(Justification::left);
-    editLabel->setText(String::empty, sendNotification);
+    editLabel->setText(String(), sendNotification);
 
-    addAndMakeVisible(statusLabel = new Label(T("Status"), String::empty));
+    addAndMakeVisible(statusLabel = new Label(T("Status"), String()));
     statusLabel->setJustificationType(Justification::left);
     statusLabel->setText(T("Please connect to MIOS32 core by pressing the Update button!"), sendNotification);
 
@@ -220,7 +220,7 @@ MiosFileBrowser::MiosFileBrowser(MiosStudio *_miosStudio)
     addAndMakeVisible(hexEditor = new HexTextEditor(statusLabel));
     hexEditor->setReadOnly(true);
 
-    addAndMakeVisible(textEditor = new TextEditor(String::empty));
+    addAndMakeVisible(textEditor = new TextEditor(String()));
     textEditor->setMultiLine(true);
     textEditor->setReturnKeyStartsNewLine(true);
     textEditor->setReadOnly(false);
@@ -373,7 +373,7 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
             hexEditor->setReadOnly(true);
             textEditor->clear();
             textEditor->setReadOnly(true);
-            editLabel->setText(String::empty, sendNotification);
+            editLabel->setText(String(), sendNotification);
 
             disableFileButtons(); // to disable also editor buttons
             enableFileButtons();
@@ -612,7 +612,7 @@ void MiosFileBrowser::updateTreeView(bool accessPossible)
         if( accessPossible ) {
             if( currentDirOpenStates ) {
                 treeView->restoreOpennessState(*currentDirOpenStates, true);
-                deleteAndZero(currentDirOpenStates);
+                currentDirOpenStates.reset();
             }
 
             uploadButton->setEnabled(true);
@@ -677,9 +677,9 @@ bool MiosFileBrowser::downloadFileSelection(unsigned selection)
                 if( !(currentReadFileStream=currentReadFile.createOutputStream()) ||
                     currentReadFileStream->failedToOpen() ) {
                     AlertWindow::showMessageBox(AlertWindow::WarningIcon,
-                                                String::empty,
+                                                String(),
                                                 T("File cannot be created!"),
-                                                String::empty);
+                                                String());
                     setStatus(T("Failed to open ") + currentReadFile.getFullPathName());
                 } else {
                     disableFileButtons();
@@ -709,7 +709,7 @@ bool MiosFileBrowser::downloadFinished(void)
         editLabel->setText(currentReadFileName, sendNotification);
     } else if( currentReadFileStream ) {
         currentReadFileStream->write((uint8 *)&currentReadData.getReference(0), currentReadData.size());
-        delete currentReadFileStream;
+        currentReadFileStream.reset();
         setStatus(T("Saved ") + currentReadFile.getFullPathName());
 
         // try next file (if there is still another selection
@@ -763,7 +763,7 @@ bool MiosFileBrowser::createDir(void)
 
     enterName.addButton(T("Create"), 1);
     enterName.addButton(T("Cancel"), 0);
-    enterName.addTextEditor(T("Name"), String::empty);
+    enterName.addTextEditor(T("Name"), String());
 
     if( enterName.runModalLoop() ) {
         String name(enterName.getTextEditorContents(T("Name")));
@@ -796,7 +796,7 @@ bool MiosFileBrowser::createFile(void)
 
     enterName.addButton(T("Create"), 1);
     enterName.addButton(T("Cancel"), 0);
-    enterName.addTextEditor(T("Name"), String::empty);
+    enterName.addTextEditor(T("Name"), String());
 
     if( enterName.runModalLoop() ) {
         String name(enterName.getTextEditorContents(T("Name")));
@@ -834,7 +834,7 @@ bool MiosFileBrowser::uploadFile(String filename)
         propertiesFile->setValue(T("defaultFilebrowserPath"), inFile.getParentDirectory().getFullPathName());
     }
 
-    FileInputStream *inFileStream = inFile.createInputStream();
+    std::unique_ptr<FileInputStream> inFileStream = inFile.createInputStream();
     if( !inFileStream || inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
         if( miosStudio->runningInBatchMode() ) {
             std::cerr << "The file " << inFile.getFileName() << " doesn't exist!" << std::endl;
@@ -842,7 +842,7 @@ bool MiosFileBrowser::uploadFile(String filename)
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                         T("The file ") + inFile.getFileName(),
                                         T("doesn't exist!"),
-                                        String::empty);
+                                        String());
         }
     } else if( inFileStream->isExhausted() ) { // || !inFileStream->getTotalLength() -> disabled, we also want to handle zero-length files
         if( miosStudio->runningInBatchMode() ) {
@@ -851,7 +851,7 @@ bool MiosFileBrowser::uploadFile(String filename)
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                         T("The file ") + inFile.getFileName(),
                                         T("can't be read!"),
-                                        String::empty);
+                                        String());
         }
     } else {
         disableFileButtons();
@@ -866,7 +866,7 @@ bool MiosFileBrowser::uploadFile(String filename)
     }
 
     if( inFileStream )
-        delete inFileStream;
+        inFileStream.reset();
 
     return true;
 }
@@ -904,7 +904,7 @@ bool MiosFileBrowser::uploadFinished(void)
         hexEditor->setReadOnly(true);
         textEditor->clear();
         textEditor->setReadOnly(true);
-        editLabel->setText(String::empty, true);
+        editLabel->setText(String(), true);
 #else
         extraText = T(" - you can continue editing; click CANCEL to close editor!");
         // don't close editor
@@ -1045,7 +1045,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                     currentReadData.clear();
                     setStatus(statusMessage);
                     downloadFinished();
-                    statusMessage = String::empty; // status has been updated by downloadFinished()
+                    statusMessage = String(); // status has been updated by downloadFinished()
                 }
             }
         } break;
@@ -1081,7 +1081,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
 
                         setStatus(statusMessage);
                         downloadFinished();
-                        statusMessage = String::empty; // status has been updated by downloadFinished()
+                        statusMessage = String(); // status has been updated by downloadFinished()
                     } else {
                         statusMessage = String(T("Downloading ") + currentReadFileName + T(": ") +
                                                String(receivedSize) + T(" bytes received") +
@@ -1108,7 +1108,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                 statusMessage = String(T("FATAL: invalid parameters for write operation!"));
             } else if( command[1] == '#' ) {
                 uploadFinished();
-                statusMessage = String::empty; // status has been updated by uploadFinished()
+                statusMessage = String(); // status has been updated by uploadFinished()
             } else {
                 unsigned addressOffset = command.substring(1).getHexValue32();
 
@@ -1162,7 +1162,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                 statusMessage = String(T("Failed to create directory!"));
             } else if( command[1] == '#' ) {
                 createDirFinished();
-                statusMessage = String::empty; // status has been updated by createDirFinished()
+                statusMessage = String(); // status has been updated by createDirFinished()
             } else {
                 statusMessage = String(T("Unsupported response from mkdir command!"));
             }
@@ -1177,7 +1177,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                 statusMessage = String(T("Failed to delete file!"));
             } else if( command[1] == '#' ) {
                 deleteFinished();
-                statusMessage = String::empty; // status has been updated by deleteFinished()
+                statusMessage = String(); // status has been updated by deleteFinished()
             } else {
                 statusMessage = String(T("Unsupported response from del command!"));
             }

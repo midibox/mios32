@@ -169,16 +169,16 @@ void LogBox::copy(void)
             std::pair<Colour, String> p = logEntries[row];
 
 #if JUCE_WIN32
-            if( selectedText != String::empty )
+            if( selectedText != String() )
                 selectedText += T("\r\n");
 #else
-            if( selectedText != String::empty )
+            if( selectedText != String() )
                 selectedText += T("\n");
 #endif
             selectedText += p.second;
         }
 
-    if( selectedText != String::empty )
+    if( selectedText != String() )
         SystemClipboard::copyTextToClipboard(selectedText);
 }
 

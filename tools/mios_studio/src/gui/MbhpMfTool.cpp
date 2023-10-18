@@ -19,13 +19,13 @@
 MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     : mbhpMfTool(_mbhpMfTool)
 {
-    addAndMakeVisible(nameLabel = new Label(String::empty, T("Patch Name:")));
+    addAndMakeVisible(nameLabel = new Label(String(), T("Patch Name:")));
     nameLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(nameEditor = new TextEditor(String::empty));
+    addAndMakeVisible(nameEditor = new TextEditor(String()));
     nameEditor->setTextToShowWhenEmpty(T("<No Name>"), Colours::grey);
     nameEditor->setInputRestrictions(16);
 
-    addAndMakeVisible(numberFadersLabel = new Label(String::empty, T("Number of Faders:")));
+    addAndMakeVisible(numberFadersLabel = new Label(String(), T("Number of Faders:")));
     numberFadersLabel->setJustificationType(Justification::right);
     addAndMakeVisible(numberFadersSlider = new Slider(T("Number of Faders")));
     numberFadersSlider->setWantsKeyboardFocus(true);
@@ -35,9 +35,9 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     numberFadersSlider->setValue(8);
     numberFadersSlider->addListener(this);
 
-    addAndMakeVisible(operationModeLabel = new Label(String::empty, T("Operation Mode:")));
+    addAndMakeVisible(operationModeLabel = new Label(String(), T("Operation Mode:")));
     operationModeLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(operationModeComboBox = new ComboBox(String::empty));
+    addAndMakeVisible(operationModeComboBox = new ComboBox(String()));
     operationModeComboBox->setWantsKeyboardFocus(true);
     operationModeComboBox->addItem(T("PitchBender Chn#1..#8"), 1);
     operationModeComboBox->addItem(T("PitchBender Chn#9..#16"), 2);
@@ -68,7 +68,7 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     operationModeComboBox->setSelectedId(1, true);
     operationModeComboBox->addListener(this);
 
-    addAndMakeVisible(midiChannelLabel = new Label(String::empty, T("MIDI Channel:")));
+    addAndMakeVisible(midiChannelLabel = new Label(String(), T("MIDI Channel:")));
     midiChannelLabel->setJustificationType(Justification::right);
     addAndMakeVisible(midiChannelSlider = new Slider(T("MIDI Channel")));
     midiChannelSlider->setWantsKeyboardFocus(true);
@@ -78,9 +78,9 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     midiChannelSlider->setValue(1);
     midiChannelSlider->addListener(this);
 
-    addAndMakeVisible(mergerLabel = new Label(String::empty, T("MIDI Merger:")));
+    addAndMakeVisible(mergerLabel = new Label(String(), T("MIDI Merger:")));
     mergerLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(mergerComboBox = new ComboBox(String::empty));
+    addAndMakeVisible(mergerComboBox = new ComboBox(String()));
     mergerComboBox->setWantsKeyboardFocus(true);
     mergerComboBox->addItem(T("Disabled"), 1);
     mergerComboBox->addItem(T("Enabled (received MIDI events forwarded to MIDI Out)"), 2);
@@ -89,7 +89,7 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     mergerComboBox->setSelectedId(1, true);
     mergerComboBox->addListener(this);
 
-    addAndMakeVisible(pwmStepsLabel = new Label(String::empty, T("PWM Steps:")));
+    addAndMakeVisible(pwmStepsLabel = new Label(String(), T("PWM Steps:")));
     pwmStepsLabel->setJustificationType(Justification::right);
     addAndMakeVisible(pwmStepsSlider = new Slider(T("PWM Period")));
     pwmStepsSlider->setWantsKeyboardFocus(true);
@@ -99,7 +99,7 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     pwmStepsSlider->setValue(64);
     pwmStepsSlider->addListener(this);
 
-    addAndMakeVisible(ainDeadbandLabel = new Label(String::empty, T("AIN Deadband:")));
+    addAndMakeVisible(ainDeadbandLabel = new Label(String(), T("AIN Deadband:")));
     ainDeadbandLabel->setJustificationType(Justification::right);
     addAndMakeVisible(ainDeadbandSlider = new Slider(T("AIN Deadband")));
     ainDeadbandSlider->setWantsKeyboardFocus(true);
@@ -109,7 +109,7 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     ainDeadbandSlider->setValue(3);
     ainDeadbandSlider->addListener(this);
 
-    addAndMakeVisible(mfDeadbandLabel = new Label(String::empty, T("MF Deadband:")));
+    addAndMakeVisible(mfDeadbandLabel = new Label(String(), T("MF Deadband:")));
     mfDeadbandLabel->setJustificationType(Justification::right);
     addAndMakeVisible(mfDeadbandSlider = new Slider(T("MF Deadband")));
     mfDeadbandSlider->setWantsKeyboardFocus(true);
@@ -119,9 +119,9 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     mfDeadbandSlider->setValue(3);
     mfDeadbandSlider->addListener(this);
 
-    addAndMakeVisible(touchSensorModeLabel = new Label(String::empty, T("TouchSensor Mode:")));
+    addAndMakeVisible(touchSensorModeLabel = new Label(String(), T("TouchSensor Mode:")));
     touchSensorModeLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(touchSensorModeComboBox = new ComboBox(String::empty));
+    addAndMakeVisible(touchSensorModeComboBox = new ComboBox(String()));
     touchSensorModeComboBox->setWantsKeyboardFocus(true);
     touchSensorModeComboBox->addItem(T("Disabled"), 1);
     touchSensorModeComboBox->addItem(T("Pressed/Depressed Events forwarded to MIDI Out"), 2);
@@ -130,7 +130,7 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     touchSensorModeComboBox->setSelectedId(2, true);
     touchSensorModeComboBox->addListener(this);
 
-    addAndMakeVisible(touchSensorSensitivityLabel = new Label(String::empty, T("Touchsensor Sensitivity:")));
+    addAndMakeVisible(touchSensorSensitivityLabel = new Label(String(), T("Touchsensor Sensitivity:")));
     touchSensorSensitivityLabel->setJustificationType(Justification::right);
     addAndMakeVisible(touchSensorSensitivitySlider = new Slider(T("Touchsensor Sensitivity")));
     touchSensorSensitivitySlider->setWantsKeyboardFocus(true);
@@ -549,10 +549,10 @@ MbhpMfToolCalibration::MbhpMfToolCalibration(MbhpMfTool* _mbhpMfTool)
     addAndMakeVisible(calibrationTable = new MbhpMfToolCalibrationTable(_mbhpMfTool));
 
     addAndMakeVisible(calibrationCurve = new MbhpMfToolCalibrationCurve);
-    addAndMakeVisible(calibrationCurveLabel = new Label(String::empty, T("x=50 mS per unit, y=256 steps per unit")));
+    addAndMakeVisible(calibrationCurveLabel = new Label(String(), T("x=50 mS per unit, y=256 steps per unit")));
     calibrationCurveLabel->setJustificationType(Justification::horizontallyCentred);
 
-    addAndMakeVisible(traceSliderLabel = new Label(String::empty, T("Fader which should be traced:")));
+    addAndMakeVisible(traceSliderLabel = new Label(String(), T("Fader which should be traced:")));
     traceSliderLabel->setJustificationType(Justification::left);
 
     addAndMakeVisible(traceSlider = new Slider(T("Trace Fader")));
@@ -563,7 +563,7 @@ MbhpMfToolCalibration::MbhpMfToolCalibration(MbhpMfTool* _mbhpMfTool)
     traceSlider->setDoubleClickReturnValue(true, 0);
     traceSlider->addListener(this);
 
-    addAndMakeVisible(traceScaleSliderLabel = new Label(String::empty, T("Trace Scale (x * mS):")));
+    addAndMakeVisible(traceScaleSliderLabel = new Label(String(), T("Trace Scale (x * mS):")));
     traceScaleSliderLabel->setJustificationType(Justification::left);
 
     addAndMakeVisible(traceScaleSlider = new Slider(T("TraceScale Fader")));
@@ -574,7 +574,7 @@ MbhpMfToolCalibration::MbhpMfToolCalibration(MbhpMfTool* _mbhpMfTool)
     traceScaleSlider->setDoubleClickReturnValue(true, 0);
     traceScaleSlider->addListener(this);
 
-    addAndMakeVisible(directMoveSliderLabel = new Label(String::empty, T("Direct Move:")));
+    addAndMakeVisible(directMoveSliderLabel = new Label(String(), T("Direct Move:")));
     directMoveSliderLabel->setJustificationType(Justification::left);
 
     addAndMakeVisible(directMoveSlider = new Slider(T("DirectMove Fader")));
@@ -612,7 +612,7 @@ MbhpMfToolCalibration::MbhpMfToolCalibration(MbhpMfTool* _mbhpMfTool)
     addAndMakeVisible(slowSineButton = new TextButton(T("Slow Sine")));
     slowSineButton->addListener(this);
 
-    addAndMakeVisible(delayLabel = new Label(String::empty, T("Slow Delay:")));
+    addAndMakeVisible(delayLabel = new Label(String(), T("Slow Delay:")));
     delayLabel->setJustificationType(Justification::left);
 
     addAndMakeVisible(delaySlider = new Slider(T("Delay")));
@@ -622,7 +622,7 @@ MbhpMfToolCalibration::MbhpMfToolCalibration(MbhpMfTool* _mbhpMfTool)
     delaySlider->setTextBoxStyle(Slider::TextBoxLeft, false, 30, 20);
     delaySlider->setDoubleClickReturnValue(true, 0);
 
-    addAndMakeVisible(delayStepsLabel = new Label(String::empty, T("Slow Steps:")));
+    addAndMakeVisible(delayStepsLabel = new Label(String(), T("Slow Steps:")));
     delayStepsLabel->setJustificationType(Justification::left);
 
     addAndMakeVisible(delayStepsSlider = new Slider(T("DelaySteps")));
@@ -1011,8 +1011,8 @@ MbhpMfToolControl::MbhpMfToolControl(MiosStudio *_miosStudio, MbhpMfToolConfig *
     if( propertiesFile ) {
         deviceIdSlider->setValue(propertiesFile->getIntValue(T("mbhpMfDeviceId"), 0) & 0x7f);
         patchSlider->setValue(propertiesFile->getIntValue(T("mbhpMfPatch"), 0) & 0x7f);
-        String syxFileName(propertiesFile->getValue(T("mbhpMfSyxFile"), String::empty));
-        if( syxFileName != String::empty )
+        String syxFileName(propertiesFile->getValue(T("mbhpMfSyxFile"), String()));
+        if( syxFileName != String() )
             syxFile = File(syxFileName);
     }
 
@@ -1167,13 +1167,13 @@ void MbhpMfToolControl::timerCallback()
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                             T("No response from core."),
                                             T("Check:\n- MIDI In/Out connections\n- Device ID\n- that MBHP_MF firmware has been uploaded"),
-                                            String::empty);
+                                            String());
             } else if( checksumError ) {
                 transferFinished = true;
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                             T("Detected checksum error!"),
                                             T("Check:\n- MIDI In/Out connections\n- your MIDI interface"),
-                                            String::empty);
+                                            String());
             } else {
                 mbhpMfToolConfig->setDump(currentSyxDump);
                 transferFinished = true;
@@ -1303,19 +1303,19 @@ void MbhpMfToolControl::handleIncomingMidiMessage(const MidiMessage& message, ui
 //==============================================================================
 bool MbhpMfToolControl::loadSyx(File &syxFile)
 {
-    FileInputStream *inFileStream = syxFile.createInputStream();
+    std::unique_ptr<FileInputStream> inFileStream = syxFile.createInputStream();
 
     if( !inFileStream ) {
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                     T("The file ") + syxFile.getFileName(),
                                     T("doesn't exist!"),
-                                    String::empty);
+                                    String());
         return false;
     } else if( inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                     T("The file ") + syxFile.getFileName(),
                                     T("is empty!"),
-                                    String::empty);
+                                    String());
         return false;
     }
 
@@ -1365,16 +1365,16 @@ bool MbhpMfToolControl::loadSyx(File &syxFile)
 
     juce_free(buffer);
 
-    if( errorMessage == String::empty ) {
+    if( errorMessage == String() ) {
         if( !numValidPatches )
             errorMessage = String(T("doesn't contain a valid patch!"));
     }
 
-    if( errorMessage != String::empty ) {
+    if( errorMessage != String() ) {
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                     T("The file ") + syxFile.getFileName(),
                                     errorMessage,
-                                    String::empty);
+                                    String());
         return false;
     }
 
@@ -1386,13 +1386,13 @@ bool MbhpMfToolControl::loadSyx(File &syxFile)
 bool MbhpMfToolControl::saveSyx(File &syxFile)
 {
     syxFile.deleteFile();
-    FileOutputStream *outFileStream = syxFile.createOutputStream();
+    std::unique_ptr<FileOutputStream> outFileStream = syxFile.createOutputStream();
             
     if( !outFileStream || outFileStream->failedToOpen() ) {
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
-                                    String::empty,
+                                    String(),
                                     T("File cannot be created!"),
-                                    String::empty);
+                                    String());
         return false;
     }
 
@@ -1404,7 +1404,7 @@ bool MbhpMfToolControl::saveSyx(File &syxFile)
                                                           &syxDump.getReference(0));
     outFileStream->write(&data.getReference(0), data.size());
 
-    delete outFileStream;
+    outFileStream.reset();
 
     return true;
 }

@@ -19,9 +19,9 @@
 OscMonitor::OscMonitor(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
 {
-    addAndMakeVisible(displayOptionsLabel = new Label(String::empty, T("OSC Display Options:")));
+    addAndMakeVisible(displayOptionsLabel = new Label(String(), T("OSC Display Options:")));
     displayOptionsLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(displayOptionsComboBox = new ComboBox(String::empty));
+    addAndMakeVisible(displayOptionsComboBox = new ComboBox(String()));
     displayOptionsComboBox->setWantsKeyboardFocus(true);
     displayOptionsComboBox->addItem(T("Decoded Text only"), 1);
     displayOptionsComboBox->addItem(T("Hex dump only"), 2);
@@ -74,7 +74,7 @@ void OscMonitor::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
 //==============================================================================
 void OscMonitor::parsedOscPacket(const OscHelper::OscArgsT& oscArgs, const unsigned& methodArg)
 {
-    if( oscString == String::empty )
+    if( oscString == String() )
         oscString = T("@") + String::formatted(T("%d.%d "), oscArgs.timetag.seconds, oscArgs.timetag.fraction);
     else
         oscString += " ";
@@ -97,7 +97,7 @@ void OscMonitor::handleIncomingOscMessage(const unsigned char *message, unsigned
     }
 
     if( displayOption == 1 || displayOption == 3 ) {
-        oscString = String::empty;
+        oscString = String();
         OscHelper::OscSearchTreeT searchTree[] = {
             //{ "midi", NULL, this, 0x00000000 },
             { NULL, NULL, this, 0 } // terminator - will receive all messages that haven't been parsed
@@ -114,7 +114,7 @@ void OscMonitor::handleIncomingOscMessage(const unsigned char *message, unsigned
             monitorLogBox->addEntry(Colours::red, "[" + timeStampStr + "] MIOS32_OSC_MAX_PATH_PARTS has been exceeded!");
         else if( status == -5 )
             monitorLogBox->addEntry(Colours::red, "[" + timeStampStr + "] received erroneous packet with status " + String(status));
-        else if( oscString == String::empty )
+        else if( oscString == String() )
             monitorLogBox->addEntry(Colours::red, "[" + timeStampStr + "] received empty OSC packet (check hex view!)");
         else
             monitorLogBox->addEntry(Colours::blue, "[" + timeStampStr + "] " + oscString);

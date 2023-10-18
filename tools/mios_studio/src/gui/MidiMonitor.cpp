@@ -25,7 +25,7 @@ MidiMonitor::MidiMonitor(MiosStudio *_miosStudio, const bool _inPort)
     , filterMiosTerminalMessage(1)
     , cutLongMessages(1)
 {
-	addAndMakeVisible(midiPortSelector = new ComboBox(String::empty));
+	addAndMakeVisible(midiPortSelector = new ComboBox(String()));
 	midiPortSelector->addListener(this);
 	midiPortSelector->clear();
     midiPortSelector->addItem (TRANS("<< device scan running >>"), -1);
@@ -112,24 +112,24 @@ void MidiMonitor::scanMidiDevices(const String& searchPort)
 
     if( current == -1 ) {
         if( inPort ) {
-            miosStudio->setMidiInput(String::empty);
+            miosStudio->setMidiInput(String());
 
             if( searchPort.length() ) {
                 std::cout << "ERROR: MIDI IN Port '" << searchPort << "' not found!" << std::endl;
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                             T("Unknown MIDI IN Port"),
                                             String("MIDI IN Port '") + searchPort + String("' not found!"),
-                                            String::empty);
+                                            String());
             }
         } else {
-            miosStudio->setMidiOutput(String::empty);
+            miosStudio->setMidiOutput(String());
 
             if( searchPort.length() ) {
                 std::cout << "ERROR: MIDI OUT Port '" << searchPort << "' not found!" << std::endl;
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                             T("Unknown MIDI OUT Port"),
                                             String("MIDI OUT Port '") + searchPort + String("' not found!"),
-                                            String::empty);
+                                            String());
             }
         }
     }
@@ -157,7 +157,7 @@ void MidiMonitor::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
     if( comboBoxThatHasChanged == midiPortSelector ) {
         String portName = midiPortSelector->getText();
         if( portName == T("<< none >>") )
-            portName = String::empty;
+            portName = String();
 
         if( inPort )
             miosStudio->setMidiInput(portName);

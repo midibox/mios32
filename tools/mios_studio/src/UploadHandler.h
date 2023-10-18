@@ -100,7 +100,7 @@ public:
     bool startQuery(void);
     bool startUpload(void);
 
-    // returns error message or String::empty if thread passed
+    // returns error message or String() if thread passed
     // must always be called before startQuery() or startUpload() is called again
     String finish(void);
 

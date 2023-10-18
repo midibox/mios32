@@ -194,7 +194,7 @@ MidiSlider::MidiSlider(MiosStudio *_miosStudio, int _num, String _functionName, 
     slider->addListener(this);
 
     // only used for horizontal sliders
-    addAndMakeVisible(sliderFunction = new ComboBox(String::empty));
+    addAndMakeVisible(sliderFunction = new ComboBox(String()));
     sliderFunction->addListener(this);
 
     // restore settings

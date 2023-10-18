@@ -386,7 +386,7 @@ SysexPatchDb::SysexPatchDb()
         ps.nameInNibbles = false;
 
         ps.numBuffers = 0;
-        ps.bufferName = String::empty;
+        ps.bufferName = String();
         ps.selectBufferCmd.clear();
 
         patchSpec.add(ps);

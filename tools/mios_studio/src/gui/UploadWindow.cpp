@@ -33,10 +33,10 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
     , waitUploadRequestMessagePrint(0)
 {
 	addAndMakeVisible(fileChooser = new FilenameComponent (T("hexfile"),
-                                                           File::nonexistent,
+                                                           File(),
                                                            true, false, false,
                                                            "*.hex",
-                                                           String::empty,
+                                                           String(),
                                                            T("(choose a .hex file to upload)")));
 	fileChooser->addListener(this);
 	fileChooser->setBrowseButtonText(T("Browse"));
@@ -77,7 +77,7 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
     // restore settings
     PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
-        String recentlyUsedHexFiles = propertiesFile->getValue(T("recentlyUsedHexFiles"), String::empty);
+        String recentlyUsedHexFiles = propertiesFile->getValue(T("recentlyUsedHexFiles"), String());
         // seems that Juce doesn't provide a split function?
         StringArray recentlyUsedHexFilesArray;
         int index = 0;
@@ -85,11 +85,11 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
             recentlyUsedHexFilesArray.add(recentlyUsedHexFiles.substring(0, index));
             recentlyUsedHexFiles = recentlyUsedHexFiles.substring(index+1);
         }
-        if( recentlyUsedHexFiles != String::empty )
+        if( recentlyUsedHexFiles != String() )
             recentlyUsedHexFilesArray.add(recentlyUsedHexFiles);
         fileChooser->setRecentlyUsedFilenames(recentlyUsedHexFilesArray);
 
-        fileChooser->setDefaultBrowseTarget(propertiesFile->getValue(T("defaultFile"), String::empty));
+        fileChooser->setDefaultBrowseTarget(propertiesFile->getValue(T("defaultFile"), String()));
     }
 
     setSize(400, 200);
@@ -194,7 +194,7 @@ bool UploadWindow::uploadFileFromExternal(const String& filename)
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                         T("Failed to open file"),
                                         filename + String(" can't be read!"),
-                                        String::empty);
+                                        String());
         }
         return false;
     }
@@ -365,7 +365,7 @@ void UploadWindow::timerCallback(const int timerId)
         } else {
             String errorMessage = miosStudio->uploadHandler->finish();
 
-            if( errorMessage != String::empty ) {
+            if( errorMessage != String() ) {
                 // TODO: word-wrapping required here for multiple lines
                 addLogEntry(Colours::red, errorMessage);
                 uploadQuery->clear();
@@ -405,7 +405,7 @@ void UploadWindow::timerCallback(const int timerId)
             String errorMessage = miosStudio->uploadHandler->finish();
             uploadStop();
 
-            if( errorMessage != String::empty ) {
+            if( errorMessage != String() ) {
                 uploadQuery->clear();
                 addQueryEntry(Colours::red, errorMessage);
                 addQueryEntry(Colours::red, T("Check MIDI IN/OUT connections"));

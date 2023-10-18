@@ -59,7 +59,7 @@ bool MiosTerminal::execCommand(const String& command)
     MidiMessage message = SysexHelper::createMidiMessage(dataArray);
     miosStudio->sendMidiMessage(message);
 
-    inputLine->setText(String::empty);
+    inputLine->setText(String());
 
     if( !gotFirstMessage )
         terminalLogBox->clear();
@@ -92,7 +92,7 @@ void MiosTerminal::textEditorReturnKeyPressed(TextEditor &editor)
 
 void MiosTerminal::textEditorEscapeKeyPressed(TextEditor &editor)
 {
-    editor.setText(String::empty);
+    editor.setText(String());
 }
 
 void MiosTerminal::textEditorFocusLost(TextEditor &editor)

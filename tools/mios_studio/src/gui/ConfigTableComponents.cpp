@@ -18,7 +18,7 @@
 ConfigTableComboBox::ConfigTableComboBox(ConfigTableController& _owner)
     : owner(_owner)
 {
-    addAndMakeVisible(comboBox = new ComboBox(String::empty));
+    addAndMakeVisible(comboBox = new ComboBox(String()));
     comboBox->addListener(this);
     comboBox->setWantsKeyboardFocus(true);
 }
@@ -57,7 +57,7 @@ void ConfigTableComboBox::addItem(const String &newItemText, const int newItemId
 ConfigTableSlider::ConfigTableSlider(ConfigTableController& _owner)
     : owner(_owner)
 {
-    addAndMakeVisible(slider = new Slider(String::empty));
+    addAndMakeVisible(slider = new Slider(String()));
     slider->addListener(this);
     slider->setRange(0, 127, 1);
     slider->setSliderStyle(Slider::IncDecButtons);
@@ -99,7 +99,7 @@ void ConfigTableSlider::setRange(const double newMinimum, const double newMaximu
 ConfigTableToggleButton::ConfigTableToggleButton(ConfigTableController& _owner)
     : owner(_owner)
 {
-    addAndMakeVisible(toggleButton = new ToggleButton(String::empty));
+    addAndMakeVisible(toggleButton = new ToggleButton(String()));
     toggleButton->addListener(this);
 }
 
@@ -132,7 +132,7 @@ void ConfigTableToggleButton::buttonClicked(Button *button)
 ConfigTableLabel::ConfigTableLabel(ConfigTableController& _owner)
     : owner(_owner)
 {
-    addAndMakeVisible(label = new Label(String::empty));
+    addAndMakeVisible(label = new Label(String()));
     label->setEditable(true);
     label->addListener(this);
 }

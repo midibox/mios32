@@ -48,15 +48,15 @@ UploadHandler::~UploadHandler()
 //==============================================================================
 void UploadHandler::clearCoreInfo(void)
 {
-    coreOperatingSystem = String::empty;
-    coreBoard = String::empty;
-    coreFamily = String::empty;
-    coreChipId = String::empty;
-    coreSerialNumber = String::empty;
-    coreFlashSize = String::empty;
-    coreRamSize = String::empty;
-    coreAppHeader1 = String::empty;
-    coreAppHeader2 = String::empty;
+    coreOperatingSystem = String();
+    coreBoard = String();
+    coreFamily = String();
+    coreChipId = String();
+    coreSerialNumber = String();
+    coreFlashSize = String();
+    coreRamSize = String();
+    coreAppHeader1 = String();
+    coreAppHeader2 = String();
 }
 
 
@@ -119,7 +119,7 @@ bool UploadHandler::startUpload(void)
 
 
 //==============================================================================
-// returns error message or String::empty if thread passed
+// returns error message or String() if thread passed
 // must always be called before startQuery() or startUpload() is called again
 String UploadHandler::finish(void)
 {
@@ -129,7 +129,7 @@ String UploadHandler::finish(void)
         return errorStatusMessage;
     }
 
-    return String::empty;
+    return String();
 }
 
 
@@ -312,7 +312,7 @@ void UploadHandler::handleIncomingMidiMessage(MidiInput* source, const MidiMessa
             }
  
             if( out ) {
-                *out = String::empty;
+                *out = String();
                 for(int i=7; i<size; ++i)
                     if( (data[i] != 0xf7 && data[i] != '\n') || size < (i+1) )
                         *out += String::formatted(T("%c"), data[i] & 0x7f);
@@ -396,7 +396,12 @@ UploadHandlerThread::UploadHandlerThread(MiosStudio *_miosStudio, UploadHandler 
 
     deviceId = uploadHandler->getDeviceId();
 
+#if 0
     startThread(8); // start thread with pretty high priority (1..10)
+#else
+    // introduced with JUCE 7.0.2
+    startThread(juce::Thread::Priority::high); // start thread with pretty high priority (1..10)
+#endif
 }
 
 
@@ -644,15 +649,15 @@ void UploadHandlerThread::run()
         uploadHandler->coreOperatingSystem = "MIOS8";
         uploadHandler->coreBoard = "MBHP_CORE or similar";
         uploadHandler->coreFamily = "PIC18F";
-        uploadHandler->coreChipId = String::empty;
-        uploadHandler->coreSerialNumber = String::empty;
-        uploadHandler->coreFlashSize = String::empty;
-        uploadHandler->coreRamSize = String::empty;
+        uploadHandler->coreChipId = String();
+        uploadHandler->coreSerialNumber = String();
+        uploadHandler->coreFlashSize = String();
+        uploadHandler->coreRamSize = String();
         if( viaBootloader )
             uploadHandler->coreAppHeader1 = "Bootloader is up & running!";
         else
             uploadHandler->coreAppHeader1 = "Application is up & running!";
-        uploadHandler->coreAppHeader2 = String::empty;
+        uploadHandler->coreAppHeader2 = String();
     }
 
 
@@ -817,7 +822,7 @@ void UploadHandlerThread::run()
             errorStatusMessage += "No response from core after " + String(maxRetries) + " retries!";
         }
 
-        if( errorStatusMessage != String::empty )
+        if( errorStatusMessage != String() )
             return;
     }
 

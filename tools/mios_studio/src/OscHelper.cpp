@@ -751,7 +751,7 @@ int OscHelper::searchPath(char *path, OscHelper::OscArgsT *oscArgs, const unsign
 // \code
 // void parsedOscPacket(const OscHelper::OscArgsT& oscArgs, const const unsigned& methodArg)
 // {
-//     if( oscString == String::empty )
+//     if( oscString == String() )
 //         oscString = T("@") + String::formatted(T("%d.%d "), oscArgs.timetag.seconds, oscArgs.timetag.fraction);
 //     else
 //         oscString += " ";
@@ -875,7 +875,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 
         if( wordEnd < 0 ) {
             String lastWord = oscString.substring(wordBegin);
-            if( lastWord != String::empty )
+            if( lastWord != String() )
                 words.add(lastWord);
             break;
         } else if( wordEnd == wordBegin )
@@ -888,7 +888,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 
     // empty packet?
     if( !words.size() ) {
-        statusMessage = String::empty;
+        statusMessage = String();
         return Array<uint8>();
     }
 
@@ -1099,7 +1099,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 
     // no path detected: empty packet!
     if( oscPath.size() == 0 ) {
-        statusMessage = String::empty;
+        statusMessage = String();
         return Array<uint8>();
     }
 

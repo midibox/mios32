@@ -17,9 +17,9 @@
 
 //==============================================================================
 HexTextEditor::HexTextEditor(Label *_statusLabel)
-    : TextEditor(String::empty)
+    : TextEditor(String())
     , statusLabel(_statusLabel)
-    , bufferedText(String::empty)
+    , bufferedText(String())
 {
     setMultiLine(true);
     setReturnKeyStartsNewLine(true);
@@ -53,7 +53,7 @@ HexTextEditor::~HexTextEditor()
 //==============================================================================
 void HexTextEditor::clear()
 {
-    bufferedText = String::empty;
+    bufferedText = String();
     TextEditor::clear();
 }
 
@@ -90,7 +90,7 @@ void HexTextEditor::textEditorTextChanged(TextEditor &editor)
         if( invalidBytesFound )
             statusLabel->setText(T("Invalid Syntax!"), sendNotification);
         else if( numBytes == 0 )
-            statusLabel->setText(String::empty, sendNotification);
+            statusLabel->setText(String(), sendNotification);
         else if( numBytes == 1 )
             statusLabel->setText(T("1 byte"), sendNotification);
         else
@@ -113,7 +113,7 @@ void HexTextEditor::textEditorFocusLost(TextEditor &editor)
 //==============================================================================
 void HexTextEditor::setBinary(uint8 *buffer, const int &size)
 {
-    bufferedText = String::empty;
+    bufferedText = String();
 
     clear();
     int64 lineBegin = 0;
@@ -141,7 +141,7 @@ void HexTextEditor::addBinary(uint8 *buffer, const int &size)
         insertTextAtCursor(hexStr);
 #else
         // works faster! Will be removed once the Juce TextEditor has been optimized
-        if( bufferedText != String::empty )
+        if( bufferedText != String() )
             bufferedText += T("\n");
         bufferedText += String::toHexString(buffer, size);
         setText(bufferedText);

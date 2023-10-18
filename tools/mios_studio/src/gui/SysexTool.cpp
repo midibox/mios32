@@ -24,16 +24,16 @@ SysexToolSend::SysexToolSend(MiosStudio *_miosStudio)
     , progress(0)
     , previousProgress(100)
 {
-    addAndMakeVisible(statusLabel = new Label(T("Number of Bytes"), String::empty));
+    addAndMakeVisible(statusLabel = new Label(T("Number of Bytes"), String()));
     statusLabel->setJustificationType(Justification::right);
 
     addAndMakeVisible(sendBox = new HexTextEditor(statusLabel));
 
 	addAndMakeVisible(sendFileChooser = new FilenameComponent (T("syxfile"),
-                                                               File::nonexistent,
+                                                               File(),
                                                                true, false, false,
                                                                "*.syx",
-                                                               String::empty,
+                                                               String(),
                                                                T("(choose a .syx file to send)")));
 	sendFileChooser->addListener(this);
 	sendFileChooser->setBrowseButtonText(T("Browse"));
@@ -69,7 +69,7 @@ SysexToolSend::SysexToolSend(MiosStudio *_miosStudio)
     if( propertiesFile ) {
         sendDelaySlider->setValue(propertiesFile->getIntValue(T("sysexSendDelay"), 750));
 
-        String recentlyUsedSyxFiles = propertiesFile->getValue(T("recentlyUsedSyxSendFiles"), String::empty);
+        String recentlyUsedSyxFiles = propertiesFile->getValue(T("recentlyUsedSyxSendFiles"), String());
         // seems that Juce doesn't provide a split function?
         StringArray recentlyUsedSyxFilesArray;
         int index = 0;
@@ -77,11 +77,11 @@ SysexToolSend::SysexToolSend(MiosStudio *_miosStudio)
             recentlyUsedSyxFilesArray.add(recentlyUsedSyxFiles.substring(0, index));
             recentlyUsedSyxFiles = recentlyUsedSyxFiles.substring(index+1);
         }
-        if( recentlyUsedSyxFiles != String::empty )
+        if( recentlyUsedSyxFiles != String() )
             recentlyUsedSyxFilesArray.add(recentlyUsedSyxFiles);
         sendFileChooser->setRecentlyUsedFilenames(recentlyUsedSyxFilesArray);
 
-        sendFileChooser->setDefaultBrowseTarget(propertiesFile->getValue(T("defaultSyxSendFile"), String::empty));
+        sendFileChooser->setDefaultBrowseTarget(propertiesFile->getValue(T("defaultSyxSendFile"), String()));
     }
 
     setSize(800, 200);
@@ -164,7 +164,7 @@ void SysexToolSend::sliderValueChanged(Slider* slider)
 bool SysexToolSend::sendSyxFile(const String& filename, const bool& sendImmediately)
 {
     File inFile(filename);
-    FileInputStream *inFileStream = inFile.createInputStream();
+    std::unique_ptr<FileInputStream> inFileStream = inFile.createInputStream();
 
     if( !inFileStream ) {
         if( miosStudio->runningInBatchMode() ) {
@@ -173,7 +173,7 @@ bool SysexToolSend::sendSyxFile(const String& filename, const bool& sendImmediat
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                         T("The file ") + inFile.getFileName(),
                                         T("doesn't exist!"),
-                                        String::empty);
+                                        String());
         }
         return false;
     }
@@ -185,9 +185,9 @@ bool SysexToolSend::sendSyxFile(const String& filename, const bool& sendImmediat
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                         T("The file ") + inFile.getFileName(),
                                         T("is empty!"),
-                                        String::empty);
+                                        String());
         }
-        deleteAndZero(inFileStream);
+        inFileStream.reset();
         return false;
     }
 
@@ -276,7 +276,7 @@ void SysexToolSend::timerCallback()
 SysexToolReceive::SysexToolReceive(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
 {
-    addAndMakeVisible(statusLabel = new Label(T("Number of Bytes"), String::empty));
+    addAndMakeVisible(statusLabel = new Label(T("Number of Bytes"), String()));
     statusLabel->setJustificationType(Justification::right);
 
     addAndMakeVisible(receiveBox = new HexTextEditor(statusLabel));
@@ -284,7 +284,7 @@ SysexToolReceive::SysexToolReceive(MiosStudio *_miosStudio)
                                        Colour(0xff808080));
 
 	addAndMakeVisible(receiveFileChooser = new FilenameComponent (T("syxfile"),
-                                                                  File::nonexistent,
+                                                                  File(),
                                                                   true, false, true,
                                                                   "*.syx",
                                                                   ".syx",
@@ -309,7 +309,7 @@ SysexToolReceive::SysexToolReceive(MiosStudio *_miosStudio)
     // restore settings
     PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
-        String recentlyUsedSyxFiles = propertiesFile->getValue(T("recentlyUsedSyxReceiveFiles"), String::empty);
+        String recentlyUsedSyxFiles = propertiesFile->getValue(T("recentlyUsedSyxReceiveFiles"), String());
         // seems that Juce doesn't provide a split function?
         StringArray recentlyUsedSyxFilesArray;
         int index = 0;
@@ -317,11 +317,11 @@ SysexToolReceive::SysexToolReceive(MiosStudio *_miosStudio)
             recentlyUsedSyxFilesArray.add(recentlyUsedSyxFiles.substring(0, index));
             recentlyUsedSyxFiles = recentlyUsedSyxFiles.substring(index+1);
         }
-        if( recentlyUsedSyxFiles != String::empty )
+        if( recentlyUsedSyxFiles != String() )
             recentlyUsedSyxFilesArray.add(recentlyUsedSyxFiles);
         receiveFileChooser->setRecentlyUsedFilenames(recentlyUsedSyxFilesArray);
 
-        receiveFileChooser->setDefaultBrowseTarget(propertiesFile->getValue(T("defaultSyxReceiveFile"), String::empty));
+        receiveFileChooser->setDefaultBrowseTarget(propertiesFile->getValue(T("defaultSyxReceiveFile"), String()));
     }
 
     setSize(800, 200);
@@ -382,22 +382,22 @@ void SysexToolReceive::filenameComponentChanged(FilenameComponent *fileComponent
         Array<uint8> saveData = receiveBox->getBinary();
         if( saveData.size() == 0 ) {
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
-                                        String::empty,
+                                        String(),
                                         T("No data to save!"),
-                                        String::empty);
+                                        String());
         } else {
             outFile.deleteFile();
-            FileOutputStream *outFileStream = outFile.createOutputStream();
+            std::unique_ptr<FileOutputStream> outFileStream = outFile.createOutputStream();
             
             if( !outFileStream || outFileStream->failedToOpen() ) {
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
-                                            String::empty,
+                                            String(),
                                             T("File cannot be created!"),
-                                            String::empty);
+                                            String());
             } else {
                 uint8 *data = &saveData.getReference(0);
                 outFileStream->write(data, saveData.size());
-                delete outFileStream;
+                outFileStream.reset();
                 statusLabel->setText(String(saveData.size()) + T(" bytes saved"), sendNotification);
             }
         }

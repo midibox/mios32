@@ -43,17 +43,16 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
 
     hexDumpAddressBlocks.clear();
 
-    FileInputStream *inFileStream = inFile.createInputStream();
+    std::unique_ptr<FileInputStream> inFileStream = inFile.createInputStream();
 
     if( !inFileStream ) {
         statusMessage = T("File doesn't exist!");
-        deleteAndZero(inFileStream);
         return false;
     }
 
     if( inFileStream->isExhausted() ) {
         statusMessage = T("File is empty!");
-        deleteAndZero(inFileStream);
+        inFileStream.reset();
         return false;
     }
 
@@ -77,13 +76,13 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
                 char buffer[100];
                 sprintf(buffer, "Failed to read file (only %d of %d bytes read)\n", readOffset, fileSize);
                 statusMessage = String(buffer);
-                deleteAndZero(inFileStream);
+                inFileStream.reset();
                 return false;
             }
             readOffset += readBytes;
         }
     }
-    deleteAndZero(inFileStream);
+    inFileStream.reset();
 
     size_t filePosition = 0;
     uint32 lineNumber = 0;

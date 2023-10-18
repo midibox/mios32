@@ -31,7 +31,7 @@ public:
     ~MidiMonitor();
 
     //==============================================================================
-    void scanMidiDevices(const String& searchPort = String::empty);
+    void scanMidiDevices(const String& searchPort = String());
 
     //==============================================================================
     void paint(Graphics& g);

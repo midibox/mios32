@@ -18,7 +18,7 @@
 
 //==============================================================================
 OscTextEditor::OscTextEditor(Label *_statusLabel)
-    : TextEditor(String::empty)
+    : TextEditor(String())
     , statusLabel(_statusLabel)
 {
     setMultiLine(true);

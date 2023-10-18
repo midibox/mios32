@@ -26,7 +26,7 @@ OscToolConnect::OscToolConnect(MiosStudio *_miosStudio, OscMonitor* _oscMonitor)
     addAndMakeVisible(remoteHostLabel = new Label(T("Remote Host:"), T("Remote Host:")));
     remoteHostLabel->setJustificationType(Justification::right);
 
-    addAndMakeVisible(remoteHostLine = new TextEditor(String::empty));
+    addAndMakeVisible(remoteHostLine = new TextEditor(String()));
     remoteHostLine->setMultiLine(false);
     remoteHostLine->setReturnKeyStartsNewLine(false);
     remoteHostLine->setReadOnly(false);
@@ -38,7 +38,7 @@ OscToolConnect::OscToolConnect(MiosStudio *_miosStudio, OscMonitor* _oscMonitor)
     addAndMakeVisible(portNumberWriteLabel = new Label(T("Port:"), T("Remote Port:")));
     portNumberWriteLabel->setJustificationType(Justification::right);
 
-    addAndMakeVisible(portNumberWriteLine = new TextEditor(String::empty));
+    addAndMakeVisible(portNumberWriteLine = new TextEditor(String()));
     portNumberWriteLine->setMultiLine(false);
     portNumberWriteLine->setReturnKeyStartsNewLine(false);
     portNumberWriteLine->setReadOnly(false);
@@ -51,7 +51,7 @@ OscToolConnect::OscToolConnect(MiosStudio *_miosStudio, OscMonitor* _oscMonitor)
     addAndMakeVisible(portNumberReadLabel = new Label(T("Port:"), T("Local Port:")));
     portNumberReadLabel->setJustificationType(Justification::right);
 
-    addAndMakeVisible(portNumberReadLine = new TextEditor(String::empty));
+    addAndMakeVisible(portNumberReadLine = new TextEditor(String()));
     portNumberReadLine->setMultiLine(false);
     portNumberReadLine->setReturnKeyStartsNewLine(false);
     portNumberReadLine->setReadOnly(false);
@@ -73,7 +73,7 @@ OscToolConnect::OscToolConnect(MiosStudio *_miosStudio, OscMonitor* _oscMonitor)
     // restore settings
     PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
-        remoteHostLine->setText(propertiesFile->getValue(T("oscRemoteHost"), String::empty));
+        remoteHostLine->setText(propertiesFile->getValue(T("oscRemoteHost"), String()));
         portNumberWriteLine->setText(propertiesFile->getValue(T("oscPortWrite"), "10000"));
         portNumberReadLine->setText(propertiesFile->getValue(T("oscPortRead"), "10000"));
     }
@@ -152,7 +152,7 @@ void OscToolConnect::timerCallback()
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                         T("No connection to remote host"),
                                         T("Check remote host name (or IP) and port numbers!"),
-                                        String::empty);
+                                        String());
 
             deleteAndZero(udpSocket);
             connectButton->setEnabled(true);
@@ -190,7 +190,7 @@ OscToolSend::OscToolSend(MiosStudio *_miosStudio, OscToolConnect *_oscToolConnec
     sendClearButton->setButtonText(T("Clear"));
     sendClearButton->addListener(this);
 
-    addAndMakeVisible(statusLabel = new Label(T("Status"), String::empty));
+    addAndMakeVisible(statusLabel = new Label(T("Status"), String()));
     statusLabel->setJustificationType(Justification::right);
     addAndMakeVisible(sendBox = new OscTextEditor(statusLabel));
 
@@ -231,13 +231,13 @@ void OscToolSend::buttonClicked(Button* buttonThatWasClicked)
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                             T("Invalid OSC packet"),
                                             T("The entered packet is invalid (or empty) - check syntax!"),
-                                            String::empty);
+                                            String());
             }
         } else {
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                         T("No connection to remote host"),
                                         T("Please press the connect button to establish connection!"),
-                                        String::empty);
+                                        String());
         }
     } else if( buttonThatWasClicked == sendClearButton ) {
         sendBox->clear();

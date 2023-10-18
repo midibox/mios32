@@ -92,7 +92,7 @@ public:
     bool createFile(void);
 
     //==============================================================================
-    bool uploadFile(String filename = String::empty);
+    bool uploadFile(String filename = String());
     bool uploadBuffer(String filename, const Array<uint8>& buffer);
     bool uploadFinished(void);
 
@@ -137,7 +137,7 @@ protected:
     String       currentDirPath;
     MiosFileBrowserFileItem*        currentDirItem;
     Array<MiosFileBrowserFileItem*> currentDirFetchItems;
-    XmlElement*  currentDirOpenStates;
+    std::unique_ptr<XmlElement>  currentDirOpenStates;
 
     unsigned     transferSelectionCtr;
     bool         openTextEditorAfterRead;
@@ -147,7 +147,7 @@ protected:
     bool         currentReadError;
     TreeViewItem* currentReadFileBrowserItem;
     File         currentReadFile;
-    FileOutputStream *currentReadFileStream;
+    std::unique_ptr<FileOutputStream> currentReadFileStream;
     String       currentReadFileName;
     unsigned     currentReadSize;
     Array<uint8> currentReadData;

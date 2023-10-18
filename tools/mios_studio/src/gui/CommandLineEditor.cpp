@@ -17,7 +17,7 @@
 
 //==============================================================================
 CommandLineEditor::CommandLineEditor(const unsigned _maxLines)
-    : TextEditor(String::empty)
+    : TextEditor(String())
     , maxLines(_maxLines)
     , positionInList(0)
 {
@@ -82,7 +82,7 @@ bool CommandLineEditor::keyPressed(const KeyPress& key)
         if( commandList.size() ) {
             if( ++positionInList >= commandList.size() ) {
                 positionInList = commandList.size();
-                setText(String::empty);
+                setText(String());
             } else {
                 setText(commandList[positionInList]);
             }

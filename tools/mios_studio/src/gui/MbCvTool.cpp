@@ -18,9 +18,9 @@
 
 MbCvToolConfigGlobals::MbCvToolConfigGlobals()
 {
-    addAndMakeVisible(mergerLabel = new Label(String::empty, T("MIDI Merger:")));
+    addAndMakeVisible(mergerLabel = new Label(String(), T("MIDI Merger:")));
     mergerLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(mergerComboBox = new ComboBox(String::empty));
+    addAndMakeVisible(mergerComboBox = new ComboBox(String()));
     mergerComboBox->setWantsKeyboardFocus(true);
     mergerComboBox->addItem(T("Disabled"), 1);
     mergerComboBox->addItem(T("Enabled (received MIDI events forwarded to MIDI Out)"), 2);
@@ -28,9 +28,9 @@ MbCvToolConfigGlobals::MbCvToolConfigGlobals()
     mergerComboBox->addItem(T("MIDIbox Link Forwarding Point (core in a MIDIbox chain)"), 4);
     mergerComboBox->setSelectedId(1, true);
 
-    addAndMakeVisible(clockDividerLabel = new Label(String::empty, T("Output Clock Divider:")));
+    addAndMakeVisible(clockDividerLabel = new Label(String(), T("Output Clock Divider:")));
     clockDividerLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(clockDividerComboBox = new ComboBox(String::empty));
+    addAndMakeVisible(clockDividerComboBox = new ComboBox(String()));
     clockDividerComboBox->setWantsKeyboardFocus(true);
     clockDividerComboBox->addItem(T("96 ppqn"), 1);
     clockDividerComboBox->addItem(T("48 ppqn"), 2);
@@ -40,9 +40,9 @@ MbCvToolConfigGlobals::MbCvToolConfigGlobals()
         clockDividerComboBox->addItem(T("24 ppqn / " + String(i)), 5+i-2);
     clockDividerComboBox->setSelectedId(4, true);
 
-    addAndMakeVisible(nameLabel = new Label(String::empty, T("Patch Name:")));
+    addAndMakeVisible(nameLabel = new Label(String(), T("Patch Name:")));
     nameLabel->setJustificationType(Justification::right);
-    addAndMakeVisible(nameEditor = new TextEditor(String::empty));
+    addAndMakeVisible(nameEditor = new TextEditor(String()));
     nameEditor->setTextToShowWhenEmpty(T("<No Name>"), Colours::grey);
     nameEditor->setInputRestrictions(16);
 }
@@ -505,8 +505,8 @@ MbCvToolControl::MbCvToolControl(MiosStudio *_miosStudio, MbCvToolConfig *_mbCvT
     if( propertiesFile ) {
         deviceIdSlider->setValue(propertiesFile->getIntValue(T("mbCvDeviceId"), 0) & 0x7f);
         patchSlider->setValue(propertiesFile->getIntValue(T("mbCvPatch"), 0) & 0x7f);
-        String syxFileName(propertiesFile->getValue(T("mbCvSyxFile"), String::empty));
-        if( syxFileName != String::empty )
+        String syxFileName(propertiesFile->getValue(T("mbCvSyxFile"), String()));
+        if( syxFileName != String() )
             syxFile = File(syxFileName);
     }
 
@@ -627,13 +627,13 @@ void MbCvToolControl::timerCallback()
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                             T("No response from core."),
                                             T("Check:\n- MIDI In/Out connections\n- Device ID\n- that MIDIbox CV firmware has been uploaded"),
-                                            String::empty);
+                                            String());
             } else if( checksumError ) {
                 transferFinished = true;
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                             T("Detected checksum error!"),
                                             T("Check:\n- MIDI In/Out connections\n- your MIDI interface"),
-                                            String::empty);
+                                            String());
             } else {
                 mbCvToolConfig->setDump(currentSyxDump);
                 transferFinished = true;
@@ -719,19 +719,19 @@ void MbCvToolControl::handleIncomingMidiMessage(const MidiMessage& message, uint
 //==============================================================================
 bool MbCvToolControl::loadSyx(File &syxFile)
 {
-    FileInputStream *inFileStream = syxFile.createInputStream();
+    std::unique_ptr<FileInputStream> inFileStream = syxFile.createInputStream();
 
     if( !inFileStream ) {
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                     T("The file ") + syxFile.getFileName(),
                                     T("doesn't exist!"),
-                                    String::empty);
+                                    String());
         return false;
     } else if( inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                     T("The file ") + syxFile.getFileName(),
                                     T("is empty!"),
-                                    String::empty);
+                                    String());
         return false;
     }
 
@@ -778,16 +778,16 @@ bool MbCvToolControl::loadSyx(File &syxFile)
 
     juce_free(buffer);
 
-    if( errorMessage == String::empty ) {
+    if( errorMessage == String() ) {
         if( !numValidPatches )
             errorMessage = String(T("doesn't contain a valid patch!"));
     }
 
-    if( errorMessage != String::empty ) {
+    if( errorMessage != String() ) {
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                     T("The file ") + syxFile.getFileName(),
                                     errorMessage,
-                                    String::empty);
+                                    String());
         return false;
     }
 
@@ -799,13 +799,13 @@ bool MbCvToolControl::loadSyx(File &syxFile)
 bool MbCvToolControl::saveSyx(File &syxFile)
 {
     syxFile.deleteFile();
-    FileOutputStream *outFileStream = syxFile.createOutputStream();
+    std::unique_ptr<FileOutputStream> outFileStream = syxFile.createOutputStream();
             
     if( !outFileStream || outFileStream->failedToOpen() ) {
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
-                                    String::empty,
+                                    String(),
                                     T("File cannot be created!"),
-                                    String::empty);
+                                    String());
         return false;
     }
 
@@ -817,7 +817,7 @@ bool MbCvToolControl::saveSyx(File &syxFile)
                                                           &syxDump.getReference(0));
     outFileStream->write(&data.getReference(0), data.size());
 
-    delete outFileStream;
+    outFileStream.reset();
 
     return true;
 }
