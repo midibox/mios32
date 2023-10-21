@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		028D053B319490C8BD6C200E /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 784ADF8C2299C24F364EFF44 /* MetalKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		059BDC4E19C314606C3870AB /* CoreAudioKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D11D25156B5CE04F9B5C078A /* CoreAudioKit.framework */; };
 		090A8E9E14F217F03987DA63 /* OscHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7F4488348BCD2386C3C7FD0 /* OscHelper.cpp */; };
 		0C3672E12E93523494F9D17F /* include_juce_audio_utils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 21785AE12BD6BFF159717177 /* include_juce_audio_utils.mm */; };
@@ -55,6 +56,7 @@
 		D47CF8AAE4D1B9443390AD84 /* RecentFilesMenuTemplate.nib in Resources */ = {isa = PBXBuildFile; fileRef = 6498C10A5512371FED3318A6 /* RecentFilesMenuTemplate.nib */; };
 		D575BBE430A68020742DA667 /* include_juce_gui_extra.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB68BE59E4757F00E936C275 /* include_juce_gui_extra.mm */; };
 		E0F4F67124AE00C0EF0E9D67 /* OscMonitor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4C1E165812430E53DB1B6EBD /* OscMonitor.cpp */; };
+		E4CE44FE9CB9666DDED9EB83 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5508192C59DD7689685ACDCD /* Metal.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		E6BD35ACF871C15EEAE64511 /* HexFileLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 019F08BA3EF33AD14EEA2F8A /* HexFileLoader.cpp */; };
 		EA37EF9CA43AD729D46347CE /* Midio128Tool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2DC147DD0ADE87D6EE9A1DE9 /* Midio128Tool.cpp */; };
 		ED98FCCA6099FC494A749E44 /* include_juce_gui_basics.mm in Sources */ = {isa = PBXBuildFile; fileRef = BCBE6F2A950A0300AF6FFF5E /* include_juce_gui_basics.mm */; };
@@ -102,6 +104,7 @@
 		4C1E165812430E53DB1B6EBD /* OscMonitor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = OscMonitor.cpp; path = ../../src/gui/OscMonitor.cpp; sourceTree = SOURCE_ROOT; };
 		4D217EB323097E9D4AA0AA90 /* MbCvTool.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = MbCvTool.cpp; path = ../../src/gui/MbCvTool.cpp; sourceTree = SOURCE_ROOT; };
 		546617F5E0D8CFA2371BB4FF /* juce_data_structures */ = {isa = PBXFileReference; lastKnownFileType = folder; name = juce_data_structures; path = "~/JUCE/modules/juce_data_structures"; sourceTree = "<absolute>"; };
+		5508192C59DD7689685ACDCD /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		55143E63A74A355C7E3AE1C6 /* include_juce_audio_formats.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_audio_formats.mm; path = ../../JuceLibraryCode/include_juce_audio_formats.mm; sourceTree = SOURCE_ROOT; };
 		5568DBA184B8ABCA7E7DB11F /* SysexTool.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SysexTool.cpp; path = ../../src/gui/SysexTool.cpp; sourceTree = SOURCE_ROOT; };
 		5B1FBDDB3D8FED601BFCC6C9 /* Info-App.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-App.plist"; sourceTree = SOURCE_ROOT; };
@@ -114,6 +117,7 @@
 		723AA9E681EBA33F92319EAB /* MidiMonitor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MidiMonitor.h; path = ../../src/gui/MidiMonitor.h; sourceTree = SOURCE_ROOT; };
 		72A077277E2B7518FB2A3951 /* MIOS_Studio_Debug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MIOS_Studio_Debug.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7396E2EE15868553D7984068 /* UdpSocket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = UdpSocket.h; path = ../../src/UdpSocket.h; sourceTree = SOURCE_ROOT; };
+		784ADF8C2299C24F364EFF44 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 		7B64FA116087083E2914DB05 /* Main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Main.cpp; path = ../../src/Main.cpp; sourceTree = SOURCE_ROOT; };
 		7C55019A22A83D4A2A4093A2 /* include_juce_events.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = include_juce_events.mm; path = ../../JuceLibraryCode/include_juce_events.mm; sourceTree = SOURCE_ROOT; };
 		7EE0BD2E00B1EFA43044D6ED /* UploadWindow.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = UploadWindow.cpp; path = ../../src/gui/UploadWindow.cpp; sourceTree = SOURCE_ROOT; };
@@ -182,6 +186,8 @@
 				401686E76AF85A0FB3A32DBE /* QuartzCore.framework in Frameworks */,
 				F75366DFDEEE63E0734342E3 /* Security.framework in Frameworks */,
 				0C626C736D0FCB1CEF69E58C /* WebKit.framework in Frameworks */,
+				E4CE44FE9CB9666DDED9EB83 /* Metal.framework in Frameworks */,
+				028D053B319490C8BD6C200E /* MetalKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -235,6 +241,8 @@
 				D14F32536AD961237898E181 /* QuartzCore.framework */,
 				7237EDDF2389D418C7A2020C /* Security.framework */,
 				B55813CCC3DFE7827360C478 /* WebKit.framework */,
+				5508192C59DD7689685ACDCD /* Metal.framework */,
+				784ADF8C2299C24F364EFF44 /* MetalKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -508,8 +516,8 @@
 					"NDEBUG=1",
 					"JUCE_MODAL_LOOPS_PERMITTED=1",
 					"JUCER_XCODE_MAC_F6D2F4CF=1",
-					"JUCE_APP_VERSION=2.4.8",
-					"JUCE_APP_VERSION_HEX=0x20408",
+					"JUCE_APP_VERSION=2.4.9",
+					"JUCE_APP_VERSION_HEX=0x20409",
 					"JucePlugin_Build_VST=0",
 					"JucePlugin_Build_VST3=0",
 					"JucePlugin_Build_AU=0",
@@ -529,14 +537,8 @@
 				INFOPLIST_PREPROCESS = NO;
 				INSTALL_PATH = "$(HOME)/Applications";
 				LLVM_LTO = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 13;
 				MTL_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../JuceLibraryCode $(HOME)/JUCE/modules";
-				OTHER_LDFLAGS = (
-					"-weak_framework",
-					Metal,
-					"-weak_framework",
-					MetalKit,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.midibox.MIOSStudio;
 				PRODUCT_NAME = MIOS_Studio;
 				USE_HEADERMAP = NO;
@@ -584,7 +586,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = "-Wl,-ld_classic";
 				PRODUCT_NAME = MIOS_Studio_Debug;
 				SDKROOT = macosx;
 				WARNING_CFLAGS = "-Wreorder";
@@ -632,6 +636,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				OTHER_LDFLAGS = "-Wl,-ld_classic";
 				PRODUCT_NAME = MIOS_Studio;
 				SDKROOT = macosx;
 				WARNING_CFLAGS = "-Wreorder";
@@ -656,8 +662,8 @@
 					"DEBUG=1",
 					"JUCE_MODAL_LOOPS_PERMITTED=1",
 					"JUCER_XCODE_MAC_F6D2F4CF=1",
-					"JUCE_APP_VERSION=2.4.8",
-					"JUCE_APP_VERSION_HEX=0x20408",
+					"JUCE_APP_VERSION=2.4.9",
+					"JUCE_APP_VERSION_HEX=0x20409",
 					"JucePlugin_Build_VST=0",
 					"JucePlugin_Build_VST3=0",
 					"JucePlugin_Build_AU=0",
@@ -676,14 +682,8 @@
 				INFOPLIST_FILE = "Info-App.plist";
 				INFOPLIST_PREPROCESS = NO;
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 13;
 				MTL_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../JuceLibraryCode $(HOME)/JUCE/modules";
-				OTHER_LDFLAGS = (
-					"-weak_framework",
-					Metal,
-					"-weak_framework",
-					MetalKit,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.midibox.MIOSStudio;
 				PRODUCT_NAME = MIOS_Studio_Debug;
 				USE_HEADERMAP = NO;
@@ -701,7 +701,7 @@
 				124D14F7C5293DCC72E3C628 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		D6825AA155D8BAB3E673FEBE /* Build configuration list for PBXProject "MIOS_Studio" */ = {
 			isa = XCConfigurationList;
@@ -710,7 +710,7 @@
 				9183C9BC56DB1A87121A93E4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};

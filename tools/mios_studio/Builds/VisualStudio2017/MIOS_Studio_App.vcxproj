@@ -64,7 +64,7 @@
       <Optimization>Disabled</Optimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>..\..\JuceLibraryCode;C:\JUCE\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;JUCER_VS2017_78A5024=1;JUCE_APP_VERSION=2.4.8;JUCE_APP_VERSION_HEX=0x20408;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;JUCER_VS2017_78A5024=1;JUCE_APP_VERSION=2.4.9;JUCE_APP_VERSION_HEX=0x20409;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -78,7 +78,7 @@
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>..\..\JuceLibraryCode;C:\JUCE\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;JUCER_VS2017_78A5024=1;JUCE_APP_VERSION=2.4.8;JUCE_APP_VERSION_HEX=0x20408;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;JUCER_VS2017_78A5024=1;JUCE_APP_VERSION=2.4.9;JUCE_APP_VERSION_HEX=0x20409;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <OutputFile>$(OutDir)\MIOS_Studio.exe</OutputFile>
@@ -106,7 +106,7 @@
     <ClCompile>
       <Optimization>Full</Optimization>
       <AdditionalIncludeDirectories>..\..\JuceLibraryCode;C:\JUCE\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;JUCER_VS2017_78A5024=1;JUCE_APP_VERSION=2.4.8;JUCE_APP_VERSION_HEX=0x20408;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;JUCER_VS2017_78A5024=1;JUCE_APP_VERSION=2.4.9;JUCE_APP_VERSION_HEX=0x20409;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -120,7 +120,7 @@
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>..\..\JuceLibraryCode;C:\JUCE\modules;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;JUCER_VS2017_78A5024=1;JUCE_APP_VERSION=2.4.8;JUCE_APP_VERSION_HEX=0x20408;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;JUCE_MODAL_LOOPS_PERMITTED=1;JUCER_VS2017_78A5024=1;JUCE_APP_VERSION=2.4.9;JUCE_APP_VERSION_HEX=0x20409;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <OutputFile>$(OutDir)\MIOS_Studio.exe</OutputFile>
@@ -276,6 +276,9 @@
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="C:\JUCE\modules\juce_audio_basics\utilities\juce_ADSR_test.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="C:\JUCE\modules\juce_audio_basics\utilities\juce_AudioWorkgroup.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="C:\JUCE\modules\juce_audio_basics\utilities\juce_IIRFilter.cpp">
@@ -1106,6 +1109,9 @@
     <ClCompile Include="C:\JUCE\modules\juce_core\containers\juce_DynamicObject.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="C:\JUCE\modules\juce_core\containers\juce_FixedSizeFunction_test.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="C:\JUCE\modules\juce_core\containers\juce_HashMap_test.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -1169,6 +1175,12 @@
     <ClCompile Include="C:\JUCE\modules\juce_core\javascript\juce_JSON.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="C:\JUCE\modules\juce_core\javascript\juce_JSONSerialisation_test.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="C:\JUCE\modules\juce_core\javascript\juce_JSONUtils.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="C:\JUCE\modules\juce_core\logging\juce_FileLogger.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -1203,6 +1215,9 @@
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="C:\JUCE\modules\juce_core\misc\juce_RuntimePermissions.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="C:\JUCE\modules\juce_core\misc\juce_ScopeGuard.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="C:\JUCE\modules\juce_core\misc\juce_Uuid.cpp">
@@ -2400,7 +2415,9 @@
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_audio_processors_ara.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_audio_processors_lv2_libs.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_audio_utils.cpp"/>
-    <ClCompile Include="..\..\JuceLibraryCode\include_juce_core.cpp"/>
+    <ClCompile Include="..\..\JuceLibraryCode\include_juce_core.cpp">
+      <AdditionalOptions> /bigobj %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_data_structures.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_events.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_graphics.cpp"/>
@@ -2474,6 +2491,7 @@
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\mpe\juce_MPEUtils.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\mpe\juce_MPEValue.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\mpe\juce_MPEZoneLayout.h"/>
+    <ClInclude Include="C:\JUCE\modules\juce_audio_basics\native\juce_AudioWorkgroup_mac.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\native\juce_CoreAudioLayouts_mac.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\native\juce_CoreAudioTimeConversions_mac.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\sources\juce_AudioSource.h"/>
@@ -2488,6 +2506,7 @@
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\sources\juce_ToneGeneratorAudioSource.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\synthesisers\juce_Synthesiser.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\utilities\juce_ADSR.h"/>
+    <ClInclude Include="C:\JUCE\modules\juce_audio_basics\utilities\juce_AudioWorkgroup.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\utilities\juce_Decibels.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\utilities\juce_GenericInterpolator.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_audio_basics\utilities\juce_IIRFilter.h"/>
@@ -2894,6 +2913,7 @@
     <ClInclude Include="C:\JUCE\modules\juce_core\containers\juce_ArrayBase.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\containers\juce_DynamicObject.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\containers\juce_ElementComparator.h"/>
+    <ClInclude Include="C:\JUCE\modules\juce_core\containers\juce_FixedSizeFunction.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\containers\juce_HashMap.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\containers\juce_LinkedListPointer.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\containers\juce_ListenerList.h"/>
@@ -2922,6 +2942,8 @@
     <ClInclude Include="C:\JUCE\modules\juce_core\files\juce_WildcardFileFilter.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\javascript\juce_Javascript.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\javascript\juce_JSON.h"/>
+    <ClInclude Include="C:\JUCE\modules\juce_core\javascript\juce_JSONSerialisation.h"/>
+    <ClInclude Include="C:\JUCE\modules\juce_core\javascript\juce_JSONUtils.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\logging\juce_FileLogger.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\logging\juce_Logger.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\maths\juce_BigInteger.h"/>
@@ -2952,6 +2974,7 @@
     <ClInclude Include="C:\JUCE\modules\juce_core\misc\juce_Functional.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\misc\juce_Result.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\misc\juce_RuntimePermissions.h"/>
+    <ClInclude Include="C:\JUCE\modules\juce_core\misc\juce_ScopeGuard.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\misc\juce_Uuid.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\misc\juce_WindowsRegistry.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\native\juce_BasicNativeHeaders.h"/>
@@ -2970,6 +2993,7 @@
     <ClInclude Include="C:\JUCE\modules\juce_core\network\juce_Socket.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\network\juce_URL.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\network\juce_WebInputStream.h"/>
+    <ClInclude Include="C:\JUCE\modules\juce_core\serialisation\juce_Serialisation.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\streams\juce_AndroidDocumentInputSource.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\streams\juce_BufferedInputStream.h"/>
     <ClInclude Include="C:\JUCE\modules\juce_core\streams\juce_FileInputSource.h"/>
