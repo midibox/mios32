@@ -3630,8 +3630,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
 
       // BLM_X DOUT -> GP LED mapping
       // left/right half offsets; green,red
-      // 0 = 8,9        1 = 11,10       2 = 13,12       3 = 15,14
-      // 4 = 40,41      2 = 43,42       3 = 45,44       4 = 47,46
+      // 0 = 9,8        1 = 11,10       2 = 13,12       3 = 15,14
+      // 4 = 41,40      2 = 43,42       3 = 45,44       4 = 47,46
 
       u16 modified_gp_leds = ui_gp_leds;
 
