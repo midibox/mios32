@@ -6,6 +6,16 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.098
+~~~~~~~~~~~~~~~~~
+
+   o Phrase Mode: if Option 3/33 "Pattern Change Synchronization" is activated, patterns will start
+     from step 1 after song position change. This is especially useful if phrases contain tracks
+     with different lengths.
+     Option 5/33 "Restart all Tracks on Pattern Change" should be disabled in this case because
+     it won't lead to the intended results.
+
+
 MIDIboxSEQ V4.097
 ~~~~~~~~~~~~~~~~~
 
