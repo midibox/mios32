@@ -1883,7 +1883,13 @@ static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
 
 	  // set song position and fetch patterns
 	  SEQ_SONG_PosSet(ui_song_edit_pos);
-	  SEQ_SONG_FetchPos(0, 0);
+
+	  // requested here: http://midibox.org/forums/topic/33197-song-mode-different-length-sections-of-the-song
+	  if( seq_core_options.SYNCHED_PATTERN_CHANGE ) {
+	    SEQ_CORE_ManualSynchToMeasure(0xffff); // ensure that the new selection is in sync
+	  }
+
+          SEQ_SONG_FetchPos(0, 0);
 	  ui_song_edit_pos = SEQ_SONG_PosGet();
 	//}
       } break;
