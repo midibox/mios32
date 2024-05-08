@@ -15,6 +15,8 @@ MIDIboxSEQ V4.098
      Option 5/33 "Restart all Tracks on Pattern Change" should be disabled in this case because
      it won't lead to the intended results.
 
+   o fixed crash when TPD is used in combination with "MIDI Section Control" feature
+
 
 MIDIboxSEQ V4.097
 ~~~~~~~~~~~~~~~~~

@@ -236,7 +236,9 @@ s32 SEQ_TPD_Handler(void)
 	  if( horizontal_display ) {
 	    tpd_display[col][TPD_RED][row] = (1 << rel_pos);
 	  } else {
-	    tpd_display[col][TPD_RED][7-rel_pos] |= (1 << row);
+	    if( rel_pos <= 7 ) { // see http://midibox.org/forums/topic/34168-hard-fault-at-pc0xffff0201-when-using-section-control/#comment-203506
+	      tpd_display[col][TPD_RED][7-rel_pos] |= (1 << row);
+	    }
 	  }
 	}
 
@@ -312,7 +314,9 @@ s32 SEQ_TPD_Handler(void)
 	  if( horizontal_display ) {
 	    tpd_display[col][TPD_GREEN][row] = (1 << rel_pos);
 	  } else {
-	    tpd_display[col][TPD_GREEN][7-rel_pos] |= (1 << row);
+	    if( rel_pos <= 7 ) { // see http://midibox.org/forums/topic/34168-hard-fault-at-pc0xffff0201-when-using-section-control/#comment-203506
+	      tpd_display[col][TPD_GREEN][7-rel_pos] |= (1 << row);
+	    }
 	  }
 	}
 
@@ -321,7 +325,9 @@ s32 SEQ_TPD_Handler(void)
 	  if( horizontal_display ) {
 	    tpd_display[col][TPD_RED][row] = (1 << rel_pos);
 	  } else {
-	    tpd_display[col][TPD_RED][7-rel_pos] |= (1 << row);
+	    if( rel_pos <= 7 ) { // see http://midibox.org/forums/topic/34168-hard-fault-at-pc0xffff0201-when-using-section-control/#comment-203506
+	      tpd_display[col][TPD_RED][7-rel_pos] |= (1 << row);
+	    }
 	  }
 	}
       }      
