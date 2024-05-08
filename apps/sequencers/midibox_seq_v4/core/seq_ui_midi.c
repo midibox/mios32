@@ -839,7 +839,7 @@ static s32 LCD_Handler(u8 high_prio)
 	if( seq_midi_in_sect_port )
 	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_sect_port)));
 	else
-	  SEQ_LCD_PrintString(" All");
+	  SEQ_LCD_PrintString("----");
       }
       SEQ_LCD_PrintSpaces(1);
 
