@@ -1,0 +1,42 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${env:MIOS32_PATH}/programming_models/traditional",
+                "${env:MIOS32_PATH}/FreeRTOS/Source/include",
+                "${env:MIOS32_PATH}/FreeRTOS/Source/portable/GCC/ARM_CM3",
+                "${env:MIOS32_PATH}/FreeRTOS/Source/portable/MemMang",
+                "${env:MIOS32_PATH}/modules/blm",
+                "${env:MIOS32_PATH}/modules/blm_x",
+                "${env:MIOS32_PATH}/modules/aout",
+                "${env:MIOS32_PATH}/modules/sequencer",
+                "${env:MIOS32_PATH}/modules/notestack",
+                "${env:MIOS32_PATH}/modules/midifile",
+                "${env:MIOS32_PATH}/modules/fatfs/src",
+                "${env:MIOS32_PATH}/modules/file",
+                "${env:MIOS32_PATH}/modules/random",
+                "${env:MIOS32_PATH}/modules/msd/${env:MIOS32_FAMILY}",
+                "${env:MIOS32_PATH}/modules/freertos_utils",
+                "${env:MIOS32_PATH}/modules/uip/uip",
+                "${env:MIOS32_PATH}/modules/uip/lib",
+                "${env:MIOS32_PATH}/modules/uip/mios32",
+                "${env:MIOS32_PATH}/modules/uip_task_standard",
+                "${env:MIOS32_PATH}/include/mios32",
+                "${env:MIOS32_PATH}/modules/uip/mios32/${env:MIOS32_FAMILY}",
+                "${env:MIOS32_PATH}/drivers/${env:MIOS32_FAMILY}/**",
+                "/opt/mios32/arm-none-eabi/include"
+            ],
+            "defines": [
+                "MIOS32_FAMILY_${env:MIOS32_FAMILY}",
+                "MIOS32_PROCESSOR_${env:MIOS32_PROCESSOR}",
+                "MIOS32_FAMILY_STR=\"xxx\"",
+                "MIOS32_BOARD_${env:MIOS32_BOARD}",
+                "MIOS32_BOARD_STR=\"xxx\"",
+                "MIOS32_FAMILY_STM32F4xx=1"            ],
+            "compilerPath": "/opt/mios32/bin/arm-none-eabi-gcc",
+        }
+    ],
+    "version": 4
+}
