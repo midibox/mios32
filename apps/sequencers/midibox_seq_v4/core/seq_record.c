@@ -634,10 +634,10 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 
 #ifdef MBSEQV4P
 	  seq_layer_evnt_t layer_events[83];
-	  s32 number_of_events = SEQ_LAYER_GetEventsPlus(track, record_step, layer_events, 0);
+	  s32 number_of_events = SEQ_LAYER_GetEventsPlus(track, record_step, layer_events, 0, 1);
 #else
 	  seq_layer_evnt_t layer_events[16];
-	  s32 number_of_events = SEQ_LAYER_GetEvents(track, record_step, layer_events, 0);
+	  s32 number_of_events = SEQ_LAYER_GetEvents(track, record_step, layer_events, 0, 1);
 #endif
 	  if( number_of_events > 0 ) {
 	    int i;

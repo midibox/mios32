@@ -304,10 +304,10 @@ s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_la
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 #ifdef MBSEQV4P
   seq_layer_evnt_t layer_events[83];
-  number_of_events = SEQ_LAYER_GetEventsPlus(track, step, layer_events, 1);
+  number_of_events = SEQ_LAYER_GetEventsPlus(track, step, layer_events, 1, 0);
 #else
   seq_layer_evnt_t layer_events[16];
-  number_of_events = SEQ_LAYER_GetEvents(track, step, layer_events, 1);
+  number_of_events = SEQ_LAYER_GetEvents(track, step, layer_events, 1, 0);
 #endif
 
   if( number_of_events <= 0 ) {
@@ -351,9 +351,9 @@ s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_la
 // the function a dedicated name for this case
 /////////////////////////////////////////////////////////////////////////////
 #ifdef MBSEQV4P
-s32 SEQ_LAYER_GetEventsPlus(u8 track, u16 step, seq_layer_evnt_t layer_events[83], u8 insert_empty_notes)
+s32 SEQ_LAYER_GetEventsPlus(u8 track, u16 step, seq_layer_evnt_t layer_events[83], u8 insert_empty_notes, u8 play_ctrl_cc)
 #else
-s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u8 insert_empty_notes)
+s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u8 insert_empty_notes, u8 play_ctrl_cc)
 #endif
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
@@ -836,7 +836,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 #ifndef MBSEQV4L
 	     (tcc->event_mode != SEQ_EVENT_MODE_CC || gate) &&
 #endif
-	     (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
+	     (insert_empty_notes || !(layer_muted & (1 << par_layer))) && play_ctrl_cc ) {
 	    // Quick&Dirty: forward immediately to SEQ CC (TODO: we could do this in seq_core, maybe cleaner)
 	    SEQ_CC_MIDI_Set(track, cc_number, value);
 	    

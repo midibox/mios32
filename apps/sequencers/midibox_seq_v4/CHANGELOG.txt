@@ -17,6 +17,8 @@ MIDIboxSEQ V4.098
 
    o fixed crash when TPD is used in combination with "MIDI Section Control" feature
 
+   o fixed unintended Ctrl layer events in Edit screen
+
 
 MIDIboxSEQ V4.097
 ~~~~~~~~~~~~~~~~~

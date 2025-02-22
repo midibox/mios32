@@ -1151,11 +1151,11 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 #ifdef MBSEQV4P
         seq_layer_evnt_t layer_events[83];
         s32 number_of_events = 0;
-	number_of_events = SEQ_LAYER_GetEventsPlus(track, t->step, layer_events, 0);
+	number_of_events = SEQ_LAYER_GetEventsPlus(track, t->step, layer_events, 0, 1);
 #else
         seq_layer_evnt_t layer_events[16];
         s32 number_of_events = 0;
-	number_of_events = SEQ_LAYER_GetEvents(track, t->step, layer_events, 0);
+	number_of_events = SEQ_LAYER_GetEvents(track, t->step, layer_events, 0, 1);
 #endif
 
 	if( number_of_events > 0 ) {

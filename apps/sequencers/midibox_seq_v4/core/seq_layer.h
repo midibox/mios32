@@ -58,9 +58,9 @@ extern const char *SEQ_LAYER_GetEvntModeName(seq_event_mode_t event_mode);
 extern s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_layer_evnt_t *layer_event);
 
 #ifdef MBSEQV4P
-extern s32 SEQ_LAYER_GetEventsPlus(u8 track, u16 step, seq_layer_evnt_t layer_events[83], u8 insert_empty_notes);
+extern s32 SEQ_LAYER_GetEventsPlus(u8 track, u16 step, seq_layer_evnt_t layer_events[83], u8 insert_empty_notes, u8 play_ctrl_cc);
 #else
-extern s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u8 insert_empty_notes);
+extern s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u8 insert_empty_notes, u8 play_ctrl_cc);
 #endif
 
 extern s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event);
