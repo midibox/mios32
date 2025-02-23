@@ -15,6 +15,9 @@ MIDIboxSEQ V4.098
      Option 5/33 "Restart all Tracks on Pattern Change" should be disabled in this case because
      it won't lead to the intended results.
 
+   o LFO: added Clock Divider ("ClkDv") option which can be enabled with GP8 in LFO page.
+     It synchronizes the LFO to the timebase as defined in the Track Clock Divider page.
+      
    o fixed crash when TPD is used in combination with "MIDI Section Control" feature
 
    o fixed unintended Ctrl layer events in Edit screen

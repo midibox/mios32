@@ -871,8 +871,11 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       u8 track_record_enabled = (seq_record_state.ENABLED && (seq_record_state.ARMED_TRACKS & (1 << track)) != 0) ? 1 : 0;
 #endif
 
+      // calculate step length
+      t->step_length = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6));
+
       // handle LFO effect
-      SEQ_LFO_HandleTrk(track, bpm_tick);
+      SEQ_LFO_HandleTrk(track, t->step_length, bpm_tick);
 
       // send LFO CC (if enabled and not muted)
       if( !(seq_core_trk_muted & (1 << track)) && !seq_core_slaveclk_mute && !t->lfo_cc_muted_from_midi ) {
@@ -920,10 +923,6 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       if( next_step_event ) {
 
 	{
-	  // calculate step length
-	  u16 step_length_pre = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6));
-	  t->step_length = step_length_pre;
-
 	  // set timestamp of next step w/o groove delay (reference timestamp)
 	  if( t->state.FIRST_CLK )
 	    t->timestamp_next_step_ref = bpm_tick + t->step_length;

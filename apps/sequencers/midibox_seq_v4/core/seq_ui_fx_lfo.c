@@ -37,14 +37,15 @@
 #define ITEM_STEPS         4
 #define ITEM_STEPS_RST     5
 #define ITEM_ENABLE_ONE_SHOT  6
-#define ITEM_ENABLE_NOTE   7
-#define ITEM_ENABLE_VELOCITY 8
-#define ITEM_ENABLE_LENGTH 9
-#define ITEM_ENABLE_CC     10
-#define ITEM_DISABLE_EXTRA_CC 11
-#define ITEM_CC            12
-#define ITEM_CC_OFFSET     13
-#define ITEM_CC_PPQN       14
+#define ITEM_ENABLE_CLK_DIV  7
+#define ITEM_ENABLE_NOTE   8
+#define ITEM_ENABLE_VELOCITY 9
+#define ITEM_ENABLE_LENGTH 10
+#define ITEM_ENABLE_CC     11
+#define ITEM_DISABLE_EXTRA_CC 12
+#define ITEM_CC            13
+#define ITEM_CC_OFFSET     14
+#define ITEM_CC_PPQN       15
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,6 +54,16 @@
 
 static u8 edit_cc_number;
 
+// map ITEM_* position with LFO flag number (see doc/mbseqv4_cc_implementation.txt)
+static u8 lfo_flag_map[7] = {
+  0, // ITEM_ENABLE_ONE_SHOT
+  6, // ITEM_ENABLE_CLK_DIV
+  1, // ITEM_ENABLE_NOTE
+  2, // ITEM_ENABLE_VELOCITY
+  3, // ITEM_ENABLE_LENGTH
+  4, // ITEM_ENABLE_CC
+  5, // ITEM_DISABLE_EXTRA_CC
+};
 
 /////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
@@ -70,6 +81,7 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_STEPS: *gp_leds = 0x0010; break;
     case ITEM_STEPS_RST: *gp_leds = 0x0020; break;
     case ITEM_ENABLE_ONE_SHOT: *gp_leds = 0x0040; break;
+    case ITEM_ENABLE_CLK_DIV: *gp_leds = 0x0080; break;
     case ITEM_ENABLE_NOTE: *gp_leds = 0x0100; break;
     case ITEM_ENABLE_VELOCITY: *gp_leds = 0x0200; break;
     case ITEM_ENABLE_LENGTH: *gp_leds = 0x0400; break;
@@ -132,7 +144,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP8:
-      return -1; // not mapped
+      ui_selected_item = ITEM_ENABLE_CLK_DIV;
+      break;
 
     case SEQ_UI_ENCODER_GP9:
       ui_selected_item = ITEM_ENABLE_NOTE;
@@ -195,28 +208,18 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_STEPS_RST:     return SEQ_UI_CC_Inc(SEQ_CC_LFO_STEPS_RST, 0, 255, incrementer);
 
     case ITEM_ENABLE_ONE_SHOT:
+    case ITEM_ENABLE_CLK_DIV:
     case ITEM_ENABLE_NOTE:
     case ITEM_ENABLE_VELOCITY:
     case ITEM_ENABLE_LENGTH:
-    case ITEM_ENABLE_CC: {
-      u8 flag = ui_selected_item - ITEM_ENABLE_ONE_SHOT;
+    case ITEM_ENABLE_CC:
+    case ITEM_DISABLE_EXTRA_CC: {
+      u8 flag = lfo_flag_map[ui_selected_item - ITEM_ENABLE_ONE_SHOT];
       u8 mask = 1 << flag;
       u8 value = SEQ_CC_Get(visible_track, SEQ_CC_LFO_ENABLE_FLAGS);
       if( incrementer == 0 ) // toggle
 	SEQ_UI_CC_SetFlags(SEQ_CC_LFO_ENABLE_FLAGS, mask, value ^ mask);
       else if( incrementer > 0 )
-	SEQ_UI_CC_SetFlags(SEQ_CC_LFO_ENABLE_FLAGS, mask, mask);
-      else
-	SEQ_UI_CC_SetFlags(SEQ_CC_LFO_ENABLE_FLAGS, mask, 0);
-    } break;
-
-    case ITEM_DISABLE_EXTRA_CC: {
-      u8 flag = 5;
-      u8 mask = 1 << flag;
-      u8 value = SEQ_CC_Get(visible_track, SEQ_CC_LFO_ENABLE_FLAGS);
-      if( incrementer == 0 ) // toggle
-	SEQ_UI_CC_SetFlags(SEQ_CC_LFO_ENABLE_FLAGS, mask, value ^ mask);
-      else if( incrementer < 0 )
 	SEQ_UI_CC_SetFlags(SEQ_CC_LFO_ENABLE_FLAGS, mask, mask);
       else
 	SEQ_UI_CC_SetFlags(SEQ_CC_LFO_ENABLE_FLAGS, mask, 0);
@@ -304,13 +307,14 @@ static s32 LCD_Handler(u8 high_prio)
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
   // Trk. Wave Amp. Phs. Steps Rst OneShot   Note Vel. Len.  CC   ExtraCC# Offs. PPQN
-  // GxTy Sine   64   0%   16   16  on        off  off  off  off   001 on   64   384
+  // Trk. Wave Amp. Phs. Steps Rst 1Sht ClkDvNote Vel. Len.  CC   ExtraCC# Offs. PPQN
+  // GxTy Sine   64   0%   16   16  on   on   off  off  off  off   001 on   64   384
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("Trk. Wave Amp. Phs. Steps Rst OneShot   Note Vel. Len.  CC   ExtraCC# Offs. PPQN");
+  SEQ_LCD_PrintString("Trk. Wave Amp. Phs. Steps Rst 1Sht ClkDvNote Vel. Len.  CC   ExtraCC# Offs. PPQN");
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
@@ -378,7 +382,12 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_LFO_ENABLE_FLAGS) & (1 << 0)) ? "  on " : " off ");
   }
 
-  SEQ_LCD_PrintSpaces(5);
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_ENABLE_CLK_DIV && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(5);
+  } else {
+    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_LFO_ENABLE_FLAGS) & (1 << 6)) ? "  on " : " off ");
+  }
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_ENABLE_NOTE && ui_cursor_flash ) {

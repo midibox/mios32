@@ -76,7 +76,7 @@ s32 SEQ_LFO_ResetTrk(u8 track)
 /////////////////////////////////////////////////////////////////////////////
 // Handles the LFO of a given track
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LFO_HandleTrk(u8 track, u32 bpm_tick)
+s32 SEQ_LFO_HandleTrk(u8 track, u16 step_length, u32 bpm_tick)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   seq_lfo_t *lfo = &seq_lfo[track];
@@ -84,8 +84,12 @@ s32 SEQ_LFO_HandleTrk(u8 track, u32 bpm_tick)
   // Note: we always have to process this part for each track, otherwise the LFO
   // could get out-of-sync if temporary disabled/enabled
 
+  // LFO speed optionally synched to clock divider
+  if( tcc->lfo_enable_flags.CLK_DIV == 0 )
+    step_length = 96; // legacy
+
   // increment step counter on each step
-  if( (bpm_tick % 96) == 0 && lfo->step_ctr != 65535) // @384 ppqn (reference bpm_tick resolution)
+  if( (bpm_tick % step_length) == 0 && lfo->step_ctr != 65535) // @384 ppqn (reference bpm_tick resolution)
     ++lfo->step_ctr;
 
 
@@ -102,7 +106,7 @@ s32 SEQ_LFO_HandleTrk(u8 track, u32 bpm_tick)
     }
   } else {
     // increment waveform pointer
-    u32 lfo_ticks = (u32)(tcc->lfo_steps+1) * 96; // @384 ppqn (reference bpm_tick resolution)
+    u32 lfo_ticks = (u32)(tcc->lfo_steps+1) * step_length; // @384 ppqn (reference bpm_tick resolution)
     u32 inc = 65536 / lfo_ticks;
     lfo->pos += inc;
   }

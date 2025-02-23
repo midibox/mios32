@@ -90,6 +90,7 @@ NRPN LSB|   Range   | Default | Description
         |           |         |    bit 3: Length Assignment on/off
         |           |         |    bit 4: CC Assignment on/off
         |           |         |    bit 5: Extra CC Assignment off/on (inverted!)
+        |           |         |    bit 6: Track Clock Divider Sync on/off
 --------+-----------+---------+------------------------------------------------
 0x16/ 22|   0 - 127 |       0 | LFO Extra CC Number
 --------+-----------+---------+------------------------------------------------

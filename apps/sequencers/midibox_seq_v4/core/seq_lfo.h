@@ -61,6 +61,7 @@ typedef union {
     u8 LENGTH:1;
     u8 CC:1;
     u8 EXTRA_CC_OFF:1;
+    u8 CLK_DIV:1;
   };
 } seq_lfo_enable_flags_t;
 
@@ -72,7 +73,7 @@ typedef union {
 extern s32 SEQ_LFO_Init(u32 mode);
 
 extern s32 SEQ_LFO_ResetTrk(u8 track);
-extern s32 SEQ_LFO_HandleTrk(u8 track, u32 bpm_tick);
+extern s32 SEQ_LFO_HandleTrk(u8 track, u16 step_length, u32 bpm_tick);
 extern s32 SEQ_LFO_Event(u8 track, seq_layer_evnt_t *e);
 extern s32 SEQ_LFO_FastCC_Event(u8 track, u32 bpm_tick, mios32_midi_package_t *p, u8 ignore_waveform);
 
