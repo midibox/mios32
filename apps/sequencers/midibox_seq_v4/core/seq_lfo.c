@@ -89,7 +89,8 @@ s32 SEQ_LFO_HandleTrk(u8 track, u16 step_length, u32 bpm_tick)
     step_length = 96; // legacy
 
   // increment step counter on each step
-  if( (bpm_tick % step_length) == 0 && lfo->step_ctr != 65535) // @384 ppqn (reference bpm_tick resolution)
+  // except for first BPM tick!
+  if( bpm_tick && (bpm_tick % step_length) == 0 && lfo->step_ctr != 65535) // @384 ppqn (reference bpm_tick resolution)
     ++lfo->step_ctr;
 
 
