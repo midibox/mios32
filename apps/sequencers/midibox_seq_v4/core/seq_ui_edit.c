@@ -1505,6 +1505,20 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
   if( incrementer > 0 && forced_value < 0 && old_value == 0x00 && (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord1 || layer_type == SEQ_PAR_Type_Chord2 || layer_type == SEQ_PAR_Type_Chord3) )
     new_value = (layer_type == SEQ_PAR_Type_Note && SEQ_CC_Get(track, SEQ_CC_MODE) != SEQ_CORE_TRKMODE_Arpeggiator) ? 0x3c : 0x40;
 
+  // extra for more comfortable editing of Nth1/Nth2 parameter layers
+  // if assigned parameter layer is Note or Chord, value range is 0, 16..111
+  if( forced_value < 0 && (layer_type == SEQ_PAR_Type_Nth1 || layer_type == SEQ_PAR_Type_Nth2) ) {
+    if( new_value >= 112 ) {
+      new_value = 111;
+    } else {
+      if( incrementer > 0 && new_value > 0 && new_value < 16 ) {
+        new_value = 16;
+      } else if( incrementer < 0 && new_value < 16 ) {
+        new_value = 0;
+      }
+    }
+  }
+
   if( !dont_change_gate ) {
     u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
 
