@@ -49,6 +49,9 @@ typedef enum {
   SEQ_LFO_WAVEFORM_Rec85,
   SEQ_LFO_WAVEFORM_Rec90,
   SEQ_LFO_WAVEFORM_Rec95,
+  SEQ_LFO_WAVEFORM_InvSine,
+  SEQ_LFO_WAVEFORM_InvTriangle,
+  SEQ_LFO_WAVEFORM_InvSaw,
 } seq_lfo_waveform_t;
 
 

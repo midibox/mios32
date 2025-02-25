@@ -229,11 +229,19 @@ static s32 SEQ_LFO_ValueGet(seq_cc_trk_t *tcc, seq_lfo_t *lfo)
     case SEQ_LFO_WAVEFORM_Off:
       return 0;
 
-    case SEQ_LFO_WAVEFORM_Sine: { // currently no real sine!
+    case SEQ_LFO_WAVEFORM_InvSine:
+      lfo_value = 65535 - lfo_value; // inversion
+      // no break -- fall through!
+    case SEQ_LFO_WAVEFORM_Sine: {  // currently no real sine!
       s32 tmp = 4*(lfo_value % 32768);
       if( tmp >= 65536 )
 	tmp = 65536 - (tmp % 65536);
       lfo_value = (lfo_value >= 32768) ? -tmp : tmp;
+    } break;
+
+    case SEQ_LFO_WAVEFORM_InvTriangle: {
+      s32 tmp = 65535 - (2*(lfo_value % 32768)); // inversion
+      lfo_value = (lfo_value >= 32768) ? (65535-tmp) : tmp;
     } break;
 
     case SEQ_LFO_WAVEFORM_Triangle: {
@@ -241,6 +249,9 @@ static s32 SEQ_LFO_ValueGet(seq_cc_trk_t *tcc, seq_lfo_t *lfo)
       lfo_value = (lfo_value >= 32768) ? (65535-tmp) : tmp;
     } break;
 
+    case SEQ_LFO_WAVEFORM_InvSaw:
+    lfo_value = 65535 - lfo_value; // inversion
+    // no break -- fall through!
     case SEQ_LFO_WAVEFORM_Saw:
       // no modification required
       break;

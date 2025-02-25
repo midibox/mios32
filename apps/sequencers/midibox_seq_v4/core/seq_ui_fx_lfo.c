@@ -201,7 +201,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_WAVEFORM:      return SEQ_UI_CC_Inc(SEQ_CC_LFO_WAVEFORM, 0, 22, incrementer);
+    case ITEM_WAVEFORM:      return SEQ_UI_CC_Inc(SEQ_CC_LFO_WAVEFORM, 0, 25, incrementer);
     case ITEM_AMPLITUDE:     return SEQ_UI_CC_Inc(SEQ_CC_LFO_AMPLITUDE, 0, 255, incrementer);
     case ITEM_PHASE:         return SEQ_UI_CC_Inc(SEQ_CC_LFO_PHASE, 0, 99, incrementer);
     case ITEM_STEPS:         return SEQ_UI_CC_Inc(SEQ_CC_LFO_STEPS, 0, 255, incrementer);
@@ -341,6 +341,14 @@ static s32 LCD_Handler(u8 high_prio)
       };
 
       SEQ_LCD_PrintString((char *)waveform_str[value]);
+    } else if( value >= 23 && value <= 25 ) {
+      const char waveform_str[3][6] = {
+	"iSin ",
+	"iTri ",
+	"iSaw "
+      };
+
+      SEQ_LCD_PrintString((char *)waveform_str[value-23]);
     } else {
       SEQ_LCD_PrintFormattedString(" R%02d ", (value-4+1)*5);
     }

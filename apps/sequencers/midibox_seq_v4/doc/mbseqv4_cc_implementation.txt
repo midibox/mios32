@@ -53,6 +53,9 @@ NRPN LSB|   Range   | Default | Description
         |           |         |    5: Rectangle 10
         |           |         |    ...
         |           |         |    22: Rectangle 95
+        |           |         |    23: Inverted Sine
+        |           |         |    24: Inverted Triangle
+        |           |         |    25: Inverted Sawtooth
 --------+-----------+---------+------------------------------------------------
 0x11/ 17|   0 - 127 |      64 | LFO Amplitude
         |           |         |    0x00..0x3f: negative range

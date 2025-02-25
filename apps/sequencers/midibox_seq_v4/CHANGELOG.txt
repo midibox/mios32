@@ -17,6 +17,10 @@ MIDIboxSEQ V4.098
 
    o LFO: added Clock Divider ("ClkDv") option which can be enabled with GP8 in LFO page.
      It synchronizes the LFO to the timebase as defined in the Track Clock Divider page.
+
+   o LFO: added Inverted Sine/Triangle/Sawtooth waveforms (iSin, iTri, iSaw at end of the Wave list)
+      
+   o Edit: value changes on Nth1/Nth2 parameter layers only select supported (meaningful) value ranges
       
    o fixed crash when TPD is used in combination with "MIDI Section Control" feature
 
