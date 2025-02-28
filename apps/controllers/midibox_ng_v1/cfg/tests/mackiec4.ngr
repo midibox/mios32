@@ -1,0 +1,4 @@
+if ^section == 0
+ trigger SENDER:201           # clear C4's top display
+ trigger SENDER:1             # print instruction in top display's upper row above 1st encoder
+endif
