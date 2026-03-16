@@ -507,7 +507,7 @@ static s32 RandomGenerator(u32 req)
 	  if( !range || range > 128 ) // (on underrun...)
 	    range = 1;
 	} else {
-	  base = 0x40;
+	  base = 0x3c;//<-randomization start point
 	  range = par_layer_range[layer];
 	}
 
