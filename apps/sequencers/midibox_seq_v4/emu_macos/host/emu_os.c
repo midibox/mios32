@@ -15,8 +15,21 @@
 static pthread_mutex_t cpu;
 static volatile int running = 1;
 
-void EMU_CpuLock(void)   { pthread_mutex_lock(&cpu); }
-void EMU_CpuUnlock(void) { pthread_mutex_unlock(&cpu); }
+static __thread unsigned slept_us;   // time this thread spent in EMU_CpuSleepUs (not holding the CPU)
+static int cpu_depth;     // recursion depth of the owner (only touched while holding the lock)
+void EMU_CpuLock(void)   { pthread_mutex_lock(&cpu); ++cpu_depth; }
+void EMU_CpuUnlock(void) { --cpu_depth; pthread_mutex_unlock(&cpu); }
+// Blocking waits (e.g. "USB buffer full") must not keep the one CPU: release it completely for a moment, so the BPM timer
+// and the other loops keep running - on the STM32 their interrupts preempt such a wait.
+void EMU_CpuSleepUs(unsigned us)
+{
+  int depth = cpu_depth;
+  for(int i=0; i<depth; ++i) EMU_CpuUnlock();
+  struct timespec a, b; clock_gettime(CLOCK_MONOTONIC, &a);
+  usleep(us);
+  for(int i=0; i<depth; ++i) EMU_CpuLock();
+  clock_gettime(CLOCK_MONOTONIC, &b); slept_us += (b.tv_sec - a.tv_sec) * 1000000L + (b.tv_nsec - a.tv_nsec) / 1000;
+}
 void EMU_CriticalEnter(void) { EMU_CpuLock(); }
 void EMU_CriticalExit(void)  { EMU_CpuUnlock(); }
 void EMU_Yield(void) {}
@@ -47,7 +60,7 @@ static void sleep_until(const struct timespec *t)
 }
 
 // a periodic loop: fn() every period_us (catching up at most 5 periods, like the "xLastExecutionTime" logic)
-typedef struct { void (*fn)(void); volatile u32 period_us; const char *name; volatile u32 calls; } loop_t;
+typedef struct { void (*fn)(void); volatile u32 period_us; const char *name; volatile u32 calls; volatile u32 max_us; } loop_t;
 static loop_t *all_loops[16]; static int num_loops;
 static void *loop_thread(void *arg)
 {
@@ -62,7 +75,10 @@ static void *loop_thread(void *arg)
       next = now;                                       // fell behind: don't burst
     if( !l->fn ) continue;
     EMU_CpuLock();
+    struct timespec t0, t1; clock_gettime(CLOCK_MONOTONIC, &t0); slept_us = 0;
     l->fn();
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+    { u32 us = (t1.tv_sec - t0.tv_sec) * 1000000L + (t1.tv_nsec - t0.tv_nsec) / 1000; us = (us > slept_us) ? us - slept_us : 0; if( us > l->max_us ) l->max_us = us; }
     ++l->calls;
     EMU_CpuUnlock();
   }
@@ -147,7 +163,7 @@ static void *idle_thread(void *arg)
   int idle_ms = 0;
   while( running ) {                         // idle task: APP_Background
     if( getenv("EMU_STATS") && ++idle_ms % 5000 == 0 ) {
-      for(int i=0; i<num_loops; ++i) { printf("[EMU] %-14s %u calls/5s\n", all_loops[i]->name, all_loops[i]->calls); all_loops[i]->calls = 0; }
+      for(int i=0; i<num_loops; ++i) { printf("[EMU] %-14s %u calls/5s, longest %u us\n", all_loops[i]->name, all_loops[i]->calls, all_loops[i]->max_us); all_loops[i]->calls = 0; all_loops[i]->max_us = 0; }
       {
         { extern volatile u32 emu_tx_msgs[4], emu_tx_err[4]; printf("[EMU] tx msgs %u %u %u %u errors %u %u %u %u\n", emu_tx_msgs[0], emu_tx_msgs[1], emu_tx_msgs[2], emu_tx_msgs[3], emu_tx_err[0], emu_tx_err[1], emu_tx_err[2], emu_tx_err[3]); }
         printf("[EMU] remote mode %d active_mode %d port 0x%02x active_port 0x%02x\n", seq_midi_sysex_remote_mode, seq_midi_sysex_remote_active_mode, seq_midi_sysex_remote_port, seq_midi_sysex_remote_active_port); }

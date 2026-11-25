@@ -221,6 +221,6 @@ s32 MIOS32_USB_MIDI_PackageSend(mios32_midi_package_t p)
 {
   s32 r;
   while( (r = MIOS32_USB_MIDI_PackageSend_NonBlocking(p)) == -2 )   // blocking: wait for the next "USB frame"
-    usleep(200);
+    EMU_CpuSleepUs(200);
   return r;
 }
