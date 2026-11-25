@@ -416,7 +416,7 @@ extern s32 SEQ_FILE_PRESETS_CreateDefaults(void)
     FLUSH_BUFFER;
 
     int i;
-    u32 num = sizeof(default_trk_labels) / 4;
+    u32 num = sizeof(default_trk_labels) / sizeof(default_trk_labels[0]);
     for(i=0; i<num; ++i) {
       sprintf(line_buffer, "%s\n", default_trk_labels[i]);
       FLUSH_BUFFER;
@@ -458,7 +458,7 @@ extern s32 SEQ_FILE_PRESETS_CreateDefaults(void)
     FLUSH_BUFFER;
 
     int i;
-    u32 num = sizeof(default_trk_categories) / 4;
+    u32 num = sizeof(default_trk_categories) / sizeof(default_trk_categories[0]);
     for(i=0; i<num; ++i) {
       sprintf(line_buffer, "%s\n", default_trk_categories[i]);
       FLUSH_BUFFER;
