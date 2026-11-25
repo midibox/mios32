@@ -7,6 +7,8 @@ Useful to try the SEQ without hardware, and to develop and test firmware changes
 It is plain C + pthreads + CoreMIDI and a small Python script for the panel: no Xcode project, no JUCE.
 (The older `../macos` Xcode project uses PYMIDI and a Cocoa UI; this is a separate, command line based approach.)
 
+![The virtual front panel running the stock firmware](doc/panel.png)
+
 ## Requirements
 - macOS with the Xcode command line tools (`xcode-select --install`: `clang`, `make`). Tested on macOS 15 (Apple Silicon), Apple clang 17.
 - Python 3 with `mido` and `python-rtmidi`: `pip3 install mido python-rtmidi`.
