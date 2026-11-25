@@ -1,0 +1,4 @@
+build/
+mbseq_emu
+sdcard.img
+cc_test.sh
