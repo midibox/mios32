@@ -9,7 +9,7 @@ DEFS := -DMIOS32_FAMILY_EMULATION -DMIOS32_BOARD_MBHP_CORE_STM32F4 -DMIOS32_PROC
 INC  := -I host -I $(SEQ)/core -I $(R)/include/mios32 -I $(M)/sequencer -I $(M)/notestack \
         -I $(M)/midifile -I $(M)/fatfs/src -I $(M)/file -I $(M)/random -I $(M)/blm -I $(M)/blm_scalar_master -I $(M)/aout \
         -I $(M)/glcd_font -I $(M)/app_lcd/universal -I $(M)/uip_task_standard -I $(M)/uip/uip -I $(M)/ws2812
-CFLAGS := -O1 -g -w -include host/emu_prelude.h $(DEFS) $(INC)
+CFLAGS := -O1 -g -w -MMD -MP -include host/emu_prelude.h $(DEFS) $(INC)
 LDFLAGS := -framework CoreMIDI -framework CoreFoundation -framework CoreServices -lpthread
 
 SEQ_SRC := $(addprefix $(SEQ)/,$(shell grep -oE 'core/[a-z0-9_]+\.c' $(SEQ)/Makefile))
@@ -29,6 +29,8 @@ mbseq_emu: $(OBJ)
 
 build/%.o: %.c host/emu_prelude.h | build
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+-include $(OBJ:.o=.d)      # header dependencies written by -MMD: a changed header rebuilds its users
 
 build:
 	mkdir -p build

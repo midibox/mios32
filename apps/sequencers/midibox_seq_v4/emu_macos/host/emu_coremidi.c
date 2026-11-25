@@ -14,60 +14,68 @@ static MIDIClientRef client;
 static MIDIEndpointRef src[NUM_PORTS], dst[NUM_PORTS];
 
 // receive ring buffer (filled by the CoreMIDI thread, read by MIOS32_MIDI_Receive_Handler under the CPU lock)
-#define RX_SIZE 4096
+#define RX_SIZE 16384
 static mios32_midi_package_t rx[RX_SIZE];
 static volatile u32 rx_head, rx_tail;
 static pthread_mutex_t rx_lock = PTHREAD_MUTEX_INITIALIZER;
-static void rx_put(mios32_midi_package_t p)
+// a whole message (all packages of a SysEx) is queued at once, so messages from the two transports (CoreMIDI callback
+// and panel link) never get mixed; if it doesn't fit, it is dropped as a whole
+static void rx_put_n(const mios32_midi_package_t *p, u32 n)
 {
   pthread_mutex_lock(&rx_lock);
-  u32 n = (rx_head + 1) % RX_SIZE;
-  if( n != rx_tail ) { rx[rx_head] = p; rx_head = n; }
+  u32 used = (rx_head + RX_SIZE - rx_tail) % RX_SIZE;
+  if( used + n < RX_SIZE ) for(u32 i=0; i<n; ++i) { rx[rx_head] = p[i]; rx_head = (rx_head + 1) % RX_SIZE; }
   pthread_mutex_unlock(&rx_lock);
 }
 
 // byte stream -> USB MIDI packages (per port parser state)
-typedef struct { u8 status; u8 buf[3]; u8 n; u8 need; u8 sysex; } parser_t;
-static parser_t ps[NUM_PORTS];
+#define SYSEX_PKG_MAX 8192       // up to 24 KB per SysEx
+typedef struct { u8 status; u8 buf[3]; u8 n; u8 need; u8 sysex; u32 npk; mios32_midi_package_t pk[SYSEX_PKG_MAX]; } parser_t;
+#define NUM_TRANSPORTS 2         // 0 = CoreMIDI, 1 = panel link: each has its own parser state
+static parser_t ps[NUM_TRANSPORTS][NUM_PORTS];
 static u8 data_len(u8 st)
 {
   if( st < 0xf0 ) { u8 h = st & 0xf0; return (h == 0xc0 || h == 0xd0) ? 1 : 2; }
   switch( st ) { case 0xf1: case 0xf3: return 1; case 0xf2: return 2; default: return 0; }
 }
 volatile int emu_activity = 0;     // a key/encoder came in: counts as front panel activity (screensaver)
-static void emit(u8 cable, u8 cin, u8 b0, u8 b1, u8 b2)
+static void emit(parser_t *s, u8 cable, u8 cin, u8 b0, u8 b1, u8 b2)
 {
   if( cin == 0x9 || cin == 0xb ) emu_activity = 1;
   static int log = -1; if( log < 0 ) log = getenv("EMU_MIDILOG") != NULL;
   if( log && cin != 0x4 && cin < 0x8 + 8 && !(cin >= 4 && cin <= 7) ) { printf("[MIDI IN %d] %02x %02x %02x\n", cable+1, b0, b1, b2); fflush(stdout); }
   mios32_midi_package_t p; p.ALL = 0;
   p.cin = cin; p.cable = cable; p.evnt0 = b0; p.evnt1 = b1; p.evnt2 = b2;
-  rx_put(p);
+  if( s->sysex ) {                                           // SysEx packages are collected, then queued as a whole
+    if( s->npk < SYSEX_PKG_MAX ) s->pk[s->npk++] = p;
+    if( cin >= 5 && cin <= 7 ) { rx_put_n(s->pk, s->npk); s->npk = 0; }    // CIN 5/6/7 = SysEx end
+  } else
+    rx_put_n(&p, 1);
 }
-void EMU_MIDI_ParseByte(u8 cable, u8 b);
-static void parse_byte(u8 cable, u8 b) { EMU_MIDI_ParseByte(cable, b); }
-void EMU_MIDI_ParseByte(u8 cable, u8 b)
+void EMU_MIDI_ParseByte(u8 transport, u8 cable, u8 b);
+static void parse_byte(u8 cable, u8 b) { EMU_MIDI_ParseByte(0, cable, b); }
+void EMU_MIDI_ParseByte(u8 transport, u8 cable, u8 b)
 {
-  parser_t *s = &ps[cable];
-  if( b >= 0xf8 ) { emit(cable, 0xf, b, 0, 0); return; }            // realtime
-  if( b == 0xf0 ) { s->sysex = 1; s->n = 0; s->buf[s->n++] = b; return; }
+  parser_t *s = &ps[transport % NUM_TRANSPORTS][cable % NUM_PORTS];
+  if( b >= 0xf8 ) { mios32_midi_package_t p; p.ALL = 0; p.cin = 0xf; p.cable = cable; p.evnt0 = b; rx_put_n(&p, 1); return; }   // realtime (may occur inside a SysEx)
+  if( b == 0xf0 ) { s->sysex = 1; s->npk = 0; s->n = 0; s->buf[s->n++] = b; return; }
   if( s->sysex ) {
     if( b == 0xf7 ) {
       s->buf[s->n++] = b;
-      emit(cable, 4 + s->n, s->buf[0], s->n > 1 ? s->buf[1] : 0, s->n > 2 ? s->buf[2] : 0);   // CIN 5/6/7 = end with 1/2/3 bytes
+      emit(s, cable, 4 + s->n, s->buf[0], s->n > 1 ? s->buf[1] : 0, s->n > 2 ? s->buf[2] : 0);   // CIN 5/6/7 = end with 1/2/3 bytes
       { static int log = -1; if( log < 0 ) log = getenv("EMU_MIDILOG") != NULL; if( log ) { printf("[MIDI IN %d] SysEx end\n", cable+1); fflush(stdout); } }
       s->sysex = 0; s->n = 0; return;
     }
-    if( b & 0x80 ) { s->sysex = 0; s->n = 0; }                       // aborted sysex, handle as status below
+    if( b & 0x80 ) { s->sysex = 0; s->n = 0; s->npk = 0; }           // aborted sysex (dropped), handle as status below
     else {
       s->buf[s->n++] = b;
-      if( s->n == 3 ) { emit(cable, 4, s->buf[0], s->buf[1], s->buf[2]); s->n = 0; }
+      if( s->n == 3 ) { emit(s, cable, 4, s->buf[0], s->buf[1], s->buf[2]); s->n = 0; }
       return;
     }
   }
   if( b & 0x80 ) {
     s->status = b; s->n = 0; s->need = data_len(b);
-    if( s->need == 0 ) emit(cable, 5, b, 0, 0);                       // single byte system common
+    if( s->need == 0 ) emit(s, cable, 5, b, 0, 0);                       // single byte system common
     return;
   }
   if( !s->status ) return;
@@ -75,7 +83,7 @@ void EMU_MIDI_ParseByte(u8 cable, u8 b)
   if( s->n >= s->need ) {
     u8 st = s->status;
     u8 cin = (st < 0xf0) ? (st >> 4) : (s->need == 1 ? 2 : 3);
-    emit(cable, cin, st, s->buf[0], s->need > 1 ? s->buf[1] : 0);
+    emit(s, cable, cin, st, s->buf[0], s->need > 1 ? s->buf[1] : 0);
     s->n = 0;
     if( st >= 0xf0 ) s->status = 0;                                   // no running status for system common
   }
@@ -122,7 +130,7 @@ s32 MIOS32_USB_MIDI_PackageReceive(mios32_midi_package_t *package)
   return r;
 }
 // MIOS32 debug messages (SysEx F0 00 00 7E 32 <dev> 0D 40 <text> F7) are also printed on the emulator console
-static u8 dbg_buf[NUM_PORTS][1024]; static u16 dbg_len[NUM_PORTS];
+static __thread u8 dbg_buf[NUM_PORTS][1024]; static __thread u16 dbg_len[NUM_PORTS];
 static void debug_tap(u8 cable, const u8 *b, u8 len)
 {
   for(int i=0; i<len; ++i) {
@@ -158,14 +166,10 @@ void EMU_MIDI_Flush(void)
     }
   }
 }
-static void send_bytes(u8 cable, const u8 *b, u32 len)
+// one packet of at most TXL_MAXPKT bytes into the packet list of the port (flush + retry when the list is full)
+#define TXL_MAXPKT (TXL_SIZE - 128)
+static void txl_add(u8 cable, const u8 *b, u32 len)
 {
-  ++emu_tx_msgs[cable];
-  { extern int EMU_SOCKET_Connected(void); extern void EMU_SOCKET_Send(u8 cable, const u8 *b, u32 len);
-    EMU_SOCKET_Send(cable, b, len);
-    if( EMU_SOCKET_Connected() && len > 8 && b[0] == 0xf0 && b[3] == 0x7e && b[4] == 0x4d && b[6] == 0x09 )
-      return;                                                     // MBSEQ remote (screens, LEDs): only to the panel link
-  }
   MIDIPacketList *pl = (MIDIPacketList *)txl_buf[cable];
   for(int attempt=0; attempt<2; ++attempt) {
     if( txl_n[cable] == 0 ) txl_cur[cable] = MIDIPacketListInit(pl);
@@ -175,8 +179,24 @@ static void send_bytes(u8 cable, const u8 *b, u32 len)
   }
   ++emu_tx_err[cable];
 }
-static u8 sx_buf[NUM_PORTS][16384];
-static u32 sx_len[NUM_PORTS];
+static void send_bytes(u8 cable, const u8 *b, u32 len)
+{
+  ++emu_tx_msgs[cable];
+  { extern int EMU_SOCKET_Connected(void); extern void EMU_SOCKET_Send(u8 cable, const u8 *b, u32 len);
+    EMU_SOCKET_Send(cable, b, len);
+    if( EMU_SOCKET_Connected() && len > 8 && b[0] == 0xf0 && b[3] == 0x7e && b[4] == 0x4d && b[6] == 0x09 )
+      return;                                                     // MBSEQ remote (screens, LEDs): only to the panel link
+  }
+  while( len ) {                                                  // long SysEx: several packets, in order
+    u32 n = len > TXL_MAXPKT ? TXL_MAXPKT : len;
+    txl_add(cable, b, n);
+    b += n; len -= n;
+  }
+}
+// SysEx being sent is collected per thread: while one sender waits for the USB "frame" (CPU lock released), another thread
+// may send its own SysEx on the same port - on the STM32 the MIDI-out mutex keeps them apart, here the collectors do
+static __thread u8 sx_buf[NUM_PORTS][16384];
+static __thread u32 sx_len[NUM_PORTS];
 
 // USB full speed MIDI on the core moves 16 packages (64 bytes) per 1 ms frame; the firmware relies on "buffer full"
 // to pace itself. Without this limit CoreMIDI gets flooded and stops delivering to the receivers.

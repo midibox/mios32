@@ -151,3 +151,12 @@ char *EMU_strtok_r(char *str, const char *sep, char **lasts)
   if( *lasts == NULL ) *lasts = empty;
   return r;
 }
+
+// FILE_Remove(): delete on the SD card image through FatFs (returns 0 = FR_OK, like f_unlink)
+#include "ff.h"
+int EMU_Unlink(const char *path) { return (int)f_unlink(path); }
+
+// The firmware's data types must have the sizes they have on the STM32 (session files are written with them)
+#include "seq_song.h"
+_Static_assert(sizeof(u32) == 4 && sizeof(s32) == 4 && sizeof(DWORD) == 4, "32 bit types");
+_Static_assert(sizeof(seq_song_step_t) == 8, "seq_song_step_t must be 8 bytes like on the STM32");

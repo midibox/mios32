@@ -24,9 +24,16 @@ typedef unsigned short	WORD;
 typedef unsigned short	WCHAR;
 
 /* These types must be 32-bit integer */
+#ifdef MIOS32_FAMILY_EMULATION
+#include <stdint.h>
+typedef int32_t		LONG;
+typedef uint32_t		ULONG;
+typedef uint32_t		DWORD;   /* 'long' is 64 bit on the host */
+#else
 typedef long			LONG;
 typedef unsigned long	ULONG;
 typedef unsigned long	DWORD;
+#endif
 
 /* Boolean type */
 // TK: clashes with STM32 setup, therefore defined locally in ff.c

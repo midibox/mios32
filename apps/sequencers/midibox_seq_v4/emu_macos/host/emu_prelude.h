@@ -11,7 +11,9 @@ extern void EMU_Yield(void);
 #define portENTER_CRITICAL() EMU_CriticalEnter()
 #define portEXIT_CRITICAL()  EMU_CriticalExit()
 #define taskYIELD()          EMU_Yield()
-extern int unlink(const char *path);
+// modules/file/file.c calls unlink() in its emulation branch: route it to FatFs (the SD card image), never to the host
+extern int EMU_Unlink(const char *path);
+#define unlink EMU_Unlink
 // newlib (STM32) leaves strtok_r's rest pointer at "" after the last token, macOS sets it to NULL; the SEQ terminal
 // relies on the newlib behaviour (strlen(brkt))
 extern char *EMU_strtok_r(char *str, const char *sep, char **lasts);

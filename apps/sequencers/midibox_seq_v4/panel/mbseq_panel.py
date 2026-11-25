@@ -18,18 +18,18 @@ How it works (see seq_midi_sysex.c / seq_ui.c / seq_midi_in.c in the firmware):
                  (channel 1), then other notes = front panel buttons (SEQ_UI_REMOTE_MIDI_Keyboard).
   * SAVE ALL   : MIOS terminal command "store".
 
-API (for scripts):
-  GET /api/screen                 -> LCD as plain text (2 lines x 80)
-  GET /api/state                  -> JSON: lcd, leds, charset, screen
-  GET /api/press?b=EDIT           -> tap a button; combination: b=SELECT+GP3 (the first one is held)
-        &ms=120                      (optional: how long it is pressed)
-  GET /api/down?b=FAST  /api/up?b=FAST   -> hold / release a button
-  GET /api/enc?e=GP3&d=2          -> turn an encoder (e = DATAWHEEL or GP1..GP16, d = -63..63)
-  GET /api/sync                   -> let the SEQ send the whole screen again (MENU tap)
-  GET /api/store                  -> save the session (SAVE ALL)
-  GET /api/buttons                -> list of button names
-  GET /api/fb?cmd=dir%20/SESSIONS -> MIOS file browser command (same protocol as MIOS Studio), returns the replies
-  GET /api/upload?src=<dir>&name=<session> -> copy a local folder to /SESSIONS/<session> on the SD card
+API (for scripts; everything that changes something is POST, requests from other web pages are refused):
+  GET  /api/screen                 -> LCD as plain text (2 lines x 80)
+  GET  /api/state                  -> JSON: lcd, leds, charset, screen
+  GET  /api/buttons                -> list of button names
+  POST /api/press?b=EDIT           -> tap a button; combination: b=SELECT+GP3 (the first one is held)
+         &ms=120                      (optional: how long it is pressed)
+  POST /api/down?b=FAST  /api/up?b=FAST   -> hold / release a button
+  POST /api/enc?e=GP3&d=2          -> turn an encoder (e = DATAWHEEL or GP1..GP16, d = -63..63)
+  POST /api/sync                   -> let the SEQ send the whole screen again (MENU tap)
+  POST /api/store                  -> save the session (SAVE ALL)
+  POST /api/fb?cmd=dir%20/SESSIONS -> MIOS file browser command (same protocol as MIOS Studio), returns the replies
+  POST /api/upload?src=<dir>&name=<session> -> copy a local folder to /SESSIONS/<session> on the SD card
 """
 import argparse
 import base64
@@ -156,6 +156,8 @@ class Seq:
         self.dev = device_id
         self.lock = threading.Lock()
         self.midi_lock = threading.Lock()
+        self.btn_lock = threading.RLock()      # one complete button transition (state + its MIDI sequence) at a time
+        self.fb_lock = threading.RLock()       # one file browser request / upload at a time (single reply list, single write handle on the SEQ)
         self.lcd = [[32] * 80 for _ in range(2)]
         self.charset = 0
         self.sr = [0] * 32
@@ -191,6 +193,10 @@ class Seq:
         return active
 
     def button(self, name, down):
+        with self.btn_lock:
+            self._button(name, down)
+
+    def _button(self, name, down):
         import mido
         name = name.upper()
         if down:
@@ -225,27 +231,30 @@ class Seq:
                 self._send(self.out2, mido.Message("note_off", note=REMOTE_KEY))
 
     def release_all(self):
-        for b in list(self.held):
-            self.button(b, False)
+        with self.btn_lock:
+            for b in list(self.held):
+                self.button(b, False)
 
     def press(self, names, ms=100):
         names = [n.upper() for n in names]
-        for n in names:
-            self.button(n, True)
-            time.sleep(0.04)
-        time.sleep(ms / 1000)
-        for n in reversed(names):
-            self.button(n, False)
-            time.sleep(0.04)
+        with self.btn_lock:                   # a combination is pressed and released as a whole
+            for n in names:
+                self.button(n, True)
+                time.sleep(0.04)
+            time.sleep(ms / 1000)
+            for n in reversed(names):
+                self.button(n, False)
+                time.sleep(0.04)
 
     def encoder(self, name, delta):
         import mido
         idx = ENCODERS[name.upper()]
         self.wake()
         delta = max(-63, min(63, int(delta)))
-        if delta:
-            self._send(self.out1, mido.Message("control_change", channel=0,
-                                               control=15 + idx, value=64 + delta))
+        while delta:                                  # the firmware takes at most +-3 per CC (SEQ_UI_Encoder_Handler): split
+            step = max(-3, min(3, delta))
+            self._send(self.out1, mido.Message("control_change", channel=0, control=15 + idx, value=64 + step))
+            delta -= step
 
     def terminal(self, cmd):
         import mido
@@ -255,17 +264,18 @@ class Seq:
     def fb(self, cmd, quiet=1.5, maxwait=20):
         """MIOS file browser (same protocol as MIOS Studio): send 'dir /SESSIONS', 'read ...' etc. and collect the replies."""
         import mido
-        self.fb_rx = []
-        data = MIOS_HDR + [self.dev, 0x0D, 0x01] + [ord(c) & 0x7F for c in cmd] + [0x0A]
-        self._send(self.out1, mido.Message("sysex", data=data))
-        t0 = last = time.time()
-        while time.time() - t0 < maxwait:
-            time.sleep(0.05)
-            if self.fb_rx and self.fb_last != last:
-                last = self.fb_last
-            if self.fb_rx and time.time() - self.fb_last > quiet:
-                break
-        return list(self.fb_rx)
+        with self.fb_lock:
+            self.fb_rx = []
+            data = MIOS_HDR + [self.dev, 0x0D, 0x01] + [ord(c) & 0x7F for c in cmd] + [0x0A]
+            self._send(self.out1, mido.Message("sysex", data=data))
+            t0 = last = time.time()
+            while time.time() - t0 < maxwait:
+                time.sleep(0.05)
+                if self.fb_rx and self.fb_last != last:
+                    last = self.fb_last
+                if self.fb_rx and time.time() - self.fb_last > quiet:
+                    break
+            return list(self.fb_rx)
 
     def _fb_cmd(self, cmd, timeout=5.0):
         """Send 1 browser command and wait for exactly 1 reply (every command gives one, except read/dir)."""
@@ -281,40 +291,60 @@ class Seq:
 
     def upload(self, src, name, block=32, burst=32):
         """Write all files of folder 'src' to /SESSIONS/<name> on the SEQ's SD card (the folder must not exist yet)."""
-        import os
+        import re
         import mido
-        self.fb_rx = []
-        listing = "".join(self.fb("dir /SESSIONS", 0.8)).replace("\x00", "") + ","
-        if f",D{name}," in listing or f",F{name}," in listing:
-            raise ValueError(f"/SESSIONS/{name} already exists")
-        if self._fb_cmd(f"mkdir /SESSIONS/{name}") != "M#":
-            raise ValueError("mkdir failed")
-        t0, total = time.time(), 0
-        for f in sorted(os.listdir(src)):
-            data = open(os.path.join(src, f), "rb").read()
-            if self._fb_cmd(f"write /SESSIONS/{name}/{f} {len(data)}") != "W00000000":
-                raise ValueError(f"write {f} failed")
-            pos = 0
-            while pos < len(data):
-                cmds, wants = [], []
-                for _ in range(burst):                      # burst: send blocks back to back, then check all replies
-                    if pos >= len(data):
-                        break
-                    chunk = data[pos:pos + block]
-                    cmds.append(f"writedata {pos:08X} " + chunk.hex().upper())
-                    pos += len(chunk)
-                    wants.append("W#" if pos >= len(data) else f"W{pos:08X}")
-                n = len(self.fb_rx)
-                for c in cmds:
-                    self._send(self.out1, mido.Message("sysex", data=MIOS_HDR + [self.dev, 0x0D, 0x01] + [ord(ch) & 0x7F for ch in c] + [0x0A]))
-                tw = time.time()
-                while len(self.fb_rx) < n + len(cmds) and time.time() - tw < 10:
-                    time.sleep(0.0005)
-                got = [r.rstrip("\x00") for r in self.fb_rx[n:n + len(cmds)]]
-                if got != wants:
-                    raise ValueError(f"{f}: unexpected replies at offset {pos}: {got[:2]} ... expected {wants[:2]}")
-            total += len(data)
-        return {"bytes": total, "seconds": round(time.time() - t0, 1)}
+        # validate everything before anything is created on the SD card
+        block, burst = int(block), int(burst)
+        if not 1 <= block <= 40:                      # "writedata XXXXXXXX " + hex data must stay below the 99 characters of the terminal
+            raise ValueError("block must be 1..40")
+        if not 1 <= burst <= 64:
+            raise ValueError("burst must be 1..64")
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,8}", name):
+            raise ValueError("session name: 1..8 characters A-Z a-z 0-9 _ -")
+        if not os.path.isdir(src):
+            raise ValueError(f"{src} is not a folder")
+        files = sorted(f for f in os.listdir(src) if os.path.isfile(os.path.join(src, f)) and not f.startswith("."))
+        for f in files:
+            if not re.fullmatch(r"[A-Za-z0-9_]{1,8}\.[A-Za-z0-9]{1,3}", f):
+                raise ValueError(f"file name {f} is not a plain 8.3 name")
+        with self.fb_lock:                            # the whole upload is one transaction
+            listing = "".join(self.fb("dir /SESSIONS", 0.8)).replace("\x00", "") + ","
+            if f",D{name}," in listing or f",F{name}," in listing:
+                raise ValueError(f"/SESSIONS/{name} already exists")
+            if self._fb_cmd(f"mkdir /SESSIONS/{name}") != "M#":
+                raise ValueError("mkdir failed")
+            t0, total = time.time(), 0
+            for f in files:
+                with open(os.path.join(src, f), "rb") as fh:
+                    data = fh.read()
+                if self._fb_cmd(f"write /SESSIONS/{name}/{f} {len(data)}") != "W00000000":
+                    raise ValueError(f"write {f} failed")
+                if not data:                          # empty file: the firmware closes it on a (empty) writedata
+                    if self._fb_cmd("writedata 00000000") != "W#":
+                        raise ValueError(f"closing empty file {f} failed")
+                    continue
+                pos = 0
+                while pos < len(data):
+                    cmds, wants = [], []
+                    for _ in range(burst):            # burst: send blocks back to back, then check all replies
+                        if pos >= len(data):
+                            break
+                        chunk = data[pos:pos + block]
+                        cmds.append(f"writedata {pos:08X} " + chunk.hex().upper())
+                        pos += len(chunk)
+                        wants.append("W#" if pos >= len(data) else f"W{pos:08X}")
+                    n = len(self.fb_rx)
+                    for c in cmds:
+                        self._send(self.out1, mido.Message("sysex", data=MIOS_HDR + [self.dev, 0x0D, 0x01] + [ord(ch) & 0x7F for ch in c] + [0x0A]))
+                    tw = time.time()
+                    while len(self.fb_rx) < n + len(cmds) and time.time() - tw < 10:
+                        time.sleep(0.0005)
+                    got = [r.rstrip("\x00") for r in self.fb_rx[n:n + len(cmds)]]
+                    if got != wants:
+                        bad = next(i for i, (g, w) in enumerate(zip(got + [None] * len(wants), wants)) if g != w)
+                        raise ValueError(f"{f}: unexpected reply {got[bad] if bad < len(got) else None!r} at block {bad} of this burst, expected {wants[bad]!r} (offset {pos})")
+                total += len(data)
+            return {"bytes": total, "seconds": round(time.time() - t0, 1)}
 
     def sync(self):
         """Tap MENU -> the SEQ draws the whole screen again."""
@@ -420,6 +450,10 @@ class Seq:
 
 
 # ---------------------------------------------------------------- HTTP
+# routes that change something (buttons, encoders, files): POST only
+MUTATING = {"/api/press", "/api/down", "/api/up", "/api/release_all", "/api/enc", "/api/sync", "/api/fb", "/api/upload", "/api/store"}
+
+
 def make_handler(seq):
     class H(BaseHTTPRequestHandler):
         def log_message(self, *a):
@@ -436,13 +470,34 @@ def make_handler(seq):
             self.end_headers()
             self.wfile.write(b)
 
+        def _allowed(self):
+            """Only requests from this panel itself: a web page on another site must not be able to press buttons,
+            write to the SD card or delete files (cross-site forms/links, DNS rebinding)."""
+            port = self.server.server_address[1]
+            own = {f"127.0.0.1:{port}", f"localhost:{port}"}
+            if self.headers.get("Host", "") not in own:
+                return False
+            origin = self.headers.get("Origin")
+            if origin is not None and origin not in {"http://" + h for h in own}:
+                return False
+            if self.headers.get("Sec-Fetch-Site", "same-origin") not in ("same-origin", "none"):
+                return False
+            return True
+
         def do_POST(self):
-            self.do_GET()
+            self._route(True)
 
         def do_GET(self):
+            self._route(False)
+
+        def _route(self, is_post):
             u = urlparse(self.path)
             q = {k: v[0] for k, v in parse_qs(u.query).items()}
             p = u.path
+            if not self._allowed():
+                return self._send(403, {"error": "forbidden (request not from this panel)"})
+            if p in MUTATING and not is_post:
+                return self._send(405, {"error": f"{p} changes something: use POST"})
             try:
                 if p == "/":
                     return self._send(200, PAGE.replace("__LOGO__", json.dumps(LOGO)), "text/html")
@@ -699,7 +754,7 @@ function logoGlyph(x,y){ // character at column x (0..39 within one LCD), line y
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-.5 -.5 6 9" fill="#9fd400">${r}</svg>`;
   return glyphCache[k]='url("data:image/svg+xml;utf8,'+encodeURIComponent(svg)+'")';
 }
-const api=(p)=>fetch(p).catch(()=>{});
+const api=(p)=>fetch(p,{method:'POST'}).catch(()=>{});
 const NA=new Set(['SCRUB','LIVE','RECORD','COPY','PASTE','CLEAR']);
 const latched=new Set(), ledEls={};
 const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;};

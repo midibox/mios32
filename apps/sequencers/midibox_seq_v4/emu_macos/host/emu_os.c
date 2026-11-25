@@ -60,7 +60,7 @@ static void sleep_until(const struct timespec *t)
 }
 
 // a periodic loop: fn() every period_us (catching up at most 5 periods, like the "xLastExecutionTime" logic)
-typedef struct { void (*fn)(void); volatile u32 period_us; const char *name; volatile u32 calls; volatile u32 max_us; } loop_t;
+typedef struct { void (*fn)(void); volatile u32 period_us; const char *name; volatile u32 calls; volatile u32 max_us; pthread_t thread; } loop_t;
 static loop_t *all_loops[16]; static int num_loops;
 static void *loop_thread(void *arg)
 {
@@ -75,6 +75,7 @@ static void *loop_thread(void *arg)
       next = now;                                       // fell behind: don't burst
     if( !l->fn ) continue;
     EMU_CpuLock();
+    if( !running ) { EMU_CpuUnlock(); break; }           // shutting down: don't start another callback
     struct timespec t0, t1; clock_gettime(CLOCK_MONOTONIC, &t0); slept_us = 0;
     l->fn();
     clock_gettime(CLOCK_MONOTONIC, &t1);
@@ -89,7 +90,7 @@ static loop_t *start_loop(void (*fn)(void), u32 period_us, const char *name)
   loop_t *l = calloc(1, sizeof(loop_t));
   l->fn = fn; l->period_us = period_us; l->name = name;
   if( num_loops < 16 ) all_loops[num_loops++] = l;
-  pthread_t t; pthread_create(&t, NULL, loop_thread, l); pthread_detach(t);
+  pthread_create(&l->thread, NULL, loop_thread, l);
   return l;
 }
 
@@ -170,6 +171,7 @@ static void *idle_thread(void *arg)
       fflush(stdout);
     }
     EMU_CpuLock();
+    if( !running ) { EMU_CpuUnlock(); break; }
     { extern volatile int emu_activity; extern s32 SEQ_LCD_LOGO_ScreenSaver_Disable(void);
       if( emu_activity ) { emu_activity = 0; SEQ_LCD_LOGO_ScreenSaver_Disable(); } }
     APP_Background();
@@ -237,6 +239,11 @@ int main(int argc, char **argv)
   while( running )
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.2, false);
   printf("\n[EMU] stopped\n");
+  // wait until no callback and no worker is running any more, only then close the SD card image
+  pthread_join(idle, NULL);
+  for(int i=0; i<num_loops; ++i) pthread_join(all_loops[i]->thread, NULL);
+  EMU_CpuLock();
   EMU_Shutdown();
+  EMU_CpuUnlock();
   return 0;
 }

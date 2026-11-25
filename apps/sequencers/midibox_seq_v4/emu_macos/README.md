@@ -37,7 +37,7 @@ datawheel and the other buttons and LEDs in the layout of Wilba's front panel.
 - LCD and LEDs come from the SEQ's SysEx remote server (`09 02` LCD, `09 03` charset, `09 04` LED shift registers);
   encoders are sent as CC 15..31, buttons through the MIDI Remote Keyboard (note 96 held on Port 2, then one note per
   button, see `SEQ_UI_REMOTE_MIDI_Keyboard`). Buttons that are not in that map (e.g. SCRUB) are shown grey.
-- HTTP API for scripts: `/api/screen`, `/api/state`, `/api/press?b=SELECT+GP3`, `/api/enc?e=GP3&d=2`, `/api/buttons`,
+- HTTP API for scripts (everything that changes something is POST; requests from other web pages are refused): `/api/screen`, `/api/state`, `POST /api/press?b=SELECT+GP3`, `POST /api/enc?e=GP3&d=2`, `/api/buttons`,
   ... (see the top of `mbseq_panel.py`).
 
 ## Using the panel with a real SEQ (no emulator)
@@ -82,6 +82,12 @@ Debug switches: `EMU_STATS=1` (task rates and remote state every ~5 s), `EMU_MID
 `EMU_FSTEST=1` (FatFs write test on the image, then exit).
 
 ## 64-bit findings in the firmware
+- `u32`/`s32` (`include/mios32/mios32_datatypes.h`) and FatFs' `DWORD`/`LONG` (`modules/fatfs/src/integer.h`) are `long`
+  based, which is 64 bit on the host. With `MIOS32_FAMILY_EMULATION` they are now `int32_t`/`uint32_t` (the STM32 build
+  is unchanged), so structures that end up in files (e.g. `seq_song_step_t`, 8 bytes) have the same layout as on the
+  hardware. `host/emu_mios32.c` has `_Static_assert`s for the sizes.
+- `modules/file/file.c` calls `unlink()` in its emulation branch; the emulator maps that to `f_unlink()`, so the file
+  browser's `del` works on the SD card image and never on the Mac's file system.
 - `core/seq_file_presets.c`: `sizeof(array_of_pointers) / 4` -> `sizeof(a) / sizeof(a[0])` (crashed on 64 bit; same
   result on the STM32). Fixed in this change.
 - `strtok_r`: macOS sets the rest pointer to NULL after the last token, newlib to ""; the terminal relies on newlib, so
